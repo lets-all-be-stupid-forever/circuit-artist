@@ -1,0 +1,9 @@
+[submodule "third_party/clip"]
+	path = third_party/clip
+	url = https://github.com/dacap/clip
+[submodule "third_party/nativefiledialog-extended"]
+	path = third_party/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended
+[submodule "third_party/raylib"]
+	path = third_party/raylib
+	url = https://github.com/raysan5/raylib
