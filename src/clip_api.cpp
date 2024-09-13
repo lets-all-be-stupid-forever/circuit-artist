@@ -18,19 +18,36 @@ Image ImageFromClipboard()
   int h = spec.height;
   Image ret = GenImageSimple(w, h);
   Color* colors = GetPixels(ret);
-  // std::cout << "pasted: " << w << " " << h << std::endl;
-  for (unsigned long y = 0; y < spec.height; ++y) {
-    uint32_t* src = (uint32_t*)(img.data() + y * spec.bytes_per_row);
-    for (unsigned long x = 0; x < spec.width; ++x, ++src) {
-      const uint32_t c = *src;
-      int r = ((c & spec.red_mask) >> spec.red_shift);
-      int g = ((c & spec.green_mask) >> spec.green_shift);
-      int b = ((c & spec.blue_mask) >> spec.blue_shift);
-      int a = ((c & spec.alpha_mask) >> spec.alpha_shift);
-      colors[y * w + x].r = r;
-      colors[y * w + x].g = g;
-      colors[y * w + x].b = b;
-      colors[y * w + x].a = a;
+  int byte_stride = spec.bits_per_pixel >> 3;
+  if (spec.alpha_mask != 0) {
+    for (unsigned long y = 0; y < spec.height; ++y) {
+      char* src = (img.data() + y * spec.bytes_per_row);
+      for (unsigned long x = 0; x < spec.width; ++x) {
+        const uint32_t c = *(uint32_t*)(src + byte_stride * x);
+        int r = ((c & spec.red_mask) >> spec.red_shift);
+        int g = ((c & spec.green_mask) >> spec.green_shift);
+        int b = ((c & spec.blue_mask) >> spec.blue_shift);
+        int a = ((c & spec.alpha_mask) >> spec.alpha_shift);
+        colors[y * w + x].r = r;
+        colors[y * w + x].g = g;
+        colors[y * w + x].b = b;
+        colors[y * w + x].a = a;
+      }
+    }
+  }
+  else {
+    for (unsigned long y = 0; y < spec.height; ++y) {
+      char* src = (img.data() + y * spec.bytes_per_row);
+      for (unsigned long x = 0; x < spec.width; ++x) {
+        const uint32_t c = *(uint32_t*)(src + byte_stride * x);
+        uint32_t r = ((c & spec.red_mask) >> spec.red_shift);
+        uint32_t g = ((c & spec.green_mask) >> spec.green_shift);
+        uint32_t b = ((c & spec.blue_mask) >> spec.blue_shift);
+        colors[y * w + x].r = r;
+        colors[y * w + x].g = g;
+        colors[y * w + x].b = b;
+        colors[y * w + x].a = 255;
+      }
     }
   }
   return ret;

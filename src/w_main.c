@@ -446,7 +446,7 @@ void MainDraw(Ui* ui)
     BtnDrawLegend(&C.btn_line, bscale, "Line tool (L)\nType (NUMBER) to change line size.\nPress (SHIFT) while drawing to add corner to start of line.\nPress (CTRL) while drawing to add corner to end of line.\nLeft mouse button: Draw\nRight mouse button: Erase");
     BtnDrawLegend(&C.btn_bucket, bscale, "Wire Fill (G)\nLeft mouse button: regular color fill.\nRight mouse button: black color fill (erase).");
     BtnDrawLegend(&C.btn_picker, bscale, "Color Picker (I)");
-    BtnDrawLegend(&C.btn_marquee, bscale, "Selection tool (M)");
+    BtnDrawLegend(&C.btn_marquee, bscale, "Selection tool (M)\nHold (LEFT CTRL) and drag to create a copy of the selection.\nHold (SHIFT) while dragging to force a strict X or Y movement.\nUse (ARROW)s to move a selection by single pixels. (CTRL+ARROW)s to move by 4 pixels. \n(C-C)/(C-V) for copy/paste selection (copies/pastes to/from clipboard).\n(DELETE) or (BACKSPACE) to delete selection.\n (ESCAPE) to deselect.");
     BtnDrawLegend(&C.btn_text, bscale, "Add Text (T)");
     BtnDrawLegend(&C.btn_fliph, bscale, "Flip selection horizontally (H)");
     BtnDrawLegend(&C.btn_flipv, bscale, "Flip selection vertically (V)");

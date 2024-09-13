@@ -1,6 +1,10 @@
 #include "string.h"
 #include "ui.h"
 
+#ifndef WEB
+#include <omp.h>
+#endif
+
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #endif
@@ -12,11 +16,18 @@ static Ui _ui = {0};
 int main()
 {
   UiLoad(&_ui);
+  // OpenMP is getting all CPU at Windows for some reason...
+  // Add limit of 6 threads to reduce its effect until a better solution is
+  // found.
+  int nt = omp_get_max_threads();
+  nt = nt < 6 ? nt : 6;
+  omp_set_num_threads(nt);
+
 #if defined(PLATFORM_WEB)
   emscripten_set_main_loop(web_update_draw_frame, 0, 1);
 #else
   SetExitKey(0);  // Avoids window closing with escape key
-  SetTargetFPS(120);
+  SetTargetFPS(60);
   SetTraceLogLevel(LOG_ERROR);
   while (true) {
     UiUpdateFrame(&_ui);

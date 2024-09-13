@@ -3,7 +3,7 @@ project(ca C CXX)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(OpenMP)
+find_package(OpenMP REQUIRED)
 
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
@@ -15,11 +15,6 @@ add_subdirectory(third_party/nativefiledialog-extended)
 link_directories(LuaJIT/src)
 
 add_compile_definitions(CLIP_ENABLE_IMAGE 1)
-
-if (OPENMP_FOUND)
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-  set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-ENDIF()
 
 add_executable(ca
   src/main.c
