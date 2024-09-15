@@ -13,7 +13,6 @@
 #include "stdlib.h"
 #include "string.h"
 #include "tiling.h"
-#include "utils.h"
 #include "w_about.h"
 #include "w_cpedia.h"
 #include "w_dialog.h"

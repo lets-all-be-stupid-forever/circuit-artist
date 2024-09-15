@@ -1,6 +1,5 @@
 #ifndef FONT_H
 #define FONT_H
-#include "img.h"
 #include "sprite.h"
 
 // Loads font from a dedicated file.

@@ -1,6 +1,5 @@
 #ifndef W_DIALOG_H
 #define W_DIALOG_H
-#include "defs.h"
 #include "ui.h"
 #include "w_main.h"
 

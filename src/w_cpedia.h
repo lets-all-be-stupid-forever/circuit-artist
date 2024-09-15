@@ -1,6 +1,5 @@
 #ifndef W_CPEDIA_H
 #define W_CPEDIA_H
-#include "stdbool.h"
 #include "ui.h"
 
 // Circuitopedia screen.

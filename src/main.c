@@ -1,4 +1,3 @@
-#include "string.h"
 #include "ui.h"
 
 #if defined(WITH_OPENMP)

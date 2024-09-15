@@ -1,6 +1,5 @@
 #ifndef IMG_H
 #define IMG_H
-#include "colors.h"
 #include "defs.h"
 #include "rect_int.h"
 

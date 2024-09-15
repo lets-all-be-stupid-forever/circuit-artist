@@ -1,6 +1,5 @@
 #ifndef TILING_H
 #define TILING_H
-#include "defs.h"
 #include "ui.h"
 
 // Descriptor for a frame pattern.

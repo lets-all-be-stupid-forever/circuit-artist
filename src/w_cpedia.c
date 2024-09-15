@@ -2,12 +2,9 @@
 
 #include "api.h"
 #include "font.h"
-#include "math.h"
 #include "raylib.h"
 #include "rlgl.h"
 #include "stb_ds.h"
-#include "stdio.h"
-#include "string.h"
 #include "tiling.h"
 #include "ui.h"
 #include "widgets.h"

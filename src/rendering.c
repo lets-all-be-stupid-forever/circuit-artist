@@ -1,7 +1,5 @@
 #include "rendering.h"
-#ifndef WEB
-#include <omp.h>
-#endif
+#include "colors.h"
 #include "font.h"
 #include "math.h"
 #include "string.h"
@@ -396,4 +394,3 @@ void RenderImageSimpleRect(Image* out, float pixel_size, int camera_x, int camer
     }
   }
 }
-

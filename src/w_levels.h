@@ -1,6 +1,5 @@
 #ifndef W_LEVELS_H
 #define W_LEVELS_H
-#include "stdbool.h"
 #include "ui.h"
 
 // Level selection screen.

@@ -1,6 +1,5 @@
 #ifndef MINIMAP_H
 #define MINIMAP_H
-#include "defs.h"
 #include "img.h"
 #include "paint.h"
 #include "ui.h"
