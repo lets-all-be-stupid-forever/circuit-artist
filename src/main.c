@@ -1,7 +1,7 @@
 #include "string.h"
 #include "ui.h"
 
-#ifndef WEB
+#if defined(WITH_OPENMP)
 #include <omp.h>
 #endif
 
@@ -16,12 +16,14 @@ static Ui _ui = {0};
 int main()
 {
   UiLoad(&_ui);
+#if defined(WITH_OPENMP)
   // OpenMP is getting all CPU at Windows for some reason...
   // Add limit of 6 threads to reduce its effect until a better solution is
   // found.
   int nt = omp_get_max_threads();
   nt = nt < 6 ? nt : 6;
   omp_set_num_threads(nt);
+#endif
 
 #if defined(PLATFORM_WEB)
   emscripten_set_main_loop(web_update_draw_frame, 0, 1);
