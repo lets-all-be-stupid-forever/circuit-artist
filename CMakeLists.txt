@@ -114,9 +114,13 @@ target_include_directories(ca PRIVATE
 
 # shlwapi is only for win32
 IF(WIN32)
-    SET(shlwapi_lib shlwapi)
+  SET(shlwapi_lib shlwapi)
+  # mingw32-make cooks lua51.dll for some reason :-(
+  SET(luajit_lib lua51)
+ELSE ()
+  SET(luajit_lib luajit)
 ENDIF()
 IF (OPENMP)
   SET(openmp_lib OpenMP::OpenMP_C)
 ENDIF ()
-target_link_libraries(ca raylib ${shlwapi_lib} nfd ${openmp_lib} luajit)
+target_link_libraries(ca raylib ${shlwapi_lib} nfd ${openmp_lib} ${luajit_lib})
