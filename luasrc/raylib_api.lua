@@ -1500,5 +1500,5 @@ typedef void (*AudioCallback)(void *bufferData, unsigned int frames);
  void DetachAudioMixedProcessor(AudioCallback processor); // Detach audio stream processor from the entire audio pipeline
 
 ]]
-local R = ffi.load("raylib.dll")
+local R = ffi.load("raylib")
 return R
