@@ -4,6 +4,9 @@
 #include "defs.h"
 #include "rect_int.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
 // Thin wrapper over GenImage of raylib. The idea is that eventually the images
 // will be forced to be in a specific format (like a 128-sized palette or
 // something.)
@@ -24,7 +27,7 @@ Image RotateImage(Image img, int ccw);
 // Fills image with a color.
 void FillImage(Image* img, Color v);
 
-// Fills a subset of a image with a color.
+// Fills a subset of an image with a color.
 void FillImageRect(Image* img, RectangleInt r, Color c);
 
 // Draws a rectangle in an image.
@@ -100,5 +103,8 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect, RectangleInt im
 //
 // It's up to the caller to take ownership of the generated `out` image.
 void DrawImageBucketTool(Image img, int x, int y, int sw, int sh, Color c, Image* out, Vector2Int* off);
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

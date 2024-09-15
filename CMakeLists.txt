@@ -58,7 +58,7 @@ link_directories(LuaJIT/src)
 
 add_compile_definitions(CLIP_ENABLE_IMAGE=1)
 
-add_executable(ca
+SET(ca_src
   src/main.c
   src/brush.c
   src/paint.c
@@ -89,10 +89,20 @@ add_executable(ca
   # Stuff for copy-paste
   third_party/clip/image.cpp
   third_party/clip/clip.cpp
-  third_party/clip/clip_win.cpp
-  third_party/clip/clip_win_wic.cpp
-  third_party/clip/clip_win_bmp.cpp
   )
+IF (WIN32)
+  SET(ca_src ${ca_src}
+    third_party/clip/clip_win.cpp
+    third_party/clip/clip_win_wic.cpp
+    third_party/clip/clip_win_bmp.cpp
+  )
+ELSEIF (APPLE)
+  SET(ca_src ${ca_src}
+    third_party/clip/clip_osx.mm
+  )
+ENDIF()
+
+add_executable(ca ${ca_src})
 
 target_include_directories(ca PRIVATE
   src
