@@ -52,7 +52,7 @@ add_custom_command(
 )
 link_directories(LuaJIT/src)
 
-add_compile_definitions(CLIP_ENABLE_IMAGE 1)
+add_compile_definitions(CLIP_ENABLE_IMAGE=1)
 
 add_executable(ca
   src/main.c
