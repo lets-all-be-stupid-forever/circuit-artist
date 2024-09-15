@@ -13,7 +13,7 @@
 #define MAX_IMG_SIZE 512
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #define CA_API
 #elif _WIN32
 #define CA_API __declspec(dllexport)
