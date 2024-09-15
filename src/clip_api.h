@@ -5,8 +5,6 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-#include "img.h"
-#include "ui.h"
 #if defined(__cplusplus)
 }
 #endif

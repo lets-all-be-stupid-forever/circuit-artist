@@ -2,8 +2,6 @@
 
 #include "font.h"
 #include "rlgl.h"
-#include "stdio.h"
-#include "stdlib.h"
 #include "tiling.h"
 #include "ui.h"
 #include "version.h"

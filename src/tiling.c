@@ -1,5 +1,5 @@
 #include "tiling.h"
-
+#include "defs.h"
 #include "rlgl.h"
 
 void DrawTiledScreen(int s, Texture2D tex, Rectangle src)

@@ -3,9 +3,8 @@
 #include <stdio.h>
 
 #include "assert.h"
+#include "colors.h"
 #include "font.h"
-#include "math.h"
-#include "sim.h"
 #include "stdlib.h"
 
 // Makes sure the alpha is 255

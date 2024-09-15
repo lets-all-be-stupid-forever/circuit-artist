@@ -1,6 +1,5 @@
 #ifndef LISTBOX_H
 #define LISTBOX_H
-#include "defs.h"
 #include "img.h"
 #include "sprite.h"
 #include "ui.h"
