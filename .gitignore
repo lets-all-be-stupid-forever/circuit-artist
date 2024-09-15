@@ -1,4 +1,6 @@
+# this is downloaded separately by cmake
 LuaJIT
+third_party/*.gz
 build
 wip
 todo.txt

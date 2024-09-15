@@ -12,6 +12,44 @@ SET(BUILD_SHARED_LIBS ON CACHE BOOL "Build raylib shared library")
 
 add_subdirectory(third_party/raylib)
 add_subdirectory(third_party/nativefiledialog-extended)
+
+# there's also a "rolling" tag but that jams up any sha256 effort
+SET(LUAJIT_VERSION 2.1.0-beta3)
+SET(LUAJIT_SHA256 409f7fe570d3c16558e594421c47bdd130238323c9d6fd6c83dedd2aaeb082a8)
+IF (NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/LuaJIT/src)
+    FILE(DOWNLOAD
+            https://github.com/LuaJIT/LuaJIT/archive/v${LUAJIT_VERSION}.tar.gz
+            ${CMAKE_SOURCE_DIR}/third_party/LuaJIT-${LUAJIT_VERSION}.tar.gz
+            STATUS luajit_fetch
+            EXPECTED_HASH SHA256=${LUAJIT_SHA256}
+    )
+    LIST(GET luajit_fetch 0 luajit_fetch_status)
+    IF (NOT ${luajit_fetch_status} EQUAL 0)
+        message(FATAL_ERROR "LuaJIT fetch did not shake out := ${luajit_fetch}")
+    ENDIF()
+    FILE(ARCHIVE_EXTRACT
+            INPUT ${CMAKE_SOURCE_DIR}/third_party/LuaJIT-${LUAJIT_VERSION}.tar.gz
+            DESTINATION ${CMAKE_SOURCE_DIR}/third_party/.luajit
+    )
+    FILE(RENAME
+            ${CMAKE_SOURCE_DIR}/third_party/.luajit/LuaJIT-${LUAJIT_VERSION}
+            ${CMAKE_SOURCE_DIR}/LuaJIT
+    )
+    FILE(REMOVE_RECURSE ${CMAKE_SOURCE_DIR}/third_party/.luajit)
+ENDIF()
+IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/LuaJIT/src/lua.h)
+    message(FATAL_ERROR "The LuaJIT unpack did not shake out, lua.h is missing")
+ENDIF()
+
+add_custom_command(
+  # in my tarball, it always generates .so but we'll need to double check what happens on (WIN32)
+  OUTPUT ${CMAKE_SOURCE_DIR}/LuaJIT/src/libluajit.so
+  # that nonsense is because it does actually build the .so
+  # but barfs linking luajit binary due to dwarf symbols
+  COMMAND make --ignore-errors
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/LuaJIT
+  VERBATIM
+)
 link_directories(LuaJIT/src)
 
 add_compile_definitions(CLIP_ENABLE_IMAGE 1)
