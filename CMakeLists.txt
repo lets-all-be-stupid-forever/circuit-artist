@@ -99,4 +99,7 @@ target_include_directories(ca PRIVATE
   )
 
 # shlwapi is only for win32
-target_link_libraries(ca raylib shlwapi nfd OpenMP::OpenMP_C lua51 luajit)
+IF(WIN32)
+    SET(shlwapi_lib shlwapi)
+ENDIF()
+target_link_libraries(ca raylib ${shlwapi_lib} nfd OpenMP::OpenMP_C lua51 luajit)
