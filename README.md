@@ -25,10 +25,14 @@ Made with [raylib](https://www.raylib.com/).
 
 ## Building
 
-Compiles in Windows.
+Compiles in Windows, Linux and Mac.
 
 - Need to build within the `build/` directory (or something within the root directory so it can access `luasrc/` and `asset/` folder)
-- Need to download and build [luajit](https://luajit.org/download.html) locally in the folder `LuaJIT`, so that `LuaJIT/src/`, `LuaJIT/src/lua51.dll` and `LuaJIT/src/luajit.lib` are there.
+- You need to compile `LuaJIT/`. You can see the instructions [here](https://luajit.org/install.html). The binaries will go to the `LuaJIT/src` folder. In MAC it seems you need to install it too. In linux I've managed to make it work with a symbolic link from `build/`. In Windows it worked directly with the cmake directives ( if it doesnt for you mind that it might be something related to link path).
+- In linux it might complain that it can't find `libraylib.so`, that's because linux won't look for libraries in the directory it is in, you can fix with it `LD_LIBRARY_PATH=$PWD ./ca` until we find a cleaner solution.
+- By default OPENMP is off, you might want to activate in the `OPENMP` cmake option.
+
+The Linux and MAC versions are not stable yet: they compile but have some divergences from windows version.
 
 ## License
 

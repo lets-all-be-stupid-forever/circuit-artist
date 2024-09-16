@@ -96,6 +96,12 @@ IF (WIN32)
     third_party/clip/clip_win_wic.cpp
     third_party/clip/clip_win_bmp.cpp
   )
+ELSEIF (UNIX)
+  ADD_COMPILE_DEFINITIONS(-DHAVE_XCB_XLIB_H=1)
+  SET(clip_libs xcb pthread)
+  SET(ca_src ${ca_src}
+    third_party/clip/clip_x11.cpp
+  )
 ELSEIF (APPLE)
   SET(ca_src ${ca_src}
     third_party/clip/clip_osx.mm
@@ -103,6 +109,10 @@ ELSEIF (APPLE)
 ENDIF()
 
 add_executable(ca ${ca_src})
+IF (UNIX)
+  # Need this command so luajit can access the C API from ffi
+  SET_PROPERTY(TARGET ca PROPERTY ENABLE_EXPORTS ON)
+ENDIF()
 
 target_include_directories(ca PRIVATE
   src
@@ -123,4 +133,4 @@ ENDIF()
 IF (OPENMP)
   SET(openmp_lib OpenMP::OpenMP_C)
 ENDIF ()
-target_link_libraries(ca raylib ${shlwapi_lib} nfd ${openmp_lib} ${luajit_lib})
+target_link_libraries(ca raylib ${shlwapi_lib} nfd ${openmp_lib} ${luajit_lib} ${clip_libs})
