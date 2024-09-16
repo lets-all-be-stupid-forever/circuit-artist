@@ -96,20 +96,20 @@ IF (WIN32)
     third_party/clip/clip_win_wic.cpp
     third_party/clip/clip_win_bmp.cpp
   )
+ELSEIF (APPLE)
+  SET(ca_src ${ca_src}
+    third_party/clip/clip_osx.mm
+  )
 ELSEIF (UNIX)
   ADD_COMPILE_DEFINITIONS(-DHAVE_XCB_XLIB_H=1)
   SET(clip_libs xcb pthread)
   SET(ca_src ${ca_src}
     third_party/clip/clip_x11.cpp
   )
-ELSEIF (APPLE)
-  SET(ca_src ${ca_src}
-    third_party/clip/clip_osx.mm
-  )
 ENDIF()
 
 add_executable(ca ${ca_src})
-IF (UNIX)
+IF (UNIX AND NOT APPLE)
   # Need this command so luajit can access the C API from ffi
   SET_PROPERTY(TARGET ca PROPERTY ENABLE_EXPORTS ON)
 ENDIF()
