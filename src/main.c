@@ -12,8 +12,7 @@ static void WebUpdateDrawFrame(void);  // Update and Draw one frame
 
 static Ui _ui = {0};
 
-int main()
-{
+int main() {
   UiLoad(&_ui);
 #if defined(WITH_OPENMP)
   // OpenMP is getting all CPU at Windows for some reason...
@@ -42,7 +41,4 @@ int main()
   return 0;
 }
 
-void WebUpdateDrawFrame()
-{
-  UiUpdateFrame(&_ui);
-}
+void WebUpdateDrawFrame() { UiUpdateFrame(&_ui); }

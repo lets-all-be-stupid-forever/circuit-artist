@@ -73,41 +73,30 @@ static SharedState shared_state = {0};
 
 CA_API SharedState* GetSharedState();
 
-CA_API void CaDrawText(const char* txt, int x, int y, Color c)
-{
+CA_API void CaDrawText(const char* txt, int x, int y, Color c) {
   FontDrawTexture(txt, x, y, c);
 }
 
-CA_API void CaSetPalFromImage(Image img)
-{
-  MainSetPaletteFromImage(img);
-}
+CA_API void CaSetPalFromImage(Image img) { MainSetPaletteFromImage(img); }
 
-CA_API int CaGetDrawTextSize(const char* txt)
-{
+CA_API int CaGetDrawTextSize(const char* txt) {
   return GetRenderedTextSize(txt).x;
 }
 
-CA_API void CaDrawTextBox(const char* txt, int x, int y, int w, Color c)
-{
+CA_API void CaDrawTextBox(const char* txt, int x, int y, int w, Color c) {
   DrawTextBox(txt, (Rectangle){x, y, w, 0}, c, NULL);
 }
 
-static void RunOrCrash(int status)
-{
+static void RunOrCrash(int status) {
   if (status != LUA_OK) {
     fprintf(stderr, "Error in Lua:\n%s\n", lua_tostring(_L, -1));
     exit(1);
   }
 }
 
-SharedState* GetSharedState()
-{
-  return &shared_state;
-}
+SharedState* GetSharedState() { return &shared_state; }
 
-void ApiLoad()
-{
+void ApiLoad() {
   _L = luaL_newstate();  // open Lua
   lua_State* L = _L;
   if (!L) {
@@ -118,32 +107,24 @@ void ApiLoad()
   RunOrCrash(luaL_dofile(L, "../luasrc/app.lua"));
 }
 
-void ApiUnload()
-{
+void ApiUnload() {
   if (_L) {
     lua_close(_L);
   }
   _L = NULL;
 }
 
-void ApiLoadLevel(int i)
-{
+void ApiLoadLevel(int i) {
   shared_state.requested_level = i;
   LuaCall("apiLoadLevel()");
 }
 
-void ApiStartLevelSimulation()
-{
-  LuaCall("apiStartSimulation()");
-}
+void ApiStartLevelSimulation() { LuaCall("apiStartSimulation()"); }
 
-void ApiStopLevelSimulation()
-{
-  LuaCall("apiStopSimulation()");
-}
+void ApiStopLevelSimulation() { LuaCall("apiStopSimulation()"); }
 
-void ApiOnLevelDraw(RenderTexture2D target, float camera_x, float camera_y, float camera_spacing)
-{
+void ApiOnLevelDraw(RenderTexture2D target, float camera_x, float camera_y,
+                    float camera_spacing) {
   shared_state.rt = target;
   shared_state.cx = camera_x;
   shared_state.cy = camera_y;
@@ -151,13 +132,10 @@ void ApiOnLevelDraw(RenderTexture2D target, float camera_x, float camera_y, floa
   LuaCall("apiOnLevelDraw()");
 }
 
-LevelDesc* ApiGetLevelDesc()
-{
-  return &shared_state.level_desc;
-}
+LevelDesc* ApiGetLevelDesc() { return &shared_state.level_desc; }
 
-void ApiUpdateLevelComponent(void* ctx, int ic, int* prev_in, int* next_in, int* output)
-{
+void ApiUpdateLevelComponent(void* ctx, int ic, int* prev_in, int* next_in,
+                             int* output) {
   shared_state.update_ctx.ic = ic;
   shared_state.update_ctx.prev_in = prev_in;
   shared_state.update_ctx.next_in = next_in;
@@ -165,13 +143,9 @@ void ApiUpdateLevelComponent(void* ctx, int ic, int* prev_in, int* next_in, int*
   LuaCall("apiUpdateLevelComponent()");
 }
 
-LevelOptions* ApiGetLevelOptions()
-{
-  return &shared_state.level_options;
-}
+LevelOptions* ApiGetLevelOptions() { return &shared_state.level_options; }
 
-TickResult ApiOnLevelTick(float dt)
-{
+TickResult ApiOnLevelTick(float dt) {
   shared_state.dt = dt;
   LuaCall("apiOnLevelTick()");
   TickResult tr;
@@ -179,24 +153,21 @@ TickResult ApiOnLevelTick(float dt)
   tr.clock_value = shared_state.clock_update_value;
   if (tr.clock_value >= 0) {
     tr.clock_updated = true;
-  }
-  else {
+  } else {
     tr.clock_updated = false;
   }
   tr.clock_count = shared_state.clock_count;
   return tr;
 }
 
-void ApiLevelClock(int ilevel, int* inputs, bool reset)
-{
+void ApiLevelClock(int ilevel, int* inputs, bool reset) {
   shared_state.update_ctx.ic = ilevel;
   shared_state.update_ctx.next_in = inputs;
   shared_state.update_ctx.reset = reset;
   LuaCall("apiOnLevelClock()");
 }
 
-void ApiSetClockTime(float clock_time)
-{
+void ApiSetClockTime(float clock_time) {
   shared_state.elapsed = 0;
   shared_state.clock_time = clock_time;
 }

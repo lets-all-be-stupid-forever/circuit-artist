@@ -14,7 +14,8 @@ typedef enum {
 typedef enum {
   // When user is drawing.
   MODE_EDIT,
-  // When user has clicked on play but the simulator hasn't finished compiling the circuit.
+  // When user has clicked on play but the simulator hasn't finished compiling
+  // the circuit.
   MODE_COMPILING,
   // When the circuit is compiled and running.
   MODE_SIMU,

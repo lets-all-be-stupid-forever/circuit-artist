@@ -14,25 +14,8 @@ static const int RESIZE_HANDLE_SIZE = 20;
 static const double line_modif_threshold = 1;
 
 static const float zoom_lut[] = {
-    -1,
-    0.2,
-    0.25,
-    0.33,
-    0.5,
-    1.0,
-    2.0,
-    3.0,
-    4.0,
-    5.0,
-    6.0,
-    8.0,
-    12.0,
-    16.0,
-    24.0,
-    32.0,
-    48.0,
-    64.0,
-    -1,
+    -1,  0.2, 0.25, 0.33, 0.5,  1.0,  2.0,  3.0,  4.0, 5.0,
+    6.0, 8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, -1,
 };
 
 static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off);
@@ -49,14 +32,12 @@ static RectangleInt PaintCropRectInBuffer(Paint* ca, RectangleInt r);
 static RectangleInt PaintMakeToolRect(Paint* ca);
 static Vector2Int PaintFindBestOffsetForClipboard(Paint* ca);
 
-static void PaintOnToolChange(Paint* ca)
-{
+static void PaintOnToolChange(Paint* ca) {
   ca->line_key_width = 0;
   ca->line_key_width_time = -1;
 }
 
-void PaintPerformToolAction(Paint* ca)
-{
+void PaintPerformToolAction(Paint* ca) {
   switch (ca->h.tool) {
     case TOOL_BRUSH:
     case TOOL_LINE: {
@@ -85,8 +66,7 @@ void PaintPerformToolAction(Paint* ca)
         int dx, dy;
         PaintGetSelMovingOffset(ca, &dx, &dy);
         HistActMoveSel(&ca->h, dx, dy);
-      }
-      else {
+      } else {
         HistActCommitSel(&ca->h, PaintMakeToolRect(ca));
       }
       break;
@@ -96,8 +76,7 @@ void PaintPerformToolAction(Paint* ca)
   }
 }
 
-RectangleInt PaintCropRectInBuffer(Paint* ca, RectangleInt r)
-{
+RectangleInt PaintCropRectInBuffer(Paint* ca, RectangleInt r) {
   int x0 = r.x;
   int x1 = r.x + r.width;
   int y0 = r.y;
@@ -119,8 +98,7 @@ RectangleInt PaintCropRectInBuffer(Paint* ca, RectangleInt r)
   };
 }
 
-static RectangleInt PaintFindVisibleScreenPixels(Paint* ca, int pad)
-{
+static RectangleInt PaintFindVisibleScreenPixels(Paint* ca, int pad) {
   float x0 = -ca->camera_x / ca->camera_s;
   float y0 = -ca->camera_y / ca->camera_s;
   RectangleInt r = ca->viewport;
@@ -142,8 +120,7 @@ static RectangleInt PaintFindVisibleScreenPixels(Paint* ca, int pad)
   };
 }
 
-static Vector2Int PaintGetCameraCenterOffset(Paint* ca, Image img)
-{
+static Vector2Int PaintGetCameraCenterOffset(Paint* ca, Image img) {
   RectangleInt roi = PaintFindVisibleScreenPixels(ca, 0);
   int cx = roi.x + roi.width / 2;
   int cy = roi.y + roi.height / 2;
@@ -155,8 +132,7 @@ static Vector2Int PaintGetCameraCenterOffset(Paint* ca, Image img)
   };
 }
 
-static RectangleInt PaintMakeToolRect(Paint* ca)
-{
+static RectangleInt PaintMakeToolRect(Paint* ca) {
   if (!ca->tool_pressed) {
     return (RectangleInt){0};
   }
@@ -172,8 +148,7 @@ static RectangleInt PaintMakeToolRect(Paint* ca)
   };
 }
 
-void PaintEnsureCameraWithinBounds(Paint* ca)
-{
+void PaintEnsureCameraWithinBounds(Paint* ca) {
   Image buffer = HistGetBuffer(&ca->h);
   int extrax = ca->extrax;
   int extray = ca->extray;
@@ -201,12 +176,13 @@ void PaintEnsureCameraWithinBounds(Paint* ca)
   ca->camera_y = fmax(fmin(ca->camera_y, y_max), y_min);
 }
 
-void PaintCenterCamera(Paint* ca)
-{
+void PaintCenterCamera(Paint* ca) {
   Image buffer = HistGetBuffer(&ca->h);
   int ci = 1;
   RectangleInt r = ca->viewport;
-  while ((zoom_lut[ci + 1] * buffer.width < r.width) && (zoom_lut[ci + 1] * buffer.height < r.height) && (zoom_lut[ci + 1] != -1)) {
+  while ((zoom_lut[ci + 1] * buffer.width < r.width) &&
+         (zoom_lut[ci + 1] * buffer.height < r.height) &&
+         (zoom_lut[ci + 1] != -1)) {
     ci++;
   }
   ca->camera_i = ci;
@@ -223,8 +199,7 @@ void PaintCenterCamera(Paint* ca)
   ca->camera_y = (y_max + y_min) / 2;
 }
 
-void PaintLoad(Paint* ca)
-{
+void PaintLoad(Paint* ca) {
   *ca = (Paint){0};
   ca->grid_on_zoom = false;
   ca->camera_i = 5;
@@ -247,14 +222,12 @@ void PaintLoad(Paint* ca)
   PaintSetClockSpeed(ca, 2);
 }
 
-void PaintImageIngress(Paint* ca, Image* img)
-{
+void PaintImageIngress(Paint* ca, Image* img) {
   ImageEnsureMaxSize(img);
   ImageRemoveBlacks(img);
 }
 
-void PaintLoadImage(Paint* ca, Image img)
-{
+void PaintLoadImage(Paint* ca, Image img) {
   PaintStopSimu(ca);
   PaintImageIngress(ca, &img);
   HistSetBuffer(&ca->h, img);
@@ -262,8 +235,7 @@ void PaintLoadImage(Paint* ca, Image img)
   PaintEnsureCameraWithinBounds(ca);
 }
 
-void PaintSetViewport(Paint* ca, int x, int y, int w, int h)
-{
+void PaintSetViewport(Paint* ca, int x, int y, int w, int h) {
   bool need_centering = false;
   if (ca->viewport.width == 0) {
     need_centering = true;
@@ -277,19 +249,14 @@ void PaintSetViewport(Paint* ca, int x, int y, int w, int h)
   }
 }
 
-ToolType PaintGetTool(Paint* ca)
-{
-  return HistGetTool(&ca->h);
-}
+ToolType PaintGetTool(Paint* ca) { return HistGetTool(&ca->h); }
 
-void PaintPasteImage(Paint* ca, Image img)
-{
+void PaintPasteImage(Paint* ca, Image img) {
   PaintImageIngress(ca, &img);
   HistActPasteImage(&ca->h, PaintGetCameraCenterOffset(ca, img), img);
 }
 
-void PaintStartSimu(Paint* ca)
-{
+void PaintStartSimu(Paint* ca) {
   if (ca->mode != MODE_EDIT) {
     return;
   }
@@ -298,7 +265,8 @@ void PaintStartSimu(Paint* ca)
   ca->mode = MODE_COMPILING;
   ca->pi = ParseImage(HistGetBuffer(&ca->h));
   LevelDesc* cd = ApiGetLevelDesc();
-  SimLoad(&ca->s, ca->pi, cd->num_components, cd->extcomps, ApiUpdateLevelComponent, NULL);
+  SimLoad(&ca->s, ca->pi, cd->num_components, cd->extcomps,
+          ApiUpdateLevelComponent, NULL);
   if (ca->s.status == SIMU_STATUS_OK) {
     ApiStartLevelSimulation();
     SimSimulate(&ca->s, 0);
@@ -308,8 +276,7 @@ void PaintStartSimu(Paint* ca)
   ca->mode = MODE_SIMU;
 }
 
-void PaintStopSimu(Paint* ca)
-{
+void PaintStopSimu(Paint* ca) {
   if (ca->mode != MODE_SIMU) {
     return;
   }
@@ -321,8 +288,7 @@ void PaintStopSimu(Paint* ca)
   ca->mode = MODE_EDIT;
 }
 
-void PaintUpdateSimu(Paint* ca, float delta)
-{
+void PaintUpdateSimu(Paint* ca, float delta) {
   float clock_time = 1 / ca->clock_frequency;
   ca->simu_time += delta;
   // Part1: Clicks from the user
@@ -353,13 +319,9 @@ void PaintUpdateSimu(Paint* ca, float delta)
   SimGenImage(&ca->s);
 }
 
-bool PaintGetHasSelection(Paint* ca)
-{
-  return HistGetHasSelection(&ca->h);
-}
+bool PaintGetHasSelection(Paint* ca) { return HistGetHasSelection(&ca->h); }
 
-bool PaintGetMouseOverSel(Paint* ca)
-{
+bool PaintGetMouseOverSel(Paint* ca) {
   // Checking if the tool is pressed to avoid scenario where a selection exists
   // and you're creating a new selection and the mouse goes over the existing
   // selection.
@@ -380,8 +342,7 @@ bool PaintGetMouseOverSel(Paint* ca)
   return false;
 }
 
-bool PaintGetIsToolSelMoving(Paint* ca)
-{
+bool PaintGetIsToolSelMoving(Paint* ca) {
   if (PaintGetHasSelection(ca) && ca->tool_pressed) {
     int px = ca->tool_start_x;
     int py = ca->tool_start_y;
@@ -398,8 +359,7 @@ bool PaintGetIsToolSelMoving(Paint* ca)
   return false;
 }
 
-static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off)
-{
+static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off) {
   Color c = ca->tool_btn == LEFT_BTN ? ca->fg_color : BLACK;
   Image buffer = HistGetBuffer(&ca->h);
   if (HistGetTool(&ca->h) == TOOL_LINE) {
@@ -416,19 +376,17 @@ static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off)
     int ls = ca->line_tool_size == 0 ? 1 : ca->line_tool_size;
     bool corner = IsKeyDown(KEY_LEFT_SHIFT);
     bool end_corner = IsKeyDown(KEY_LEFT_CONTROL);
-    DrawImageLineTool(start, PaintMakeToolRect(ca), img_rect, ls, corner, end_corner, c, img, off);
-  }
-  else if (HistGetTool(&ca->h) == TOOL_BRUSH) {
+    DrawImageLineTool(start, PaintMakeToolRect(ca), img_rect, ls, corner,
+                      end_corner, c, img, off);
+  } else if (HistGetTool(&ca->h) == TOOL_BRUSH) {
     BrushMakeImage(&ca->brush, c, buffer.width, buffer.height, img, off);
-  }
-  else {
+  } else {
     *img = (Image){0};
     *off = (Vector2Int){0};
   }
 }
 
-static void PaintGetSelMovingOffset(Paint* ca, int* dx, int* dy)
-{
+static void PaintGetSelMovingOffset(Paint* ca, int* dx, int* dy) {
   if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) {
     int cx = ca->tool_end_x - ca->tool_start_x;
     int cy = ca->tool_end_y - ca->tool_start_y;
@@ -437,24 +395,22 @@ static void PaintGetSelMovingOffset(Paint* ca, int* dx, int* dy)
     if (acx > acy) {
       *dx = cx;
       *dy = 0;
-    }
-    else {
+    } else {
       *dx = 0;
       *dy = cy;
     }
-  }
-  else {
+  } else {
     *dx = ca->tool_end_x - ca->tool_start_x;
     *dy = ca->tool_end_y - ca->tool_start_y;
   }
 }
 
-void PaintRender(Paint* ca)
-{
+void PaintRender(Paint* ca) {
   RectangleInt r = ca->viewport;
   int tw = r.width;
   int th = r.height;
-  if (ca->tmp_render.width == 0 || ca->tmp_render.width != tw || ca->tmp_render.height != th) {
+  if (ca->tmp_render.width == 0 || ca->tmp_render.width != tw ||
+      ca->tmp_render.height != th) {
     if (ca->tmp_render.width > 0) {
       UnloadImage(ca->tmp_render);
     }
@@ -493,7 +449,8 @@ void PaintRender(Paint* ca)
       r.tool_off_x = off.x;
       r.tool_off_y = off.y;
     }
-    if ((tool == TOOL_LINE || tool == TOOL_BRUSH) && !ca->tool_pressed && IsCursorOnScreen() && ca->mouse_on_target) {
+    if ((tool == TOOL_LINE || tool == TOOL_BRUSH) && !ca->tool_pressed &&
+        IsCursorOnScreen() && ca->mouse_on_target) {
       r.pixel_preview = true;
       r.pixel_preview_x = ca->pixel_cursor_x;
       r.pixel_preview_y = ca->pixel_cursor_y;
@@ -510,8 +467,10 @@ void PaintRender(Paint* ca)
           r.sel[0].width,
           r.sel[0].height,
       };
-      RenderImageSelRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y, sel_rect, 1, t);
-      RenderImageSelRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y, sel_rect, 2, t);
+      RenderImageSelRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y,
+                         sel_rect, 1, t);
+      RenderImageSelRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y,
+                         sel_rect, 2, t);
     }
 
     // Creating the selection
@@ -529,8 +488,10 @@ void PaintRender(Paint* ca)
               x1 - x0,
               y1 - y0,
           };
-          RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y, sel_rect, 1, t, WHITE);
-          RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y, sel_rect, 2, t, WHITE);
+          RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x,
+                                r.camera_y, sel_rect, 1, t, WHITE);
+          RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x,
+                                r.camera_y, sel_rect, 2, t, WHITE);
         }
       }
     }
@@ -549,13 +510,17 @@ void PaintRender(Paint* ca)
             y1 - y0,
         };
         Color c = ca->fg_color;
-        RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y, bucket_rect, 1, t, c);
-        RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y, bucket_rect, 2, t, c);
+        RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x,
+                              r.camera_y, bucket_rect, 1, t, c);
+        RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x,
+                              r.camera_y, bucket_rect, 2, t, c);
       }
     }
 
     // Mouse selection preview
-    if ((tool == TOOL_SEL || tool == TOOL_BUCKET) && !ca->tool_pressed && IsCursorOnScreen() && !PaintGetMouseOverSel(ca) && ca->mouse_on_target) {
+    if ((tool == TOOL_SEL || tool == TOOL_BUCKET) && !ca->tool_pressed &&
+        IsCursorOnScreen() && !PaintGetMouseOverSel(ca) &&
+        ca->mouse_on_target) {
       Image buffer = HistGetBuffer(&ca->h);
       if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < buffer.width &&
           ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < buffer.height) {
@@ -570,7 +535,8 @@ void PaintRender(Paint* ca)
             y1 - y0,
         };
         Color c = WHITE;
-        RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y, sel_rect, 1, t, c);
+        RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x,
+                              r.camera_y, sel_rect, 1, t, c);
       }
     }
 
@@ -605,9 +571,9 @@ void PaintRender(Paint* ca)
             sizey,
         };
         ca->resize_region = reg;
-        RenderImageSelRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y, reg, 1, t);
-      }
-      else {
+        RenderImageSelRect(&ca->tmp_render, r.pixel_size, r.camera_x,
+                           r.camera_y, reg, 1, t);
+      } else {
         if (is_on_resize_rect) {
           c = WHITE;
         }
@@ -618,13 +584,13 @@ void PaintRender(Paint* ca)
           RESIZE_HANDLE_SIZE / r.pixel_size,
           RESIZE_HANDLE_SIZE / r.pixel_size,
       };
-      DrawImageSceneRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y, rect, c);
+      DrawImageSceneRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y,
+                         rect, c);
     }
     if (r.tool_img.width > 0) {
       UnloadImage(r.tool_img);
     }
-  }
-  else {
+  } else {
     RenderImgCtx r = {0};
     for (int i = 0; i < 3; i++) {
       r.img[i] = ca->s.simulated[i];
@@ -643,24 +609,24 @@ void PaintRender(Paint* ca)
     Image tmp = GenImageSimple(200, 800);
     const LevelDesc* cd = ApiGetLevelDesc();
     Sim* s = ca->mode == MODE_EDIT ? NULL : &ca->s;
-    RenderImageCompInput(&tmp, HistGetBuffer(&ca->h), s, cd->num_components, cd->pindesc);
+    RenderImageCompInput(&tmp, HistGetBuffer(&ca->h), s, cd->num_components,
+                         cd->pindesc);
     float pixel_size = ca->camera_s;
     int camera_x = -ca->camera_x;
     int camera_y = -ca->camera_y;
-    RenderImageSimple(&ca->tmp_render, tmp, pixel_size, camera_x, camera_y, -tmp.width, 0);
+    RenderImageSimple(&ca->tmp_render, tmp, pixel_size, camera_x, camera_y,
+                      -tmp.width, 0);
     UnloadImage(tmp);
   }
 }
 
-void PaintNewBuffer(Paint* ca)
-{
+void PaintNewBuffer(Paint* ca) {
   PaintStopSimu(ca);
   HistNewBuffer(&ca->h);
   PaintResetCamera(ca);
 }
 
-static void PaintResetCamera(Paint* ca)
-{
+static void PaintResetCamera(Paint* ca) {
   ca->camera_i = 7;
   ca->camera_s = zoom_lut[ca->camera_i];
   ca->camera_x = 0;
@@ -668,18 +634,11 @@ static void PaintResetCamera(Paint* ca)
   PaintCenterCamera(ca);
 }
 
-Image PaintGetEditImage(Paint* ca)
-{
-  return HistGetBuffer(&ca->h);
-}
+Image PaintGetEditImage(Paint* ca) { return HistGetBuffer(&ca->h); }
 
-void PaintSetNotDirty(Paint* ca)
-{
-  HistSetNotDirty(&ca->h);
-}
+void PaintSetNotDirty(Paint* ca) { HistSetNotDirty(&ca->h); }
 
-void PaintSetTool(Paint* ca, ToolType tool)
-{
+void PaintSetTool(Paint* ca, ToolType tool) {
   ToolType prev = HistGetTool(&ca->h);
   ToolType next = tool;
   PaintOnToolChange(ca);
@@ -694,29 +653,22 @@ void PaintSetTool(Paint* ca, ToolType tool)
   ca->tool_pressed = false;
 }
 
-void PaintSetColor(Paint* ca, Color color)
-{
-  ca->fg_color = color;
-}
+void PaintSetColor(Paint* ca, Color color) { ca->fg_color = color; }
 
-void PaintToggleSimu(Paint* ca)
-{
+void PaintToggleSimu(Paint* ca) {
   if (ca->mode == MODE_EDIT) {
     PaintStartSimu(ca);
-  }
-  else {
+  } else {
     PaintStopSimu(ca);
   }
 }
 
-void PaintUnload(Paint* ca)
-{
+void PaintUnload(Paint* ca) {
   BrushUnload(&ca->brush);
   HistUnload(&ca->h);
 }
 
-static Vector2 ProjectPointIntoRect(Vector2 p, Rectangle r)
-{
+static Vector2 ProjectPointIntoRect(Vector2 p, Rectangle r) {
   int x0 = r.x;
   int y0 = r.y;
   int x1 = r.x + r.width;
@@ -733,8 +685,7 @@ static Vector2 ProjectPointIntoRect(Vector2 p, Rectangle r)
   };
 }
 
-void PaintEnforceMouseOnImageIfNeed(Paint* ca)
-{
+void PaintEnforceMouseOnImageIfNeed(Paint* ca) {
   Vector2 pos = GetMousePosition();
   RectangleInt r = ca->viewport;
   Rectangle target_rect = {r.x, r.y, r.width, r.height};
@@ -748,8 +699,7 @@ void PaintEnforceMouseOnImageIfNeed(Paint* ca)
   }
 }
 
-void PaintUpdatePixelPosition(Paint* ca)
-{
+void PaintUpdatePixelPosition(Paint* ca) {
   Vector2 pos = GetMousePosition();
   RectangleInt r = ca->viewport;
   ca->f_pixel_cursor_x = (pos.x - ca->camera_x - r.x) / ca->camera_s;
@@ -758,8 +708,7 @@ void PaintUpdatePixelPosition(Paint* ca)
   ca->pixel_cursor_y = (int)floorf(ca->f_pixel_cursor_y);
 }
 
-static void PaintZoomCameraAt(Paint* ca, Vector2 screenpos, int z)
-{
+static void PaintZoomCameraAt(Paint* ca, Vector2 screenpos, int z) {
   // position of the mouse in the image before zoom
   RectangleInt r = ca->viewport;
   float p0x = (screenpos.x - ca->camera_x - r.x) / ca->camera_s;
@@ -769,8 +718,7 @@ static void PaintZoomCameraAt(Paint* ca, Vector2 screenpos, int z)
     if (zoom_lut[ca->camera_i - 1] > 0) {
       ca->camera_i -= 1;
     }
-  }
-  else {
+  } else {
     if (zoom_lut[ca->camera_i + 1] > 0) {
       ca->camera_i += 1;
     }
@@ -784,8 +732,7 @@ static void PaintZoomCameraAt(Paint* ca, Vector2 screenpos, int z)
   PaintEnsureCameraWithinBounds(ca);
 }
 
-void PaintHandleWheelZoom(Paint* ca)
-{
+void PaintHandleWheelZoom(Paint* ca) {
   Vector2 pos = GetMousePosition();
   float wheel = GetMouseWheelMove();
   if (fabs(wheel) > 1e-3) {
@@ -794,8 +741,7 @@ void PaintHandleWheelZoom(Paint* ca)
   }
 }
 
-static Vector2Int PaintFindBestOffsetForClipboard(Paint* ca)
-{
+static Vector2Int PaintFindBestOffsetForClipboard(Paint* ca) {
   RectangleInt roi = PaintFindVisibleScreenPixels(ca, -1);
   Vector2Int off = ca->clipboard_offset;
   RectangleInt clip_roi = {
@@ -811,14 +757,14 @@ static Vector2Int PaintFindBestOffsetForClipboard(Paint* ca)
   return PaintGetCameraCenterOffset(ca, ca->clipboard_image);
 }
 
-static void PaintPasteFromClipboard(Paint* ca)
-{
+static void PaintPasteFromClipboard(Paint* ca) {
   // If there's an image in the clipboard, uses that image instead (and save it
   // in internal clipboard)
   Image system_clipboard_image = ImageFromClipboard();
   if (system_clipboard_image.width > 0) {
     if (ca->clipboard_image.width > 0) {
-      if (ca->clipboard_image.width != system_clipboard_image.width || ca->clipboard_image.height != system_clipboard_image.height) {
+      if (ca->clipboard_image.width != system_clipboard_image.width ||
+          ca->clipboard_image.height != system_clipboard_image.height) {
         ca->clipboard_offset.x = -100000;
         ca->clipboard_offset.y = -100000;
       }
@@ -833,8 +779,7 @@ static void PaintPasteFromClipboard(Paint* ca)
   }
 }
 
-static void PaintCopyToClipboard(Paint* ca)
-{
+static void PaintCopyToClipboard(Paint* ca) {
   if (!PaintGetHasSelection(ca)) {
     return;
   }
@@ -849,8 +794,7 @@ static void PaintCopyToClipboard(Paint* ca)
   ImageToClipboard(ca->clipboard_image);
 }
 
-static int GetNumberKeyPressed()
-{
+static int GetNumberKeyPressed() {
   if (IsKeyPressed(KEY_ZERO)) return 0;
   if (IsKeyPressed(KEY_ONE)) return 1;
   if (IsKeyPressed(KEY_TWO)) return 2;
@@ -864,8 +808,7 @@ static int GetNumberKeyPressed()
   return -1;
 }
 
-static void PaintAppendLineWidthNumber(Paint* ca, int key)
-{
+static void PaintAppendLineWidthNumber(Paint* ca, int key) {
   int old_size = ca->line_key_width;
   if (!PaintGetKeyLineWidthHasJustChanged(ca)) {
     old_size = 0;
@@ -879,8 +822,7 @@ static void PaintAppendLineWidthNumber(Paint* ca, int key)
   }
 }
 
-void PaintHandleKeys(Paint* ca)
-{
+void PaintHandleKeys(Paint* ca) {
   if (IsKeyPressed(KEY_SPACE)) {
     PaintToggleSimu(ca);
   }
@@ -934,12 +876,15 @@ void PaintHandleKeys(Paint* ca)
 
     // It has multiple selection checks because selection might change
     // between commands
-    if (!ca->tool_pressed && PaintGetHasSelection(ca) && IsKeyPressed(KEY_ESCAPE)) {
+    if (!ca->tool_pressed && PaintGetHasSelection(ca) &&
+        IsKeyPressed(KEY_ESCAPE)) {
       PaintPerformToolAction(ca);
     }
 
     if (!ca->tool_pressed) {
-      if ((PaintGetHasSelection(ca)) && (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_DOWN))) {
+      if ((PaintGetHasSelection(ca)) &&
+          (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) ||
+           IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_DOWN))) {
         // moves the selection...
         int dx = 0;
         int dy = 0;
@@ -967,26 +912,26 @@ void PaintHandleKeys(Paint* ca)
         HistActSelFill(&ca->h, ca->fg_color);
       }
 
-      if (has_sel && (IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE))) {
+      if (has_sel &&
+          (IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE))) {
         HistActDeleteSel(&ca->h);
       }
     }
   }
 }
 
-static void PaintPokeSimulationPixel(Paint* ca)
-{
+static void PaintPokeSimulationPixel(Paint* ca) {
   Image buffer = HistGetBuffer(&ca->h);
   if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < buffer.width &&
       ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < buffer.height) {
     int search_radius = 5;
-    SimFindNearestPixelToToggle(&ca->s, search_radius, ca->f_pixel_cursor_x, ca->f_pixel_cursor_y,
-                                &ca->queued_toggled_x, &ca->queued_toggled_y);
+    SimFindNearestPixelToToggle(&ca->s, search_radius, ca->f_pixel_cursor_x,
+                                ca->f_pixel_cursor_y, &ca->queued_toggled_x,
+                                &ca->queued_toggled_y);
   }
 }
 
-void PaintHandleMouse(Paint* ca, bool is_target)
-{
+void PaintHandleMouse(Paint* ca, bool is_target) {
   ca->mouse_on_target = is_target;
   if (ca->mode == MODE_EDIT) {
     bool left_pressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
@@ -1007,8 +952,7 @@ void PaintHandleMouse(Paint* ca, bool is_target)
         // Resizing feature...
         if (is_on_resize_rect) {
           ca->resize_pressed = true;
-        }
-        else {
+        } else {
           ca->tool_pressed = !ca->tool_pressed;
           ca->tool_btn = LEFT_BTN;
           ca->tool_start_x = ca->pixel_cursor_x;
@@ -1027,8 +971,7 @@ void PaintHandleMouse(Paint* ca, bool is_target)
         // Cancels resizing when the user clicks on right button
         if (ca->resize_pressed) {
           ca->resize_pressed = false;
-        }
-        else if (ca->tool_pressed) {
+        } else if (ca->tool_pressed) {
           PaintOnToolStart(ca);
         }
       }
@@ -1079,16 +1022,14 @@ void PaintHandleMouse(Paint* ca, bool is_target)
       ca->tool_pressed = false;
       ca->resize_pressed = false;
     }
-  }
-  else if (ca->mode == MODE_SIMU && ca->s.status == SIMU_STATUS_OK) {
+  } else if (ca->mode == MODE_SIMU && ca->s.status == SIMU_STATUS_OK) {
     if (is_target && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       PaintPokeSimulationPixel(ca);
     }
   }
 }
 
-static void PaintOnToolStart(Paint* ca)
-{
+static void PaintOnToolStart(Paint* ca) {
   if (HistGetTool(&ca->h) == TOOL_BRUSH) {
     BrushReset(&ca->brush);
   }
@@ -1101,8 +1042,7 @@ static void PaintOnToolStart(Paint* ca)
   }
 }
 
-void PaintHandleCameraMovement(Paint* ca)
-{
+void PaintHandleCameraMovement(Paint* ca) {
   if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
     Vector2 dmouse = GetMouseDelta();
     ca->camera_x += dmouse.x;
@@ -1111,106 +1051,68 @@ void PaintHandleCameraMovement(Paint* ca)
   }
 }
 
-bool PaintGetIsDirty(Paint* ca)
-{
-  return HistGetIsDirty(&ca->h);
-}
+bool PaintGetIsDirty(Paint* ca) { return HistGetIsDirty(&ca->h); }
 
-Image PaintGetSelBuffer(Paint* ca)
-{
-  return HistGetSelBuffer(&ca->h);
-}
+Image PaintGetSelBuffer(Paint* ca) { return HistGetSelBuffer(&ca->h); }
 
-int PaintGetNumNands(Paint* ca)
-{
+int PaintGetNumNands(Paint* ca) {
   if (ca->mode == MODE_SIMU) {
     return SimGetNumNands(&ca->s);
-  }
-  else {
+  } else {
     return 0;
   }
 }
 
-PaintMode PaintGetMode(Paint* ca)
-{
-  return ca->mode;
-}
+PaintMode PaintGetMode(Paint* ca) { return ca->mode; }
 
-int PaintGetSimuStatus(Paint* ca)
-{
+int PaintGetSimuStatus(Paint* ca) {
   if (ca->mode == MODE_SIMU) {
     return ca->s.status;
-  }
-  else {
+  } else {
     return -1;
   }
 }
 
-Color PaintGetColor(Paint* ca)
-{
-  return ca->fg_color;
-}
+Color PaintGetColor(Paint* ca) { return ca->fg_color; }
 
-void PaintGetSimuPixelToggleState(Paint* ca, int* cur_state)
-{
+void PaintGetSimuPixelToggleState(Paint* ca, int* cur_state) {
   Image buffer = HistGetBuffer(&ca->h);
   if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < buffer.width &&
       ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < buffer.height) {
     int search_radius = 5;
     int qx;
     int qy;
-    SimFindNearestPixelToToggle(&ca->s, search_radius,
-                                ca->f_pixel_cursor_x,
-                                ca->f_pixel_cursor_y,
-                                &qx, &qy);
+    SimFindNearestPixelToToggle(&ca->s, search_radius, ca->f_pixel_cursor_x,
+                                ca->f_pixel_cursor_y, &qx, &qy);
     if (qx != -1) {
       int val = SimGetWireValue(&ca->s, qx, qy);
       *cur_state = val;
-    }
-    else {
+    } else {
       *cur_state = -1;
     }
-  }
-  else {
+  } else {
     *cur_state = -1;
   }
 }
 
-int PaintGetLineWidth(Paint* ca)
-{
-  return ca->line_key_width;
-}
+int PaintGetLineWidth(Paint* ca) { return ca->line_key_width; }
 
-bool PaintGetKeyLineWidthHasJustChanged(Paint* ca)
-{
+bool PaintGetKeyLineWidthHasJustChanged(Paint* ca) {
   double t = GetTime();
   double last_t = ca->line_key_width_time;
   if (last_t < 0) return false;
   return t - last_t < line_modif_threshold;
 }
 
-void PaintActSelFill(Paint* ca)
-{
-  HistActSelFill(&ca->h, ca->fg_color);
-}
+void PaintActSelFill(Paint* ca) { HistActSelFill(&ca->h, ca->fg_color); }
 
-void PaintActSelRot(Paint* ca)
-{
-  HistActSelFlip(&ca->h, ACTION_SEL_ROTATE);
-}
+void PaintActSelRot(Paint* ca) { HistActSelFlip(&ca->h, ACTION_SEL_ROTATE); }
 
-void PaintActSelFlipH(Paint* ca)
-{
-  HistActSelFlip(&ca->h, ACTION_SEL_FLIP_H);
-}
+void PaintActSelFlipH(Paint* ca) { HistActSelFlip(&ca->h, ACTION_SEL_FLIP_H); }
 
-void PaintActSelFlipV(Paint* ca)
-{
-  HistActSelFlip(&ca->h, ACTION_SEL_FLIP_V);
-}
+void PaintActSelFlipV(Paint* ca) { HistActSelFlip(&ca->h, ACTION_SEL_FLIP_V); }
 
-void PaintSetClockSpeed(Paint* ca, int c)
-{
+void PaintSetClockSpeed(Paint* ca, int c) {
   ca->clock_speed = c;
   double one_hz = 0.5;
   switch (c) {
@@ -1235,7 +1137,4 @@ void PaintSetClockSpeed(Paint* ca, int c)
   }
 }
 
-int PaintGetClockSpeed(Paint* ca)
-{
-  return ca->clock_speed;
-}
+int PaintGetClockSpeed(Paint* ca) { return ca->clock_speed; }

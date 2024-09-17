@@ -4,11 +4,13 @@
 // ReSharper disable once CppUnusedIncludeDirective
 #include "raylib.h"
 
-#define COLOR_EQ(u, v) (((u).r == (v).r) && ((u).g == (v).g) && ((u).b == (v).b) && ((u).a == (v).a))
+#define COLOR_EQ(u, v) \
+  (((u).r == (v).r) && ((u).g == (v).g) && ((u).b == (v).b) && ((u).a == (v).a))
 
 #ifndef WEB
 // Maximum image size is 8k.
-// For images bigger than that, a dedicated exporter/reader is necessary (stb_image blocks at 8k by default)
+// For images bigger than that, a dedicated exporter/reader is necessary
+// (stb_image blocks at 8k by default)
 #define MAX_IMG_SIZE (8 * 1024)
 #else
 #define MAX_IMG_SIZE 512
@@ -71,15 +73,24 @@
 #define rect_map ((Rectangle){448, 0, 13, 13})
 
 // mouse icons
-#define rect_mouse_arrow ((Rectangle){.x = 0, .y = 32, .width = 32, .height = 32})
-#define rect_mouse_pen_alone ((Rectangle){.x = 176, .y = 32, .width = 32, .height = 32})
-#define rect_mouse_cross2 ((Rectangle){.x = 208, .y = 32, .width = 32, .height = 32})
-#define rect_mouse_movecross ((Rectangle){.x = 336, .y = 32, .width = 32, .height = 32})
-#define rect_mouse_pen ((Rectangle){.x = 240, .y = 32, .width = 32, .height = 32})
-#define rect_mouse_bucket ((Rectangle){.x = 272, .y = 32, .width = 32, .height = 32})
-#define rect_mouse_picker ((Rectangle){.x = 304, .y = 32, .width = 32, .height = 32})
-#define rect_mouse_resize ((Rectangle){.x = 368, .y = 32, .width = 32, .height = 32})
-#define rect_mouse_pointer ((Rectangle){.x = 432, .y = 32, .width = 32, .height = 32})
+#define rect_mouse_arrow \
+  ((Rectangle){.x = 0, .y = 32, .width = 32, .height = 32})
+#define rect_mouse_pen_alone \
+  ((Rectangle){.x = 176, .y = 32, .width = 32, .height = 32})
+#define rect_mouse_cross2 \
+  ((Rectangle){.x = 208, .y = 32, .width = 32, .height = 32})
+#define rect_mouse_movecross \
+  ((Rectangle){.x = 336, .y = 32, .width = 32, .height = 32})
+#define rect_mouse_pen \
+  ((Rectangle){.x = 240, .y = 32, .width = 32, .height = 32})
+#define rect_mouse_bucket \
+  ((Rectangle){.x = 272, .y = 32, .width = 32, .height = 32})
+#define rect_mouse_picker \
+  ((Rectangle){.x = 304, .y = 32, .width = 32, .height = 32})
+#define rect_mouse_resize \
+  ((Rectangle){.x = 368, .y = 32, .width = 32, .height = 32})
+#define rect_mouse_pointer \
+  ((Rectangle){.x = 432, .y = 32, .width = 32, .height = 32})
 
 // Background pattern
 #define rect_bg_pattern ((Rectangle){800, 0, 12, 12})

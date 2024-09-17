@@ -7,8 +7,7 @@
 #include "rlgl.h"
 #include "ui.h"
 
-void CollectSnapshot(Image buf, Image* img)
-{
+void CollectSnapshot(Image buf, Image* img) {
   int w = img->width;
   int h = img->height;
   Color* dout = GetPixels(*img);
@@ -19,8 +18,7 @@ void CollectSnapshot(Image buf, Image* img)
   float ps;
   if (rw > rh) {
     ps = ((float)rw) / w;
-  }
-  else {
+  } else {
     ps = ((float)rh) / h;
   }
 
@@ -85,8 +83,7 @@ void CollectSnapshot(Image buf, Image* img)
   }
 }
 
-void MinimapUpdate(Minimap* m, Paint* ca, Ui* ui, int target_w, int target_h)
-{
+void MinimapUpdate(Minimap* m, Paint* ca, Ui* ui, int target_w, int target_h) {
   Image ref_pyr = ca->h.buffer[2];
   Image ref_img = ca->h.buffer[0];
   int w = m->hitbox.width - 2 * m->s;
@@ -98,8 +95,7 @@ void MinimapUpdate(Minimap* m, Paint* ca, Ui* ui, int target_w, int target_h)
   double ps = -1;  // pixel spacing in image pixels.
   if (rw > rh) {
     ps = ((float)rw) / w;
-  }
-  else {
+  } else {
     ps = ((float)rh) / h;
   }
 
@@ -128,11 +124,9 @@ void MinimapUpdate(Minimap* m, Paint* ca, Ui* ui, int target_w, int target_h)
     ImageClearBackground(&m->img, GetLutColor(COLOR_DARKGRAY));
     if (ps < 2) {
       CollectSnapshot(ca->h.buffer[0], &m->img);
-    }
-    else if (ps < 4) {
+    } else if (ps < 4) {
       CollectSnapshot(ca->h.buffer[1], &m->img);
-    }
-    else {
+    } else {
       CollectSnapshot(ca->h.buffer[2], &m->img);
     }
     UpdateTexture(m->tex, m->img.data);
@@ -147,9 +141,8 @@ void MinimapUpdate(Minimap* m, Paint* ca, Ui* ui, int target_w, int target_h)
   float cs = ca->camera_s;
 
   // Camera view size in minimap pixels
-  // sw/cs --> How many image pixels are there in the screen (can be more than image)
-  // 1 pixel in map = ps pixels in image.
-  // pixels in map = (sw/cs)/ps
+  // sw/cs --> How many image pixels are there in the screen (can be more than
+  // image) 1 pixel in map = ps pixels in image. pixels in map = (sw/cs)/ps
   int minimap_cw = sw / cs / ps;
   int minimap_ch = sh / cs / ps;
 
@@ -184,11 +177,15 @@ void MinimapUpdate(Minimap* m, Paint* ca, Ui* ui, int target_w, int target_h)
     ui->hit_count++;
   }
 
-  if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE)) && hit) {
+  if ((IsMouseButtonPressed(MOUSE_BUTTON_LEFT) ||
+       IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE)) &&
+      hit) {
     m->pressed = true;
   }
 
-  if ((IsMouseButtonReleased(MOUSE_BUTTON_LEFT) || IsMouseButtonReleased(MOUSE_BUTTON_MIDDLE)) || !hit) {
+  if ((IsMouseButtonReleased(MOUSE_BUTTON_LEFT) ||
+       IsMouseButtonReleased(MOUSE_BUTTON_MIDDLE)) ||
+      !hit) {
     m->pressed = false;
   }
   if (hit) {
@@ -218,8 +215,7 @@ void MinimapUpdate(Minimap* m, Paint* ca, Ui* ui, int target_w, int target_h)
   m->cnt++;
 }
 
-void MinimapDraw(Minimap* m)
-{
+void MinimapDraw(Minimap* m) {
   int x = m->hitbox.x;
   int y = m->hitbox.y;
   int w = m->hitbox.width;

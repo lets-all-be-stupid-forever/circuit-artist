@@ -69,20 +69,27 @@ typedef struct {
 // Renders main screen in edit mode, with tools and everything.
 void RenderImageEdit(RenderImgCtx rc);
 
-// renders an image in the camera space. Used for rendering the wire API stuff after rendering the main image.
-void RenderImageSimple(Image* out, Image img, float pixel_size, int camera_x, int camera_y, int offx, int offy);
+// renders an image in the camera space. Used for rendering the wire API stuff
+// after rendering the main image.
+void RenderImageSimple(Image* out, Image img, float pixel_size, int camera_x,
+                       int camera_y, int offx, int offy);
 
 // Renders the dotted selection rectangle.
-void RenderImageSelRect(Image* out, float pixel_size, int camera_x, int camera_y, RectangleInt r, int ls, double t);
+void RenderImageSelRect(Image* out, float pixel_size, int camera_x,
+                        int camera_y, RectangleInt r, int ls, double t);
 
 // Renders a filled rectangle in camera space.
 // Used for the resizing handle.
-void DrawImageSceneRect(Image* out, float pixel_size, int camera_x, int camera_y, RectangleInt r, Color c);
+void DrawImageSceneRect(Image* out, float pixel_size, int camera_x,
+                        int camera_y, RectangleInt r, Color c);
 
 // Draws the wire API in the leftr side of the image.
-void RenderImageCompInput(Image* out, Image buffer, Sim* simu, int ncomp, PinDesc* cdesc_list);
+void RenderImageCompInput(Image* out, Image buffer, Sim* simu, int ncomp,
+                          PinDesc* cdesc_list);
 
 // Draws a simple rectangle (only the edges).
-void RenderImageSimpleRect(Image* out, float pixel_size, int camera_x, int camera_y, RectangleInt r, int ls, double t, Color c);
+void RenderImageSimpleRect(Image* out, float pixel_size, int camera_x,
+                           int camera_y, RectangleInt r, int ls, double t,
+                           Color c);
 
 #endif

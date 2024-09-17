@@ -15,8 +15,7 @@ static struct {
   UiCallback modal_next_action;  // Next action for modal
 } C = {0};
 
-static void DialogUpdateLayout()
-{
+static void DialogUpdateLayout() {
   int n = 3;
   int gap = 12;
   int rw = 120;
@@ -41,8 +40,7 @@ static void DialogUpdateLayout()
   }
 }
 
-void DialogOpen(Ui* ui, const char* modal_msg, UiCallback modal_next_action)
-{
+void DialogOpen(Ui* ui, const char* modal_msg, UiCallback modal_next_action) {
   ui->window = WINDOW_DIALOG;
   if (C.modal_msg) free(C.modal_msg);
   C.modal_msg = CloneString(modal_msg);
@@ -54,13 +52,13 @@ void DialogOpen(Ui* ui, const char* modal_msg, UiCallback modal_next_action)
   }
 }
 
-void DialogUpdate(Ui* ui)
-{
+void DialogUpdate(Ui* ui) {
   DialogUpdateLayout();
   int result = -1;
   if (BtnUpdate(&C.confirm_buttons[0], ui)) result = 0;
   if (BtnUpdate(&C.confirm_buttons[1], ui)) result = 1;
-  if (BtnUpdate(&C.confirm_buttons[2], ui) || IsKeyPressed(KEY_ESCAPE)) result = 2;
+  if (BtnUpdate(&C.confirm_buttons[2], ui) || IsKeyPressed(KEY_ESCAPE))
+    result = 2;
   if (result == -1) {  // nothing
     return;
   }
@@ -79,14 +77,14 @@ void DialogUpdate(Ui* ui)
   ui->window = WINDOW_MAIN;
 }
 
-void DialogDraw(Ui* ui)
-{
+void DialogDraw(Ui* ui) {
   int sw = GetScreenWidth();
   int sh = GetScreenHeight();
   DrawRectangle(0, 0, sw, sh, (Color){.r = 0, .g = 0, .b = 0, .a = 150});
   int s = ui->scale;
   Rectangle r = C.confirm_modal;
-  BeginScissorMode(C.confirm_modal.x, C.confirm_modal.y, C.confirm_modal.width, C.confirm_modal.height);
+  BeginScissorMode(C.confirm_modal.x, C.confirm_modal.y, C.confirm_modal.width,
+                   C.confirm_modal.height);
   DrawDefaultTiledScreen(ui);
   EndScissorMode();
 
@@ -104,4 +102,3 @@ void DialogDraw(Ui* ui)
   BtnDrawText(&C.confirm_buttons[2], s, "Cancel");
   DrawDefaultTiledFrame(ui, C.confirm_modal);
 }
-

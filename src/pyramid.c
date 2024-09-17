@@ -15,42 +15,33 @@ static void PyramidUpdateRectMax(Image b, Image* s, RectangleInt r);
 static void PyramidUpdateRect2Avg(int n, Image* h, RectangleInt r);
 static void PyramidUpdateRect2Max(int n, Image* h, RectangleInt r);
 
-Image PyramidGenImage(Image base)
-{
-  return PyramidGenImageAvg(base);
-}
+Image PyramidGenImage(Image base) { return PyramidGenImageAvg(base); }
 
-void PyramidUpdatePixel(Image b, Image* s, int x2, int y2)
-{
+void PyramidUpdatePixel(Image b, Image* s, int x2, int y2) {
   PyramidUpdatePixelAvg(b, s, x2, y2);
 }
 
-void PyramidUpdateRect(Image b, Image* s, RectangleInt r)
-{
+void PyramidUpdateRect(Image b, Image* s, RectangleInt r) {
   PyramidUpdateRectAvg(b, s, r);
 }
 
-void PyramidUpdateRect2(int n, Image* h, RectangleInt r)
-{
+void PyramidUpdateRect2(int n, Image* h, RectangleInt r) {
   PyramidUpdateRect2Avg(n, h, r);
 }
 
-Image PyramidGenImageAvg(Image base)
-{
+Image PyramidGenImageAvg(Image base) {
   Image sub = GenImageSimple((base.width + 1) / 2, (base.height + 1) / 2);
   PyramidUpdateRectAvg(base, &sub, (RectangleInt){0, 0, sub.width, sub.height});
   return sub;
 }
 
-Image PyramidGenImageMax(Image base)
-{
+Image PyramidGenImageMax(Image base) {
   Image sub = GenImageSimple((base.width + 1) / 2, (base.height + 1) / 2);
   PyramidUpdateRectMax(base, &sub, (RectangleInt){0, 0, sub.width, sub.height});
   return sub;
 }
 
-void PyramidUpdatePixelAvg(Image b, Image* s, int x2, int y2)
-{
+void PyramidUpdatePixelAvg(Image b, Image* s, int x2, int y2) {
   int w1 = b.width;
   int h1 = b.height;
   int w2 = s->width;
@@ -89,8 +80,7 @@ void PyramidUpdatePixelAvg(Image b, Image* s, int x2, int y2)
   d2[y2 * w2 + x2] = (Color){vr >> 2, vg >> 2, vb >> 2, va >> 2};
 }
 
-void PyramidUpdatePixelMax(Image b, Image* s, int x2, int y2)
-{
+void PyramidUpdatePixelMax(Image b, Image* s, int x2, int y2) {
   int w1 = b.width;
   int h1 = b.height;
   int w2 = s->width;
@@ -112,8 +102,7 @@ void PyramidUpdatePixelMax(Image b, Image* s, int x2, int y2)
   d2[y2 * w2 + x2] = c;
 }
 
-void PyramidUpdateRectAvg(Image b, Image* s, RectangleInt r)
-{
+void PyramidUpdateRectAvg(Image b, Image* s, RectangleInt r) {
   int ux2 = r.x;
   int uy2 = r.y;
   int uw2 = r.width;
@@ -161,8 +150,7 @@ void PyramidUpdateRectAvg(Image b, Image* s, RectangleInt r)
   }
 }
 
-void PyramidUpdateRectMax(Image b, Image* s, RectangleInt r)
-{
+void PyramidUpdateRectMax(Image b, Image* s, RectangleInt r) {
   int ux2 = r.x;
   int uy2 = r.y;
   int uw2 = r.width;
@@ -194,8 +182,7 @@ void PyramidUpdateRectMax(Image b, Image* s, RectangleInt r)
   }
 }
 
-void PyramidUpdateRect2Avg(int n, Image* h, RectangleInt r)
-{
+void PyramidUpdateRect2Avg(int n, Image* h, RectangleInt r) {
   int x0 = r.x;
   int y0 = r.y;
   int x1 = r.width + x0;
@@ -205,12 +192,12 @@ void PyramidUpdateRect2Avg(int n, Image* h, RectangleInt r)
     y0 = y0 >> 1;
     x1 = x1 >> 1;
     y1 = y1 >> 1;
-    PyramidUpdateRectAvg(h[i - 1], &h[i], (RectangleInt){x0, y0, x1 - x0, y1 - y0});
+    PyramidUpdateRectAvg(h[i - 1], &h[i],
+                         (RectangleInt){x0, y0, x1 - x0, y1 - y0});
   }
 }
 
-void PyramidUpdateRect2Max(int n, Image* h, RectangleInt r)
-{
+void PyramidUpdateRect2Max(int n, Image* h, RectangleInt r) {
   int x0 = r.x;
   int y0 = r.y;
   int x1 = r.width + x0;
@@ -220,6 +207,7 @@ void PyramidUpdateRect2Max(int n, Image* h, RectangleInt r)
     y0 = y0 >> 1;
     x1 = x1 >> 1;
     y1 = y1 >> 1;
-    PyramidUpdateRectMax(h[i - 1], &h[i], (RectangleInt){x0, y0, x1 - x0, y1 - y0});
+    PyramidUpdateRectMax(h[i - 1], &h[i],
+                         (RectangleInt){x0, y0, x1 - x0, y1 - y0});
   }
 }

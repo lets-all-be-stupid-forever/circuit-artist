@@ -8,13 +8,9 @@
 #include "stdlib.h"
 
 // Makes sure the alpha is 255
-static Color ToValidColor(Color c)
-{
-  return (Color){c.r, c.g, c.b, 255};
-}
+static Color ToValidColor(Color c) { return (Color){c.r, c.g, c.b, 255}; }
 
-static bool IsRectInside(Image img, RectangleInt region)
-{
+static bool IsRectInside(Image img, RectangleInt region) {
   RectangleInt intersection = GetCollisionRecInt(GetImageRect(img), region);
   bool ok = true;
   ok = ok && (intersection.x == region.x);
@@ -24,8 +20,7 @@ static bool IsRectInside(Image img, RectangleInt region)
   return ok;
 }
 
-Color* GetPixels(Image img)
-{
+Color* GetPixels(Image img) {
   if (img.width == 0 || img.height == 0) {
     return NULL;
   }
@@ -34,35 +29,26 @@ Color* GetPixels(Image img)
 }
 
 // It's just to make it easier to compare colors
-int* GetPixelsAsInt(Image img)
-{
+int* GetPixelsAsInt(Image img) {
   assert(img.format == PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
   return (int*)img.data;
 }
 
-RectangleInt GetImageRect(Image img)
-{
+RectangleInt GetImageRect(Image img) {
   return (RectangleInt){0, 0, img.width, img.height};
 }
 
-Image GenImageSimple(int w, int h)
-{
-  // Keeping this function because eventually we might want to enforce the default image data type (like keeping a palette).
+Image GenImageSimple(int w, int h) {
+  // Keeping this function because eventually we might want to enforce the
+  // default image data type (like keeping a palette).
   return GenImageFilled(w, h, BLACK);
 }
 
-Image GenImageFilled(int w, int h, Color v)
-{
-  return GenImageColor(w, h, v);
-}
+Image GenImageFilled(int w, int h, Color v) { return GenImageColor(w, h, v); }
 
-Image CloneImage(Image img)
-{
-  return CropImage(img, GetImageRect(img));
-}
+Image CloneImage(Image img) { return CropImage(img, GetImageRect(img)); }
 
-void FillImage(Image* img, Color v)
-{
+void FillImage(Image* img, Color v) {
   int size = img->width * img->height;
   Color* color_data = GetPixels(*img);
   for (int i = 0; i < size; i++) {
@@ -70,10 +56,10 @@ void FillImage(Image* img, Color v)
   }
 }
 
-Image CropImage(Image img, RectangleInt region)
-{
-  assert(IsRectInside(img, region));  // Checks that the cropping region is inside the image
-  assert(!IsRecIntEmpty(region));     // cropped region shouldn't be empty
+Image CropImage(Image img, RectangleInt region) {
+  assert(IsRectInside(
+      img, region));  // Checks that the cropping region is inside the image
+  assert(!IsRecIntEmpty(region));  // cropped region shouldn't be empty
   int w = region.width;
   int h = region.height;
   Image cropped = GenImageSimple(w, h);
@@ -89,8 +75,7 @@ Image CropImage(Image img, RectangleInt region)
   return cropped;
 }
 
-Image RotateImage(Image img, int ccw)
-{
+Image RotateImage(Image img, int ccw) {
   Image out = GenImageSimple(img.height, img.width);
   Color* pout = GetPixels(out);
   Color* pin = GetPixels(img);
@@ -100,8 +85,7 @@ Image RotateImage(Image img, int ccw)
         int pix_out = (img.width - x - 1) * out.width + y;
         int pix_in = y * img.width + x;
         pout[pix_out] = pin[pix_in];
-      }
-      else {
+      } else {
         int pix_in = y * img.width + x;
         int pix_out = x * out.width + (img.height - y - 1);
         pout[pix_out] = pin[pix_in];
@@ -111,8 +95,7 @@ Image RotateImage(Image img, int ccw)
   return out;
 }
 
-void FlipImageHInplace(Image* img)
-{
+void FlipImageHInplace(Image* img) {
   Color* colors = GetPixels(*img);
   for (int y = 0; y < img->height; y++) {
     for (int x = 0; x < img->width / 2; x++) {
@@ -125,8 +108,7 @@ void FlipImageHInplace(Image* img)
   }
 }
 
-void FlipImageVInplace(Image* img)
-{
+void FlipImageVInplace(Image* img) {
   Color* colors = GetPixels(*img);
   for (int y = 0; y < img->height / 2; y++) {
     for (int x = 0; x < img->width; x++) {
@@ -139,8 +121,7 @@ void FlipImageVInplace(Image* img)
   }
 }
 
-void FillImageRect(Image* img, RectangleInt r, Color c)
-{
+void FillImageRect(Image* img, RectangleInt r, Color c) {
   assert(IsRectInside(*img, r));
   int x0 = r.x;
   int y0 = r.y;
@@ -156,10 +137,11 @@ void FillImageRect(Image* img, RectangleInt r, Color c)
   }
 }
 
-void ImageCombine(Image src, RectangleInt r, Image* dst, Vector2Int offset)
-{
-  assert(r.x >= 0 && r.y >= 0 && r.x + r.width <= src.width && r.y + r.height <= src.height);
-  assert(offset.x >= 0 && offset.y >= 0 && offset.x + r.width <= dst->width && offset.y + r.height <= dst->height);
+void ImageCombine(Image src, RectangleInt r, Image* dst, Vector2Int offset) {
+  assert(r.x >= 0 && r.y >= 0 && r.x + r.width <= src.width &&
+         r.y + r.height <= src.height);
+  assert(offset.x >= 0 && offset.y >= 0 && offset.x + r.width <= dst->width &&
+         offset.y + r.height <= dst->height);
   Color* csrc = GetPixels(src);
   Color* cdst = GetPixels(*dst);
   int w = r.width;
@@ -179,18 +161,18 @@ void ImageCombine(Image src, RectangleInt r, Image* dst, Vector2Int offset)
       if (COLOR_EQ(csrc[p1], BLACK)) {
         // When it's black, I want to keep blank in the dest image
         cdst[p2] = BLANK;
-      }
-      else if (!COLOR_EQ(csrc[p1], BLANK)) {
+      } else if (!COLOR_EQ(csrc[p1], BLANK)) {
         cdst[p2] = csrc[p1];
       }
     }
   }
 }
 
-void CopyImage(Image src, RectangleInt r, Image* dst, Vector2Int offset)
-{
-  assert(r.x >= 0 && r.y >= 0 && r.x + r.width <= src.width && r.y + r.height <= src.height);
-  assert(offset.x >= 0 && offset.y >= 0 && offset.x + r.width <= dst->width && offset.y + r.height <= dst->height);
+void CopyImage(Image src, RectangleInt r, Image* dst, Vector2Int offset) {
+  assert(r.x >= 0 && r.y >= 0 && r.x + r.width <= src.width &&
+         r.y + r.height <= src.height);
+  assert(offset.x >= 0 && offset.y >= 0 && offset.x + r.width <= dst->width &&
+         offset.y + r.height <= dst->height);
   Color* csrc = GetPixels(src);
   Color* cdst = GetPixels(*dst);
   int w = r.width;
@@ -209,16 +191,14 @@ void CopyImage(Image src, RectangleInt r, Image* dst, Vector2Int offset)
       int p2 = y2 * dst->width + x2;
       if (COLOR_EQ(csrc[p1], BLACK)) {
         cdst[p2] = BLANK;
-      }
-      else {
+      } else {
         cdst[p2] = csrc[p1];
       }
     }
   }
 }
 
-void ImageRemoveBlacks(Image* img)
-{
+void ImageRemoveBlacks(Image* img) {
   Color* colors = GetPixels(*img);
   for (int y = 0; y < img->height; y++) {
     for (int x = 0; x < img->width; x++) {
@@ -226,16 +206,14 @@ void ImageRemoveBlacks(Image* img)
       int c = ColorToGray(colors[p]);
       if (c < 1) {
         colors[p] = BLANK;
-      }
-      else {
+      } else {
         colors[p] = ToValidColor(colors[p]);
       }
     }
   }
 }
 
-void ImageAddBlacks(Image img)
-{
+void ImageAddBlacks(Image img) {
   Color* colors = GetPixels(img);
   for (int y = 0; y < img.height; y++) {
     for (int x = 0; x < img.width; x++) {
@@ -243,16 +221,14 @@ void ImageAddBlacks(Image img)
       int c = ColorToGray(colors[p]);
       if (c > 1) {
         colors[p] = ToValidColor(colors[p]);
-      }
-      else {
+      } else {
         colors[p] = BLACK;
       }
     }
   }
 }
 
-void ImageEnsureMaxSize(Image* img)
-{
+void ImageEnsureMaxSize(Image* img) {
   int max_size = MAX_IMG_SIZE;
   if (img->width > max_size || img->height > max_size) {
     int w = img->width;
@@ -272,8 +248,9 @@ void ImageEnsureMaxSize(Image* img)
   }
 }
 
-void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect, RectangleInt img_rect, int ls, bool corner, bool end_corner, Color c, Image* out, Vector2Int* off)
-{
+void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
+                       RectangleInt img_rect, int ls, bool corner,
+                       bool end_corner, Color c, Image* out, Vector2Int* off) {
   const int DIR_HORIZONTAL = 0;
   const int DIR_VERTICAL = 1;
   RectangleInt r = tool_rect;
@@ -291,8 +268,7 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect, RectangleInt im
         .width = r.width,
         .height = 2 * ls - 1,
     };
-  }
-  else {
+  } else {
     dir = DIR_VERTICAL;
     r = (RectangleInt){
         .x = startx,
@@ -339,8 +315,7 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect, RectangleInt im
         line[x] = c;
       }
     }
-  }
-  else {
+  } else {
     for (int y = 0; y < img.height; y++) {
       Color* line = data + y * img.width;
       for (int x = 0; x < img.width; x += 2) {
@@ -386,8 +361,8 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect, RectangleInt im
   off->y = r.y;
 }
 
-static inline int GetCrossingPixelDirection(int* pixels, int w, int h, int x, int y)
-{
+static inline int GetCrossingPixelDirection(int* pixels, int w, int h, int x,
+                                            int y) {
   if (x == 0 || x == w - 1 || y == 0 || y == h - 1) {
     return false;
   }
@@ -401,14 +376,12 @@ static inline int GetCrossingPixelDirection(int* pixels, int w, int h, int x, in
   nh += pixels[idx + 1] == c;
   if (nv > nh) {
     return 1;
-  }
-  else {
+  } else {
     return 0;
   }
 }
 
-static inline bool IsCrossing(int* pixels, int w, int h, int x, int y)
-{
+static inline bool IsCrossing(int* pixels, int w, int h, int x, int y) {
   if (x == 0 || x == w - 1 || y == 0 || y == h - 1) {
     return false;
   }
@@ -420,8 +393,8 @@ static inline bool IsCrossing(int* pixels, int w, int h, int x, int y)
   return true;
 }
 
-void DrawImageBucketTool(Image img, int x, int y, int sw, int sh, Color c, Image* out, Vector2Int* off)
-{
+void DrawImageBucketTool(Image img, int x, int y, int sw, int sh, Color c,
+                         Image* out, Vector2Int* off) {
   // Idea: Like a floodfill but only wire logic.
   // A bit tricky. Need to identify how it would be displayed in the
   // simulation.
@@ -433,7 +406,8 @@ void DrawImageBucketTool(Image img, int x, int y, int sw, int sh, Color c, Image
   // Maybe I can do as in the simu parsing, at each time compute only the
   // vertical or horizontal components
   //
-  // Line sections = lines that extend until finding black. (vertical or horizontal)
+  // Line sections = lines that extend until finding black. (vertical or
+  // horizontal)
   //
   // Each pixel has it's horizontal and vertical line passing through.
   // They always intersect, **with exception of crossings**
@@ -613,12 +587,10 @@ void DrawImageBucketTool(Image img, int x, int y, int sw, int sh, Color c, Image
       int oidx = iy * ww + ix;
       if (n == 2) {
         out_pixels[oidx] = c;
-      }
-      else {
+      } else {
         if (GetCrossingPixelDirection(pixels, w, h, ix + xmin, iy + ymin)) {
           if (draft[2 * idx + 1]) out_pixels[oidx] = c;
-        }
-        else {
+        } else {
           if (draft[2 * idx + 0]) out_pixels[oidx] = c;
         }
       }
@@ -628,8 +600,7 @@ void DrawImageBucketTool(Image img, int x, int y, int sw, int sh, Color c, Image
   free(draft);
 }
 
-void DrawImageRectSimple(Image* img, int x, int y, int w, int h, Color c)
-{
+void DrawImageRectSimple(Image* img, int x, int y, int w, int h, Color c) {
   assert(IsRectInside(*img, (RectangleInt){x, y, w, h}));
   int x0 = x;
   int y0 = y;

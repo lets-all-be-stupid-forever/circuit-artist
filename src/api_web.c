@@ -17,8 +17,7 @@ static struct {
   bool stop;
 } C = {0};
 
-void ApiLoad()
-{
+void ApiLoad() {
   level_desc.ilevel = 0;
   level_desc.num_components = 1;
 
@@ -46,18 +45,15 @@ void ApiLoad()
   level_desc.extcomps = ec;
 }
 
-void ApiUnload()
-{
+void ApiUnload() {
   // Nothing to be done here.
 }
 
-void ApiLoadLevel(int i)
-{
+void ApiLoadLevel(int i) {
   // Nothing to be done here. There's a single level.
 }
 
-void ApiStartLevelSimulation()
-{
+void ApiStartLevelSimulation() {
   C.elapsed = 0;
   C.value = 0;
   C.cycle = 0;
@@ -65,38 +61,30 @@ void ApiStartLevelSimulation()
   level_desc.extcomps[0].dirty = true;
 }
 
-void ApiStopLevelSimulation()
-{
+void ApiStopLevelSimulation() {
   C.elapsed = 0;
   C.value = 0;
   C.cycle = 0;
   C.stop = true;
 }
 
-void ApiOnLevelDraw(RenderTexture2D target, float camera_x, float camera_y, float camera_spacing)
-{
+void ApiOnLevelDraw(RenderTexture2D target, float camera_x, float camera_y,
+                    float camera_spacing) {
   // Nothing to be done here.
 }
 
-LevelDesc* ApiGetLevelDesc()
-{
-  return &level_desc;
-}
+LevelDesc* ApiGetLevelDesc() { return &level_desc; }
 
-void ApiUpdateLevelComponent(void* ctx, int ic, int* prev_in, int* next_in, int* output)
-{
+void ApiUpdateLevelComponent(void* ctx, int ic, int* prev_in, int* next_in,
+                             int* output) {
   int por = C.cycle < 2;
   output[0] = por;
   output[1] = C.value;
 }
 
-LevelOptions* ApiGetLevelOptions()
-{
-  return NULL;
-}
+LevelOptions* ApiGetLevelOptions() { return NULL; }
 
-TickResult ApiOnLevelTick(float dt)
-{
+TickResult ApiOnLevelTick(float dt) {
   // S.elapsed = S.elapsed + dt
   // while (S.elapsed > S.clock_time) and not self.stop do
   //   self.value = 1 - self.value
@@ -130,12 +118,8 @@ TickResult ApiOnLevelTick(float dt)
   };
 }
 
-void ApiLevelClock(int ilevel, int* inputs, bool reset)
-{
+void ApiLevelClock(int ilevel, int* inputs, bool reset) {
   // Nothing to do here.
 }
 
-void ApiSetClockTime(float clock_time)
-{
-  C.clock_time = clock_time;
-}
+void ApiSetClockTime(float clock_time) { C.clock_time = clock_time; }

@@ -18,8 +18,7 @@ static struct {
   Btn btn_close;
 } C = {0};
 
-static void AboutUpdateLayout()
-{
+static void AboutUpdateLayout() {
   int sw = GetScreenWidth();
   int sh = GetScreenHeight();
   int bw = 12 * 35 * 2;
@@ -37,9 +36,7 @@ static void AboutUpdateLayout()
   C.title = (Rectangle){x, y, total_w, 35 * 2};
   int pad = 10 * s;
   C.modal = (Rectangle){x - pad, y - pad, total_w + 2 * pad, total_h + 2 * pad};
-  Rectangle box = {
-      x + 2 * s, yy,
-      bw, bh};
+  Rectangle box = {x + 2 * s, yy, bw, bh};
   C.textbox_wrap = box;
   Rectangle box2 = box;
   box2.x = box.x + s;
@@ -56,8 +53,7 @@ static void AboutUpdateLayout()
   TextboxSetBox(&C.tb, box2);
 }
 
-void AboutOpen(Ui* ui)
-{
+void AboutOpen(Ui* ui) {
   ui->window = WINDOW_ABOUT;
   const char* about_page =
       "\n!img:0\n\n" CA_VERSION
@@ -65,7 +61,8 @@ void AboutOpen(Ui* ui)
       "A game by `lets_all_be_stupid_forever`.\n"
       "circuitartistgame@gmail.com\n"
       "\n"
-      "Available on Steam.\nhttps://store.steampowered.com/app/3139580/Circuit_Artist/\n\n"
+      "Available on "
+      "Steam.\nhttps://store.steampowered.com/app/3139580/Circuit_Artist/\n\n"
       "\n`Credits:`"
       "\n!hl"
       "\n"
@@ -105,8 +102,7 @@ void AboutOpen(Ui* ui)
   }
 }
 
-void AboutUpdate(Ui* ui)
-{
+void AboutUpdate(Ui* ui) {
   AboutUpdateLayout();
   if (BtnUpdate(&C.btn_close, ui) || IsKeyPressed(KEY_ESCAPE)) {
     ui->window = WINDOW_MAIN;
@@ -115,8 +111,7 @@ void AboutUpdate(Ui* ui)
   TextboxUpdate(&C.tb, ui);
 }
 
-void AboutDraw(Ui* ui)
-{
+void AboutDraw(Ui* ui) {
   int sh = GetScreenHeight();
   int sw = GetScreenWidth();
   Color bg = BLACK;
@@ -142,4 +137,3 @@ void AboutDraw(Ui* ui)
   BtnDrawText(&C.btn_close, ui->scale, "CLOSE");
   DrawDefaultTiledFrame(ui, C.modal);
 }
-

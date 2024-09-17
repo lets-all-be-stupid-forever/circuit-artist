@@ -9,20 +9,17 @@
 #include "ui.h"
 #include "utils.h"
 
-void ListboxLoad(Listbox* l)
-{
+void ListboxLoad(Listbox* l) {
   *l = (Listbox){0};
   ScrollLoad(&l->scroll);
 }
 
-void ListboxSetBox(Listbox* l, Rectangle r)
-{
+void ListboxSetBox(Listbox* l, Rectangle r) {
   l->hitbox = r;
   ScrollSetContentBox(&l->scroll, r, 10);
 }
 
-void ListboxAddRow(Listbox* l, const char* content)
-{
+void ListboxAddRow(Listbox* l, const char* content) {
   ListboxRow row = {0};
   int w = l->hitbox.width;
   int y = l->height;
@@ -39,8 +36,7 @@ void ListboxAddRow(Listbox* l, const char* content)
   arrput(l->rows, row);
 }
 
-static void ListboxUpdateRowSizes(Listbox* l)
-{
+static void ListboxUpdateRowSizes(Listbox* l) {
   l->height = 0;
   int s = 2;
   for (int i = 0; i < arrlen(l->rows); i++) {
@@ -58,8 +54,7 @@ static void ListboxUpdateRowSizes(Listbox* l)
   }
 }
 
-void ListboxUpdate(Listbox* l)
-{
+void ListboxUpdate(Listbox* l) {
   Vector2 mouse = GetMousePosition();
   ListboxUpdateRowSizes(l);
   int sy = -l->scroll.value;
@@ -84,8 +79,7 @@ void ListboxUpdate(Listbox* l)
   }
 }
 
-void ListboxDraw(Listbox* l, Ui* ui, int selected)
-{
+void ListboxDraw(Listbox* l, Ui* ui, int selected) {
   int s = ui->scale;
   Color bg = WHITE;
   bg.a = 20;
@@ -107,8 +101,7 @@ void ListboxDraw(Listbox* l, Ui* ui, int selected)
       rlScalef(s, s, 1);
       FontDrawTexture(row->content, pad, row->text_y, BLACK);
       rlPopMatrix();
-    }
-    else {
+    } else {
       DrawRectangle(0, 0, row_w, row_h, BLACK);
       rlPushMatrix();
       rlScalef(s, s, 1);
@@ -125,8 +118,7 @@ void ListboxDraw(Listbox* l, Ui* ui, int selected)
 // scroll I need: 1. value, some state for hovering: mouse0, value0
 // value, mouse0, value0
 
-void ListboxUnload(Listbox* l)
-{
+void ListboxUnload(Listbox* l) {
   for (int i = 0; i < arrlen(l->rows); i++) {
     free(l->rows[i].content);
   }
@@ -134,48 +126,31 @@ void ListboxUnload(Listbox* l)
   *l = (Listbox){0};
 }
 
-void ScrollLoad(Scroll* s)
-{
-  *s = (Scroll){0};
-}
+void ScrollLoad(Scroll* s) { *s = (Scroll){0}; }
 
-void ScrollSetContentBox(Scroll* s, Rectangle box, int w)
-{
+void ScrollSetContentBox(Scroll* s, Rectangle box, int w) {
   s->content = box;
-  s->scroll_rect = (Rectangle){
-      box.x + box.width - w,
-      box.y,
-      w,
-      box.height};
+  s->scroll_rect = (Rectangle){box.x + box.width - w, box.y, w, box.height};
 }
 
-void ScrollResetValue(Scroll* s)
-{
-  s->value = 0;
-}
+void ScrollResetValue(Scroll* s) { s->value = 0; }
 
-int ScrollGetValue(Scroll* s)
-{
-  return s->value;
-}
+int ScrollGetValue(Scroll* s) { return s->value; }
 
-static int FClip(int s, int vmin, int vmax)
-{
+static int FClip(int s, int vmin, int vmax) {
   if (s < vmin) return vmin;
   if (s > vmax) return vmax;
   return s;
 }
 
-void ScrollUpdate(Scroll* s, float h, Vector2 mouse)
-{
+void ScrollUpdate(Scroll* s, float h, Vector2 mouse) {
   int th = s->scroll_rect.height;
   int max_value = FClip(h - th, 0, 100000);
   s->hit = false;
   if (h < s->content.height) {
     s->hidden = true;
     return;
-  }
-  else {
+  } else {
     s->hidden = false;
   }
 
@@ -213,16 +188,14 @@ void ScrollUpdate(Scroll* s, float h, Vector2 mouse)
     s->rect.y = s->scroll_rect.y + y;
     s->rect.width = s->scroll_rect.width;
     s->rect.height = srect;
-  }
-  else {
+  } else {
     s->hidden = true;
     s->rect.width = 0;
     s->rect.height = 0;
   }
 }
 
-void ScrollDraw(Scroll* s)
-{
+void ScrollDraw(Scroll* s) {
   rlPushMatrix();
   if (!s->hidden) {
     Color bg_color = GetLutColor(COLOR_DARKGRAY);
@@ -236,14 +209,12 @@ void ScrollDraw(Scroll* s)
   rlPopMatrix();
 }
 
-void TextboxLoad(Textbox* t)
-{
+void TextboxLoad(Textbox* t) {
   *t = (Textbox){0};
   ScrollLoad(&t->scroll);
 }
 
-void TextboxSetContent(Textbox* t, const char* txt, Sprite* sprites)
-{
+void TextboxSetContent(Textbox* t, const char* txt, Sprite* sprites) {
   if (t->text) {
     free(t->text);
   }
@@ -253,13 +224,14 @@ void TextboxSetContent(Textbox* t, const char* txt, Sprite* sprites)
   ScrollResetValue(&t->scroll);
 }
 
-void TextboxUpdate(Textbox* t, Ui* ui)
-{
+void TextboxUpdate(Textbox* t, Ui* ui) {
   t->text_x = 12 * ui->scale;
-  t->text_w = (t->box.width - t->scroll.scroll_rect.width - 2 * t->text_x) / ui->scale;
+  t->text_w =
+      (t->box.width - t->scroll.scroll_rect.width - 2 * t->text_x) / ui->scale;
   if (t->height == 0) {
     int th;
-    DrawTextBoxAdvanced(t->text, (Rectangle){0, 0, t->text_w, 0}, WHITE, t->sprites, &th);
+    DrawTextBoxAdvanced(t->text, (Rectangle){0, 0, t->text_w, 0}, WHITE,
+                        t->sprites, &th);
     t->height = 2 * th;
   }
   Vector2 mouse = GetMousePosition();
@@ -269,8 +241,7 @@ void TextboxUpdate(Textbox* t, Ui* ui)
   }
 }
 
-void TextboxDraw(Textbox* t, Ui* ui)
-{
+void TextboxDraw(Textbox* t, Ui* ui) {
   Rectangle box = t->box;
   int s = ui->scale;
   BeginScissorMode(box.x, box.y, box.width, box.height);
@@ -279,26 +250,24 @@ void TextboxDraw(Textbox* t, Ui* ui)
   DrawRectangle(0, 0, box.width, t->box.height, BLACK);
   rlTranslatef(t->text_x, -t->scroll.value, 0);
   rlScalef(s, s, 1);
-  DrawTextBoxAdvanced(t->text, (Rectangle){0, 0, t->text_w, 0}, WHITE, t->sprites, NULL);
+  DrawTextBoxAdvanced(t->text, (Rectangle){0, 0, t->text_w, 0}, WHITE,
+                      t->sprites, NULL);
 
   rlPopMatrix();
   EndScissorMode();
   ScrollDraw(&t->scroll);
 }
 
-void TextboxUnload(Textbox* t)
-{
+void TextboxUnload(Textbox* t) {
   if (t->text) free(t->text);
 }
 
-void TextboxSetBox(Textbox* t, Rectangle box)
-{
+void TextboxSetBox(Textbox* t, Rectangle box) {
   t->box = box;
   ScrollSetContentBox(&t->scroll, box, 30);
 }
 
-bool BtnUpdate(Btn* b, Ui* ui)
-{
+bool BtnUpdate(Btn* b, Ui* ui) {
   if (b->disabled || b->hidden) return false;
   Vector2 pos = GetMousePosition();
   bool hit = CheckCollisionPointRec(pos, b->hitbox) && ui->hit_count == 0;
@@ -322,8 +291,7 @@ bool BtnUpdate(Btn* b, Ui* ui)
   return ret;
 }
 
-void BtnDrawText(Btn* b, int ui_scale, const char* text)
-{
+void BtnDrawText(Btn* b, int ui_scale, const char* text) {
   Vector2 size = GetRenderedTextSize(text);
   int fx = (b->hitbox.x + b->hitbox.width / 2) / ui_scale - size.x / 2;
   int fy = (b->hitbox.y + b->hitbox.height / 2) / ui_scale - size.y / 2 + 1;
@@ -343,8 +311,7 @@ void BtnDrawText(Btn* b, int ui_scale, const char* text)
   if ((b->pressed || b->toggled) && (!b->disabled)) {
     DrawRectangle(x, y, w, s, c0);  // TOP
     DrawRectangle(x, y, s, h, c0);  // LEFT
-  }
-  else {
+  } else {
     DrawRectangle(x, y, w - s, s, c2);
     DrawRectangle(x, y, s, h - s, c2);
   }
@@ -356,8 +323,7 @@ void BtnDrawText(Btn* b, int ui_scale, const char* text)
 
   if (!b->disabled) {
     FontDrawTexture(text, fx, fy, BLACK);
-  }
-  else {
+  } else {
     FontDrawTexture(text, fx + 1, fy, c2);
     FontDrawTexture(text, fx, fy + 1, c2);
     FontDrawTexture(text, fx + 1, fy + 1, c2);
@@ -372,8 +338,7 @@ void BtnDrawText(Btn* b, int ui_scale, const char* text)
   }
 }
 
-void BtnDrawIcon(Btn* b, int ui_scale, Texture2D texture, Rectangle source)
-{
+void BtnDrawIcon(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
   if (b->hidden) return;
   int fx = (b->hitbox.x + b->hitbox.width / 2) / ui_scale - source.width / 2;
   int fy = (b->hitbox.y + b->hitbox.height / 2) / ui_scale - source.height / 2;
@@ -392,8 +357,7 @@ void BtnDrawIcon(Btn* b, int ui_scale, Texture2D texture, Rectangle source)
   if ((b->pressed || b->toggled) && (!b->disabled)) {
     DrawRectangle(x, y, w, s, c0);  // TOP
     DrawRectangle(x, y, s, h, c0);  // LEFT
-  }
-  else {
+  } else {
     DrawRectangle(x, y, w - s, s, c2);  // TOP
     DrawRectangle(x, y, s, h - s, c2);  // LEFT
   }
@@ -403,8 +367,7 @@ void BtnDrawIcon(Btn* b, int ui_scale, Texture2D texture, Rectangle source)
   rlScalef(ui_scale, ui_scale, 1);
   if (!b->disabled) {
     DrawTextureRec(texture, source, (Vector2){fx, fy}, BLACK);
-  }
-  else {
+  } else {
     DrawTextureRec(texture, source, (Vector2){fx + 1, fy}, c2);
     DrawTextureRec(texture, source, (Vector2){fx, fy + 1}, c2);
     DrawTextureRec(texture, source, (Vector2){fx + 1, fy + 1}, c2);
@@ -418,8 +381,7 @@ void BtnDrawIcon(Btn* b, int ui_scale, Texture2D texture, Rectangle source)
   }
 }
 
-void BtnDrawLegend(Btn* b, int ui_scale, const char* text)
-{
+void BtnDrawLegend(Btn* b, int ui_scale, const char* text) {
   if (b->hidden) return;
   Vector2 pos = GetMousePosition();
   bool hover = CheckCollisionPointRec(pos, b->hitbox);
@@ -442,7 +404,8 @@ void BtnDrawLegend(Btn* b, int ui_scale, const char* text)
       area.x = area.x - area.width - 16;
       x = area.x;
     }
-    DrawRectangle(area.x - s, area.y - s, area.width + 2 * s, area.height + 2 * s, BLACK);
+    DrawRectangle(area.x - s, area.y - s, area.width + 2 * s,
+                  area.height + 2 * s, BLACK);
     DrawRectangleRec(area, kk);
     rlPushMatrix();
     rlScalef(ui_scale, ui_scale, 1);
@@ -453,16 +416,14 @@ void BtnDrawLegend(Btn* b, int ui_scale, const char* text)
   }
 }
 
-bool BtnHover(Btn* b)
-{
+bool BtnHover(Btn* b) {
   if (b->disabled || b->hidden) return false;
   Vector2 pos = GetMousePosition();
   bool hit = CheckCollisionPointRec(pos, b->hitbox);
   return hit;
 }
 
-void BtnDrawColor(Ui* ui, Rectangle r, Color c, bool selected, bool disabled)
-{
+void BtnDrawColor(Ui* ui, Rectangle r, Color c, bool selected, bool disabled) {
   int s = ui->scale;
   int x = r.x + 1 * s;
   int y = r.y + 1 * s;
@@ -485,8 +446,7 @@ void BtnDrawColor(Ui* ui, Rectangle r, Color c, bool selected, bool disabled)
 
   if (disabled) {
     DrawRectangle(x + 2 * s, y + 2 * s, w - 4 * s, h - 4 * s, c1);
-  }
-  else {
+  } else {
     DrawRectangle(x + 2 * s, y + 2 * s, w - 4 * s, h - 4 * s, c);
   }
 }

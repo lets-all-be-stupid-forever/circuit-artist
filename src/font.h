@@ -39,8 +39,9 @@ Image RenderText(const char* txt, Color c);
 // Advanced text box rendering.
 // It can render:
 // - Highlighted text via `blabla`
-// - Images via !img:<number> --> uses the number-th sprite passed as input in `sprites`.
-// It is used for both circuitopedia and level description rendering.
-void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color c, Sprite* sprites, int* height);
+// - Images via !img:<number> --> uses the number-th sprite passed as input in
+// `sprites`. It is used for both circuitopedia and level description rendering.
+void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color c,
+                         Sprite* sprites, int* height);
 
 #endif

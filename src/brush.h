@@ -41,6 +41,7 @@ void BrushReset(Brush* b);
 // returned via the `off` parameter.
 //
 // The caller should take ownership of the created `out` image.
-void BrushMakeImage(Brush* b, Color c, int w, int h, Image* out, Vector2Int* off);
+void BrushMakeImage(Brush* b, Color c, int w, int h, Image* out,
+                    Vector2Int* off);
 
 #endif

@@ -92,13 +92,11 @@ static bool MainGetIsCursorInTargeTimage();
 static char* MainGetFilename();
 static RectangleInt MainGetTargetRegion();
 
-static bool RectHover(Rectangle hitbox, Vector2 pos)
-{
+static bool RectHover(Rectangle hitbox, Vector2 pos) {
   return CheckCollisionPointRec(pos, hitbox);
 }
 
-void MainOpen(Ui* ui)
-{
+void MainOpen(Ui* ui) {
   ui->window = WINDOW_MAIN;
   if (!C.inited) {
     C.inited = true;
@@ -106,8 +104,7 @@ void MainOpen(Ui* ui)
   }
 }
 
-void MainInit(Ui* ui)
-{
+void MainInit(Ui* ui) {
   C.minimap.s = 2;
   C.minimap.hitbox = (Rectangle){0, 0, 2 * 17 * 2, 2 * 17 * 2};
   C.palette[0] = WHITE;
@@ -148,8 +145,7 @@ void MainInit(Ui* ui)
   MainUpdateWidgets();
 }
 
-void MainUpdate(Ui* ui)
-{
+void MainUpdate(Ui* ui) {
   MainCheckWindowResize(ui);
   MainCheckFileDrop();
   MsgUpdate();
@@ -165,14 +161,11 @@ void MainUpdate(Ui* ui)
   BeginTextureMode(C.level_overlay_tex);
   ClearBackground(BLANK);
   EndTextureMode();
-  ApiOnLevelDraw(C.level_overlay_tex,
-                 C.ca.camera_x,
-                 C.ca.camera_y,
+  ApiOnLevelDraw(C.level_overlay_tex, C.ca.camera_x, C.ca.camera_y,
                  C.ca.camera_s);
 }
 
-void MainUpdateControls(Ui* ui)
-{
+void MainUpdateControls(Ui* ui) {
   MainUpdateHud(ui);
 #ifndef WEB
   if (IsKeyPressed(KEY_TAB)) {
@@ -203,11 +196,11 @@ void MainUpdateControls(Ui* ui)
       ToolType tool = PaintGetTool(&C.ca);
       switch (tool) {
         case TOOL_SEL: {
-          bool move = PaintGetMouseOverSel(&C.ca) || PaintGetIsToolSelMoving(&C.ca);
+          bool move =
+              PaintGetMouseOverSel(&C.ca) || PaintGetIsToolSelMoving(&C.ca);
           if (move) {
             ui->cursor = MOUSE_MOVE;
-          }
-          else {
+          } else {
             ui->cursor = MOUSE_SELECTION;
           }
           break;
@@ -230,19 +223,16 @@ void MainUpdateControls(Ui* ui)
           break;
         }
       }
-    }
-    else {
+    } else {
       int cs;
       PaintGetSimuPixelToggleState(&C.ca, &cs);
       if (cs == 0 || cs == 1) {
         ui->cursor = MOUSE_POINTER;
-      }
-      else {
+      } else {
         ui->cursor = MOUSE_ARROW;
       }
     }
-  }
-  else {
+  } else {
     ui->cursor = MOUSE_ARROW;
   }
   if (C.ca.mode == MODE_EDIT) {
@@ -254,10 +244,10 @@ void MainUpdateControls(Ui* ui)
   PaintHandleKeys(&C.ca);
 }
 
-void MainUpdateHud(Ui* ui)
-{
+void MainUpdateHud(Ui* ui) {
   if (BtnUpdate(&C.btn_new, ui)) MainAskForSaveAndProceed(ui, MainNewFile);
-  if (BtnUpdate(&C.btn_open, ui)) MainAskForSaveAndProceed(ui, MainOpenFileModal);
+  if (BtnUpdate(&C.btn_open, ui))
+    MainAskForSaveAndProceed(ui, MainOpenFileModal);
   if (BtnUpdate(&C.btn_save, ui)) MainOnSaveClick(ui, false);
   if (BtnUpdate(&C.btn_saveas, ui)) MainOnSaveClick(ui, true);
   if (BtnUpdate(&C.btn_about, ui)) AboutOpen(ui);
@@ -303,8 +293,7 @@ void MainUpdateHud(Ui* ui)
   }
 }
 
-void MainDraw(Ui* ui)
-{
+void MainDraw(Ui* ui) {
   ClearBackground(BLANK);
   DrawDefaultTiledScreen(ui);
 
@@ -328,15 +317,19 @@ void MainDraw(Ui* ui)
         .width = source.width,
         .height = source.height,
     };
-    DrawRectangle(C.target_pos.x, C.target_pos.y, source.width, source.height, BLACK);
-    DrawTexturePro(C.img_target_tex.texture, source, target, (Vector2){.x = 0, .y = 0}, 0.0f, WHITE);
+    DrawRectangle(C.target_pos.x, C.target_pos.y, source.width, source.height,
+                  BLACK);
+    DrawTexturePro(C.img_target_tex.texture, source, target,
+                   (Vector2){.x = 0, .y = 0}, 0.0f, WHITE);
 
     // Drawing the text in the resize rectangle of the image.
     // I'm drawing here and not in the img because I want to scale the font.
     // When it's dragging, it displays the image size.
     if (C.ca.resize_hovered || C.ca.resize_pressed) {
       ui->cursor = MOUSE_RESIZE;
-      BeginScissorMode(C.target_pos.x, C.target_pos.y, C.img_target_tex.texture.width, C.img_target_tex.texture.height);
+      BeginScissorMode(C.target_pos.x, C.target_pos.y,
+                       C.img_target_tex.texture.width,
+                       C.img_target_tex.texture.height);
       rlPushMatrix();
       rlTranslatef(C.target_pos.x, C.target_pos.y, 0);
       rlTranslatef(C.ca.camera_x, C.ca.camera_y, 0);
@@ -345,8 +338,7 @@ void MainDraw(Ui* ui)
       Image img = PaintGetEditImage(&C.ca);
       if (C.ca.resize_pressed) {
         rlTranslatef(C.ca.resize_region.width, C.ca.resize_region.height, 0);
-      }
-      else {
+      } else {
         rlTranslatef(img.width, img.height, 0);
       }
 
@@ -359,8 +351,7 @@ void MainDraw(Ui* ui)
         int w = C.ca.resize_region.width;
         int h = C.ca.resize_region.height;
         sprintf(txt, "%d x %d", w, h);
-      }
-      else {
+      } else {
         sprintf(txt, "Drag to resize");
       }
       FontDrawTexture(txt, 0, 0, WHITE);
@@ -368,7 +359,8 @@ void MainDraw(Ui* ui)
       EndScissorMode();
     }
 
-    DrawTexturePro(C.level_overlay_tex.texture, source_inverted, target, (Vector2){.x = 0, .y = 0}, 0.0f, WHITE);
+    DrawTexturePro(C.level_overlay_tex.texture, source_inverted, target,
+                   (Vector2){.x = 0, .y = 0}, 0.0f, WHITE);
   }
 
   Rectangle inner_content = {
@@ -391,17 +383,20 @@ void MainDraw(Ui* ui)
 
   int bscale = ui->scale;
   bool simu_on = PaintGetMode(&C.ca) == MODE_SIMU;
-  BtnDrawIcon(&C.btn_simu, bscale, ui->sprites, simu_on ? rect_stop : rect_start);
+  BtnDrawIcon(&C.btn_simu, bscale, ui->sprites,
+              simu_on ? rect_stop : rect_start);
 #ifndef WEB
   C.btn_challenge.disabled = PaintGetMode(&C.ca) != MODE_EDIT;
-  BtnDrawIcon(&C.btn_challenge, bscale, co->options[cd->ilevel].icon.tex, co->options[cd->ilevel].icon.region);
+  BtnDrawIcon(&C.btn_challenge, bscale, co->options[cd->ilevel].icon.tex,
+              co->options[cd->ilevel].icon.region);
 #else
   BtnDrawIcon(&C.btn_challenge, bscale, ui->sprites, rect_sandbox);
 #endif
   BtnDrawIcon(&C.btn_circuitopedia, bscale, ui->sprites, rect_search);
   BtnDrawIcon(&C.btn_minimap, bscale, ui->sprites, rect_map);
   bool color_disabled = PaintGetMode(&C.ca) != MODE_EDIT;
-  BtnDrawColor(ui, C.fg_color_rect, PaintGetColor(&C.ca), false, color_disabled);
+  BtnDrawColor(ui, C.fg_color_rect, PaintGetColor(&C.ca), false,
+               color_disabled);
   BtnDrawIcon(&C.btn_line, bscale, ui->sprites, rect_line);
   BtnDrawIcon(&C.btn_brush, bscale, ui->sprites, rect_brush);
   BtnDrawIcon(&C.btn_picker, bscale, ui->sprites, rect_picker);
@@ -422,7 +417,8 @@ void MainDraw(Ui* ui)
 
   MsgDraw(ui);
   for (int i = 0; i < C.num_colors; i++) {
-    BtnDrawColor(ui, C.color_btn[i], C.palette[i], COLOR_EQ(C.palette[i], PaintGetColor(&C.ca)), color_disabled);
+    BtnDrawColor(ui, C.color_btn[i], C.palette[i],
+                 COLOR_EQ(C.palette[i], PaintGetColor(&C.ca)), color_disabled);
   }
 
   if (C.ca.mode == MODE_SIMU) {
@@ -440,12 +436,29 @@ void MainDraw(Ui* ui)
     BtnDrawLegend(&C.btn_about, bscale, "About Circuit Artist");
     BtnDrawLegend(&C.btn_exit, bscale, "Exit");
 
-    BtnDrawLegend(&C.btn_simu, bscale, simu_on ? "Stop Simulation (SPACE)" : "Start Simulation (SPACE)");
-    BtnDrawLegend(&C.btn_brush, bscale, "Brush tool (B)\nLeft mouse button: draw\nRight mouse button: erase");
-    BtnDrawLegend(&C.btn_line, bscale, "Line tool (L)\nType (NUMBER) to change line size.\nPress (SHIFT) while drawing to add corner to start of line.\nPress (CTRL) while drawing to add corner to end of line.\nLeft mouse button: Draw\nRight mouse button: Erase");
-    BtnDrawLegend(&C.btn_bucket, bscale, "Wire Fill (G)\nLeft mouse button: regular color fill.\nRight mouse button: black color fill (erase).");
+    BtnDrawLegend(
+        &C.btn_simu, bscale,
+        simu_on ? "Stop Simulation (SPACE)" : "Start Simulation (SPACE)");
+    BtnDrawLegend(
+        &C.btn_brush, bscale,
+        "Brush tool (B)\nLeft mouse button: draw\nRight mouse button: erase");
+    BtnDrawLegend(&C.btn_line, bscale,
+                  "Line tool (L)\nType (NUMBER) to change line size.\nPress "
+                  "(SHIFT) while drawing to add corner to start of "
+                  "line.\nPress (CTRL) while drawing to add corner to end of "
+                  "line.\nLeft mouse button: Draw\nRight mouse button: Erase");
+    BtnDrawLegend(&C.btn_bucket, bscale,
+                  "Wire Fill (G)\nLeft mouse button: regular color "
+                  "fill.\nRight mouse button: black color fill (erase).");
     BtnDrawLegend(&C.btn_picker, bscale, "Color Picker (I)");
-    BtnDrawLegend(&C.btn_marquee, bscale, "Selection tool (M)\nHold (LEFT CTRL) and drag to create a copy of the selection.\nHold (SHIFT) while dragging to force a strict X or Y movement.\nUse (ARROW)s to move a selection by single pixels. (CTRL+ARROW)s to move by 4 pixels. \n(C-C)/(C-V) for copy/paste selection (copies/pastes to/from clipboard).\n(DELETE) or (BACKSPACE) to delete selection.\n (ESCAPE) to deselect.");
+    BtnDrawLegend(
+        &C.btn_marquee, bscale,
+        "Selection tool (M)\nHold (LEFT CTRL) and drag to create a copy of the "
+        "selection.\nHold (SHIFT) while dragging to force a strict X or Y "
+        "movement.\nUse (ARROW)s to move a selection by single pixels. "
+        "(CTRL+ARROW)s to move by 4 pixels. \n(C-C)/(C-V) for copy/paste "
+        "selection (copies/pastes to/from clipboard).\n(DELETE) or (BACKSPACE) "
+        "to delete selection.\n (ESCAPE) to deselect.");
     BtnDrawLegend(&C.btn_text, bscale, "Add Text (T)");
     BtnDrawLegend(&C.btn_fliph, bscale, "Flip selection horizontally (H)");
     BtnDrawLegend(&C.btn_flipv, bscale, "Flip selection vertically (V)");
@@ -472,8 +485,7 @@ void MainDraw(Ui* ui)
   }
 }
 
-void MainSetPaletteFromImage(Image img)
-{
+void MainSetPaletteFromImage(Image img) {
   int w = img.width;
   int nc = w / 8;
   if (nc > 64) nc = 64;
@@ -487,8 +499,7 @@ void MainSetPaletteFromImage(Image img)
   C.num_colors = nc;
 }
 
-void MainUpdateLayout(Ui* ui)
-{
+void MainUpdateLayout(Ui* ui) {
   int s = ui->scale;
   {
     int y0 = 4 * s;
@@ -566,7 +577,8 @@ void MainUpdateLayout(Ui* ui)
 
     int chax = GetScreenWidth() - 6 * s - 35 * s;
     C.btn_challenge.hitbox = (Rectangle){chax, by0_simu, 35 * s, s * 35};
-    C.btn_circuitopedia.hitbox = (Rectangle){chax, by0_simu + 36 * s + 4 * s, bw, bh};
+    C.btn_circuitopedia.hitbox =
+        (Rectangle){chax, by0_simu + 36 * s + 4 * s, bw, bh};
 
     int mw = 6 * 17 * s;
     int yy = GetScreenHeight() - mw - 4 * s;
@@ -574,8 +586,7 @@ void MainUpdateLayout(Ui* ui)
   }
 }
 
-void MainUpdateViewport(Ui* ui)
-{
+void MainUpdateViewport(Ui* ui) {
   int sw = GetScreenWidth();
   int sh = GetScreenHeight();
   MainUpdateLayout(ui);
@@ -606,29 +617,25 @@ void MainUpdateViewport(Ui* ui)
   };
 }
 
-char* MainGetFilename()
-{
+char* MainGetFilename() {
   if (C.fname) {
     return C.fname;
   }
   return "Untitled";
 }
 
-void MainUpdateTitle()
-{
+void MainUpdateTitle() {
   const char* fname = GetFileName(MainGetFilename());
   char tmp[400];
   if (strlen(fname) >= 400) {
     sprintf(tmp, "%.*s ... - Circuit Artist", 400, fname);
-  }
-  else {
+  } else {
     sprintf(tmp, "%s - Circuit Artist", fname);
   }
   SetWindowTitle(tmp);
 }
 
-void MainDrawErrorMessage(Ui* ui)
-{
+void MainDrawErrorMessage(Ui* ui) {
   int x = C.target_pos.x;
   int y = C.target_pos.y;
 
@@ -647,12 +654,12 @@ void MainDrawErrorMessage(Ui* ui)
   rlPopMatrix();
 }
 
-void MainDrawStatusBar(Ui* ui)
-{
+void MainDrawStatusBar(Ui* ui) {
   int ui_scale = ui->scale;
   Color tc = WHITE;
   int num_lines = 8;
-  int yc1 = (C.target_pos.y + C.img_target_tex.texture.height) / ui_scale - 17 * num_lines;
+  int yc1 = (C.target_pos.y + C.img_target_tex.texture.height) / ui_scale -
+            17 * num_lines;
   int xc = 1 * 17 + C.target_pos.x / ui_scale;
   int yc2 = yc1 + 17;
   int yc3 = yc2 + 17;
@@ -677,11 +684,11 @@ void MainDrawStatusBar(Ui* ui)
     ty = ty < 0 ? -ty : ty;
     int tool = PaintGetTool(&C.ca);
     if (C.ca.mode == MODE_EDIT) {
-      if (C.ca.tool_pressed && !PaintGetIsToolSelMoving(&C.ca) && tool == TOOL_SEL) {
+      if (C.ca.tool_pressed && !PaintGetIsToolSelMoving(&C.ca) &&
+          tool == TOOL_SEL) {
         sprintf(txt, "W: %d H: %d", tx + 1, ty + 1);
         FontDrawTextureOutlined(txt, xc, yc2, tc, bg);
-      }
-      else if (PaintGetHasSelection(&C.ca)) {
+      } else if (PaintGetHasSelection(&C.ca)) {
         Image selbuffer = PaintGetSelBuffer(&C.ca);
         int sw = selbuffer.width;
         int sh = selbuffer.height;
@@ -706,8 +713,7 @@ void MainDrawStatusBar(Ui* ui)
       int updates = C.ca.s.total_updates;
       sprintf(txt, "NAND Updates: %d", updates);
       FontDrawTextureOutlined(txt, xc, yc6, tc, bg);
-    }
-    else {
+    } else {
       sprintf(txt, "ERROR: %s", C.ca.s.crash_reason);
       FontDrawTextureOutlined(txt, xc, yc4, tc, bg);
     }
@@ -721,8 +727,7 @@ void MainDrawStatusBar(Ui* ui)
   rlPopMatrix();
 }
 
-RectangleInt MainGetTargetRegion()
-{
+RectangleInt MainGetTargetRegion() {
   return (RectangleInt){
       .x = C.target_pos.x,
       .y = C.target_pos.y,
@@ -731,17 +736,16 @@ RectangleInt MainGetTargetRegion()
   };
 }
 
-bool MainGetIsCursorInTargeTimage()
-{
+bool MainGetIsCursorInTargeTimage() {
   Vector2 pos = GetMousePosition();
   RectangleInt r = MainGetTargetRegion();
   Rectangle target_rect = {r.x, r.y, r.width, r.height};
   return CheckCollisionPointRec(pos, target_rect);
 }
 
-void MainDrawMouseExtra(Ui* ui)
-{
-  if (C.ca.mode == MODE_EDIT && PaintGetTool(&C.ca) == TOOL_LINE && ui->cursor == MOUSE_PEN) {
+void MainDrawMouseExtra(Ui* ui) {
+  if (C.ca.mode == MODE_EDIT && PaintGetTool(&C.ca) == TOOL_LINE &&
+      ui->cursor == MOUSE_PEN) {
     Vector2 pos = GetMousePosition();
     int s = ui->scale;
     bool just_changed = PaintGetKeyLineWidthHasJustChanged(&C.ca);
@@ -755,8 +759,7 @@ void MainDrawMouseExtra(Ui* ui)
   }
 }
 
-void MainCheckFileDrop()
-{
+void MainCheckFileDrop() {
   if (!IsFileDropped()) {
     return;
   }
@@ -771,8 +774,7 @@ void MainCheckFileDrop()
   UnloadDroppedFiles(path_list);
 }
 
-void MainUpdateWidgets()
-{
+void MainUpdateWidgets() {
   bool ned = C.ca.mode != MODE_EDIT;
   int tool = PaintGetTool(&C.ca);
   C.btn_simu.disabled = (C.ca.mode != MODE_EDIT) && (C.ca.mode != MODE_SIMU);
@@ -813,8 +815,7 @@ void MainUpdateWidgets()
   }
 }
 
-void MainCheckWindowResize(Ui* ui)
-{
+void MainCheckWindowResize(Ui* ui) {
   bool needs_update_viewport = C.img_target_tex.texture.width == 0;
   if (IsWindowResized() || needs_update_viewport) {
     MainUpdateViewport(ui);
@@ -823,8 +824,7 @@ void MainCheckWindowResize(Ui* ui)
   }
 }
 
-void MainNewFile(Ui* ui)
-{
+void MainNewFile(Ui* ui) {
   if (C.fname) {
     free(C.fname);
     C.fname = NULL;
@@ -833,8 +833,7 @@ void MainNewFile(Ui* ui)
   MainUpdateTitle();
 }
 
-void MainUnload()
-{
+void MainUnload() {
   PaintUnload(&C.ca);
   if (C.fname) {
     free(C.fname);
@@ -844,8 +843,7 @@ void MainUnload()
   C.inited = false;
 }
 
-void MainOpenFileModal(Ui* ui)
-{
+void MainOpenFileModal(Ui* ui) {
   ModalResult mr = ModalOpenFile(NULL);
   if (mr.ok) {
     PaintLoadImage(&C.ca, LoadImage(mr.path));
@@ -855,18 +853,15 @@ void MainOpenFileModal(Ui* ui)
     }
     C.fname = mr.path;
     MainUpdateTitle();
-  }
-  else if (mr.cancel) {
-  }
-  else {
+  } else if (mr.cancel) {
+  } else {
     char txt[500];
     sprintf(txt, "ERROR: %s\n", mr.error_msg);
     MsgAdd(txt, MSG_DURATION);
   }
 }
 
-int MainOnSaveClick(Ui* ui, bool saveas)
-{
+int MainOnSaveClick(Ui* ui, bool saveas) {
   if (C.fname == NULL || saveas) {
     ModalResult mr = ModalSaveFile(NULL, NULL);
     if (mr.ok) {
@@ -875,11 +870,9 @@ int MainOnSaveClick(Ui* ui, bool saveas)
         C.fname = NULL;
       }
       C.fname = mr.path;
-    }
-    else if (mr.cancel) {
+    } else if (mr.cancel) {
       return 1;
-    }
-    else {
+    } else {
       char txt[500];
       sprintf(txt, "ERROR: %s\n", mr.error_msg);
       MsgAdd(txt, MSG_DURATION);
@@ -904,18 +897,15 @@ int MainOnSaveClick(Ui* ui, bool saveas)
   return 0;
 }
 
-void MainAskForSaveAndProceed(Ui* ui, UiCallback next_action)
-{
+void MainAskForSaveAndProceed(Ui* ui, UiCallback next_action) {
   if (!PaintGetIsDirty(&C.ca)) {
     next_action(ui);
-  }
-  else {
+  } else {
     DialogOpen(ui, "Do you want to save changes?", next_action);
   }
 }
 
-void MainPasteText(const char* txt)
-{
+void MainPasteText(const char* txt) {
   Image img = RenderText(txt, C.ca.fg_color);
   PaintPasteImage(&C.ca, img);
 }

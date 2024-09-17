@@ -119,7 +119,8 @@ void HistActDeleteSel(Hist* h);
 void HistActSelFill(Hist* h, Color fill_color);
 
 // Dispatches an action to flip a selection.
-// act should be  one of: ACTION_SEL_FLIP_H, ACTION_SEL_FLIP_V or ACTION_SEL_ROTATE.
+// act should be  one of: ACTION_SEL_FLIP_H, ACTION_SEL_FLIP_V or
+// ACTION_SEL_ROTATE.
 void HistActSelFlip(Hist* h, CmdActionType act);
 
 // Dispatch an action to paste a new image at a given place (C-V).
@@ -129,11 +130,12 @@ void HistActPasteImage(Hist* h, Vector2Int offset, Image img);
 // Often used with tools like line/brush/text/bucket.
 void HistActBuffer(Hist* h, Image img, Vector2Int off);
 
-// Dispatches an action to de-select a selection. (clicking outside, pressing ESC, changing tool etc)
+// Dispatches an action to de-select a selection. (clicking outside, pressing
+// ESC, changing tool etc)
 void HistActCommitSel(Hist* h, RectangleInt tool_rect);
 
-// Dispatches an action for duplicating current selection at the beginning of a drag.
-// Use case is when we drag a selection with the left CTRL key pressed.
+// Dispatches an action for duplicating current selection at the beginning of a
+// drag. Use case is when we drag a selection with the left CTRL key pressed.
 void HistActCloneSel(Hist* h);
 
 // Returns true if there's a region selected.
@@ -157,7 +159,8 @@ ToolType HistGetTool(Hist* h);
 Image HistGetBuffer(Hist* h);
 
 // Returns the active image selection buffer as reference (marquee selection)..
-// If there's no selection, an empty image is returned. (as in width=0, height=0, data=NULL)
+// If there's no selection, an empty image is returned. (as in width=0,
+// height=0, data=NULL)
 Image HistGetSelBuffer(Hist* h);
 
 // Returns the offset of the selection.

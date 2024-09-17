@@ -87,12 +87,15 @@ Color* GetPixels(Image img);
 // The generated image `out` is a subset of the full image . The full image
 // size is defined by `img_rect`,  and the offset of the subimage within the
 // full image is given by the `off` output.
-void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect, RectangleInt img_rect, int ls, bool corner, bool end_corner, Color c, Image* out, Vector2Int* off);
+void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
+                       RectangleInt img_rect, int ls, bool corner,
+                       bool end_corner, Color c, Image* out, Vector2Int* off);
 
 // Algorithm for the "Bucket Tool".
 //
 // `img` is the original image before the tool is applied.
-// `x`, `y`, `sw` and `sh` define the region where the bucket should be applied to with the color `c`.
+// `x`, `y`, `sw` and `sh` define the region where the bucket should be applied
+// to with the color `c`.
 //
 // The `out` image contains a sub-image of the original image (positined by
 // `off` offset) containing the new pixels after modification. The final result
@@ -101,7 +104,8 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect, RectangleInt im
 // Note that it doesnt modify the image inplace directly.
 //
 // It's up to the caller to take ownership of the generated `out` image.
-void DrawImageBucketTool(Image img, int x, int y, int sw, int sh, Color c, Image* out, Vector2Int* off);
+void DrawImageBucketTool(Image img, int x, int y, int sw, int sh, Color c,
+                         Image* out, Vector2Int* off);
 #if defined(__cplusplus)
 }
 #endif

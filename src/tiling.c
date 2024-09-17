@@ -1,9 +1,9 @@
 #include "tiling.h"
+
 #include "defs.h"
 #include "rlgl.h"
 
-void DrawTiledScreen(int s, Texture2D tex, Rectangle src)
-{
+void DrawTiledScreen(int s, Texture2D tex, Rectangle src) {
   rlPushMatrix();
   rlScalef(s, s, 1);
   int tilew = src.width;
@@ -16,7 +16,9 @@ void DrawTiledScreen(int s, Texture2D tex, Rectangle src)
     for (int tx = 0; tx < nx; tx++) {
       int x = tx * tilew;
       int y = ty * tilew;
-      // RLAPI void DrawTexturePro(Texture2D texture, Rectangle source, Rectangle dest, Vector2 origin, float rotation, Color tint); // Draw a part of a texture defined by a rectangle with 'pro' parameters
+      // RLAPI void DrawTexturePro(Texture2D texture, Rectangle source,
+      // Rectangle dest, Vector2 origin, float rotation, Color tint); // Draw a
+      // part of a texture defined by a rectangle with 'pro' parameters
       Rectangle dest = {
           x,
           y,
@@ -32,8 +34,7 @@ void DrawTiledScreen(int s, Texture2D tex, Rectangle src)
   rlPopMatrix();
 }
 
-void DrawTiledFrame(int s, FramePatternDesc pd, Rectangle inner_content)
-{
+void DrawTiledFrame(int s, FramePatternDesc pd, Rectangle inner_content) {
   // Idea:
   // 1. Draw each side
   // 2. Draw corners on top
@@ -114,22 +115,24 @@ void DrawTiledFrame(int s, FramePatternDesc pd, Rectangle inner_content)
     DrawTexturePro(pd.tex, pd.frame_right, dest, origin, rotation, tint);
   }
 
-  DrawTexturePro(pd.tex, pd.corner, (Rectangle){-tw, -tw, tw, tw}, (Vector2){0}, 0, WHITE);
-  DrawTexturePro(pd.tex, pd.corner, (Rectangle){cw / s, -tw, tw, tw}, (Vector2){0}, 0, WHITE);
-  DrawTexturePro(pd.tex, pd.corner, (Rectangle){-tw, ch / s, tw, tw}, (Vector2){0}, 0, WHITE);
-  DrawTexturePro(pd.tex, pd.corner, (Rectangle){cw / s, ch / s, tw, tw}, (Vector2){0}, 0, WHITE);
+  DrawTexturePro(pd.tex, pd.corner, (Rectangle){-tw, -tw, tw, tw}, (Vector2){0},
+                 0, WHITE);
+  DrawTexturePro(pd.tex, pd.corner, (Rectangle){cw / s, -tw, tw, tw},
+                 (Vector2){0}, 0, WHITE);
+  DrawTexturePro(pd.tex, pd.corner, (Rectangle){-tw, ch / s, tw, tw},
+                 (Vector2){0}, 0, WHITE);
+  DrawTexturePro(pd.tex, pd.corner, (Rectangle){cw / s, ch / s, tw, tw},
+                 (Vector2){0}, 0, WHITE);
 
   rlPopMatrix();
   EndScissorMode();
 }
 
-void DrawDefaultTiledScreen(Ui* ui)
-{
+void DrawDefaultTiledScreen(Ui* ui) {
   DrawTiledScreen(ui->scale, ui->sprites, rect_bg_pattern);
 }
 
-void DrawDefaultTiledFrame(Ui* ui, Rectangle inner_content)
-{
+void DrawDefaultTiledFrame(Ui* ui, Rectangle inner_content) {
   FramePatternDesc pd = {
       .tex = ui->sprites,
       .frame_left = (Rectangle){816, 16, 7, 12},

@@ -1,12 +1,8 @@
 #include "rect_int.h"
 
-bool IsRecIntEmpty(RectangleInt r)
-{
-  return r.width == 0 || r.height == 0;
-}
+bool IsRecIntEmpty(RectangleInt r) { return r.width == 0 || r.height == 0; }
 
-bool CheckRecIntCollision(RectangleInt a, RectangleInt b)
-{
+bool CheckRecIntCollision(RectangleInt a, RectangleInt b) {
   int r1x = a.x;
   int r1y = a.y;
   int r1w = a.width;
@@ -24,8 +20,7 @@ bool CheckRecIntCollision(RectangleInt a, RectangleInt b)
   return false;
 }
 
-RectangleInt GetCollisionRecInt(RectangleInt a, RectangleInt b)
-{
+RectangleInt GetCollisionRecInt(RectangleInt a, RectangleInt b) {
   // adapted from raylib
   RectangleInt overlap = {0};
 

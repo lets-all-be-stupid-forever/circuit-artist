@@ -86,7 +86,8 @@ bool BtnUpdate(Btn* b, Ui* ui);
 // Text button (close button for example).
 void BtnDrawText(Btn* b, int ui_scale, const char* text);
 
-// Draws the legend of the button. Needs to be called separately from the button itself.
+// Draws the legend of the button. Needs to be called separately from the button
+// itself.
 void BtnDrawLegend(Btn* b, int ui_scale, const char* text);
 
 // Icon button: tool buttons and challenge button.

@@ -9,7 +9,8 @@
 typedef struct {
   // Title of each Circuitopedia chapter.
   const char* help_name[50];
-  // Multi-line text of each circuitopedia chapter (rendered with DrawTextBoxAdvanced).
+  // Multi-line text of each circuitopedia chapter (rendered with
+  // DrawTextBoxAdvanced).
   const char* help_txt[50];
   // Images associated to each circuitopedia chapter.
   Sprite help_sprites[50][20];
@@ -21,8 +22,8 @@ typedef struct {
     const char* name;
     // Detailed text string for the description of each level.
     // The strings have a special format, allowing "bold" strings and embedded
-    // images. It is rendered by DrawTextBoxAdvanced, you can look at its doc for more
-    // details on the format.
+    // images. It is rendered by DrawTextBoxAdvanced, you can look at its doc
+    // for more details on the format.
     const char* desc;
     // Icon sprite of the level (displayed in the selection window)
     Sprite icon;
@@ -76,15 +77,18 @@ void ApiStopLevelSimulation();
 void ApiSetClockTime(float clock_rate);
 
 // Asks the Level to draw to a dedicated render texture.
-void ApiOnLevelDraw(RenderTexture2D target, float camera_x, float camera_y, float camera_spacing);
+void ApiOnLevelDraw(RenderTexture2D target, float camera_x, float camera_y,
+                    float camera_spacing);
 
 // Clock event sent to lua.
-// Sent whenever a clock has been updated so the componets can sync their internal memory.
+// Sent whenever a clock has been updated so the componets can sync their
+// internal memory.
 void ApiLevelClock(int ilevel, int* inputs, bool reset);
 
 // Main component update entrypoint, which triggers an update component in lua.
 // Called from the simulator during the simulation algorithm.
-void ApiUpdateLevelComponent(void* ctx, int ic, int* prev_in, int* next_in, int* output);
+void ApiUpdateLevelComponent(void* ctx, int ic, int* prev_in, int* next_in,
+                             int* output);
 
 // Low-level tick event. Called in a fixed high frequency rate.
 // Used mostly by the clock component, but can also be used in random
@@ -92,7 +96,8 @@ void ApiUpdateLevelComponent(void* ctx, int ic, int* prev_in, int* next_in, int*
 // called multiple times per frame).
 TickResult ApiOnLevelTick(float dt);
 
-// Getter for the level descriptor of the active level. (set by the ApiLoadLevel function)
+// Getter for the level descriptor of the active level. (set by the ApiLoadLevel
+// function)
 LevelDesc* ApiGetLevelDesc();
 
 // Getter for the global list of all available levels and Circuitopedioa pages.
