@@ -88,6 +88,17 @@ int CaGetDrawTextSize(const char* txt);
 void CaDrawTextBox(const char* txt, int x, int y, int w, Color c);
 void CaSetPalFromImage(Image img);
 
+typedef struct RlDrawTextureProArgs{
+ Texture2D texture;
+ Rectangle source;
+ Rectangle dest;
+ Vector2 origin;
+ float rotation;
+ Color tint;
+} RlDrawTextureProArgs;
+
+void RlDrawTexturePro(RlDrawTextureProArgs* args);
+
 ]]
 
 return ffi.C

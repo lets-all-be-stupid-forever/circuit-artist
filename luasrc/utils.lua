@@ -1,5 +1,7 @@
 local math = require 'math'
 local bit = require 'bit'
+local ffi = require 'ffi'
+local C = require 'c_api'
 local utils = {}
 local lshift, rshift, rol = bit.lshift, bit.rshift, bit.rol
 local bnot, band, bor, bxor = bit.bnot, bit.band, bit.bor, bit.bxor
@@ -35,6 +37,11 @@ end
 function utils.scriptPath()
   local str = debug.getinfo(2, "S").source:sub(2)
   return str:match("(.*/)")
+end
+
+function utils.rlDrawTexturePro(texture, source, dest, origin, rotation, tint)
+  local args = ffi.new('RlDrawTextureProArgs', { texture, source, dest, origin, rotation, tint})
+  C.RlDrawTexturePro(args)
 end
 
 return utils

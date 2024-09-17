@@ -73,6 +73,23 @@ static SharedState shared_state = {0};
 
 CA_API SharedState* GetSharedState();
 
+// workaround for MAC's luajit bug:
+// NYI: cannot call this C function (yet)
+// https://github.com/LuaJIT/LuaJIT/issues/205
+typedef struct {
+  Texture2D texture;
+  Rectangle source;
+  Rectangle dest;
+  Vector2 origin;
+  float rotation;
+  Color tint;
+} RlDrawTextureProArgs;
+
+CA_API void RlDrawTexturePro(RlDrawTextureProArgs* args) {
+  DrawTexturePro(args->texture, args->source, args->dest, args->origin,
+                 args->rotation, args->tint);
+}
+
 CA_API void CaDrawText(const char* txt, int x, int y, Color c) {
   FontDrawTexture(txt, x, y, c);
 }
