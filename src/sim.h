@@ -121,7 +121,8 @@ typedef struct {
 //
 // Mind that this callback is used for all components, there's no per-component
 // callback. It's up to the callback to route the logic to each component.
-typedef void (*ComponentUpdateCallback)(void* ctx, int c, int* prev_in, int* next_in, int* next_out);
+typedef void (*ComponentUpdateCallback)(void* ctx, int c, int* prev_in,
+                                        int* next_in, int* next_out);
 
 // Simulation context.
 //
@@ -138,9 +139,11 @@ typedef void (*ComponentUpdateCallback)(void* ctx, int c, int* prev_in, int* nex
 // 1. When parsing, first we detect the nands.
 //
 // 2. Everything that is not a NAND is considered a wire.
-//   Wires are formed by "connected" pixels. So each pixel is either a NAND a wire.
+//   Wires are formed by "connected" pixels. So each pixel is either a NAND a
+//   wire.
 //
-// 3. After that, we use the NAND placements to determines the 2 inputs of each wire.
+// 3. After that, we use the NAND placements to determines the 2 inputs of each
+// wire.
 //    Note that we don't accept more than one NAND outputting to the same wire,
 //    because it breaks this assumption.
 //
@@ -166,14 +169,14 @@ typedef struct {
   // Total number of wires.
   int nc;
   // NAND graph of the circuit.
-  // Has size `2*nc`, and for each wire contains the two input wires to its source NAND.
-  // Each wire can have at most 1 NAND connected to it. To make it easier to
-  // manage, we assume EVERY wire is the result of a NAND among two other wires
-  // (possibly the same). For the wires that don't have a NAND associated to
-  // it, we assume that the special wire 0 is its source wire. Since the wire 0
-  // is special and never changes state, these wires are never automatically
-  // updated during simulation.
-  // So, the update formula of the system is something like:
+  // Has size `2*nc`, and for each wire contains the two input wires to its
+  // source NAND. Each wire can have at most 1 NAND connected to it. To make it
+  // easier to manage, we assume EVERY wire is the result of a NAND among two
+  // other wires (possibly the same). For the wires that don't have a NAND
+  // associated to it, we assume that the special wire 0 is its source wire.
+  // Since the wire 0 is special and never changes state, these wires are never
+  // automatically updated during simulation. So, the update formula of the
+  // system is something like:
   //
   //    WireState[i] := NAND(WireState[graph[2*i+0]], WireState[graph[2*i+1]])
   //
@@ -261,10 +264,9 @@ typedef struct {
   // We keep a lut so we can quickly do things like NAND with undefined bits.
   // It's 4x4 because we consider 4 states for a wire.
   int nand_lut[4 * 4];
-  // Flag describing whether a given wire has changed state during a simulation (simulate) step.
-  // Used for tracking which wires have updated in a simulation step.
-  // Only used during the call to `simulate`.
-  // Has size `nc`.
+  // Flag describing whether a given wire has changed state during a simulation
+  // (simulate) step. Used for tracking which wires have updated in a simulation
+  // step. Only used during the call to `simulate`. Has size `nc`.
   bool* wire_has_changed;
   // Stack containing the wires that have changed during simulation.
   // It is used to avoid iterating through all the wires to find out those who
@@ -327,7 +329,8 @@ void UnloadParsedImage(ParsedImage p);
 // Creates a simulation context.
 // It takes as input an instance of a parsed image and specification of the
 // external components that are associated to the simulated image.
-void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps, ComponentUpdateCallback update, void* comp_ctx);
+void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
+             ComponentUpdateCallback update, void* comp_ctx);
 
 // Destructor
 void SimUnload(Sim* s);
@@ -361,10 +364,12 @@ void SimUnload(Sim* s);
 // FUNCTION simulate(wire_state, wire_graph, events, comps)
 //    REPEAT:
 //       WHILE events IS NOT EMPTY DO
-//          wire_state, events := SIMULATE_EVENT_STEP(wire_state, wire_graph, events)
+//          wire_state, events := SIMULATE_EVENT_STEP(wire_state, wire_graph,
+//          events)
 //       ENDWHILE
 //       FOR EACH COMPONENT comp IN comps DO
-//          IF (comp IS DIRTY) OR (COMP_INPUT_HAS_CHANGED(comp, wire_state)) THEN
+//          IF (comp IS DIRTY) OR (COMP_INPUT_HAS_CHANGED(comp, wire_state))
+//          THEN
 //              SIMULATE_COMP(comp, wire_state)
 //              IF COMP_OUTPUT_HAS_CHANGED(comp, wire_state) THEN
 //                 events = events + DIFF(comp_next_output, comp_prev_output)
@@ -389,7 +394,8 @@ void SimTogglePixel(Sim* s, int x, int y);
 // in the image. Indeed, if we don't do that it becomes very hard to click on
 // any wire because there's many more background pixels than wire pixels in the
 // image, specially when the circuit is scaled up.
-void SimFindNearestPixelToToggle(Sim* s, int tol, float x, float y, int* px, int* py);
+void SimFindNearestPixelToToggle(Sim* s, int tol, float x, float y, int* px,
+                                 int* py);
 
 // Renders the simulated image.
 //

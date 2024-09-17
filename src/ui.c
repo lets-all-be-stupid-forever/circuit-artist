@@ -18,11 +18,12 @@
 #include "w_main.h"
 #include "w_text.h"
 
-static void UiDrawMouse(Ui *ui);  // Draws the mouse cursor. It's last thing that is drawn in the screen.
-static void UiClose(Ui *ui);      // Callback called when user clicks on the close "X" in the game window.
+static void UiDrawMouse(Ui* ui);  // Draws the mouse cursor. It's last thing
+                                  // that is drawn in the screen.
+static void UiClose(Ui* ui);  // Callback called when user clicks on the close
+                              // "X" in the game window.
 
-void UiLoad(Ui *ui)
-{
+void UiLoad(Ui* ui) {
   *ui = (Ui){0};
 
   // For now the ui scale only works at scale=2, there are some hard coded
@@ -52,18 +53,11 @@ void UiLoad(Ui *ui)
   MainOpen(ui);
 }
 
-void UiUnload(Ui *ui)
-{
-  MainUnload();
-}
+void UiUnload(Ui* ui) { MainUnload(); }
 
-static void UiClose(Ui *ui)
-{
-  ui->should_close = true;
-}
+static void UiClose(Ui* ui) { ui->should_close = true; }
 
-void UiUpdateFrame(Ui *ui)
-{
+void UiUpdateFrame(Ui* ui) {
   // X button in the UI
   if (WindowShouldClose()) {
     ui->close_requested = true;
@@ -105,8 +99,7 @@ void UiUpdateFrame(Ui *ui)
   EndDrawing();
 }
 
-void UiDrawMouse(Ui *ui)
-{
+void UiDrawMouse(Ui* ui) {
   // Doesn't draw if cursor is not on screen.
   if (!IsCursorOnScreen()) {
     return;
@@ -155,6 +148,6 @@ void UiDrawMouse(Ui *ui)
       .width = 32 * s,
       .height = 32 * s,
   };
-  DrawTexturePro(ui->sprites, source, target, (Vector2){.x = 0, .y = 0}, 0.0f, WHITE);
+  DrawTexturePro(ui->sprites, source, target, (Vector2){.x = 0, .y = 0}, 0.0f,
+                 WHITE);
 }
-

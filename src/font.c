@@ -55,14 +55,14 @@ typedef struct {
 // 31  US  (unit separator)            63  ?         95  _        127  DEL
 //
 // Chars to be used in the font creation
-// CHARS = !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+// CHARS =
+// !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
 
 static const char first_char = '!';
 static const int NUM_CHARS = 94;
 static ArtFont _font = {0};
 
-static void ParseFont(ArtFont* f)
-{
+static void ParseFont(ArtFont* f) {
   int w = f->atlas.width;
   int h = f->atlas.height;
   Color* colors = GetPixels(f->atlas);
@@ -84,17 +84,16 @@ static void ParseFont(ArtFont* f)
           is_last = false;
         }
         // Removes everything that is not white.
-        // Indeed, sometimes we want to add "black" pixels in the font image because
-        // a char contains blank columns, for example the " char.
-        // Then, this additional pass removes that column.
+        // Indeed, sometimes we want to add "black" pixels in the font image
+        // because a char contains blank columns, for example the " char. Then,
+        // this additional pass removes that column.
         if (!COLOR_EQ(c, WHITE)) {
           colors[idx] = BLANK;
         }
       }
       if (!is_last) {
         xl = xl + 1;
-      }
-      else {
+      } else {
         break;
       }
     }
@@ -120,8 +119,7 @@ static void ParseFont(ArtFont* f)
   assert(ichar == NUM_CHARS + 1);
 }
 
-static ArtFont CreateFontFromFile(const char* font_filename)
-{
+static ArtFont CreateFontFromFile(const char* font_filename) {
   ArtFont fnt = {0};
   fnt.atlas = LoadImage(font_filename);
   fnt.offset = calloc(257, sizeof(int));
@@ -130,8 +128,7 @@ static ArtFont CreateFontFromFile(const char* font_filename)
   return fnt;
 }
 
-Vector2 GetRenderedTextSize(const char* txt)
-{
+Vector2 GetRenderedTextSize(const char* txt) {
   int len = strlen(txt);
   const char last_char = first_char + NUM_CHARS;
   int tot_len = 0;
@@ -146,12 +143,10 @@ Vector2 GetRenderedTextSize(const char* txt)
     int ic = c - first_char;
     tot_len += _font.offset[ic + 1] - _font.offset[ic];
   }
-  return (Vector2){
-      tot_len, _font.line_height};
+  return (Vector2){tot_len, _font.line_height};
 }
 
-static Vector2 GetRenderedTextSize2(const char* txt, int len)
-{
+static Vector2 GetRenderedTextSize2(const char* txt, int len) {
   const char last_char = first_char + NUM_CHARS;
   // No support for newline for now!
   int tot_len = 0;
@@ -168,12 +163,10 @@ static Vector2 GetRenderedTextSize2(const char* txt, int len)
     int ic = c - first_char;
     tot_len += _font.offset[ic + 1] - _font.offset[ic];
   }
-  return (Vector2){
-      tot_len, _font.line_height};
+  return (Vector2){tot_len, _font.line_height};
 }
 
-Image RenderText(const char* txt, Color color)
-{
+Image RenderText(const char* txt, Color color) {
   int len = strlen(txt);
   const char last_char = first_char + NUM_CHARS;
 
@@ -209,7 +202,8 @@ Image RenderText(const char* txt, Color color)
     int h = _font.line_height;
     for (int y = 0; y < h; y++) {
       for (int x = 0; x < x1 - x0; x++) {
-        dc[y * out.width + xx + x] = ac[y * _font.atlas.width + x0 + x].r > 0 ? color : BLANK;
+        dc[y * out.width + xx + x] =
+            ac[y * _font.atlas.width + x0 + x].r > 0 ? color : BLANK;
       }
     }
     xx += x1 - x0 + 1;
@@ -217,8 +211,7 @@ Image RenderText(const char* txt, Color color)
   return out;
 }
 
-void FontDraw(Image* dst, const char* txt, int x, int y, Color c)
-{
+void FontDraw(Image* dst, const char* txt, int x, int y, Color c) {
   Image img = RenderText(txt, WHITE);
   Rectangle src_rec = {
       .x = 0,
@@ -236,8 +229,7 @@ void FontDraw(Image* dst, const char* txt, int x, int y, Color c)
   UnloadImage(img);
 }
 
-void UnloadArtFont()
-{
+void UnloadArtFont() {
   if (_font.atlas.width > 0) {
     UnloadTexture(_font.tex);
     UnloadImage(_font.atlas);
@@ -246,8 +238,7 @@ void UnloadArtFont()
   _font = (ArtFont){0};
 }
 
-void FontDrawTexture(const char* txt, int x, int y, Color color)
-{
+void FontDrawTexture(const char* txt, int x, int y, Color color) {
   int len = strlen(txt);
   const char last_char = first_char + NUM_CHARS;
   int xx = 0;
@@ -279,18 +270,12 @@ void FontDrawTexture(const char* txt, int x, int y, Color color)
   }
 }
 
-void LoadArtFont(const char* filepath)
-{
-  _font = CreateFontFromFile(filepath);
-}
+void LoadArtFont(const char* filepath) { _font = CreateFontFromFile(filepath); }
 
-int GetFontLineHeight()
-{
-  return _font.line_height;
-}
+int GetFontLineHeight() { return _font.line_height; }
 
-static void FontDrawTexture2(const char* txt, int len, int x, int y, Color* color, Color normal, Color special)
-{
+static void FontDrawTexture2(const char* txt, int len, int x, int y,
+                             Color* color, Color normal, Color special) {
   const char last_char = first_char + NUM_CHARS;
   int xx = 0;
   for (int i = 0; i < len; i++) {
@@ -304,8 +289,7 @@ static void FontDrawTexture2(const char* txt, int len, int x, int y, Color* colo
     if (c == '$') {
       if (COLOR_EQ(*color, normal)) {
         *color = special;
-      }
-      else {
+      } else {
         *color = normal;
       }
       continue;
@@ -314,8 +298,7 @@ static void FontDrawTexture2(const char* txt, int len, int x, int y, Color* colo
       if (COLOR_EQ(*color, normal)) {
         Color c1 = GetLutColor(COLOR_BG0);
         *color = c1;
-      }
-      else {
+      } else {
         *color = normal;
       }
       continue;
@@ -343,8 +326,8 @@ static void FontDrawTexture2(const char* txt, int len, int x, int y, Color* colo
   }
 }
 
-void DrawTextBox(const char* text, Rectangle rect, Color first_color, int* height)
-{
+void DrawTextBox(const char* text, Rectangle rect, Color first_color,
+                 int* height) {
   int lh = GetFontLineHeight() + 2;
   int n = strlen(text);
   // space size
@@ -372,8 +355,7 @@ void DrawTextBox(const char* text, Rectangle rect, Color first_color, int* heigh
     if (text[ki] == '\n') {
       is_new_line = true;
       ki++;
-    }
-    else {
+    } else {
       while (text[ki] != ' ' && text[ki] != '\n' && text[ki] != '\0') ki++;
     }
 
@@ -381,8 +363,7 @@ void DrawTextBox(const char* text, Rectangle rect, Color first_color, int* heigh
     if (is_new_line) {
       offy += lh + 1;
       offx = 0;
-    }
-    else {
+    } else {
       int nc = ki - k0;
       int w = GetRenderedTextSize2(text + k0, nc).x;
       if (w + offx > linew) {
@@ -391,7 +372,8 @@ void DrawTextBox(const char* text, Rectangle rect, Color first_color, int* heigh
       }
       // renders
       if (height == NULL) {
-        FontDrawTexture2(text + k0, nc, x + offx, y + offy, &c, first_color, YELLOW);
+        FontDrawTexture2(text + k0, nc, x + offx, y + offy, &c, first_color,
+                         YELLOW);
       }
       offx = offx + w + sx;
     }
@@ -415,8 +397,7 @@ typedef struct {
   int isprite;
 } ParsedTokenType;
 
-static bool StartsWithUnsafe(const char* a, const char* b)
-{
+static bool StartsWithUnsafe(const char* a, const char* b) {
   int n = strlen(b);
   for (int i = 0; i < n; i++) {
     if (a[i] != b[i]) return false;
@@ -424,8 +405,7 @@ static bool StartsWithUnsafe(const char* a, const char* b)
   return true;
 }
 
-static ParsedTokenType ParseToken(const char* t, int len)
-{
+static ParsedTokenType ParseToken(const char* t, int len) {
   ParsedTokenType r = {0};
   r.type = TKN_TEXT;
   if (len >= 6) {
@@ -449,8 +429,8 @@ static ParsedTokenType ParseToken(const char* t, int len)
   return r;
 }
 
-void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color, Sprite* sprites, int* height)
-{
+void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color,
+                         Sprite* sprites, int* height) {
   int lh = GetFontLineHeight() + 2;
   int n = strlen(text);
   // space size
@@ -478,8 +458,7 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color, Sp
     if (text[ki] == '\n') {
       is_new_line = true;
       ki++;
-    }
-    else {
+    } else {
       while (text[ki] != ' ' && text[ki] != '\n' && text[ki] != '\0') ki++;
     }
 
@@ -487,8 +466,7 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color, Sp
     if (is_new_line) {
       offy += lh + 1;
       offx = 0;
-    }
-    else {
+    } else {
       int nc = ki - k0;
       ParsedTokenType ptkn = ParseToken(text + k0, nc);
       switch (ptkn.type) {
@@ -515,7 +493,8 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color, Sp
 
           offx = (linew - iw) / 2;
           if (height == NULL) {
-            DrawTextureRec(sprites[k].tex, sprites[k].region, (Vector2){offx, offy}, WHITE);
+            DrawTextureRec(sprites[k].tex, sprites[k].region,
+                           (Vector2){offx, offy}, WHITE);
           }
           offy += ih;
           offx = 0;
@@ -530,7 +509,8 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color, Sp
           }
           // renders
           if (height == NULL) {
-            FontDrawTexture2(text + k0, nc, x + offx, y + offy, &c, first_color, YELLOW);
+            FontDrawTexture2(text + k0, nc, x + offx, y + offy, &c, first_color,
+                             YELLOW);
           }
           offx = offx + w + sx;
           break;
@@ -546,8 +526,7 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color, Sp
   }
 }
 
-void GetDrawTextBoxSize(const char* text, int lw, int* h, int* w)
-{
+void GetDrawTextBoxSize(const char* text, int lw, int* h, int* w) {
   int lh = GetFontLineHeight() + 2;
   int n = strlen(text);
   // space size
@@ -573,8 +552,7 @@ void GetDrawTextBoxSize(const char* text, int lw, int* h, int* w)
     if (text[ki] == '\n') {
       is_new_line = true;
       ki++;
-    }
-    else {
+    } else {
       while (text[ki] != ' ' && text[ki] != '\n' && text[ki] != '\0') ki++;
     }
 
@@ -582,8 +560,7 @@ void GetDrawTextBoxSize(const char* text, int lw, int* h, int* w)
     if (is_new_line) {
       offy += lh + 1;
       offx = 0;
-    }
-    else {
+    } else {
       int nc = ki - k0;
       int w = GetRenderedTextSize2(text + k0, nc).x;
       if (w + offx > linew) {
@@ -602,8 +579,7 @@ void GetDrawTextBoxSize(const char* text, int lw, int* h, int* w)
   *w = maxoffx;
 }
 
-void FontDrawTextureOutlined(const char* txt, int x, int y, Color c, Color bg)
-{
+void FontDrawTextureOutlined(const char* txt, int x, int y, Color c, Color bg) {
   for (int dx = -1; dx <= 1; dx++) {
     for (int dy = -1; dy <= 1; dy++) {
       if (dx == 0 && dy == 0) continue;

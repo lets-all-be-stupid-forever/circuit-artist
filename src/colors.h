@@ -19,8 +19,7 @@ typedef enum {
 Color GetLutColor(ColorLut c);
 
 // From RGB color to 0-255 gray value.
-static inline int ColorToGray(Color c)
-{
+static inline int ColorToGray(Color c) {
   float r = c.r;
   float g = c.g;
   float b = c.b;

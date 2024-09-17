@@ -1,11 +1,12 @@
 #include "rendering.h"
+
 #include "colors.h"
 #include "font.h"
 #include "math.h"
 #include "string.h"
 
-void RenderImageSimple(Image* out, Image img, float pixel_size, int camera_x, int camera_y, int offx, int offy)
-{
+void RenderImageSimple(Image* out, Image img, float pixel_size, int camera_x,
+                       int camera_y, int offx, int offy) {
   int w = out->width;
   int h = out->height;
   float pinv = 1.f / pixel_size;
@@ -38,8 +39,7 @@ void RenderImageSimple(Image* out, Image img, float pixel_size, int camera_x, in
   }
 }
 
-void RenderImageEdit(RenderImgCtx r)
-{
+void RenderImageEdit(RenderImgCtx r) {
   int w = r.out.width;
   int h = r.out.height;
   float pinv = 1.f / r.pixel_size;
@@ -89,13 +89,11 @@ void RenderImageEdit(RenderImgCtx r)
               pout[y * w + x] = r.grid_color;
             }
           }
-        }
-        else if (pinv < 2.001) {
+        } else if (pinv < 2.001) {
           int py2 = py >> 1;
           int px2 = px >> 1;
           pout[y * w + x] = pin2[py2 * img2.width + px2];
-        }
-        else {
+        } else {
           int py4 = py >> 2;
           int px4 = px >> 2;
           pout[y * w + x] = pin4[py4 * img4.width + px4];
@@ -104,17 +102,16 @@ void RenderImageEdit(RenderImgCtx r)
         if (has_sel) {
           int pxs = px - r.sel_off_x;
           int pys = py - r.sel_off_y;
-          if (pxs >= 0 && pxs < r.sel[0].width && pys >= 0 && pys < r.sel[0].height) {
+          if (pxs >= 0 && pxs < r.sel[0].width && pys >= 0 &&
+              pys < r.sel[0].height) {
             Color coff;
             if (pinv <= 1.001) {
               coff = pins[pys * r.sel[0].width + pxs];
-            }
-            else if (pinv < 2.001) {
+            } else if (pinv < 2.001) {
               int pxs2 = pxs >> 1;
               int pys2 = pys >> 1;
               coff = pins2[pys2 * sel2.width + pxs2];
-            }
-            else {
+            } else {
               int pxs4 = pxs >> 2;
               int pys4 = pys >> 2;
               coff = pins4[pys4 * sel4.width + pxs4];
@@ -129,7 +126,8 @@ void RenderImageEdit(RenderImgCtx r)
         if (has_tool) {
           int pxs = px - r.tool_off_x;
           int pys = py - r.tool_off_y;
-          if (pxs >= 0 && pxs < r.tool_img.width && pys >= 0 && pys < r.tool_img.height) {
+          if (pxs >= 0 && pxs < r.tool_img.width && pys >= 0 &&
+              pys < r.tool_img.height) {
             Color coff = ptool[pys * r.tool_img.width + pxs];
             if (coff.a > 0) {
               pout[y * w + x] = coff;
@@ -141,16 +139,15 @@ void RenderImageEdit(RenderImgCtx r)
             pout[y * w + x] = r.pixel_preview_color;
           }
         }
-      }
-      else {
+      } else {
         // pout[y * w + x] = r.bg;
       }
     }
   }
 }
 
-void RenderImageSelRect(Image* out, float pixel_size, int camera_x, int camera_y, RectangleInt r, int ls, double t)
-{
+void RenderImageSelRect(Image* out, float pixel_size, int camera_x,
+                        int camera_y, RectangleInt r, int ls, double t) {
   int w = out->width;
   int h = out->height;
 
@@ -196,8 +193,8 @@ void RenderImageSelRect(Image* out, float pixel_size, int camera_x, int camera_y
   }
 }
 
-void DrawImageSceneRect(Image* out, float pixel_size, int camera_x, int camera_y, RectangleInt r, Color c)
-{
+void DrawImageSceneRect(Image* out, float pixel_size, int camera_x,
+                        int camera_y, RectangleInt r, Color c) {
   int w = out->width;
   int h = out->height;
 
@@ -236,8 +233,8 @@ static int arrow_left[] = {
     0, 0, 1, 0, 0, 0,  //
 };
 
-void RenderImageCompInput(Image* out, Image buffer, Sim* s, int ncomp, PinDesc* cdesc_list)
-{
+void RenderImageCompInput(Image* out, Image buffer, Sim* s, int ncomp,
+                          PinDesc* cdesc_list) {
   int w = out->width;
   int y = 0;
   int arrow_w = 6;
@@ -277,19 +274,14 @@ void RenderImageCompInput(Image* out, Image buffer, Sim* s, int ncomp, PinDesc* 
           int s = 0;
           if (ctype == CONN_OUTPUT) {
             s = outputs[op++];
-          }
-          else {
+          } else {
             s = inputs[ip++];
           }
           cc = GetSimuColorOnWire(c, s);
         }
         for (int x = w - pin_size; x < w; x++) {
           float k = cc.a / 255.f;
-          cc = (Color){
-              cc.r * k,
-              cc.g * k,
-              cc.b * k,
-              255};
+          cc = (Color){cc.r * k, cc.g * k, cc.b * k, 255};
           pixels[yy * w + x] = cc;
         }
       }
@@ -317,17 +309,11 @@ void RenderImageCompInput(Image* out, Image buffer, Sim* s, int ncomp, PinDesc* 
   }
 }
 
-static inline Color InvertColor(Color c)
-{
-  return (Color){
-      .r = 255 - c.r,
-      .g = 255 - c.g,
-      .b = 255 - c.b,
-      .a = c.a};
+static inline Color InvertColor(Color c) {
+  return (Color){.r = 255 - c.r, .g = 255 - c.g, .b = 255 - c.b, .a = c.a};
 }
 
-static inline Color GetGoodColor(Color target, Color pix)
-{
+static inline Color GetGoodColor(Color target, Color pix) {
   // If it's too close,
   int g1 = ColorToGray(target);
   int g2 = ColorToGray(pix);
@@ -337,8 +323,9 @@ static inline Color GetGoodColor(Color target, Color pix)
   return target;
 }
 
-void RenderImageSimpleRect(Image* out, float pixel_size, int camera_x, int camera_y, RectangleInt r, int ls, double t, Color c)
-{
+void RenderImageSimpleRect(Image* out, float pixel_size, int camera_x,
+                           int camera_y, RectangleInt r, int ls, double t,
+                           Color c) {
   int w = out->width;
   int h = out->height;
 

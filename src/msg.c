@@ -19,8 +19,7 @@ static struct {
   Msg* msg_queue;
 } C = {0};
 
-void MsgAdd(const char* msg_txt, float duration)
-{
+void MsgAdd(const char* msg_txt, float duration) {
   Msg* m = malloc(sizeof(Msg));
   m->txt = CloneString(msg_txt);
   m->expire_at = GetTime() + duration;
@@ -28,8 +27,7 @@ void MsgAdd(const char* msg_txt, float duration)
   C.msg_queue = m;
 }
 
-void MsgDraw(Ui* ui)
-{
+void MsgDraw(Ui* ui) {
   Msg* m = C.msg_queue;
   int y = 100;
   int x = 100;
@@ -45,8 +43,7 @@ void MsgDraw(Ui* ui)
   }
 }
 
-void MsgUpdate()
-{
+void MsgUpdate() {
   Msg* prv = NULL;
   Msg* m = C.msg_queue;
   double now = GetTime();
@@ -58,8 +55,7 @@ void MsgUpdate()
       m = prv;
       if (prv) {
         prv->nxt = nxt;
-      }
-      else {
+      } else {
         C.msg_queue = nxt;
       }
     }
@@ -67,4 +63,3 @@ void MsgUpdate()
     m = nxt;
   }
 }
-

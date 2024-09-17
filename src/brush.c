@@ -3,16 +3,14 @@
 #include "assert.h"
 #include "stdlib.h"
 
-void BrushLoad(Brush* b)
-{
+void BrushLoad(Brush* b) {
   *b = (Brush){0};
   b->max_path_size = 1000;
   b->path_cnt = 0;
   b->path_pixels = calloc(b->max_path_size, sizeof(int));
 }
 
-void BrushAppendPoint(Brush* b, int px, int py)
-{
+void BrushAppendPoint(Brush* b, int px, int py) {
   // If have reached maximum size for brush, dont add more points.
   // (otherwise we might have issues in drawing as well)
   if (2 * b->path_cnt == b->max_path_size) {
@@ -20,7 +18,8 @@ void BrushAppendPoint(Brush* b, int px, int py)
   }
   // Won't add point to brush if it's the same as last one.
   int c = b->path_cnt - 1;
-  if (c >= 0 && b->path_pixels[2 * c + 0] == px && b->path_pixels[2 * c + 1] == py) {
+  if (c >= 0 && b->path_pixels[2 * c + 0] == px &&
+      b->path_pixels[2 * c + 1] == py) {
     return;
   }
 
@@ -29,13 +28,9 @@ void BrushAppendPoint(Brush* b, int px, int py)
   b->path_cnt++;
 }
 
-void BrushReset(Brush* b)
-{
-  b->path_cnt = 0;
-}
+void BrushReset(Brush* b) { b->path_cnt = 0; }
 
-static void BrushMakePixels(Brush* b, int w, int h, int* npts, int** pts)
-{
+static void BrushMakePixels(Brush* b, int w, int h, int* npts, int** pts) {
   int size = 10000;
   int n = 0;
   int xmin = 0;
@@ -54,8 +49,7 @@ static void BrushMakePixels(Brush* b, int w, int h, int* npts, int** pts)
       out[2 * n + 0] = px;
       out[2 * n + 1] = py;
       n = n + 1;
-    }
-    else {
+    } else {
       int x1 = px;
       int y1 = py;
       int x0 = b->path_pixels[2 * (i - 1) + 0];
@@ -116,16 +110,15 @@ static void BrushMakePixels(Brush* b, int w, int h, int* npts, int** pts)
     *pts = NULL;
     *npts = 0;
     return;
-  }
-  else {
+  } else {
     *pts = out;
     *npts = k;
     return;
   }
 }
 
-void BrushMakeImage(Brush* b, Color c, int wtgt, int htgt, Image* out, Vector2Int* off)
-{
+void BrushMakeImage(Brush* b, Color c, int wtgt, int htgt, Image* out,
+                    Vector2Int* off) {
   int* pts;
   int n;
   BrushMakePixels(b, wtgt, htgt, &n, &pts);
@@ -166,8 +159,4 @@ void BrushMakeImage(Brush* b, Color c, int wtgt, int htgt, Image* out, Vector2In
   free(pts);
 }
 
-void BrushUnload(Brush* b)
-{
-  free(b->path_pixels);
-}
-
+void BrushUnload(Brush* b) { free(b->path_pixels); }

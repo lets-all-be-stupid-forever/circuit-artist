@@ -1,7 +1,6 @@
 #include "colors.h"
 
-Color GetLutColor(ColorLut c)
-{
+Color GetLutColor(ColorLut c) {
   switch (c) {
     case COLOR_BTN0:
       return GetColor(0x6C6C53FF);

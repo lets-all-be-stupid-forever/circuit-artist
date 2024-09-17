@@ -12,10 +12,10 @@ Image PyramidGenImage(Image base);
 // `s` is the downsampled pyramid image.
 void PyramidUpdatePixel(Image b, Image* s, int x2, int y2);
 
-// Notifies that a rectangular region in the image has changed and updates the pyramid levels.
-// `n` is the number of pyramid levels.
-// `h` is an array with each pyramid level. h[0] is the first level (higher
-// resolution and the one containing the changes).
+// Notifies that a rectangular region in the image has changed and updates the
+// pyramid levels. `n` is the number of pyramid levels. `h` is an array with
+// each pyramid level. h[0] is the first level (higher resolution and the one
+// containing the changes).
 void PyramidUpdateRect2(int n, Image* h, RectangleInt r);
 
 #endif

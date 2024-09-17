@@ -27,8 +27,7 @@ static struct {
   Btn btn_cancel;
 } C = {0};
 
-static void LevelsUpdateLayout(Ui* ui)
-{
+static void LevelsUpdateLayout(Ui* ui) {
   int s = ui->scale;
   int screen_width = GetScreenWidth();
   int screen_height = GetScreenHeight();
@@ -86,11 +85,11 @@ static void LevelsUpdateLayout(Ui* ui)
   int xb = box.x + box.width - 8 * bsize - 8 * s;
   int yb = box.height + box.y + 8 * s;
   C.btn_ok.hitbox = (Rectangle){xb, yb, 4 * bsize, 17 * s};
-  C.btn_cancel.hitbox = (Rectangle){xb + 4 * bsize + 8 * s, yb, 4 * bsize, 17 * s};
+  C.btn_cancel.hitbox =
+      (Rectangle){xb + 4 * bsize + 8 * s, yb, 4 * bsize, 17 * s};
 }
 
-static void LevelsSetSel(int ilevel)
-{
+static void LevelsSetSel(int ilevel) {
   C.sel = ilevel;
   // Sets selection number and updates textbox content.
   LevelOptions* co = ApiGetLevelOptions();
@@ -98,8 +97,7 @@ static void LevelsSetSel(int ilevel)
   TextboxSetContent(&C.level_textbox, desc, &co->options[C.sel].sprites[0]);
 }
 
-void LevelsOpen(Ui* ui)
-{
+void LevelsOpen(Ui* ui) {
   ui->window = WINDOW_LEVELS;
   // If the options are not yet initialized, initialize them.
   if (!C.inited) {
@@ -116,8 +114,7 @@ void LevelsOpen(Ui* ui)
   LevelsSetSel(cd->ilevel);
 }
 
-void LevelsUpdate(Ui* ui)
-{
+void LevelsUpdate(Ui* ui) {
   // In case the window size has changed.
   LevelsUpdateLayout(ui);
   LevelOptions* co = ApiGetLevelOptions();
@@ -152,8 +149,7 @@ void LevelsUpdate(Ui* ui)
   TextboxUpdate(&C.level_textbox, ui);
 }
 
-void LevelsDraw(Ui* ui)
-{
+void LevelsDraw(Ui* ui) {
   int screen_width = GetScreenWidth();
   int screen_height = GetScreenHeight();
   Color bg_color = BLACK;
@@ -181,7 +177,8 @@ void LevelsDraw(Ui* ui)
   LevelOptions* co = ApiGetLevelOptions();
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
     if (co->options[i].name) {
-      BtnDrawIcon(&C.btn_opts[i], ui->scale, co->options[i].icon.tex, co->options[i].icon.region);
+      BtnDrawIcon(&C.btn_opts[i], ui->scale, co->options[i].icon.tex,
+                  co->options[i].icon.region);
     }
   }
   BtnDrawText(&C.btn_ok, ui->scale, "CHOOSE LEVEL");
@@ -195,4 +192,3 @@ void LevelsDraw(Ui* ui)
     }
   }
 }
-

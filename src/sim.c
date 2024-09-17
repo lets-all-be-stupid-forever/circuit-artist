@@ -10,14 +10,15 @@
 #define ALPHA_ON 255
 
 static int MAX_CIRCUIT_UPDATE_COUNT = 100;
-static const char CRASH_REASON_MULTIPLE_GATE_CIRCUIT[] = "Circuits with multiple input gates.";
-static const char CRASH_REASON_TOO_MANY_UPDATES[] = "Circuit updated too many times (infinite loop?).";
+static const char CRASH_REASON_MULTIPLE_GATE_CIRCUIT[] =
+    "Circuits with multiple input gates.";
+static const char CRASH_REASON_TOO_MANY_UPDATES[] =
+    "Circuit updated too many times (infinite loop?).";
 static void MakeNandLut(int* nand_lut);
 static void SimQueueInitialInputEvents(Sim* s);
 
 // Union-find Find
-static inline int UfFind(int* c, int a)
-{
+static inline int UfFind(int* c, int a) {
   int root = a;
   while (c[root] != root) {
     root = c[root];
@@ -31,8 +32,7 @@ static inline int UfFind(int* c, int a)
 }
 
 // Union-find Union
-static inline void UfUnion(int* c, int* r, int a, int b)
-{
+static inline void UfUnion(int* c, int* r, int a, int b) {
   int ca = UfFind(c, a);
   int cb = UfFind(c, b);
   if (ca == cb) {
@@ -40,8 +40,7 @@ static inline void UfUnion(int* c, int* r, int a, int b)
   }
   if (r[ca] < r[cb]) {
     c[ca] = cb;
-  }
-  else {
+  } else {
     c[cb] = ca;
     if (r[ca] == r[cb]) {
       r[ca] += 1;
@@ -75,13 +74,14 @@ PatternDef pd_list[] = {
      .w2y = 3,
      .w3x = 4,
      .w3y = 2,
-     .data = {
-         0, 0, 0, -1,  // row0
-         0, 1, 0, 0,   // row1
-         0, 0, 1, 0,   // row2
-         0, 1, 0, 0,   // row3
-         0, 0, 0, -1,  // row4
-     }},
+     .data =
+         {
+             0, 0, 0, -1,  // row0
+             0, 1, 0, 0,   // row1
+             0, 0, 1, 0,   // row2
+             0, 1, 0, 0,   // row3
+             0, 0, 0, -1,  // row4
+         }},
     {.ox = 2,  // Left
      .oy = 1,
      .pw = 4,
@@ -92,13 +92,14 @@ PatternDef pd_list[] = {
      .w2y = 3,
      .w3x = -1,
      .w3y = 2,
-     .data = {
-         -1, 0, 0, 0,  // row0
-         0, 0, 1, 0,   // row1
-         0, 1, 0, 0,   // row2
-         0, 0, 1, 0,   // row3
-         -1, 0, 0, 0,  // row4
-     }},
+     .data =
+         {
+             -1, 0, 0, 0,  // row0
+             0,  0, 1, 0,  // row1
+             0,  1, 0, 0,  // row2
+             0,  0, 1, 0,  // row3
+             -1, 0, 0, 0,  // row4
+         }},
     {.ox = 2,  // Up
      .oy = 1,
      .pw = 5,
@@ -109,12 +110,13 @@ PatternDef pd_list[] = {
      .w2y = 4,
      .w3x = 2,
      .w3y = -1,
-     .data = {
-         -1, 0, 0, 0, -1,  // row0
-         0, 0, 1, 0, 0,    // row1
-         0, 1, 0, 1, 0,    // row2
-         0, 0, 0, 0, 0,    // row3
-     }},
+     .data =
+         {
+             -1, 0, 0, 0, -1,  // row0
+             0,  0, 1, 0, 0,   // row1
+             0,  1, 0, 1, 0,   // row2
+             0,  0, 0, 0, 0,   // row3
+         }},
     {.ox = 1,  // Down
      .oy = 1,
      .pw = 5,
@@ -125,16 +127,18 @@ PatternDef pd_list[] = {
      .w2y = -1,
      .w3x = 2,
      .w3y = 4,
-     .data = {
-         0, 0, 0, 0, 0,    // row0
-         0, 1, 0, 1, 0,    // row1
-         0, 0, 1, 0, 0,    // row2
-         -1, 0, 0, 0, -1,  // row3
-     }},
+     .data =
+         {
+             0,  0, 0, 0, 0,   // row0
+             0,  1, 0, 1, 0,   // row1
+             0,  0, 1, 0, 0,   // row2
+             -1, 0, 0, 0, -1,  // row3
+         }},
 };
 
-static void FindNands(int w, int h, int* img, int* ones, int* num_ones, int* nnand, int* nands, int* num_nand_pixels, int** nand_pixels)
-{
+static void FindNands(int w, int h, int* img, int* ones, int* num_ones,
+                      int* nnand, int* nands, int* num_nand_pixels,
+                      int** nand_pixels) {
   int no = 0;
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
@@ -213,8 +217,9 @@ static void FindNands(int w, int h, int* img, int* ones, int* num_ones, int* nna
   *num_nand_pixels = npixels_size / 2;
 }
 
-static int ParseComponents(Image src_img, int w, int h, int* img, int no, int* ones, int* out_comp, int* comp_off, int* comp_pixels)
-{
+static int ParseComponents(Image src_img, int w, int h, int* img, int no,
+                           int* ones, int* out_comp, int* comp_off,
+                           int* comp_pixels) {
   int* comp = malloc(w * h * 2 * sizeof(int));
   int* r = malloc(w * h * 2 * sizeof(int));
   for (int y = 0; y < h; y++) {
@@ -227,7 +232,8 @@ static int ParseComponents(Image src_img, int w, int h, int* img, int no, int* o
   for (int i = 0; i < no; i++) {
     int idx = ones[i];
     // each component is assigned the identity
-    comp[2 * idx + 0] = 2 * idx + 0;  // when idx is 0, this is assigned the 0 component.
+    comp[2 * idx + 0] =
+        2 * idx + 0;  // when idx is 0, this is assigned the 0 component.
     comp[2 * idx + 1] = 2 * idx + 1;
     r[2 * (idx) + 0] = 0;
     r[2 * (idx) + 1] = 0;
@@ -265,8 +271,7 @@ static int ParseComponents(Image src_img, int w, int h, int* img, int no, int* o
       if (!iscross) {
         UfUnion(comp, r, 2 * idx + 0, 2 * idx + 1);
       }
-    }
-    else {
+    } else {
       // In the border, we always want to merge
       UfUnion(comp, r, 2 * idx + 0, 2 * idx + 1);
     }
@@ -317,8 +322,7 @@ static int ParseComponents(Image src_img, int w, int h, int* img, int no, int* o
     if (m[c] != 0) {
       // If it's on the map, retrieves it.
       k = m[c];
-    }
-    else {
+    } else {
       // if component is not on the mapping (ie, it's a new component), then
       // creates a new component number and save it in the component hashmap
       comp_off[nc] = 0;
@@ -351,8 +355,7 @@ static int ParseComponents(Image src_img, int w, int h, int* img, int no, int* o
   return nc;
 }
 
-ParsedImage ParseImage(Image image)
-{
+ParsedImage ParseImage(Image image) {
   double start = GetTime();
   Color* colors = GetPixels(image);
   ParsedImage pi = {0};
@@ -375,8 +378,10 @@ ParsedImage ParseImage(Image image)
   }
   int* ones = malloc(w * h * sizeof(int));
   int num_ones = -1;
-  FindNands(w, h, pi.image, ones, &num_ones, &pi.num_nands, pi.nands, &pi.num_nand_pixels, &pi.nand_pixels);
-  pi.nc = ParseComponents(image, w, h, pi.image, num_ones, ones, pi.comp, pi.comp_off, pi.comp_pixels);
+  FindNands(w, h, pi.image, ones, &num_ones, &pi.num_nands, pi.nands,
+            &pi.num_nand_pixels, &pi.nand_pixels);
+  pi.nc = ParseComponents(image, w, h, pi.image, num_ones, ones, pi.comp,
+                          pi.comp_off, pi.comp_pixels);
   double end = GetTime();
   pi.time_parsing = 1000 * (end - start);
   pi.original_image = image;
@@ -384,8 +389,7 @@ ParsedImage ParseImage(Image image)
   return pi;
 }
 
-void UnloadParsedImage(ParsedImage pi)
-{
+void UnloadParsedImage(ParsedImage pi) {
   if (pi.nand_pixels) free(pi.nand_pixels);
   free(pi.comp_off);
   free(pi.comp_pixels);
@@ -394,8 +398,8 @@ void UnloadParsedImage(ParsedImage pi)
   free(pi.nands);
 }
 
-void SimFindNearestPixelToToggle(Sim* s, int tol, float fx, float fy, int* px, int* py)
-{
+void SimFindNearestPixelToToggle(Sim* s, int tol, float fx, float fy, int* px,
+                                 int* py) {
   if (!s->ok_creation) {
     *px = -1;
     *py = -1;
@@ -434,15 +438,13 @@ void SimFindNearestPixelToToggle(Sim* s, int tol, float fx, float fy, int* px, i
   if (xmin != -1) {
     *px = xmin;
     *py = ymin;
-  }
-  else {
+  } else {
     *px = -1;
     *py = -1;
   }
 }
 
-int SimGetWireAtPixel(Sim* s, int x, int y)
-{
+int SimGetWireAtPixel(Sim* s, int x, int y) {
   int w = s->pi.width;
   if (x < 0 || x >= s->pi.width || y < 0 || y >= s->pi.height) {
     return 0;
@@ -452,8 +454,7 @@ int SimGetWireAtPixel(Sim* s, int x, int y)
   return c;
 }
 
-int SimGetWireValue(Sim* s, int x, int y)
-{
+int SimGetWireValue(Sim* s, int x, int y) {
   if (x < 0 || x >= s->pi.width || y < 0 || y >= s->pi.height) {
     return 0;
   }
@@ -462,14 +463,12 @@ int SimGetWireValue(Sim* s, int x, int y)
   int c = s->pi.comp[idx];
   if (c > 0) {
     return s->state[c];
-  }
-  else {
+  } else {
     return -2;
   }
 }
 
-void SimTogglePixel(Sim* s, int x, int y)
-{
+void SimTogglePixel(Sim* s, int x, int y) {
   int w = s->pi.width;
   int idx = y * w + x;
   int c = s->pi.comp[idx];
@@ -481,8 +480,7 @@ void SimTogglePixel(Sim* s, int x, int y)
   }
 }
 
-static void SimCalcFanout(int nc, const int* topology, int* nfo, int* fo)
-{
+static void SimCalcFanout(int nc, const int* topology, int* nfo, int* fo) {
   // maybe 2 passes?
   // 1st counting, 2nd filling values
 
@@ -520,8 +518,8 @@ static void SimCalcFanout(int nc, const int* topology, int* nfo, int* fo)
   free(tc);
 }
 
-void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps, ComponentUpdateCallback update_cb, void* update_ctx)
-{
+void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
+             ComponentUpdateCallback update_cb, void* update_ctx) {
   double start = GetTime();
   *s = (Sim){0};
   s->update_cb = update_cb;
@@ -598,8 +596,7 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps, ComponentUpda
       s->crash_reason = CRASH_REASON_MULTIPLE_GATE_CIRCUIT;
       s->status = SIMU_STATUS_WIRE;
       s->bugged_flag[cc]++;
-    }
-    else {
+    } else {
       s->graph[2 * cc + 0] = ca;
       s->graph[2 * cc + 1] = cb;
     }
@@ -639,8 +636,7 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps, ComponentUpda
   for (int i = 0; i < s->nc; i++) {
     if (s->bugged_flag[i]) {
       s->state[i] = BIT_BUGGED;
-    }
-    else {
+    } else {
       s->state[i] = BIT_UNDEFINED;
     }
     s->last_render_state[i] = -1;
@@ -664,8 +660,7 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps, ComponentUpda
   }
 }
 
-void SimQueueInitialInputEvents(Sim* s)
-{
+void SimQueueInitialInputEvents(Sim* s) {
   // step1: find all inputs.
   // step2: queue all values 0 for them.
   // the component 0 is special, we dont send event to it
@@ -680,8 +675,7 @@ void SimQueueInitialInputEvents(Sim* s)
   }
 }
 
-static void MakeNandLut(int* nand_lut)
-{
+static void MakeNandLut(int* nand_lut) {
   // 9 values to setup
   // Off = 0
   // On = 1
@@ -711,8 +705,7 @@ static void MakeNandLut(int* nand_lut)
   nand_lut[bx + ax] = ax;
 }
 
-static void SimCrashSimulation(Sim* s)
-{
+static void SimCrashSimulation(Sim* s) {
   s->ok_creation = false;
   for (int i = 0; i < s->nc; i++) {
     s->state[i] = BIT_UNDEFINED;
@@ -722,8 +715,7 @@ static void SimCrashSimulation(Sim* s)
   }
 }
 
-void SimSimulate(Sim* s, double dt)
-{
+void SimSimulate(Sim* s, double dt) {
   // No change in circuit if there was parsing errors
   s->time_simulation_last_simulate = 0;
   if (s->ok_creation == false) {
@@ -805,8 +797,7 @@ void SimSimulate(Sim* s, double dt)
             int kk = s->queued_at[j];
             e2[2 * kk + 0] = j;
             e2[2 * kk + 1] = next_vj;
-          }
-          else {
+          } else {
             s->num_updates_last_simulate++;
             s->queued_at[j] = n2;
             e2[2 * n2 + 0] = j;
@@ -842,7 +833,8 @@ void SimSimulate(Sim* s, double dt)
       //     for (ibit in len(prevOutput)) {
       //       int wire = GetOutputWire(comp, ibit);
       //       if (nextOutput[i] != prevOutput[i]) {
-      //         EnqueueWireEvent(s, wire, nextOutput[i]); <-- Note that during component update a wire can't change more than once!
+      //         EnqueueWireEvent(s, wire, nextOutput[i]); <-- Note that during
+      //         component update a wire can't change more than once!
       //       }
       //     }
       //   }
@@ -863,7 +855,8 @@ void SimSimulate(Sim* s, double dt)
         }
         if (need_simu) {
           if (s->update_cb) {
-            s->update_cb(s->update_ctx, iec, prev_inputs, next_inputs, next_outputs);
+            s->update_cb(s->update_ctx, iec, prev_inputs, next_inputs,
+                         next_outputs);
           }
           // Updates previous inputs
           for (int i = 0; i < comp->ni; i++) {
@@ -910,8 +903,7 @@ void SimSimulate(Sim* s, double dt)
   s->total_updates = s->num_updates_last_simulate + s->total_updates;
 }
 
-void SimUnload(Sim* s)
-{
+void SimUnload(Sim* s) {
   if (s->ecomps) {
     free(s->ecomp_inputs);
     free(s->ecomp_outputs);
@@ -936,13 +928,11 @@ void SimUnload(Sim* s)
   *s = (Sim){0};
 }
 
-static inline Color ColorWithAlpha(Color c, int a)
-{
+static inline Color ColorWithAlpha(Color c, int a) {
   return (Color){c.r, c.g, c.b, a};
 }
 
-void SimGenImage(Sim* s)
-{
+void SimGenImage(Sim* s) {
   double start = GetTime();
   int w = s->pi.width;
   int h = s->pi.height;
@@ -994,8 +984,7 @@ void SimGenImage(Sim* s)
       int idx = s->pi.comp_pixels[ip];
       if (cs == BIT_BUGGED || cs == BIT_UNDEFINED) {
         pixels[idx] = k;
-      }
-      else {
+      } else {
         Color tmp = original_pixels[idx];
         tmp.a = color_alpha;
         pixels[idx] = tmp;
@@ -1009,23 +998,17 @@ void SimGenImage(Sim* s)
   s->time_gen_image = 1000 * (GetTime() - start);
 }
 
-int SimGetNumNands(Sim* s)
-{
-  return s->pi.num_nands;
-}
+int SimGetNumNands(Sim* s) { return s->pi.num_nands; }
 
-int* SimGetComponentInputs(Sim* s, int icomp)
-{
+int* SimGetComponentInputs(Sim* s, int icomp) {
   return &s->ecomp_inputs[icomp * MAX_SLOTS];
 }
 
-int* SimGetComponentOutputs(Sim* s, int icomp)
-{
+int* SimGetComponentOutputs(Sim* s, int icomp) {
   return &s->ecomp_outputs[icomp * MAX_SLOTS];
 }
 
-Color GetWireColor(int wire_value)
-{
+Color GetWireColor(int wire_value) {
   Color zero = GetColor(0x614540FF);
   Color one = GetColor(0xFA3410FF);
   Color undefined = MAGENTA;
@@ -1039,28 +1022,24 @@ Color GetWireColor(int wire_value)
   return lut[wire_value];
 }
 
-Color GetSimuColorOnWire(Color c, int v)
-{
+Color GetSimuColorOnWire(Color c, int v) {
   Color undefined = MAGENTA;
   Color bugged = RED;
   if (v == BIT_0 || v == BIT_1) {
     int color_alpha = v == BIT_0 ? ALPHA_OFF : ALPHA_ON;
     c.a = color_alpha;
     return c;
-  }
-  else {
+  } else {
     if (v == BIT_UNDEFINED) {
       c = undefined;
-    }
-    else if (v == BIT_BUGGED) {
+    } else if (v == BIT_BUGGED) {
       c = bugged;
     }
   }
   return c;
 }
 
-void SimDispatchComponent(Sim* s, int icomp)
-{
+void SimDispatchComponent(Sim* s, int icomp) {
   int* next_outputs = &s->ecomp_outputs[icomp * MAX_SLOTS];
   int* prev_inputs = &s->ecomp_inputs[icomp * MAX_SLOTS];
   int next_inputs[MAX_SLOTS];

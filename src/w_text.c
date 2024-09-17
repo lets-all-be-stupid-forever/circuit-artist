@@ -15,16 +15,14 @@ static struct {
   float alive;
 } C = {0};
 
-void TextModalOpen(Ui* ui)
-{
+void TextModalOpen(Ui* ui) {
   ui->window = WINDOW_TEXT;
   C.alive = 0;
   C.tlen = 0;
   C.txt[0] = '\0';
 }
 
-void TextModalUpdate(Ui* ui)
-{
+void TextModalUpdate(Ui* ui) {
   float dt = GetFrameTime();
   C.alive += dt;
   int key = GetCharPressed();
@@ -46,7 +44,8 @@ void TextModalUpdate(Ui* ui)
   }
 
   bool escape = IsKeyPressed(KEY_ESCAPE);
-  escape = escape || IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
+  escape = escape || IsMouseButtonPressed(MOUSE_BUTTON_LEFT) ||
+           IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
 
   if (escape) {
     C.tlen = 0;
@@ -65,8 +64,7 @@ void TextModalUpdate(Ui* ui)
   }
 }
 
-void TextModalDraw(Ui* ui)
-{
+void TextModalDraw(Ui* ui) {
   Color bg = BLACK;
   bg.a = 150;
   int sw = GetScreenWidth();
@@ -106,11 +104,6 @@ void TextModalDraw(Ui* ui)
   }
   rlPopMatrix();
 
-  Rectangle inner_content = (Rectangle){
-      -12,
-      y0,
-      GetScreenWidth() + 24,
-      hh * s};
+  Rectangle inner_content = (Rectangle){-12, y0, GetScreenWidth() + 24, hh * s};
   DrawDefaultTiledFrame(ui, inner_content);
 }
-

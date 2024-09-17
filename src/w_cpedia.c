@@ -22,8 +22,7 @@ static struct {
   Btn btn_close;
 } C = {0};
 
-void CpediaUpdateLayout()
-{
+void CpediaUpdateLayout() {
   int sw = GetScreenWidth();
   int sh = GetScreenHeight();
   int lw = 4 * 35 * 2;
@@ -38,11 +37,8 @@ void CpediaUpdateLayout()
   C.title = (Rectangle){x, y, total_w, 35 * 2};
   int pad = 10 * s;
   C.modal = (Rectangle){x - pad, y - pad, total_w + 2 * pad, total_h + 2 * pad};
-  Rectangle lb_box = {
-      x, yy, lw, bh};
-  Rectangle box = {
-      x + lw + 2 * s, yy,
-      bw, bh};
+  Rectangle lb_box = {x, yy, lw, bh};
+  Rectangle box = {x + lw + 2 * s, yy, bw, bh};
   C.textbox_wrap = box;
   Rectangle box2 = box;
   box2.x = box.x + s;
@@ -60,8 +56,7 @@ void CpediaUpdateLayout()
   ListboxSetBox(&C.lb, lb_box);
 }
 
-void CpediaOpen(Ui* ui)
-{
+void CpediaOpen(Ui* ui) {
   ui->window = WINDOW_CPEDIA;
   C.opened_this_frame = true;
   C.closed = false;
@@ -81,8 +76,7 @@ void CpediaOpen(Ui* ui)
   }
 }
 
-void CpediaUpdate(Ui* ui)
-{
+void CpediaUpdate(Ui* ui) {
   CpediaUpdateLayout();
   if (IsKeyPressed(KEY_TAB) && !C.opened_this_frame) {
     ui->window = WINDOW_MAIN;
@@ -106,8 +100,7 @@ void CpediaUpdate(Ui* ui)
   }
 }
 
-void CpediaDraw(Ui* ui)
-{
+void CpediaDraw(Ui* ui) {
   int sh = GetScreenHeight();
   int sw = GetScreenWidth();
   Color bg = BLACK;
