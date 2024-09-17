@@ -1,6 +1,7 @@
 -- Helper level component class for levels with pre-defined results.
 local LevelComponent = require 'level_component'
 local Tester = LevelComponent:extend()
+local utils = require 'utils'
 local rl = require 'raylib_api'
 local C = require 'c_api'
 local ffi = require 'ffi'
@@ -258,7 +259,7 @@ function Tester:onDraw(rt, cam, disp1)
        local src = ffi.new('Rectangle', {0, 0, texSuccess.width, texSuccess.height})
        local dst = ffi.new('Rectangle', {xx0, yy0, rw*nx, rh*ny})
        local ori =  ffi.new('Vector2', {0, 0})
-       rl.DrawTexturePro(texSuccess, src, dst, ori, 0, c2)
+       utils.rlDrawTexturePro(texSuccess, src, dst, ori, 0, c2)
     end
 
     rl.rlPopMatrix()

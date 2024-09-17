@@ -2,6 +2,7 @@ local Tester = require 'tester'
 local Clock = require 'clock'
 local rl = require 'raylib_api'
 local ffi = require 'ffi'
+local utils = require 'utils'
 
 local lut_7seg = {
     {1, 1, 1, 1, 1, 1, 0},
@@ -52,7 +53,7 @@ function drawSegment(sprites, i, x, y, c)
   local source = ffi.new('Rectangle', {i * seg_width, 0, seg_width, seg_height})
   local target = ffi.new('Rectangle', {x, y, source.width, source.height})
   local origin = ffi.new('Vector2', {0})
-  rl.DrawTexturePro(sprites, source, target, origin, 0, c);
+  utils.rlDrawTexturePro(sprites, source, target, origin, 0, c);
 end
 
 function SevenSeg:customDraw(rt)
