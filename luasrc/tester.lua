@@ -161,8 +161,6 @@ function Tester:onDraw(rt, cam, disp1)
   if self.running then
     local msgs = {}
     local tw = rt.texture.width
-    rl.rlPushMatrix()
-    rl.rlScalef(2,2,1)
     if self.result == 1 then
       -- table.insert(msgs, {text='Success (' .. self.clocks_taken .. ' clocks)', color=green})
       table.insert(msgs, {text='Success', color=green})
@@ -183,6 +181,8 @@ function Tester:onDraw(rt, cam, disp1)
       end
     end
     rl.rlPushMatrix()
+    rl.rlScalef(2,2,1)
+    rl.rlPushMatrix()
     rl.rlTranslatef(0, 10, 0)
     local p = 5
     local lh = 14;
@@ -198,7 +198,7 @@ function Tester:onDraw(rt, cam, disp1)
       local w = tx + 2*p
       local kk = tw/2 - w - 5
       rl.rlTranslatef(kk, 0, 0)
-      rl.DrawRectangleLines(0, 0, w, lh+2*p, c0)
+      rl.DrawRectangle(0, 0, w, lh+2*p , c0)
       rl.DrawRectangle(1, 1, w-2, lh+2*p - 2, bg)
       if border then
         C.CaDrawText(txt, p+1, 4+p+1, black)
