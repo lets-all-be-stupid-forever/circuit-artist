@@ -14,6 +14,10 @@ static const char CRASH_REASON_MULTIPLE_GATE_CIRCUIT[] =
     "Circuits with multiple input gates.";
 static const char CRASH_REASON_TOO_MANY_UPDATES[] =
     "Circuit updated too many times (infinite loop?).";
+static const char CRASH_REASON_MISSING_INPUTS[] =
+    "NANDs must have its 2 inputs filled";
+static const char CRASH_REASON_MISSING_OUTPUT[] =
+    "NANDs must be connected to an output wire.";
 static void MakeNandLut(int* nand_lut);
 static void SimQueueInitialInputEvents(Sim* s);
 
@@ -530,6 +534,10 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
   s->last_render_state = malloc(s->nc * sizeof(int));
   s->graph = malloc(2 * s->nc * sizeof(int));
   s->bugged_flag = malloc(s->nc * sizeof(int));
+  s->nand_error_status = NULL;
+  if (pi.num_nands > 0) {
+    s->nand_error_status = malloc(pi.num_nands * sizeof(int));
+  }
   s->max_events = s->nc;
   s->ne = 0;
   s->events = malloc(2 * s->max_events * sizeof(int));
@@ -576,6 +584,17 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
 
     // If it's not connected anywhere, ignore it.
     if (cc == 0) {
+      s->nand_error_status[i] = NAND_STATUS_MISSING_OUTPUT;
+      s->crash_reason = CRASH_REASON_MISSING_OUTPUT;
+      s->status = SIMU_STATUS_NAND_MISSING_OUTPUT;
+      s->ok_creation = false;
+      continue;
+    }
+    if (ca == 0 || cb == 0) {
+      s->nand_error_status[i] = NAND_STATUS_MISSING_INPUT;
+      s->crash_reason = CRASH_REASON_MISSING_INPUTS;
+      s->status = SIMU_STATUS_NAND_MISSING_INPUT;
+      s->ok_creation = false;
       continue;
     }
 
@@ -600,6 +619,7 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
       s->graph[2 * cc + 0] = ca;
       s->graph[2 * cc + 1] = cb;
     }
+    s->nand_error_status[i] = NAND_STATUS_OK;
   }
 
   // If there are bugged circuits, no need for fanout calculation
@@ -913,6 +933,9 @@ void SimUnload(Sim* s) {
       UnloadImage(s->simulated[i]);
     }
   }
+  if (s->nand_error_status) {
+    free(s->nand_error_status);
+  }
   free(s->wire_has_changed);
   free(s->wire_changed_stack);
   free(s->e1);
@@ -943,6 +966,10 @@ void SimGenImage(Sim* s) {
   Color* original_pixels = GetPixels(s->pi.original_image);
   Color undefined = MAGENTA;
   Color bugged = RED;
+  if (!s->ok_creation) {
+    nand.a = 10;
+    undefined.a = 10;
+  }
   if (s->simulated[0].width == 0) {
     s->simulated[0] = GenImageFilled(w, h, black);
     // renders nands...
@@ -951,16 +978,27 @@ void SimGenImage(Sim* s) {
       int ix = s->pi.nand_pixels[2 * i + 0];
       int iy = s->pi.nand_pixels[2 * i + 1];
       int idx = iy * w + ix;
-      pixels[idx] = ColorWithAlpha(original_pixels[idx], 100);
+      Color target_color = ColorWithAlpha(original_pixels[idx], 100);
+      int nand_idx = i / 3;
+      NandStatusEnum status = s->nand_error_status[nand_idx];
+      if (s->ok_creation) {
+        pixels[idx] = target_color;
+      } else {
+        switch (status) {
+          case NAND_STATUS_OK:
+            pixels[idx] = undefined;
+            break;
+          case NAND_STATUS_MISSING_INPUT:
+          case NAND_STATUS_MISSING_OUTPUT:
+            pixels[idx] = bugged;
+            break;
+        }
+      }
     }
     s->simulated[1] = PyramidGenImage(s->simulated[0]);
     s->simulated[2] = PyramidGenImage(s->simulated[1]);
   }
   Color* pixels = GetPixels(s->simulated[0]);
-  if (!s->ok_creation) {
-    nand.a = 10;
-    undefined.a = 10;
-  }
   Color lut[] = {
       zero,
       one,

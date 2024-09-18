@@ -15,7 +15,25 @@ typedef enum {
   // During simulation, a loop was detected (ie, a wire was updated too many
   // times).
   SIMU_STATUS_LOOP,
+  // During compilation it found at least one NAND that doesn't have 2 inputs,
+  // which is not allowed.
+  SIMU_STATUS_NAND_MISSING_INPUT,
+  // During compilation it found at least one NAND that doesn't have 2 inputs,
+  // which is not allowed.
+  SIMU_STATUS_NAND_MISSING_OUTPUT,
 } SimuStatus;
+
+// Status flag for simulation.
+typedef enum {
+  // Nand is OK
+  NAND_STATUS_OK,
+  // Nand is missing an input. Either a wire missing or 2 wires missing.
+  NAND_STATUS_MISSING_INPUT,
+  // Nand is not connected to an output. Indeed simulation can work with
+  // unconnected nands, but being stricted makes it easier to find bugs in the
+  // circuit.
+  NAND_STATUS_MISSING_OUTPUT,
+} NandStatusEnum;
 
 // The 4 possible values for a wire by default
 typedef enum {
@@ -168,6 +186,13 @@ typedef struct {
   bool ok_creation;
   // Total number of wires.
   int nc;
+  // Error status for each nand. Processed during the creation of the graph.
+  // Used for identifying NANDs missing inputs or outputs.
+  // Possible values:
+  //   NAND_STATUS_OK
+  //   NAND_STATUS_MISSING_OUTPUT
+  //   NAND_STATUS_MISSING_INPUT
+  int* nand_error_status;
   // NAND graph of the circuit.
   // Has size `2*nc`, and for each wire contains the two input wires to its
   // source NAND. Each wire can have at most 1 NAND connected to it. To make it
