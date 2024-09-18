@@ -34,6 +34,22 @@ Compiles in Windows, Linux and Mac.
 
 The Linux and MAC versions are not stable yet: they compile but have some divergences from windows version.
 
+### Clone, compile, run on Linux
+```
+git clone https://github.com/lets-all-be-stupid-forever/circuit-artist.git
+cd circuit-artist/
+git submodule init
+git submodule update
+mkdir build
+cd build/
+cmake ..
+make -C ../LuaJIT/
+make
+ln -s ../LuaJIT/src/libluajit.so libluajit-5.1.so.2
+LD_LIBRARY_PATH=$PWD ./ca
+```
+
+
 ## License
 
 GPLv3. See LICENSE file. For dependencies, see `third_party` folder.

@@ -101,7 +101,7 @@ ELSEIF (APPLE)
     third_party/clip/clip_osx.mm
   )
 ELSEIF (UNIX)
-  ADD_COMPILE_DEFINITIONS(-DHAVE_XCB_XLIB_H=1)
+  ADD_COMPILE_DEFINITIONS(HAVE_XCB_XLIB_H=1)
   SET(clip_libs xcb pthread)
   SET(ca_src ${ca_src}
     third_party/clip/clip_x11.cpp
