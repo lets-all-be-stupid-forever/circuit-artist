@@ -2,8 +2,9 @@
 
 Circuit Artist is a digital circuit drawing and simulation game. Circuits are images. You can play in sandbox mode or solve puzzles. You can use lua to interact with your circuit.
 
-- [steam](https://store.steampowered.com/app/3139580/Circuit_Artist/)
+- [web demo on itch.io](https://lets-all-be-stupid-foreva.itch.io/circuit-artist-demo) (it's a bit laggy)
 - [discord](https://discord.gg/McpSTEW5jU)
+- [steam](https://store.steampowered.com/app/3139580/Circuit_Artist/)
 
 Made with [raylib](https://www.raylib.com/).
 
