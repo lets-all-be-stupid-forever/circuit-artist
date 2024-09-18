@@ -31,11 +31,16 @@ void CpediaUpdateLayout() {
   int x = (sw - total_w) / 2;
   int bh = 9 * 35 * 2;
   int s = 2;
+  int pad = 10 * s;
   int total_h = (bh + 35 * 2 + 35 * 2);
+  while (total_h + 2 * pad > sh) {
+    bh -= 35 * 2;
+    total_h -= 35 * 2;
+  }
+
   int y = (sh - total_h) / 2;
   int yy = y + 35 * 2;
   C.title = (Rectangle){x, y, total_w, 35 * 2};
-  int pad = 10 * s;
   C.modal = (Rectangle){x - pad, y - pad, total_w + 2 * pad, total_h + 2 * pad};
   Rectangle lb_box = {x, yy, lw, bh};
   Rectangle box = {x + lw + 2 * s, yy, bw, bh};

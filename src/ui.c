@@ -29,23 +29,14 @@ void UiLoad(Ui* ui) {
   // For now the ui scale only works at scale=2, there are some hard coded
   // scale that needs to be fixed (low priority)
   ui->scale = 2;
-
-#ifndef WEB
-  int k = 110;
-  int screen_width = k * 16 - 2;
-  int screen_height = k * 9 - 32;
+  int screen_width = 640 * 2;
+  int screen_height = 320 * 2;
   SetTraceLogLevel(LOG_NONE);
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-#else
-  SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-  int screen_width = 640 * 2;
-  int screen_height = 360 * 2;
-#endif
   InitWindow(screen_width, screen_height, "Circuit Artist");
+  SetWindowState(FLAG_WINDOW_MAXIMIZED);
   ui->icon = LoadImage("../assets/icon32.png");
-#ifndef WEB
   SetWindowIcon(ui->icon);
-#endif
   LoadArtFont("../assets/font5x7.png");
   ui->sprites = LoadTexture("../assets/sprite4.png");
   HideCursor();

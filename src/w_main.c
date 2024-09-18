@@ -146,7 +146,7 @@ void MainInit(Ui* ui) {
 }
 
 void MainUpdate(Ui* ui) {
-  MainCheckWindowResize(ui);
+  MainUpdateViewport(ui);
   MainCheckFileDrop();
   MsgUpdate();
   C.mouse_on_target = false;
@@ -597,14 +597,17 @@ void MainUpdateViewport(Ui* ui) {
       .x = pad + 42 * scale + tt,
       .y = C.header_size + 2 * scale + tt,
   };
-  if (C.img_target_tex.texture.width > 0) {
-    UnloadRenderTexture(C.img_target_tex);
-    UnloadRenderTexture(C.level_overlay_tex);
-  }
   int tgt_size_x = sw - C.target_pos.x - pad - tt - 8 * scale - 35 * scale;
   int tgt_size_y = sh - C.bottom_size - C.header_size - tt;
-  C.img_target_tex = LoadRenderTexture(tgt_size_x, tgt_size_y);
-  C.level_overlay_tex = LoadRenderTexture(tgt_size_x, tgt_size_y);
+  if (tgt_size_x != C.img_target_tex.texture.width ||
+      tgt_size_y != C.img_target_tex.texture.height) {
+    if (C.img_target_tex.texture.width > 0) {
+      UnloadRenderTexture(C.img_target_tex);
+      UnloadRenderTexture(C.level_overlay_tex);
+    }
+    C.img_target_tex = LoadRenderTexture(tgt_size_x, tgt_size_y);
+    C.level_overlay_tex = LoadRenderTexture(tgt_size_x, tgt_size_y);
+  }
 
   int s = ui->scale;
   C.minimap.s = s;
@@ -810,15 +813,6 @@ void MainUpdateWidgets() {
   }
 
   {
-    RectangleInt r = MainGetTargetRegion();
-    PaintSetViewport(&C.ca, r.x, r.y, r.width, r.height);
-  }
-}
-
-void MainCheckWindowResize(Ui* ui) {
-  bool needs_update_viewport = C.img_target_tex.texture.width == 0;
-  if (IsWindowResized() || needs_update_viewport) {
-    MainUpdateViewport(ui);
     RectangleInt r = MainGetTargetRegion();
     PaintSetViewport(&C.ca, r.x, r.y, r.width, r.height);
   }

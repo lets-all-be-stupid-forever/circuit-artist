@@ -22,19 +22,23 @@ static void AboutUpdateLayout() {
   int sw = GetScreenWidth();
   int sh = GetScreenHeight();
   int bw = 12 * 35 * 2;
+  int s = 2;
   int total_w = bw + 2 * 2;
   int x = (sw - total_w) / 2;
-  int bh = 9 * 35 * 2;
+  int bh = 9 * 35 * s;
 #ifdef WEB
   // Making it smaller for the web version
   bh = 4 * 35 * 2;
 #endif
-  int s = 2;
   int total_h = (bh + 35 * 2 + 35 * 2);
+  int pad = 10 * s;
+  while (total_h + 2 * pad + 10 > sh) {
+    total_h -= 35 * s;
+    bh -= 35 * s;
+  }
   int y = (sh - total_h) / 2;
   int yy = y + 35 * 2;
   C.title = (Rectangle){x, y, total_w, 35 * 2};
-  int pad = 10 * s;
   C.modal = (Rectangle){x - pad, y - pad, total_w + 2 * pad, total_h + 2 * pad};
   Rectangle box = {x + 2 * s, yy, bw, bh};
   C.textbox_wrap = box;

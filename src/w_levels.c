@@ -32,7 +32,7 @@ static void LevelsUpdateLayout(Ui* ui) {
   int screen_width = GetScreenWidth();
   int screen_height = GetScreenHeight();
 
-  int h = 8;
+  int h = 9;
   int bsize = 35 * s;
 
   int box_w = bsize * 12;
@@ -40,9 +40,13 @@ static void LevelsUpdateLayout(Ui* ui) {
   int total_w = list_w + box_w + 2 * s;
   int x0 = (screen_width - total_w) / 2;
   int total_h = (h + 2) * bsize;
+  int pad = 8 * s;
+  while (total_h + 2 * pad + 10 > screen_height) {
+    total_h -= bsize;
+    h -= 1;
+  }
   int y0 = (screen_height - total_h) / 2;
   C.title = (Rectangle){x0, y0, total_w, 35 * 2};
-  int pad = 8 * s;
   C.modal = (Rectangle){
       x0 - pad,
       y0 - pad,
