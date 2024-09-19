@@ -193,7 +193,7 @@ void MainUpdateControls(Ui* ui) {
     PaintHandleWheelZoom(&C.ca);
     PaintHandleCameraMovement(&C.ca);
     if (PaintGetMode(&C.ca) == MODE_EDIT) {
-      ToolType tool = PaintGetTool(&C.ca);
+      ToolType tool = PaintGetDisplayTool(&C.ca);
       switch (tool) {
         case TOOL_SEL: {
           bool move =

@@ -19,6 +19,7 @@ static const float zoom_lut[] = {
 };
 
 static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off);
+static void PaintPickColorUnderCursor(Paint* ca);
 static void PaintResetCamera(Paint* ca);
 static void PaintZoomCameraAt(Paint* ca, Vector2 screenpos, int z);
 static void PaintPasteFromClipboard(Paint* ca);
@@ -31,6 +32,7 @@ static RectangleInt PaintFindVisibleScreenPixels(Paint* ca, int pad);
 static RectangleInt PaintCropRectInBuffer(Paint* ca, RectangleInt r);
 static RectangleInt PaintMakeToolRect(Paint* ca);
 static Vector2Int PaintFindBestOffsetForClipboard(Paint* ca);
+static bool PaintGetToolIsPickerInPractice(Paint* ca);
 
 static void PaintOnToolChange(Paint* ca) {
   ca->line_key_width = 0;
@@ -41,22 +43,27 @@ void PaintPerformToolAction(Paint* ca) {
   switch (ca->h.tool) {
     case TOOL_BRUSH:
     case TOOL_LINE: {
-      Image img = {0};
-      Vector2Int off = {0};
-      PaintMakeToolSubImage(ca, &img, &off);
-      HistActBuffer(&ca->h, img, off);
+      if (!ca->tool_pressed_with_alt) {
+        Image img = {0};
+        Vector2Int off = {0};
+        PaintMakeToolSubImage(ca, &img, &off);
+        HistActBuffer(&ca->h, img, off);
+      }
       break;
     }
     case TOOL_BUCKET: {
-      RectangleInt r = PaintCropRectInBuffer(ca, PaintMakeToolRect(ca));
-      Image bkt = {0};
-      Vector2Int off = {0};
-      Image buffer = HistGetBuffer(&ca->h);
-      Color c = ca->tool_btn == LEFT_BTN ? ca->fg_color : BLACK;
-      if (r.width * r.height != 0) {
-        DrawImageBucketTool(buffer, r.x, r.y, r.width, r.height, c, &bkt, &off);
-        if (bkt.width > 0) {
-          HistActBuffer(&ca->h, bkt, off);
+      if (!ca->tool_pressed_with_alt) {
+        RectangleInt r = PaintCropRectInBuffer(ca, PaintMakeToolRect(ca));
+        Image bkt = {0};
+        Vector2Int off = {0};
+        Image buffer = HistGetBuffer(&ca->h);
+        Color c = ca->tool_btn == LEFT_BTN ? ca->fg_color : BLACK;
+        if (r.width * r.height != 0) {
+          DrawImageBucketTool(buffer, r.x, r.y, r.width, r.height, c, &bkt,
+                              &off);
+          if (bkt.width > 0) {
+            HistActBuffer(&ca->h, bkt, off);
+          }
         }
       }
       break;
@@ -405,6 +412,27 @@ static void PaintGetSelMovingOffset(Paint* ca, int* dx, int* dy) {
   }
 }
 
+// For rendering purposes, you have 2 situations where the tool is replaced
+// by a picker tool: 1) tool_pressed=false AND Alt_down is true AND
+// (tool=brush,bucket,line) 2) tool_pressed=true AND
+// tool_started_with_alt=true AND (tool=brush,bucket,line)
+bool PaintGetToolIsPickerInPractice(Paint* ca) {
+  ToolType tool = HistGetTool(&ca->h);
+  if ((tool == TOOL_LINE || tool == TOOL_BRUSH || tool == TOOL_BUCKET)) {
+    if (!ca->tool_pressed && ca->alt_down) return true;
+    if (ca->tool_pressed && ca->tool_pressed_with_alt) return true;
+  }
+  return false;
+}
+
+ToolType PaintGetDisplayTool(Paint* ca) {
+  ToolType tool = HistGetTool(&ca->h);
+  if (PaintGetToolIsPickerInPractice(ca)) {
+    tool = TOOL_PICKER;
+  }
+  return tool;
+}
+
 void PaintRender(Paint* ca) {
   RectangleInt r = ca->viewport;
   int tw = r.width;
@@ -443,6 +471,10 @@ void PaintRender(Paint* ca) {
     r.camera_y = -ca->camera_y;
     r.bg = bg_color;
     ToolType tool = HistGetTool(&ca->h);
+    if (PaintGetToolIsPickerInPractice(ca)) {
+      tool = TOOL_PICKER;
+    }
+
     if ((tool == TOOL_LINE || tool == TOOL_BRUSH) && ca->tool_pressed) {
       Vector2Int off;
       PaintMakeToolSubImage(ca, &r.tool_img, &off);
@@ -714,6 +746,7 @@ void PaintUpdatePixelPosition(Paint* ca) {
   ca->f_pixel_cursor_y = (pos.y - ca->camera_y - r.y) / ca->camera_s;
   ca->pixel_cursor_x = (int)floorf(ca->f_pixel_cursor_x);
   ca->pixel_cursor_y = (int)floorf(ca->f_pixel_cursor_y);
+  ca->alt_down = IsKeyDown(KEY_LEFT_ALT);
 }
 
 static void PaintZoomCameraAt(Paint* ca, Vector2 screenpos, int z) {
@@ -939,6 +972,21 @@ static void PaintPokeSimulationPixel(Paint* ca) {
   }
 }
 
+void PaintPickColorUnderCursor(Paint* ca) {
+  bool ld = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+  int px = ca->pixel_cursor_x;
+  int py = ca->pixel_cursor_y;
+  Image buffer = HistGetBuffer(&ca->h);
+  Color* colors = GetPixels(buffer);
+  int w = buffer.width;
+  int h = buffer.height;
+  if (px >= 0 && py >= 0 && px < w && py < h) {
+    if (ld) ca->fg_color = colors[py * w + px];
+    if (ca->fg_color.a < 128) ca->fg_color = BLACK;
+    ca->fg_color.a = 255;
+  }
+}
+
 void PaintHandleMouse(Paint* ca, bool is_target) {
   ca->mouse_on_target = is_target;
   if (ca->mode == MODE_EDIT) {
@@ -962,6 +1010,7 @@ void PaintHandleMouse(Paint* ca, bool is_target) {
           ca->resize_pressed = true;
         } else {
           ca->tool_pressed = !ca->tool_pressed;
+          ca->tool_pressed_with_alt = ca->alt_down;
           ca->tool_btn = LEFT_BTN;
           ca->tool_start_x = ca->pixel_cursor_x;
           ca->tool_start_y = ca->pixel_cursor_y;
@@ -973,6 +1022,7 @@ void PaintHandleMouse(Paint* ca, bool is_target) {
 
       if (right_pressed) {
         ca->tool_pressed = !ca->tool_pressed;
+        ca->tool_pressed_with_alt = ca->alt_down;
         ca->tool_btn = RIGHT_BTN;
         ca->tool_start_x = ca->pixel_cursor_x;
         ca->tool_start_y = ca->pixel_cursor_y;
@@ -987,22 +1037,17 @@ void PaintHandleMouse(Paint* ca, bool is_target) {
       if (ca->tool_pressed) {
         ca->tool_end_x = ca->pixel_cursor_x;
         ca->tool_end_y = ca->pixel_cursor_y;
-        if (HistGetTool(&ca->h) == TOOL_BRUSH) {
+        ToolType tool = HistGetTool(&ca->h);
+        if (tool == TOOL_BRUSH && !ca->tool_pressed_with_alt) {
           BrushAppendPoint(&ca->brush, ca->pixel_cursor_x, ca->pixel_cursor_y);
         }
-        if (HistGetTool(&ca->h) == TOOL_PICKER) {
-          bool ld = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
-          int px = ca->pixel_cursor_x;
-          int py = ca->pixel_cursor_y;
-          Image buffer = HistGetBuffer(&ca->h);
-          Color* colors = GetPixels(buffer);
-          int w = buffer.width;
-          int h = buffer.height;
-          if (px >= 0 && py >= 0 && px < w && py < h) {
-            if (ld) ca->fg_color = colors[py * w + px];
-            if (ca->fg_color.a < 128) ca->fg_color = BLACK;
-            ca->fg_color.a = 255;
-          }
+        bool bap = false;  // behave as picker
+        bap = bap || (tool == TOOL_PICKER);
+        bap = bap || ((tool == TOOL_LINE) && (ca->tool_pressed_with_alt));
+        bap = bap || ((tool == TOOL_BRUSH) && (ca->tool_pressed_with_alt));
+        bap = bap || ((tool == TOOL_BUCKET) && (ca->tool_pressed_with_alt));
+        if (bap) {
+          PaintPickColorUnderCursor(ca);
         }
       }
     }
@@ -1039,7 +1084,9 @@ void PaintHandleMouse(Paint* ca, bool is_target) {
 
 static void PaintOnToolStart(Paint* ca) {
   if (HistGetTool(&ca->h) == TOOL_BRUSH) {
-    BrushReset(&ca->brush);
+    if (!ca->tool_pressed_with_alt) {
+      BrushReset(&ca->brush);
+    }
   }
 
   if (HistGetTool(&ca->h) == TOOL_SEL) {

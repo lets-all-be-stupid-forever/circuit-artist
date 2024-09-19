@@ -114,6 +114,11 @@ typedef struct {
   RectangleInt resize_region;
   // Number of clocks passed during simulation.
   int clock_count;
+  // Whether alt was down when tool has started.
+  // Used mainly to do a color picker during brush/line/bucket.
+  bool tool_pressed_with_alt;
+  // Whether alt is being pressed in this frame.
+  bool alt_down;
 } Paint;
 
 // Constructor.
@@ -257,5 +262,9 @@ bool PaintGetMouseOverSel(Paint* ca);
 
 // Returns the active drawing tool.
 ToolType PaintGetTool(Paint* ca);
+
+// The tool for to display (example: tool brush might be active but when user
+// presses alt, we want to see the tool color picker)
+ToolType PaintGetDisplayTool(Paint* ca);
 
 #endif
