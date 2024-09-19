@@ -34,9 +34,16 @@ void UiLoad(Ui* ui) {
   SetTraceLogLevel(LOG_NONE);
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
   InitWindow(screen_width, screen_height, "Circuit Artist");
-  SetWindowState(FLAG_WINDOW_MAXIMIZED);
   ui->icon = LoadImage("../assets/icon32.png");
   SetWindowIcon(ui->icon);
+  BeginDrawing();
+  // Added this black rectangle here so the screen first appears as a black
+  // window rather than a black window with a white square in the center
+  // (windows) before window is maximized.
+  // TODO: put a propper splash screen eventually?
+  DrawRectangle(0, 0, 2000, 2000, BLACK);
+  EndDrawing();
+  SetWindowState(FLAG_WINDOW_MAXIMIZED);
   LoadArtFont("../assets/font5x7.png");
   ui->sprites = LoadTexture("../assets/sprite4.png");
   HideCursor();
