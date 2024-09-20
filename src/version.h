@@ -1,8 +1,17 @@
 #ifndef VERSION_H
 #define VERSION_H
-#define CA_VERSION "v1.0.2 - Sep2024"
+#define CA_VERSION "v1.0.3 - 20Sep2024"
 
-// v1.0.1 --> v1.0.2:
+// v1.0.2 --> v1.0.3: Small QoL
+//  -   (QoL) Window starts maximized. Initial window is a bit smaller, to make
+//        it work better at smaller screens. Dialogs change size with screen
+//        size (to adapt for smaller screens).
+//  -   (QoL) Can pick color using ALT during brush, line and bucket tools.
+//  -   (Others) The parsing algorithm requires that all nands have 2 inputs and
+//         1 output, otherwise it enters an error state.
+//  -   (Bugfix) Fixed tilted rectangle display in levels.
+//
+// v1.0.1 --> v1.0.2: Bugfix
 //    - (Bugfix) Pasted Image Ugly.
 //            Pasting images that were not encoded with 32 bits were not pasted
 //            propperly. It would happen specially when the saved image went
