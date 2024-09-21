@@ -1,11 +1,5 @@
 #include "ui.h"
 
-#ifdef WIN32
-// This pragma hides the console app terminal in window.
-// We might want to make it flexible so people can use it to debug lua scripts.
-#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
-#endif
-
 #include "api.h"
 #include "colors.h"
 #include "font.h"

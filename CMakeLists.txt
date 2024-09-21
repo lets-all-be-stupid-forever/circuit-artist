@@ -59,7 +59,6 @@ link_directories(LuaJIT/src)
 add_compile_definitions(CLIP_ENABLE_IMAGE=1)
 
 SET(ca_src
-  src/main.c
   src/brush.c
   src/paint.c
   src/filedialog.c
@@ -108,13 +107,9 @@ ELSEIF (UNIX)
   )
 ENDIF()
 
-add_executable(ca ${ca_src})
-IF (UNIX AND NOT APPLE)
-  # Need this command so luajit can access the C API from ffi
-  SET_PROPERTY(TARGET ca PROPERTY ENABLE_EXPORTS ON)
-ENDIF()
+add_library(calib STATIC ${ca_src})
 
-target_include_directories(ca PRIVATE
+target_include_directories(calib PRIVATE
   src
   third_party
   third_party/clip
@@ -133,4 +128,23 @@ ENDIF()
 IF (OPENMP)
   SET(openmp_lib OpenMP::OpenMP_C)
 ENDIF ()
-target_link_libraries(ca raylib ${shlwapi_lib} nfd ${openmp_lib} ${luajit_lib} ${clip_libs})
+target_link_libraries(calib raylib ${shlwapi_lib} nfd ${openmp_lib} ${luajit_lib} ${clip_libs})
+
+add_executable(ca src/main.c)
+target_link_libraries(ca calib)
+
+IF (UNIX AND NOT APPLE)
+  # Need this command so luajit can access the C API from ffi
+  SET_PROPERTY(TARGET ca PROPERTY ENABLE_EXPORTS ON)
+ENDIF()
+
+# In Windows I create 2 executables: one without the console window (ca.exe)
+# and one with the console window (ca_console.exe).
+# The idea is that one would use ca_console.exe on windows to develop lua
+# scripts to see logs and error messages, while the default version is used as
+# main entrypoint of steam.
+IF (WIN32)
+  add_executable(ca_console src/main.c)
+  target_link_libraries(ca_console calib)
+  add_compile_definitions(ca_console PUBLIC SHOW_CONSOLE=1)
+ENDIF()

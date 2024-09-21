@@ -8,6 +8,14 @@
 #include <emscripten/emscripten.h>
 #endif
 
+#ifdef WIN32
+#ifndef SHOW_CONSOLE
+// This pragma hides the console app terminal in window.
+// We might want to make it flexible so people can use it to debug lua scripts.
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+#endif
+#endif
+
 static void WebUpdateDrawFrame(void);  // Update and Draw one frame
 
 static Ui _ui = {0};
