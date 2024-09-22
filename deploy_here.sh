@@ -5,6 +5,12 @@
 set -e
 mkdir bin
 cp ../build/Release/* bin/
-cp -r ../luasrc/ .
+mkdir luasrc
+cp  ../luasrc/*.lua luasrc/
+cp -r ../luasrc/component_examples  luasrc/
+cp -r ../luasrc/ctpd                luasrc/
+cp -r ../luasrc/imgs                luasrc/
+cp -r ../luasrc/levels              luasrc/
+cp -r ../luasrc/template_scripts    luasrc/
 cp -r ../assets/ .
 cp ../LuaJIT/src/lua51.* bin/

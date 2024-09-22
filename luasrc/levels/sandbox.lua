@@ -25,7 +25,6 @@ table.insert(chips, ram)
 table.insert(chips, ramDisplay)
 
 
-
 return {
     icon = "../luasrc/imgs/levels/sandbox_icon.png",
     name = 'Sandbox',
@@ -49,7 +48,7 @@ You also have an example of custom (reusable) components such as:
 - A RAM component
 - A RAM Display component
 
-You can create your own components and levels in the `script/` folder of your game installation. (if the folder is not there you can create one)
+You can create your own components and levels in the `luasrc/scripts/` folder of your game installation. (if the folder is not there you can create one from the template in `luasrc/template_scripts/`)
 
 You can look at the `luasrc/` folder for references/examples.
 
@@ -57,8 +56,7 @@ The game will look for the `scripts/init.lua` script at initialization, so you c
 
 You can open the game folder in steam via right click on the game name in "library", then go to "Manage" -> "Browse Local Files".
 
-`Attention:` You shouldn't modify the scripts in "luasrc/" folder because they are overidden in updates. Your custom scripts should be stored in the `scripts/` folder (or somewhere in your machine if you want to, in which case you should import them from the `scripts/init.lua`).
-
+`Attention:` Mind not modifying scripts outside the `luasrc/scripts/` folder because they are overidden in updates.
 ]],
     chips = chips
 }

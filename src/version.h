@@ -1,7 +1,13 @@
 #ifndef VERSION_H
 #define VERSION_H
-#define CA_VERSION "v1.0.3 - 20Sep2024"
+#define CA_VERSION "v1.0.4 - 22Sep2024"
 
+// v1.0.3 --> v1.0.4: Improved Lua Support
+//  - (QoL) Loads lua scripts from luasrc/scripts folder.
+//          Improved Sandbox level with Keyboard + ROM + RAM + Display
+//          components for reference.
+//  - (QoL) Added console launcher version for windows.
+//
 // v1.0.2 --> v1.0.3: Small QoL
 //  -   (QoL) Window starts maximized. Initial window is a bit smaller, to make
 //        it work better at smaller screens. Dialogs change size with screen

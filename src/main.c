@@ -9,7 +9,7 @@
 #endif
 
 #ifdef WIN32
-#ifndef SHOW_CONSOLE
+#ifndef CA_SHOW_CONSOLE
 // This pragma hides the console app terminal in window.
 // We might want to make it flexible so people can use it to debug lua scripts.
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
