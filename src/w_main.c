@@ -449,17 +449,19 @@ void MainDraw(Ui* ui) {
     BtnDrawLegend(
         &C.btn_simu, bscale,
         simu_on ? "Stop Simulation (SPACE)" : "Start Simulation (SPACE)");
-    BtnDrawLegend(
-        &C.btn_brush, bscale,
-        "Brush tool (B)\nLeft mouse button: draw\nRight mouse button: erase");
+    BtnDrawLegend(&C.btn_brush, bscale,
+                  "Brush tool (B)\nLeft mouse button: draw\nRight mouse "
+                  "button: erase\nPress (ALT) to pick color.");
     BtnDrawLegend(&C.btn_line, bscale,
                   "Line tool (L)\nType (NUMBER) to change line size.\nPress "
                   "(SHIFT) while drawing to add corner to start of "
                   "line.\nPress (CTRL) while drawing to add corner to end of "
-                  "line.\nLeft mouse button: Draw\nRight mouse button: Erase");
+                  "line.\nLeft mouse button: Draw\nRight mouse button: "
+                  "Erase\nPress (ALT) to pick color.");
     BtnDrawLegend(&C.btn_bucket, bscale,
                   "Wire Fill (G)\nLeft mouse button: regular color "
-                  "fill.\nRight mouse button: black color fill (erase).");
+                  "fill.\nRight mouse button: black color fill (erase).\nPress "
+                  "(ALT) to pick color.");
     BtnDrawLegend(&C.btn_picker, bscale, "Color Picker (I)");
     BtnDrawLegend(
         &C.btn_marquee, bscale,
