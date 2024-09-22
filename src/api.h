@@ -30,6 +30,8 @@ typedef struct {
     // Sprites associated with the desc string.
     Sprite sprites[20];
   } options[60];
+  // Image that is loaded on the game startup
+  char* startup_image_path;
 } LevelOptions;
 
 // Detailed low level description of a Level.

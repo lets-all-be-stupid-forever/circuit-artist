@@ -1,7 +1,6 @@
 local ffi = require 'ffi'
 local R = require 'raylib_api'
 local C = require 'c_api'
-local levelOptions = require 'levels'
 local help = require 'ctpd'
 local Camera = require 'camera'
 local textbox = require 'textbox'
@@ -11,6 +10,9 @@ local free = ffi.C.free
 local malloc = ffi.C.malloc
 local cast = ffi.cast
 local sizeof = ffi.sizeof
+
+-- Level registry
+local levelOptions = {}
 
 function getLevelComponents()
   return levelOptions[S.level_desc.ilevel+1].chips
@@ -60,7 +62,7 @@ local function toSprite(img)
   return s
 end
 
-local function initCircuitopedia()
+function initCircuitopedia()
   for ih=1,#help do
     local h = help[ih]
     S.level_options.help_name[ih-1] = h.name
@@ -78,32 +80,31 @@ local function initCircuitopedia()
   end
 end
 
-local function initLevels()
-  for i = 1, 60 do
-    local co = levelOptions[i]
-    if co ~= nil then
-      local opt = S.level_options.options[i-1]
-      opt.ilevel = i-1
-      local icon = R.LoadTexture(co.icon)
-      opt.icon = toSprite({icon, 0, 0, 33, 33})
-      local t = textbox.prepareText(co.desc)
-      co._t = t
-      -- Hack to make lua keep the table with the string so the reference in C is
-      -- still valid.
-      -- If we don't do this, the string will be garbage collected and the C
-      -- pointer will be invalidated
-      opt.desc = t.text
-      for k=1,#t.sprites do
-        opt.sprites[k-1] = t.sprites[k]
-      end
-      opt.name = co.name
-    end
+function addLevel(co)
+  table.insert(levelOptions, co)
+  local i = #levelOptions
+  print('added level ' .. i .. ' ' .. co.name)
+  -- local co = levelOptions[i]
+  local opt = S.level_options.options[i-1]
+  opt.ilevel = i-1
+  local icon = R.LoadTexture(co.icon)
+  opt.icon = toSprite({icon, 0, 0, 33, 33})
+  local t = textbox.prepareText(co.desc)
+  co._t = t
+  -- Hack to make lua keep the table with the string so the reference in C is
+  -- still valid.
+  -- If we don't do this, the string will be garbage collected and the C
+  -- pointer will be invalidated
+  opt.desc = t.text
+  for k=1,#t.sprites do
+    opt.sprites[k-1] = t.sprites[k]
   end
+  opt.name = co.name
+  return i
 end
 
 function initApp()
   initCircuitopedia()
-  initLevels()
 end
 
 local function setDirtyFlag(i, value)
@@ -136,14 +137,18 @@ local function unloadStateLevels()
   cd.num_components = 0
 end
 
+function setInitialLevelByName(levelName)
+  for i=1,#levelOptions do
+    if levelOptions[i].name == levelName then
+        S.requested_level = i-1
+    end
+  end
+end
 
 -- Called by C but can also be called from lua
-function apiLoadLevel(ilevel)
+function apiLoadLevel()
   unloadStateLevels()
-  if ilevel == nil then
-    ilevel = S.requested_level
-  end
-
+  ilevel = S.requested_level
   local cd = S.level_desc
   cd.ilevel = ilevel
   local co = levelOptions[ilevel+1]
@@ -267,7 +272,9 @@ function apiOnLevelDraw()
   local rt = S.rt
   local cam = Camera(S.cx, S.cy, S.cs)
   local comps = getLevelComponents()
-  comps[#comps]:onDraw(rt, cam)
+  for icomp=1,#comps do
+    comps[icomp]:onDraw(rt, cam)
+  end
 end
 
 function initPaletteFromImage(path)
@@ -275,4 +282,10 @@ function initPaletteFromImage(path)
   C.CaSetPalFromImage(img)
 end
 
+-- Sets initial image of the game.
+-- It's useful when you're developping a level so you don't need
+-- to re-open your image every time.
+function setStartupImage(image_path)
+  C.CaSetStartupImage(image_path)
+end
 

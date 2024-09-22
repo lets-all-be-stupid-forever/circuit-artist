@@ -105,6 +105,7 @@ function Hanoi:onDraw(rt, cam, disp1)
   rl.ClearBackground(blank)
   local tw = rt.texture.width
   if self.running then
+
     rl.rlPushMatrix()
     rl.rlScalef(2,2,1)
     local rw = 200

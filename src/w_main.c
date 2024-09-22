@@ -13,6 +13,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include "tiling.h"
+#include "utils.h"
 #include "w_about.h"
 #include "w_cpedia.h"
 #include "w_dialog.h"
@@ -91,6 +92,7 @@ static bool RectHover(Rectangle hitbox, Vector2 pos);
 static bool MainGetIsCursorInTargeTimage();
 static char* MainGetFilename();
 static RectangleInt MainGetTargetRegion();
+static void MainLoadImageFromPath(const char* path);
 
 static bool RectHover(Rectangle hitbox, Vector2 pos) {
   return CheckCollisionPointRec(pos, hitbox);
@@ -137,8 +139,16 @@ void MainInit(Ui* ui) {
   C.btn_exit.disabled = true;
 #endif
   PaintLoad(&C.ca);
-  Image img = LoadImage("../assets/tutorial.png");
-  PaintLoadImage(&C.ca, img);
+  LevelOptions* opt = ApiGetLevelOptions();
+  if (!opt->startup_image_path) {
+    // This way here is not the same as MainLoadImageFromPath: when we load
+    // image this way, the image's path is not associated to it, so the user
+    // can't override the initial tutorial image directly by pressing "save".
+    Image img = LoadImage("../assets/tutorial.png");
+    PaintLoadImage(&C.ca, img);
+  } else {
+    MainLoadImageFromPath(opt->startup_image_path);
+  }
 
   MainUpdateViewport(ui);
   MainUpdateTitle();
@@ -837,16 +847,21 @@ void MainUnload() {
   C.inited = false;
 }
 
+void MainLoadImageFromPath(const char* path) {
+  PaintLoadImage(&C.ca, LoadImage(path));
+  if (C.fname) {
+    free(C.fname);
+    C.fname = NULL;
+  }
+  C.fname = CloneString(path);
+  MainUpdateTitle();
+}
+
 void MainOpenFileModal(Ui* ui) {
   ModalResult mr = ModalOpenFile(NULL);
   if (mr.ok) {
-    PaintLoadImage(&C.ca, LoadImage(mr.path));
-    if (C.fname) {
-      free(C.fname);
-      C.fname = NULL;
-    }
-    C.fname = mr.path;
-    MainUpdateTitle();
+    MainLoadImageFromPath(mr.path);
+    free(mr.path);
   } else if (mr.cancel) {
   } else {
     char txt[500];

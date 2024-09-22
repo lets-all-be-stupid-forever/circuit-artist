@@ -5,6 +5,7 @@
 #include <lualib.h>
 
 #include "font.h"
+#include "msg.h"
 #include "stb_ds.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -94,7 +95,18 @@ CA_API void CaDrawText(const char* txt, int x, int y, Color c) {
   FontDrawTexture(txt, x, y, c);
 }
 
+CA_API void CaAddMessage(const char* txt, float duration) {
+  MsgAdd(txt, duration);
+}
+
 CA_API void CaSetPalFromImage(Image img) { MainSetPaletteFromImage(img); }
+
+CA_API void CaSetStartupImage(const char* path) {
+  if (shared_state.level_options.startup_image_path) {
+    free(shared_state.level_options.startup_image_path);
+  }
+  shared_state.level_options.startup_image_path = CloneString(path);
+}
 
 CA_API int CaGetDrawTextSize(const char* txt) {
   return GetRenderedTextSize(txt).x;

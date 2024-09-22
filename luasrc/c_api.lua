@@ -19,6 +19,7 @@ typedef struct {
     Sprite icon;
     Sprite sprites[20];
   } options[60];
+  char* startup_image_path;
 } LevelOptions;
 
 
@@ -87,6 +88,8 @@ void CaDrawText(const char* txt, int x, int y, Color c);
 int CaGetDrawTextSize(const char* txt);
 void CaDrawTextBox(const char* txt, int x, int y, int w, Color c);
 void CaSetPalFromImage(Image img);
+void CaAddMessage(const char* txt, float duration);
+void CaSetStartupImage(const char* path);
 
 typedef struct RlDrawTextureProArgs{
  Texture2D texture;
