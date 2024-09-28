@@ -611,6 +611,10 @@ void MainUpdateViewport(Ui* ui) {
   };
   int tgt_size_x = sw - C.target_pos.x - pad - tt - 8 * scale - 35 * scale;
   int tgt_size_y = sh - C.bottom_size - C.header_size - tt;
+  // Avoids crashing when window is too small
+  const int min_tgt_size = 32;
+  tgt_size_x = MaxInt(min_tgt_size, tgt_size_x);
+  tgt_size_y = MaxInt(min_tgt_size, tgt_size_y);
   if (tgt_size_x != C.img_target_tex.texture.width ||
       tgt_size_y != C.img_target_tex.texture.height) {
     if (C.img_target_tex.texture.width > 0) {
