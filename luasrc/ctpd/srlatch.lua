@@ -8,6 +8,6 @@ It's generally not possible to store memory without using cycles, ie, wires whic
 
 That being, the first important configuration we need to know is the `SR latch`: it's a very simple interlinked configuration of gates that is stable and allows memory to be stored somehow, in the sense that it can "remember" its previous configuration and you can change it using the right inputs:
 !img:imgs/circuitopedia/mem1.png
-The `S` and `R` inputs stand for `set` and `reset`: you can see that when S=1, we have the value of Q updated by the value of R, and when S=0, R=1, the value of Q is "reseted" to 0. When inputs are 0,0 the latch doesnt do anything, it just maintains the previous set result, thus working as a 1-bit storage memory.
+The `S` and `R` inputs stand for `set` and `reset`: you can see that when S=1 and R=0, we have the value of `Q'` updated to 1, and when R=1 and S=0, the value of `Q'` is "reseted" to 0. When inputs are 1,1 the latch doesnt do anything, it just maintains the previous set result, thus working as a 1-bit storage memory. The S=0 and R=0 case is a bit tricky: it makes the output be (1, 1) which is considered invalid, because we want the `Q` and `Q'` values to be opposite, so in practice we try not to use this case.
   ]]
 }
