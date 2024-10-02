@@ -715,13 +715,14 @@ void MainDrawStatusBar(Ui* ui) {
     if (C.ca.mode == MODE_EDIT) {
       if (C.ca.tool_pressed && !PaintGetIsToolSelMoving(&C.ca) &&
           tool == TOOL_SEL) {
-        sprintf(txt, "W: %d H: %d", tx + 1, ty + 1);
+        sprintf(txt, "w: %d h: %d (%d pixels)", tx + 1, ty + 1,
+                (tx + 1) * (ty + 1));
         FontDrawTextureOutlined(txt, xc, yc2, tc, bg);
       } else if (PaintGetHasSelection(&C.ca)) {
         Image selbuffer = PaintGetSelBuffer(&C.ca);
         int sw = selbuffer.width;
         int sh = selbuffer.height;
-        sprintf(txt, "w: %d h: %d", sw, sh);
+        sprintf(txt, "w: %d h: %d (%d pixels)", sw, sh, sw * sh);
         FontDrawTextureOutlined(txt, xc, yc2, tc, bg);
       }
     }
