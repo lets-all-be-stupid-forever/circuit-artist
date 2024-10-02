@@ -6,6 +6,6 @@ The subtraction of two integer numbers is very similar to its addition. All you 
 
 This can be done by using the "carry in" of the first `FULL ADDER` in the n-bits adder.
 
-  !img:imgs/circuitopedia/sub2.png
+  !img:imgs/tutorial/sub2.png
   ]]
 }

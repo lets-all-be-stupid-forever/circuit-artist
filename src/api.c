@@ -60,7 +60,7 @@ typedef struct {
   // Descriptor of the current active level.
   // Updated from the lua side.
   LevelDesc level_desc;
-  // Global store of levels and circuitopedia page.
+  // Global store of levels and tutorial page.
   // Set from lua.
   LevelOptions level_options;
   // Data used during call of component update. (ApiUpdateLevelComponent)

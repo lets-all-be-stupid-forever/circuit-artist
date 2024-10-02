@@ -5,14 +5,14 @@
 #include "sim.h"
 #include "sprite.h"
 
-// Describes the list of all Levels and Circuitopedia items available.
+// Describes the list of all Levels and Tutorial items available.
 typedef struct {
-  // Title of each Circuitopedia chapter.
+  // Title of each Tutorial chapter.
   const char* help_name[50];
-  // Multi-line text of each circuitopedia chapter (rendered with
+  // Multi-line text of each tutorial chapter (rendered with
   // DrawTextBoxAdvanced).
   const char* help_txt[50];
-  // Images associated to each circuitopedia chapter.
+  // Images associated to each tutorial chapter.
   Sprite help_sprites[50][20];
   // Descriptor of each Level.
   struct {
@@ -102,7 +102,7 @@ TickResult ApiOnLevelTick(float dt);
 // function)
 LevelDesc* ApiGetLevelDesc();
 
-// Getter for the global list of all available levels and Circuitopedioa pages.
+// Getter for the global list of all available levels and tutorial pages.
 LevelOptions* ApiGetLevelOptions();
 
 #endif

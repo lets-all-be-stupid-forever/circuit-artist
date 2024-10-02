@@ -1,7 +1,7 @@
 local ffi = require 'ffi'
 local R = require 'raylib_api'
 local C = require 'c_api'
-local help = require 'ctpd'
+local help = require 'tutorial'
 local Camera = require 'camera'
 local textbox = require 'textbox'
 
@@ -62,7 +62,7 @@ local function toSprite(img)
   return s
 end
 
-function initCircuitopedia()
+function initTutorial()
   for ih=1,#help do
     local h = help[ih]
     S.level_options.help_name[ih-1] = h.name
@@ -104,7 +104,7 @@ function addLevel(co)
 end
 
 function initApp()
-  initCircuitopedia()
+  initTutorial()
 end
 
 local function setDirtyFlag(i, value)

@@ -2,11 +2,11 @@ return {
   name="NAND Gate",
   text=[[
 
-!img:imgs/circuitopedia/nand1.png
+!img:imgs/tutorial/nand1.png
 
 A NAND logic gate is represented by 3 pixels, as shown below.
 
-!img:imgs/circuitopedia/nand0.png
+!img:imgs/tutorial/nand0.png
 
 A logic gate is a "mechanism" that transforms one or two bit inputs into one bit output.
 
@@ -19,15 +19,15 @@ a=1 b=1 --> NAND=0
 
 For example, if the 2 inputs are 0, then the output will be assigned to 1. See examples below.
 
-!img:imgs/circuitopedia/nand2.png
+!img:imgs/tutorial/nand2.png
 
 The NAND gates can be drawn in any orientation (facing up, down, left or right):
 
-!img:imgs/circuitopedia/nand3.png
+!img:imgs/tutorial/nand3.png
 
 Every NAND should have its 2 inputs present, as well as the output, otherwise it will trigger an error when the simulation is launched.
 
-!img:imgs/circuitopedia/nand4.png
+!img:imgs/tutorial/nand4.png
 
 Every non-black pixel in the image that is not part of a NAND gate is considered a wire, and has some state associated to it, as described below.
 

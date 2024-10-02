@@ -81,7 +81,7 @@ SET(ca_src
   src/w_main.c
   src/w_levels.c
   src/w_text.c
-  src/w_cpedia.c
+  src/w_tutorial.c
   src/w_dialog.c
   src/clip_api.cpp
 

@@ -60,9 +60,6 @@
 #define rect_hz64 ((Rectangle){368, 16, 13, 13})
 #define rect_hz1k ((Rectangle){384, 16, 13, 13})
 
-// circuitopedia button icon
-#define rect_search ((Rectangle){304, 0, 13, 13})
-
 // Marquee sub-tools icons
 #define rect_rot ((Rectangle){160, 0, 13, 13})
 #define rect_fliph ((Rectangle){112, 0 * 0, 13, 13})
@@ -115,6 +112,7 @@
 #define rect_color ((Rectangle){272, 448, 16 * 4, 16 * 3})
 #define rect_progress_incomplete ((Rectangle){416, 448, 33, 33})
 #define rect_progress_complete ((Rectangle){464, 448, 33, 33})
+#define rect_search ((Rectangle){304, 0, 13, 13})
 
 // Vector2, 2 components
 typedef struct Vector2Int {

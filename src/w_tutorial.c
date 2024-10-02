@@ -1,4 +1,4 @@
-#include "w_cpedia.h"
+#include "w_tutorial.h"
 
 #include "api.h"
 #include "font.h"
@@ -22,7 +22,7 @@ static struct {
   Btn btn_close;
 } C = {0};
 
-void CpediaUpdateLayout() {
+void TutorialUpdateLayout() {
   int sw = GetScreenWidth();
   int sh = GetScreenHeight();
   int lw = 4 * 35 * 2;
@@ -61,8 +61,8 @@ void CpediaUpdateLayout() {
   ListboxSetBox(&C.lb, lb_box);
 }
 
-void CpediaOpen(Ui* ui) {
-  ui->window = WINDOW_CPEDIA;
+void TutorialOpen(Ui* ui) {
+  ui->window = WINDOW_TUTORIAL;
   C.opened_this_frame = true;
   C.closed = false;
   if (!C.inited) {
@@ -81,8 +81,8 @@ void CpediaOpen(Ui* ui) {
   }
 }
 
-void CpediaUpdate(Ui* ui) {
-  CpediaUpdateLayout();
+void TutorialUpdate(Ui* ui) {
+  TutorialUpdateLayout();
   if (IsKeyPressed(KEY_TAB) && !C.opened_this_frame) {
     ui->window = WINDOW_MAIN;
     return;
@@ -105,13 +105,13 @@ void CpediaUpdate(Ui* ui) {
   }
 }
 
-void CpediaDraw(Ui* ui) {
+void TutorialDraw(Ui* ui) {
   int sh = GetScreenHeight();
   int sw = GetScreenWidth();
   Color bg = BLACK;
   bg.a = 150;
   DrawRectangle(0, 0, sw, sh, bg);
-  const char* title = "CIRCUITOPEDIA";
+  const char* title = "TUTORIAL";
   Vector2 ts = GetRenderedTextSize(title);
   int th = ts.y * 4;
   int tw = ts.x * 4;

@@ -6,11 +6,11 @@
 #include "raylib.h"
 #include "rlgl.h"
 #include "w_about.h"
-#include "w_cpedia.h"
 #include "w_dialog.h"
 #include "w_levels.h"
 #include "w_main.h"
 #include "w_text.h"
+#include "w_tutorial.h"
 
 static void UiDrawMouse(Ui* ui);  // Draws the mouse cursor. It's last thing
                                   // that is drawn in the screen.
@@ -70,7 +70,7 @@ void UiUpdateFrame(Ui* ui) {
   if (update_window == WINDOW_TEXT) TextModalUpdate(ui);
   if (update_window == WINDOW_MAIN) MainUpdate(ui);
   if (update_window == WINDOW_LEVELS) LevelsUpdate(ui);
-  if (update_window == WINDOW_CPEDIA) CpediaUpdate(ui);
+  if (update_window == WINDOW_TUTORIAL) TutorialUpdate(ui);
   if (update_window == WINDOW_ABOUT) AboutUpdate(ui);
   if (update_window == WINDOW_DIALOG) DialogUpdate(ui);
 
@@ -84,7 +84,7 @@ void UiUpdateFrame(Ui* ui) {
   MainDraw(ui);
   if (ui->window == WINDOW_TEXT) TextModalDraw(ui);
   if (ui->window == WINDOW_ABOUT) AboutDraw(ui);
-  if (ui->window == WINDOW_CPEDIA) CpediaDraw(ui);
+  if (ui->window == WINDOW_TUTORIAL) TutorialDraw(ui);
   if (ui->window == WINDOW_LEVELS) LevelsDraw(ui);
   if (ui->window == WINDOW_DIALOG) DialogDraw(ui);
   UiDrawMouse(ui);

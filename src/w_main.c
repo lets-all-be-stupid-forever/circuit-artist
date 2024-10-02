@@ -15,10 +15,10 @@
 #include "tiling.h"
 #include "utils.h"
 #include "w_about.h"
-#include "w_cpedia.h"
 #include "w_dialog.h"
 #include "w_levels.h"
 #include "w_text.h"
+#include "w_tutorial.h"
 #include "widgets.h"
 
 #define MSG_DURATION 2
@@ -67,7 +67,7 @@ static struct {
 
   // Right side buttons
   Btn btn_challenge;
-  Btn btn_circuitopedia;
+  Btn btn_tutorial;
   Btn btn_minimap;
 
   Minimap minimap;
@@ -131,7 +131,7 @@ void MainInit(Ui* ui) {
 
 #ifdef WEB
   C.btn_challenge.disabled = true;
-  C.btn_circuitopedia.disabled = true;
+  C.btn_tutorial.disabled = true;
   C.btn_new.disabled = true;
   C.btn_save.disabled = true;
   C.btn_saveas.disabled = true;
@@ -179,7 +179,7 @@ void MainUpdateControls(Ui* ui) {
   MainUpdateHud(ui);
 #ifndef WEB
   if (IsKeyPressed(KEY_TAB)) {
-    CpediaOpen(ui);
+    TutorialOpen(ui);
   }
 #endif
   if (IsKeyPressed(KEY_K)) {
@@ -285,7 +285,7 @@ void MainUpdateHud(Ui* ui) {
   if (BtnUpdate(&C.btn_simu, ui)) PaintToggleSimu(&C.ca);
 #ifndef WEB
   if (BtnUpdate(&C.btn_challenge, ui)) LevelsOpen(ui);
-  if (BtnUpdate(&C.btn_circuitopedia, ui)) CpediaOpen(ui);
+  if (BtnUpdate(&C.btn_tutorial, ui)) TutorialOpen(ui);
 #endif
   if (BtnUpdate(&C.btn_minimap, ui)) C.show_minimap = !C.show_minimap;
 
@@ -402,7 +402,9 @@ void MainDraw(Ui* ui) {
 #else
   BtnDrawIcon(&C.btn_challenge, bscale, ui->sprites, rect_sandbox);
 #endif
-  BtnDrawIcon(&C.btn_circuitopedia, bscale, ui->sprites, rect_search);
+
+  BtnDrawText(&C.btn_tutorial, bscale, "Tutorial");
+
   BtnDrawIcon(&C.btn_minimap, bscale, ui->sprites, rect_map);
   bool color_disabled = PaintGetMode(&C.ca) != MODE_EDIT;
   BtnDrawColor(ui, C.fg_color_rect, PaintGetColor(&C.ca), false,
@@ -477,7 +479,10 @@ void MainDraw(Ui* ui) {
     BtnDrawLegend(&C.btn_rotate, bscale, "Rotate selection (R)");
     BtnDrawLegend(&C.btn_fill, bscale, "Fill selection (F)");
     BtnDrawLegend(&C.btn_challenge, bscale, "Select Level");
-    BtnDrawLegend(&C.btn_circuitopedia, bscale, "Circuitopedia (TAB)");
+    BtnDrawLegend(&C.btn_tutorial, bscale,
+                  "Tutorial (TAB)\n`-` Describes core game concepts and "
+                  "mechanics.\n`-` Introduces a "
+                  "number of digital logic concepts and components.");
     BtnDrawLegend(&C.btn_minimap, bscale, "Show/Hide Minimap (K)");
 
     BtnDrawLegend(&C.btn_clockopt[0], bscale, "0 Hz Simulation");
@@ -521,6 +526,11 @@ void MainUpdateLayout(Ui* ui) {
     int x3 = x2 + 18 * s;
     int x4 = x3 + 18 * s;
     int x5 = x4 + 18 * s;
+    int x6 = x5 + 18 * s;
+    int x7 = x6 + 18 * s;
+    int x8 = x7 + 18 * s;
+    int x9 = x8 + 18 * s;
+    int x10 = x9 + 18 * s;
     int bw = 17 * s;
     int bh = 17 * s;
     C.btn_new.hitbox = (Rectangle){x0, y0, bw, bh};
@@ -529,6 +539,8 @@ void MainUpdateLayout(Ui* ui) {
     C.btn_saveas.hitbox = (Rectangle){x3, y0, bw, bh};
     C.btn_about.hitbox = (Rectangle){x4, y0, bw, bh};
     C.btn_exit.hitbox = (Rectangle){x5, y0, bw, bh};
+
+    C.btn_tutorial.hitbox = (Rectangle){x8, y0, 3 * bw, bh};
   }
 
   int sh = GetScreenHeight() / s;
@@ -589,8 +601,6 @@ void MainUpdateLayout(Ui* ui) {
 
     int chax = GetScreenWidth() - 6 * s - 35 * s;
     C.btn_challenge.hitbox = (Rectangle){chax, by0_simu, 35 * s, s * 35};
-    C.btn_circuitopedia.hitbox =
-        (Rectangle){chax, by0_simu + 36 * s + 4 * s, bw, bh};
 
     int mw = 6 * 17 * s;
     int yy = GetScreenHeight() - mw - 4 * s;

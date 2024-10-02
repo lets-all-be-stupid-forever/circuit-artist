@@ -3,7 +3,7 @@ return {
   text=[[
 
 For `signed integers`, we create a sort of extension of the unsigned integer definition:
-!img:imgs/circuitopedia/numbers2.png
+!img:imgs/tutorial/numbers2.png
 This representation is also called `two's complement`.
 
 The formula to convert a number to its negative is given as: `-N = NOT(N) + 1`. It works for both positive and negative numbers.

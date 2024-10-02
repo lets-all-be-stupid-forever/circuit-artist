@@ -6,7 +6,7 @@ local ffi = require 'ffi'
 local utils = require 'utils'
 require 'api'
 
-initCircuitopedia()
+initTutorial()
 
 -- Loads each level
 addLevel(require 'levels.sandbox')
