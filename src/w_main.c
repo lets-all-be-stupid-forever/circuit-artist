@@ -4,7 +4,6 @@
 #include "colors.h"
 #include "filedialog.h"
 #include "font.h"
-#include "minimap.h"
 #include "msg.h"
 #include "paint.h"
 #include "raylib.h"
@@ -70,10 +69,6 @@ static struct {
   // Right side buttons
   Btn btn_challenge;
   Btn btn_tutorial;
-  Btn btn_minimap;
-
-  Minimap minimap;
-  bool show_minimap;
 } C = {0};
 
 static void MainInit(Ui* ui);
@@ -111,8 +106,6 @@ void MainOpen(Ui* ui) {
 }
 
 void MainInit(Ui* ui) {
-  C.minimap.s = 2;
-  C.minimap.hitbox = (Rectangle){0, 0, 2 * 17 * 2, 2 * 17 * 2};
   C.palette[0] = WHITE;
   C.palette[1] = BLACK;
   C.palette[2] = RED;
@@ -186,19 +179,10 @@ void MainUpdateControls(Ui* ui) {
     TutorialOpen(ui);
   }
 #endif
-  if (IsKeyPressed(KEY_K)) {
-    C.show_minimap = !C.show_minimap;
-  }
-
   if (IsKeyPressed(KEY_S) && IsKeyDown(KEY_LEFT_CONTROL)) {
     MainOnSaveClick(ui, false);
   }
 
-  if (C.show_minimap) {
-    int target_w = C.img_target_tex.texture.width;
-    int target_h = C.img_target_tex.texture.height;
-    MinimapUpdate(&C.minimap, &C.ca, ui, target_w, target_h);
-  }
   bool mouse_on_target = MainGetIsCursorInTargeTimage() && ui->hit_count == 0;
   C.mouse_on_target = mouse_on_target;
   PaintUpdatePixelPosition(&C.ca);
@@ -333,7 +317,6 @@ void MainUpdateHud(Ui* ui) {
   if (BtnUpdate(&C.btn_challenge, ui)) LevelsOpen(ui);
   if (BtnUpdate(&C.btn_tutorial, ui)) TutorialOpen(ui);
 #endif
-  if (BtnUpdate(&C.btn_minimap, ui)) C.show_minimap = !C.show_minimap;
 
   Vector2 pos = GetMousePosition();
   if (RectHover(C.fg_color_rect, pos)) {
@@ -451,7 +434,6 @@ void MainDraw(Ui* ui) {
 
   BtnDrawText(&C.btn_tutorial, bscale, "Tutorial");
 
-  BtnDrawIcon(&C.btn_minimap, bscale, ui->sprites, rect_map);
   bool color_disabled = PaintGetMode(&C.ca) != MODE_EDIT;
   BtnDrawColor(ui, C.fg_color_rect, PaintGetColor(&C.ca), false,
                color_disabled);
@@ -534,7 +516,6 @@ void MainDraw(Ui* ui) {
                   "Tutorial (TAB)\n`-` Describes core game concepts and "
                   "mechanics.\n`-` Introduces a "
                   "number of digital logic concepts and components.");
-    BtnDrawLegend(&C.btn_minimap, bscale, "Show/Hide Minimap (K)");
 
     BtnDrawLegend(&C.btn_clockopt[0], bscale, "0 Hz Simulation");
     BtnDrawLegend(&C.btn_clockopt[1], bscale, "1 Hz Simulation");
@@ -544,9 +525,6 @@ void MainDraw(Ui* ui) {
     BtnDrawLegend(&C.btn_clockopt[5], bscale, "1024 Hz Simulation");
   }
 
-  if (C.show_minimap) {
-    MinimapDraw(&C.minimap);
-  }
   MainDrawStatusBar(ui);
   if (ui->window == WINDOW_MAIN) {
     MainDrawMouseExtra(ui);
@@ -655,10 +633,6 @@ void MainUpdateLayout(Ui* ui) {
 
     int chax = GetScreenWidth() - 6 * s - 35 * s;
     C.btn_challenge.hitbox = (Rectangle){chax, by0_simu, 35 * s, s * 35};
-
-    int mw = 6 * 17 * s;
-    int yy = GetScreenHeight() - mw - 4 * s;
-    C.btn_minimap.hitbox = (Rectangle){chax, yy - 4 * s - bh, bw, bh};
   }
 }
 
@@ -688,16 +662,6 @@ void MainUpdateViewport(Ui* ui) {
     C.img_target_tex = LoadRenderTexture(tgt_size_x, tgt_size_y);
     C.level_overlay_tex = LoadRenderTexture(tgt_size_x, tgt_size_y);
   }
-
-  int s = ui->scale;
-  C.minimap.s = s;
-  int mw = 6 * 17 * s;
-  C.minimap.hitbox = (Rectangle){
-      GetScreenWidth() - mw - 4 * s,
-      GetScreenHeight() - mw - 4 * s,
-      mw,
-      mw,
-  };
 }
 
 char* MainGetFilename() {
@@ -875,7 +839,6 @@ void MainUpdateWidgets() {
   C.btn_marquee.toggled = tool == TOOL_SEL;
   C.btn_bucket.toggled = tool == TOOL_BUCKET;
   C.btn_picker.toggled = tool == TOOL_PICKER;
-  C.btn_minimap.toggled = C.show_minimap;
 
   int has_sel = PaintGetHasSelection(&C.ca) && tool == TOOL_SEL;
   C.btn_rotate.disabled = !has_sel || ned;
