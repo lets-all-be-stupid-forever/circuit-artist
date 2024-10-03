@@ -52,6 +52,10 @@
 #define rect_info ((Rectangle){432, 16, 13, 13})
 #define rect_exit ((Rectangle){240, 16, 13, 13})
 
+// Selection open/save
+#define rect_sel_open ((Rectangle){464, 16, 13, 13})
+#define rect_sel_save ((Rectangle){464, 0, 13, 13})
+
 // Clock speed icons
 #define rect_hz0 ((Rectangle){352, 16, 13, 13})
 #define rect_hz1 ((Rectangle){352, 0, 13, 13})

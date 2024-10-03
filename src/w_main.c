@@ -63,6 +63,8 @@ static struct {
   Btn btn_fill;
   Btn btn_fliph;
   Btn btn_flipv;
+  Btn btn_sel_open;
+  Btn btn_sel_save;
   Btn btn_clockopt[6];
 
   // Right side buttons
@@ -93,6 +95,8 @@ static bool MainGetIsCursorInTargeTimage();
 static char* MainGetFilename();
 static RectangleInt MainGetTargetRegion();
 static void MainLoadImageFromPath(const char* path);
+static void MainOpenSelection(Ui* ui);
+static void MainSaveSelection(Ui* ui);
 
 static bool RectHover(Rectangle hitbox, Vector2 pos) {
   return CheckCollisionPointRec(pos, hitbox);
@@ -254,6 +258,45 @@ void MainUpdateControls(Ui* ui) {
   PaintHandleKeys(&C.ca);
 }
 
+void MainOpenSelection(Ui* ui) {
+  ModalResult mr = ModalOpenFile(NULL);
+  if (mr.ok) {
+    Image img = LoadImage(mr.path);
+    PaintPasteImage(&C.ca, img);
+    free(mr.path);
+  } else if (mr.cancel) {
+  } else {
+    char txt[500];
+    sprintf(txt, "ERROR: %s\n", mr.error_msg);
+    MsgAdd(txt, MSG_DURATION);
+  }
+}
+
+void MainSaveSelection(Ui* ui) {
+  ModalResult mr = ModalSaveFile(NULL, NULL);
+  if (mr.cancel) {
+    return;
+  } else if (!mr.ok) {
+    char txt[500];
+    sprintf(txt, "ERROR: %s\n", mr.error_msg);
+    MsgAdd(txt, MSG_DURATION);
+    return;
+  }
+
+  if (mr.path && mr.ok) {
+    Image out = CloneImage(PaintGetSelBuffer(&C.ca));
+    // Before saving, add black pixels back
+    ImageAddBlacks(out);
+    if (!ExportImage(out, mr.path)) {
+      MsgAdd("ERROR: Could not save selection ...", MSG_DURATION);
+      return;
+    }
+    UnloadImage(out);
+    MsgAdd("Selection Image Saved.", MSG_DURATION);
+    return;
+  }
+}
+
 void MainUpdateHud(Ui* ui) {
   if (BtnUpdate(&C.btn_new, ui)) MainAskForSaveAndProceed(ui, MainNewFile);
   if (BtnUpdate(&C.btn_open, ui))
@@ -262,6 +305,9 @@ void MainUpdateHud(Ui* ui) {
   if (BtnUpdate(&C.btn_saveas, ui)) MainOnSaveClick(ui, true);
   if (BtnUpdate(&C.btn_about, ui)) AboutOpen(ui);
   if (BtnUpdate(&C.btn_exit, ui)) ui->close_requested = true;
+
+  if (BtnUpdate(&C.btn_sel_open, ui)) MainOpenSelection(ui);
+  if (BtnUpdate(&C.btn_sel_save, ui)) MainSaveSelection(ui);
 
   if (BtnUpdate(&C.btn_line, ui)) PaintSetTool(&C.ca, TOOL_LINE);
   if (BtnUpdate(&C.btn_brush, ui)) PaintSetTool(&C.ca, TOOL_BRUSH);
@@ -419,6 +465,8 @@ void MainDraw(Ui* ui) {
   BtnDrawIcon(&C.btn_fliph, bscale, ui->sprites, rect_fliph);
   BtnDrawIcon(&C.btn_flipv, bscale, ui->sprites, rect_flipv);
   BtnDrawIcon(&C.btn_fill, bscale, ui->sprites, rect_fill);
+  BtnDrawIcon(&C.btn_sel_open, bscale, ui->sprites, rect_sel_open);
+  BtnDrawIcon(&C.btn_sel_save, bscale, ui->sprites, rect_sel_save);
 
   BtnDrawIcon(&C.btn_clockopt[0], bscale, ui->sprites, rect_hz0);
   BtnDrawIcon(&C.btn_clockopt[1], bscale, ui->sprites, rect_hz1);
@@ -447,6 +495,9 @@ void MainDraw(Ui* ui) {
     BtnDrawLegend(&C.btn_saveas, bscale, "Save Image As...");
     BtnDrawLegend(&C.btn_about, bscale, "About Circuit Artist");
     BtnDrawLegend(&C.btn_exit, bscale, "Exit");
+
+    BtnDrawLegend(&C.btn_sel_open, bscale, "Import Selection from Image");
+    BtnDrawLegend(&C.btn_sel_save, bscale, "Save Selection as Image");
 
     BtnDrawLegend(
         &C.btn_simu, bscale,
@@ -556,6 +607,7 @@ void MainUpdateLayout(Ui* ui) {
     int by3 = by2 + 18 * s + 4 * s;
     int by4 = by3 + 18 * s;
     int by5 = by4 + 18 * s;
+    int by5b = by4 + 18 * s + 4 * s;
 
     int bx1 = bx0 + 18 * s;
     int bw = 17 * s;
@@ -572,6 +624,8 @@ void MainUpdateLayout(Ui* ui) {
     C.btn_flipv.hitbox = (Rectangle){bx1, by3, bw, bh};
     C.btn_rotate.hitbox = (Rectangle){bx0, by4, bw, bh};
     C.btn_fill.hitbox = (Rectangle){bx1, by4, bw, bh};
+    C.btn_sel_open.hitbox = (Rectangle){bx0, by5b, bw, bh};
+    C.btn_sel_save.hitbox = (Rectangle){bx1, by5b, bw, bh};
 
     C.btn_clockopt[0].hitbox = (Rectangle){bx0, by3, bw, bh};
     C.btn_clockopt[1].hitbox = (Rectangle){bx1, by3, bw, bh};
@@ -829,10 +883,16 @@ void MainUpdateWidgets() {
   C.btn_fliph.disabled = !has_sel || ned;
   C.btn_fill.disabled = !has_sel || ned;
 
+  C.btn_sel_open.disabled = ned;
+  C.btn_sel_save.disabled = !has_sel || ned;
+
   C.btn_rotate.hidden = (tool != TOOL_SEL) || ned;
   C.btn_flipv.hidden = (tool != TOOL_SEL) || ned;
   C.btn_fliph.hidden = (tool != TOOL_SEL) || ned;
   C.btn_fill.hidden = (tool != TOOL_SEL) || ned;
+
+  C.btn_sel_open.hidden = (tool != TOOL_SEL) || ned;
+  C.btn_sel_save.hidden = (tool != TOOL_SEL) || ned;
 
   for (int i = 0; i < 6; i++) {
     C.btn_clockopt[i].hidden = C.ca.mode != MODE_SIMU;
