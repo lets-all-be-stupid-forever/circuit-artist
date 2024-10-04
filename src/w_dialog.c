@@ -23,7 +23,7 @@ static void DialogUpdateLayout() {
   int rh = 17 * 2;
 
   int modal_w = 500;
-  int modal_h = 150;
+  int modal_h = 180;
   int modal_x = (GetScreenWidth() - modal_w) / 2;
   int modal_y = (GetScreenHeight() - modal_h) / 2;
   C.confirm_modal = (Rectangle){modal_x, modal_y, modal_w, modal_h};
@@ -93,12 +93,13 @@ void DialogDraw(Ui* ui) {
   rlTranslatef(r.x, r.y, 0);
   rlScalef(s, s, 1);
   int mx = (r.width / s - msg_size) / 2;
-  int my = 20;
+  int my = 36;
   FontDrawTexture(C.modal_msg, mx + 1, my + 1, BLACK);
   FontDrawTexture(C.modal_msg, mx, my, WHITE);
   rlPopMatrix();
   BtnDrawText(&C.confirm_buttons[0], s, "Save");
   BtnDrawText(&C.confirm_buttons[1], s, "Don't save");
   BtnDrawText(&C.confirm_buttons[2], s, "Cancel");
-  DrawDefaultTiledFrame(ui, C.confirm_modal);
+  DrawWidgetFrameInv(ui, C.confirm_modal);
+  DrawTitle(ui, C.confirm_modal, "Confirm");
 }

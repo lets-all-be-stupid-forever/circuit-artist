@@ -30,27 +30,23 @@ static void AboutUpdateLayout() {
   // Making it smaller for the web version
   bh = 4 * 35 * 2;
 #endif
-  int total_h = (bh + 35 * 2 + 35 * 2);
+  int total_h = (bh + 35 * 1 + 35 * 1);
   int pad = 10 * s;
   while (total_h + 2 * pad + 10 > sh) {
     total_h -= 35 * s;
     bh -= 35 * s;
   }
   int y = (sh - total_h) / 2;
-  int yy = y + 35 * 2;
+  int yy = y + 35 * 1;
   C.title = (Rectangle){x, y, total_w, 35 * 2};
   C.modal = (Rectangle){x - pad, y - pad, total_w + 2 * pad, total_h + 2 * pad};
-  Rectangle box = {x + 2 * s, yy, bw, bh};
+  Rectangle box = {x + 2 * s, yy, bw, bh - 4 * s};
   C.textbox_wrap = box;
   Rectangle box2 = box;
-  box2.x = box.x + s;
-  box2.y = box.y + 4 * s;
-  box2.height = box.height - 2 * 4 * s;
-  box2.width = box.width - 2 * s;
   int bsize = 4 * 35 * s;
   C.btn_close.hitbox = (Rectangle){
       box.x + box.width - bsize,
-      box.y + box.height + 12 * 2,
+      box.y + box.height + 8 * 2,
       bsize,
       17 * 2,
   };
@@ -121,23 +117,13 @@ void AboutDraw(Ui* ui) {
   Color bg = BLACK;
   bg.a = 150;
   DrawRectangle(0, 0, sw, sh, bg);
-  const char* title = "ABOUT";
-  Vector2 ts = GetRenderedTextSize(title);
-  int th = ts.y * 4;
-  int tw = ts.x * 4;
-  int yy = (C.title.height - th) / 2;
-  int xx = (C.title.width - tw) / 2;
   BeginScissorMode(C.modal.x, C.modal.y, C.modal.width, C.modal.height);
   DrawDefaultTiledScreen(ui);
   EndScissorMode();
-  rlPushMatrix();
-  rlTranslatef(C.title.x + xx, C.title.y + yy, 0);
-  rlScalef(4, 4, 1);
-  FontDrawTexture(title, 1, 1, BLACK);
-  FontDrawTexture(title, 0, 0, WHITE);
-  rlPopMatrix();
   DrawRectangleRec(C.textbox_wrap, BLACK);
   TextboxDraw(&C.tb, ui);
+  DrawWidgetFrame(ui, C.textbox_wrap);
   BtnDrawText(&C.btn_close, ui->scale, "CLOSE");
-  DrawDefaultTiledFrame(ui, C.modal);
+  DrawWidgetFrameInv(ui, C.modal);
+  DrawTitle(ui, C.modal, "ABOUT");
 }

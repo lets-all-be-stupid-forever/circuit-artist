@@ -99,4 +99,13 @@ void BtnDrawColor(Ui* ui, Rectangle r, Color c, bool selected, bool disabled);
 // Checks if button is being hovered
 bool BtnHover(Btn* b);
 
+// Draws a basic frame of size 2px.
+void DrawWidgetFrame(Ui* ui, Rectangle inner_content);
+
+// Frame for windows.
+void DrawWidgetFrameInv(Ui* ui, Rectangle r);
+
+// Title for framed windows
+void DrawTitle(Ui* ui, Rectangle modal, const char* title);
+
 #endif

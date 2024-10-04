@@ -1,6 +1,7 @@
 #include "w_levels.h"
 
 #include "api.h"
+#include "colors.h"
 #include "font.h"
 #include "rlgl.h"
 #include "stdio.h"
@@ -32,21 +33,20 @@ static void LevelsUpdateLayout(Ui* ui) {
   int screen_width = GetScreenWidth();
   int screen_height = GetScreenHeight();
 
-  int h = 9;
+  int h = 10;
   int bsize = 35 * s;
 
   int box_w = bsize * 12;
   int list_w = bsize * 5;
   int total_w = list_w + box_w + 2 * s;
   int x0 = (screen_width - total_w) / 2;
-  int total_h = (h + 2) * bsize;
+  int total_h = (h + 1) * bsize;
   int pad = 8 * s;
   while (total_h + 2 * pad + 10 > screen_height) {
     total_h -= bsize;
     h -= 1;
   }
   int y0 = (screen_height - total_h) / 2;
-  C.title = (Rectangle){x0, y0, total_w, 35 * 2};
   C.modal = (Rectangle){
       x0 - pad,
       y0 - pad,
@@ -54,7 +54,7 @@ static void LevelsUpdateLayout(Ui* ui) {
       total_h + 2 * pad,
   };
 
-  int yy = y0 + 35 * 2;
+  int yy = y0 + 35 * 1;
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
     int xx = i % 4;
     int cy = i / 4;
@@ -72,17 +72,17 @@ static void LevelsUpdateLayout(Ui* ui) {
       bsize * h,
   };
   Rectangle box = {
-      x0 + list_w + 2 * s,
-      yy,
+      x0 + list_w - 4 * s,
+      yy + 2 * s,
       box_w,
-      bsize * h,
+      bsize * h - 10 * s,
   };
   C.textbox_wrap = box;
   Rectangle box2 = box;
-  box2.x = box.x + s;
-  box2.y = box.y + 4 * s;
-  box2.height = box.height - 2 * 4 * s;
-  box2.width = box.width - 2 * s;
+  // box2.x = box.x + s;
+  // box2.y = box.y + 4 * s;
+  // box2.height = box.height - 2 * 4 * s;
+  // box2.width = box.width - 2 * s;
 
   TextboxSetBox(&C.level_textbox, box2);
 
@@ -90,7 +90,7 @@ static void LevelsUpdateLayout(Ui* ui) {
   int yb = box.height + box.y + 8 * s;
   C.btn_ok.hitbox = (Rectangle){xb, yb, 4 * bsize, 17 * s};
   C.btn_cancel.hitbox =
-      (Rectangle){xb + 4 * bsize + 8 * s, yb, 4 * bsize, 17 * s};
+      (Rectangle){xb + 4 * bsize + 8 * s + 2 * s, yb, 4 * bsize, 17 * s};
 }
 
 static void LevelsSetSel(int ilevel) {
@@ -162,22 +162,7 @@ void LevelsDraw(Ui* ui) {
   BeginScissorMode(C.modal.x, C.modal.y, C.modal.width, C.modal.height);
   DrawDefaultTiledScreen(ui);
   EndScissorMode();
-
-  const char* title = "LEVEL SELECTION";
-  Vector2 ts = GetRenderedTextSize(title);
-  int th = ts.y * 4;
-  int tw = ts.x * 4;
-  int yy = (C.title.height - th) / 2;
-  int xx = (C.title.width - tw) / 2;
-  rlPushMatrix();
-  rlTranslatef(C.title.x + xx, C.title.y + yy, 0);
-  rlScalef(4, 4, 1);
-  FontDrawTexture(title, 1, 1, BLACK);
-  FontDrawTexture(title, 0, 1, BLACK);
-  FontDrawTexture(title, 1, 0, BLACK);
-  FontDrawTexture(title, 0, 0, WHITE);
-  rlPopMatrix();
-
+  DrawTitle(ui, C.modal, "LEVEL SELECTION");
   LevelOptions* co = ApiGetLevelOptions();
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
     if (co->options[i].name) {
@@ -188,7 +173,8 @@ void LevelsDraw(Ui* ui) {
   BtnDrawText(&C.btn_ok, ui->scale, "CHOOSE LEVEL");
   BtnDrawText(&C.btn_cancel, ui->scale, "CANCEL");
   DrawRectangleRec(C.textbox_wrap, BLACK);
-  DrawDefaultTiledFrame(ui, C.modal);
+  DrawWidgetFrame(ui, C.textbox_wrap);
+  DrawWidgetFrameInv(ui, C.modal);
   TextboxDraw(&C.level_textbox, ui);
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
     if (co->options[i].name) {

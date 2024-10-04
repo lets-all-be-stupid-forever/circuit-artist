@@ -124,7 +124,7 @@ void MainInit(Ui* ui) {
   C.palette[15] = LIME;
   C.num_colors = 16;
   C.header_size = 24 * ui->scale;
-  C.bottom_size = 3 * 17 * 1 * ui->scale;
+  C.bottom_size = 3 * 17 * 1 * ui->scale - 6 * ui->scale;
 
 #ifdef WEB
   C.btn_challenge.disabled = true;
@@ -408,7 +408,7 @@ void MainDraw(Ui* ui) {
       C.level_overlay_tex.texture.width,
       C.level_overlay_tex.texture.height,
   };
-  DrawDefaultTiledFrame(ui, inner_content);
+  DrawWidgetFrame(ui, inner_content);
 
   LevelOptions* co = ApiGetLevelOptions();
   LevelDesc* cd = ApiGetLevelDesc();
@@ -425,6 +425,17 @@ void MainDraw(Ui* ui) {
   BtnDrawIcon(&C.btn_simu, bscale, ui->sprites,
               simu_on ? rect_stop : rect_start);
 #ifndef WEB
+  // {
+  //   int x = C.btn_challenge.hitbox.x;
+  //   int y = C.btn_challenge.hitbox.y - 10 * 2;
+  //   rlPushMatrix();
+  //   rlTranslatef(x, y, 0);
+  //   rlScalef(2, 2, 1);
+  //   FontDrawTexture("Level", 1, 1, BLACK);
+  //   FontDrawTexture("Level", 0, 0, WHITE);
+  //   rlPopMatrix();
+  // }
+
   C.btn_challenge.disabled = PaintGetMode(&C.ca) != MODE_EDIT;
   BtnDrawIcon(&C.btn_challenge, bscale, co->options[cd->ilevel].icon.tex,
               co->options[cd->ilevel].icon.region);
@@ -472,13 +483,13 @@ void MainDraw(Ui* ui) {
   // We only draw the legends if this window is the active window.
   if (ui->window == WINDOW_MAIN) {
     BtnDrawLegend(&C.btn_new, bscale, "New Image");
-    BtnDrawLegend(&C.btn_open, bscale, "Open Image");
+    BtnDrawLegend(&C.btn_open, bscale, "Load Image");
     BtnDrawLegend(&C.btn_save, bscale, "Save Image (C-S)");
     BtnDrawLegend(&C.btn_saveas, bscale, "Save Image As...");
     BtnDrawLegend(&C.btn_about, bscale, "About Circuit Artist");
     BtnDrawLegend(&C.btn_exit, bscale, "Exit");
 
-    BtnDrawLegend(&C.btn_sel_open, bscale, "Import Selection from Image");
+    BtnDrawLegend(&C.btn_sel_open, bscale, "Load Selection from Image");
     BtnDrawLegend(&C.btn_sel_save, bscale, "Save Selection as Image");
 
     BtnDrawLegend(
@@ -568,15 +579,17 @@ void MainUpdateLayout(Ui* ui) {
     C.btn_saveas.hitbox = (Rectangle){x3, y0, bw, bh};
     C.btn_about.hitbox = (Rectangle){x4, y0, bw, bh};
     C.btn_exit.hitbox = (Rectangle){x5, y0, bw, bh};
-
-    C.btn_tutorial.hitbox = (Rectangle){x8, y0, 3 * bw, bh};
+    C.btn_tutorial.hitbox = (Rectangle){x7, y0, 3 * bw, bh};
   }
 
   int sh = GetScreenHeight() / s;
   {
     int bx0 = 4 * s;
-    int by0 = 4 + 2 * 18 * s;
+    int by0 = (30) * s;
     int by0_simu = by0;
+    C.btn_challenge.hitbox = (Rectangle){bx0, by0, 35 * s, s * 35};
+
+    by0 = by0 + 2 * 18 * s + 4 * s;
     C.btn_simu.hitbox = (Rectangle){bx0, by0, (2 * 17 + 1) * s, 17 * s};
     by0 = by0 + 18 * s;
     by0 = by0 + 4 * s;
@@ -612,7 +625,7 @@ void MainUpdateLayout(Ui* ui) {
     C.btn_clockopt[4].hitbox = (Rectangle){bx0, by5, bw, bh};
     C.btn_clockopt[5].hitbox = (Rectangle){bx1, by5, bw, bh};
 
-    int cy = (sh - 2 * 18 - 4) * s;
+    int cy = (sh - 2 * 18 - 2) * s;
     int cx = 4 * s + 35 * s + 4 * s;
     C.fg_color_rect = (Rectangle){
         .x = cx,
@@ -631,8 +644,8 @@ void MainUpdateLayout(Ui* ui) {
       };
     }
 
-    int chax = GetScreenWidth() - 6 * s - 35 * s;
-    C.btn_challenge.hitbox = (Rectangle){chax, by0_simu, 35 * s, s * 35};
+    // int chax = GetScreenWidth() - 6 * s - 35 * s;
+    // C.btn_challenge.hitbox = (Rectangle){chax, by0_simu, 35 * s, s * 35};
   }
 }
 
@@ -642,12 +655,12 @@ void MainUpdateViewport(Ui* ui) {
   MainUpdateLayout(ui);
   int pad = 4;
   int scale = 2;
-  int tt = 7 * scale;
+  int tt = 2 * scale;
   C.target_pos = (Vector2){
       .x = pad + 42 * scale + tt,
       .y = C.header_size + 2 * scale + tt,
   };
-  int tgt_size_x = sw - C.target_pos.x - pad - tt - 8 * scale - 35 * scale;
+  int tgt_size_x = sw - C.target_pos.x - pad - tt - 2 * scale;
   int tgt_size_y = sh - C.bottom_size - C.header_size - tt;
   // Avoids crashing when window is too small
   const int min_tgt_size = 32;
@@ -706,8 +719,9 @@ void MainDrawStatusBar(Ui* ui) {
   Color tc = WHITE;
   int num_lines = 8;
   int yc1 = (C.target_pos.y + C.img_target_tex.texture.height) / ui_scale -
-            17 * num_lines;
-  int xc = 1 * 17 + C.target_pos.x / ui_scale;
+            19 * num_lines;
+  int xc = 1 * 4 + C.target_pos.x / ui_scale;
+  // int yc1 = yc0 + 17;
   int yc2 = yc1 + 17;
   int yc3 = yc2 + 17;
   int yc4 = yc3 + 17;
@@ -715,7 +729,9 @@ void MainDrawStatusBar(Ui* ui) {
   int yc6 = yc5 + 17;
   int yc7 = yc6 + 17;
   int yc8 = yc7 + 17;
+  int yc9 = yc8 + 17;
   rlPushMatrix();
+  // Color c1 = GetLutColor(COLOR_BG0);
   Color c2 = GetLutColor(COLOR_BTN2);
 
   tc = c2;
@@ -766,12 +782,18 @@ void MainDrawStatusBar(Ui* ui) {
       FontDrawTextureOutlined(txt, xc, yc4, tc, bg);
     }
   }
+
+  LevelOptions* co = ApiGetLevelOptions();
+  LevelDesc* cd = ApiGetLevelDesc();
+  sprintf(txt, "[level] %s", co->options[cd->ilevel].name);
+  FontDrawTextureOutlined(txt, xc, yc7, tc, bg);
+
   const char* fname = GetFileName(MainGetFilename());
   sprintf(txt, "[img] %s", fname);
-  FontDrawTextureOutlined(txt, xc, yc7, tc, bg);
+  FontDrawTextureOutlined(txt, xc, yc8, tc, bg);
   Image img = PaintGetEditImage(&C.ca);
   sprintf(txt, "[img] w: %d h: %d", img.width, img.height);
-  FontDrawTextureOutlined(txt, xc, yc8, tc, bg);
+  FontDrawTextureOutlined(txt, xc, yc9, tc, bg);
   rlPopMatrix();
 }
 
@@ -958,3 +980,4 @@ void MainPasteText(const char* txt) {
   Image img = RenderText(txt, C.ca.fg_color);
   PaintPasteImage(&C.ca, img);
 }
+

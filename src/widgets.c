@@ -16,7 +16,7 @@ void ListboxLoad(Listbox* l) {
 
 void ListboxSetBox(Listbox* l, Rectangle r) {
   l->hitbox = r;
-  ScrollSetContentBox(&l->scroll, r, 10);
+  ScrollSetContentBox(&l->scroll, r, 24);
 }
 
 void ListboxAddRow(Listbox* l, const char* content) {
@@ -113,6 +113,7 @@ void ListboxDraw(Listbox* l, Ui* ui, int selected) {
   rlPopMatrix();
   ScrollDraw(&l->scroll);
   EndScissorMode();
+  DrawWidgetFrame(ui, box);
 }
 
 // scroll I need: 1. value, some state for hovering: mouse0, value0
@@ -197,14 +198,19 @@ void ScrollUpdate(Scroll* s, float h, Vector2 mouse) {
 
 void ScrollDraw(Scroll* s) {
   rlPushMatrix();
+
   if (!s->hidden) {
-    Color bg_color = GetLutColor(COLOR_DARKGRAY);
+    Color bg_color = GetLutColor(COLOR_BTN0);
     DrawRectangleRec(s->scroll_rect, bg_color);
     Color c1 = GetLutColor(COLOR_BTN1);
     if (s->down) {
       c1 = GetLutColor(COLOR_ORANGE);
     }
-    DrawRectangleRec(s->rect, c1);
+    Btn b = {0};
+    b.hitbox = s->rect;
+    b.hitbox.width -= 2;
+    b.pressed = s->down;
+    BtnDrawText(&b, 2, "");
   }
   rlPopMatrix();
 }
@@ -264,7 +270,7 @@ void TextboxUnload(Textbox* t) {
 
 void TextboxSetBox(Textbox* t, Rectangle box) {
   t->box = box;
-  ScrollSetContentBox(&t->scroll, box, 30);
+  ScrollSetContentBox(&t->scroll, box, 24);
 }
 
 bool BtnUpdate(Btn* b, Ui* ui) {
@@ -306,7 +312,8 @@ void BtnDrawText(Btn* b, int ui_scale, const char* text) {
   Color c1 = GetLutColor(COLOR_BTN1);
   Color c2 = GetLutColor(COLOR_BTN2);
   Color cbg = GetLutColor(COLOR_BTN_BG);
-  DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
+  // DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
+  DrawRectangle(x, y, w + 1 * s, h + 1 * s, cbg);
   DrawRectangle(x, y, w, h, c1);
   if ((b->pressed || b->toggled) && (!b->disabled)) {
     DrawRectangle(x, y, w, s, c0);  // TOP
@@ -352,7 +359,8 @@ void BtnDrawIcon(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
   Color c1 = GetLutColor(COLOR_BTN1);
   Color c2 = GetLutColor(COLOR_BTN2);
   Color cbg = GetLutColor(COLOR_BTN_BG);
-  DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
+  // DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
+  DrawRectangle(x, y, w + 1 * s, h + 1 * s, cbg);
   DrawRectangle(x, y, w, h, c1);
   if ((b->pressed || b->toggled) && (!b->disabled)) {
     DrawRectangle(x, y, w, s, c0);  // TOP
@@ -450,3 +458,59 @@ void BtnDrawColor(Ui* ui, Rectangle r, Color c, bool selected, bool disabled) {
     DrawRectangle(x + 2 * s, y + 2 * s, w - 4 * s, h - 4 * s, c);
   }
 }
+
+void DrawWidgetFrame(Ui* ui, Rectangle r) {
+  int s = ui->scale;
+  int x = r.x - 2 * s;
+  int y = r.y - 2 * s;
+  int w = r.width + 4 * s;
+  int h = r.height + 4 * s;
+  Color c0 = GetLutColor(COLOR_BTN0);
+  Color c1 = GetLutColor(COLOR_BTN1);
+  Color c2 = GetLutColor(COLOR_BTN2);
+  Color cbg = GetLutColor(COLOR_BTN_BG);
+  // DrawRectangle(x, y, w, h, c1);
+  DrawRectangle(x, y, w - s, s, c0);
+  DrawRectangle(x, y, s, h - s, c0);
+  DrawRectangle(x, y + h - s, w - s, s, c2);
+  DrawRectangle(x + w - s, y, s, h, c2);
+  DrawRectangle(x + s, y + h - 2 * s, w - 2 * s, s, c1);
+  DrawRectangle(x + w - 2 * s, y + s, s, h - 2 * s, c1);
+  DrawRectangle(x + s, y + s, w - 3 * s, s, BLACK);
+  DrawRectangle(x + s, y + s, s, h - 3 * s, BLACK);
+}
+
+void DrawWidgetFrameInv(Ui* ui, Rectangle r) {
+  int s = ui->scale;
+  int x = r.x - 2 * s;
+  int y = r.y - 2 * s;
+  int w = r.width + 4 * s;
+  int h = r.height + 4 * s;
+  Color c0 = GetLutColor(COLOR_BTN0);  // darker
+  Color c1 = GetLutColor(COLOR_BTN1);
+  Color c2 = GetLutColor(COLOR_BTN2);  // lighter
+
+  DrawRectangle(x, y, w - s, s, c1);                      // outter top
+  DrawRectangle(x + s, y + s, w - 3 * s, s, c2);          // inner top
+  DrawRectangle(x, y, s, h - s, c1);                      // outter left
+  DrawRectangle(x + s, y + s, s, h - 3 * s, c2);          // inner left
+  DrawRectangle(x + w - s, y, s, h, BLACK);               // outter right
+  DrawRectangle(x + w - 2 * s, y + s, s, h - 2 * s, c0);  // inner right
+  DrawRectangle(x + s, y + h - 2 * s, w - 2 * s, s, c0);  // inner bottom
+  DrawRectangle(x, y + h - s, w - s, s, BLACK);           // outter bottom
+}
+
+void DrawTitle(Ui* ui, Rectangle modal, const char* title) {
+  rlPushMatrix();
+  rlTranslatef(modal.x, modal.y, 0);
+  int th = 20;
+  int lh = GetFontLineHeight();
+  int offy = (th - lh) / 2 + 2;
+  int offx = 5;
+  int s = 2;
+  DrawRectangle(0, 0, modal.width, s * th, GetLutColor(COLOR_BG1));
+  rlScalef(s, s, 1);
+  FontDrawTexture(title, offx, offy, WHITE);
+  rlPopMatrix();
+}
+
