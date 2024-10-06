@@ -305,6 +305,28 @@ function setStartupImage(image_path)
   C.CaSetStartupImage(image_path)
 end
 
+local function updateSteamAchievements()
+  if not C.SteamEnabled() then
+    return
+  end
+  for i=1, #levelOptions do
+    local level = levelOptions[i]
+    if level.id ~= nil then
+      local achievementName = 'ACHIEVEMENT_LVL_' .. level.id
+      local opt = S.level_options.options[i-1]
+      local isComplete = opt.complete
+      if isComplete then
+        local hasAchievement = C.SteamGetAchievement(achievementName)
+        if not hasAchievement then
+            C.SteamSetAchievement(achievementName)
+        end
+      end
+    end
+  end
+  C.SteamRefreshAchievement();
+end
+
+
 function notifyLevelCompleted()
   local opt = S.level_options.options[S.level_desc.ilevel]
   local complete_before = opt.complete
@@ -320,8 +342,25 @@ function notifyLevelCompleted()
       end
     end
     C.CaAddMessage("Level Complete!", 4)
+    updateSteamAchievements()
   end
 end
+
+local function initSteam()
+  if not C.SteamEnabled() then
+    return
+  end
+  C.SteamInit()
+end
+
+local function shutdownSteam()
+  if not C.SteamEnabled() then
+    return
+  end
+  C.SteamShutdown()
+end
+
+
 
 -- loadProgress() should be called after all levels have been defined. It will
 -- read the save json file and override the C structs with the data written in
@@ -341,6 +380,7 @@ function loadProgress()
       end
     end
   end
+  updateSteamAchievements()
 end
 
 -- The saveProgress() function will read the data from the C structs and write
@@ -361,3 +401,4 @@ end
 function apiOnExit()
   saveProgress()
 end
+

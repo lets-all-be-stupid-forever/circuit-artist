@@ -104,6 +104,12 @@ typedef struct RlDrawTextureProArgs{
 
 void RlDrawTexturePro(RlDrawTextureProArgs* args);
 
+// Steam stuff
+bool SteamEnabled();
+bool SteamGetAchievement(const char* ach_name);
+void SteamSetAchievement(const char* ach_name);
+void SteamRefreshAchievement();
+void SteamClearAchievement(const char* ach_name);
 ]]
 
 return ffi.C

@@ -130,8 +130,7 @@ void LevelsUpdate(Ui* ui) {
 
     // Checks if option is locked
     if (co->options[i].unlocked_by >= 0) {
-      C.btn_opts[i].disabled =
-          !co->options[co->options[i].unlocked_by].complete;
+      C.btn_opts[i].hidden = !co->options[co->options[i].unlocked_by].complete;
     }
 
     if (BtnUpdate(&C.btn_opts[i], ui)) {
@@ -173,13 +172,9 @@ void LevelsDraw(Ui* ui) {
   DrawTitle(ui, C.modal, "LEVEL SELECTION");
   LevelOptions* co = ApiGetLevelOptions();
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
-    if (co->options[i].name) {
-      if (C.btn_opts[i].disabled) {
-        BtnDrawIcon(&C.btn_opts[i], ui->scale, ui->sprites, rect_locked);
-      } else {
-        BtnDrawIcon(&C.btn_opts[i], ui->scale, co->options[i].icon.tex,
-                    co->options[i].icon.region);
-      }
+    if (co->options[i].name && !C.btn_opts[i].hidden) {
+      BtnDrawIcon(&C.btn_opts[i], ui->scale, co->options[i].icon.tex,
+                  co->options[i].icon.region);
       if (co->options[i].complete && true) {
         Rectangle box = C.btn_opts[i].hitbox;
         int x = box.x;
@@ -209,12 +204,8 @@ void LevelsDraw(Ui* ui) {
   DrawWidgetFrameInv(ui, C.modal);
   TextboxDraw(&C.level_textbox, ui);
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
-    if (co->options[i].name) {
-      if (C.btn_opts[i].disabled) {
-        BtnDrawLegend(&C.btn_opts[i], ui->scale, "???");
-      } else {
-        BtnDrawLegend(&C.btn_opts[i], ui->scale, co->options[i].name);
-      }
+    if (co->options[i].name && !C.btn_opts[i].hidden) {
+      BtnDrawLegend(&C.btn_opts[i], ui->scale, co->options[i].name);
     }
   }
 }

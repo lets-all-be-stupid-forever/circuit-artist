@@ -5,6 +5,7 @@
 #include "font.h"
 #include "raylib.h"
 #include "rlgl.h"
+//#include "steam.h"
 #include "w_about.h"
 #include "w_dialog.h"
 #include "w_levels.h"
@@ -20,8 +21,15 @@ static void UiClose(Ui* ui);  // Callback called when user clicks on the close
 void UiLoad(Ui* ui) {
   *ui = (Ui){0};
 
-  // For now the ui scale only works at scale=2, there are some hard coded
-  // scale that needs to be fixed (low priority)
+  bool steam_enabled = SteamEnabled();
+  if (steam_enabled) {
+#ifdef WITH_STEAM
+    SteamInit();
+#endif
+  }
+
+  //  For now the ui scale only works at scale=2, there are some hard coded
+  //  scale that needs to be fixed (low priority)
   ui->scale = 2;
   int screen_width = 640 * 2;
   int screen_height = 320 * 2;
@@ -45,7 +53,12 @@ void UiLoad(Ui* ui) {
   MainOpen(ui);
 }
 
-void UiUnload(Ui* ui) { MainUnload(); }
+void UiUnload(Ui* ui) {
+  MainUnload();
+#ifdef WITH_STEAM
+  SteamShutdown();
+#endif
+}
 
 static void UiClose(Ui* ui) { ui->should_close = true; }
 

@@ -3,6 +3,7 @@ project(ca C CXX)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 OPTION(OPENMP "Use OpenMP for thread detection")
+OPTION(STEAM "Steam support")
 
 IF (OPENMP)
   find_package(OpenMP REQUIRED)
@@ -56,6 +57,13 @@ add_custom_command(
 )
 link_directories(LuaJIT/src)
 
+IF (STEAM)
+    link_directories(third_party/redistributable_bin/win64/)
+    SET(steam_libs steam_api64)
+    add_compile_definitions(WITH_STEAM=1)
+ENDIF()
+
+
 add_compile_definitions(CLIP_ENABLE_IMAGE=1)
 
 SET(ca_src
@@ -84,6 +92,7 @@ SET(ca_src
   src/w_tutorial.c
   src/w_dialog.c
   src/clip_api.cpp
+  src/steam.cpp
 
   # Stuff for copy-paste
   third_party/clip/image.cpp
@@ -128,7 +137,7 @@ ENDIF()
 IF (OPENMP)
   SET(openmp_lib OpenMP::OpenMP_C OpenMP::OpenMP_CXX)
 ENDIF ()
-target_link_libraries(calib raylib ${shlwapi_lib} nfd ${openmp_lib} ${luajit_lib} ${clip_libs})
+target_link_libraries(calib raylib ${shlwapi_lib} nfd ${openmp_lib} ${luajit_lib} ${clip_libs} ${steam_libs})
 
 add_executable(ca src/main.c)
 target_link_libraries(ca calib)
