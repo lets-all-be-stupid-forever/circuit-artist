@@ -52,7 +52,7 @@ function SimpleRam:new()
   self.schedule = cases
 end
 
-return {
+addLevel({
     icon = "../luasrc/imgs/levels/simple_ram_icon.png",
     name = "Memory: 8bit SRAM",
     desc=[[
@@ -93,5 +93,7 @@ For the tests, we will fill each memory address with random values, and then on 
     chips = {
       Clock(),
       SimpleRam(),
-    }
-}
+    },
+    id='RAM8',
+    unlockedBy='MOF3',
+})

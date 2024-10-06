@@ -2,6 +2,7 @@ local math = require 'math'
 local bit = require 'bit'
 local ffi = require 'ffi'
 local C = require 'c_api'
+local json = require 'json'
 local utils = {}
 local lshift, rshift, rol = bit.lshift, bit.rshift, bit.rol
 local bnot, band, bor, bxor = bit.bnot, bit.band, bit.bor, bit.bxor
@@ -79,6 +80,42 @@ end
 
 function utils.iswindows()
    return package.config:sub(1,1) == '\\'
+end
+
+
+function utils.saveJson(content, path)
+  -- Open the file handle
+  local file, errorString = io.open( path, "w" )
+
+  if not file then
+    -- Error occurred; output the cause
+    print( "File error: " .. errorString )
+    return false
+  else
+    -- Write encoded JSON data to file
+    file:write( json.encode( content ) )
+    -- Close the file handle
+    io.close( file )
+    return true
+  end
+end
+
+function utils.loadJson(path)
+  -- Open the file handle
+  local file, errorString = io.open( path, "r" )
+  if not file then
+    -- Error occurred; output the cause
+    print( "File error: " .. errorString )
+  else
+    -- Read data from file
+    local contents = file:read( "*a" )
+    -- Decode JSON data into Lua table
+    local t = json.decode( contents )
+    -- Close the file handle
+    io.close( file )
+    -- Return table
+    return t
+  end
 end
 
 

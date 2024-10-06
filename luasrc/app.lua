@@ -9,16 +9,18 @@ require 'api'
 initTutorial()
 
 -- Loads each level
-addLevel(require 'levels.sandbox')
-addLevel(require 'levels.seven_seg')
-addLevel(require 'levels.bus')
-addLevel(require 'levels.mof3')
-addLevel(require 'levels.simple_ram')
-addLevel(require 'levels.collatz')
-addLevel(require 'levels.gcd')
-addLevel(require 'levels.riscv_alu')
-addLevel(require 'levels.hanoi')
-addLevel(require 'levels.primes')
+require 'levels.sandbox'
+require 'levels.seven_seg'
+require 'levels.bus'
+require 'levels.mof3'
+require 'levels.simple_ram'
+require 'levels.collatz'
+require 'levels.gcd'
+require 'levels.riscv_alu'
+require 'levels.hanoi'
+-- require 'levels.primes'
+
+loadProgress()
 
 setInitialLevelByName('Sandbox')
 

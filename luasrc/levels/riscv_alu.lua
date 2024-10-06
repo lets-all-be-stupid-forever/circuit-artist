@@ -226,7 +226,7 @@ function RiscvALU:new()
 
 end
 
-return {
+addLevel({
     icon = "../luasrc/imgs/levels/riscv_alu_icon.png",
     name = "RISCV ALU: RV32I",
     desc=[[
@@ -297,5 +297,7 @@ SLT(100, 3)=0
     chips = {
       Clock(true),
       RiscvALU(),
-    }
-}
+    },
+    id='ALU32',
+    unlockedBy='GCD',
+})

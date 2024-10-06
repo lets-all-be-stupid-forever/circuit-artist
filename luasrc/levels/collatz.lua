@@ -44,7 +44,7 @@ function Collatz:new()
 
 end
 
-return {
+addLevel({
   icon = "../luasrc/imgs/levels/collatz_icon.png",
   name = "3x+1 Sequence",
   desc=[[
@@ -78,5 +78,7 @@ The first 16 tests will be the positive numbers from `n`=1 to `n`=16. The 8 next
   chips = {
     Clock(),
     Collatz(),
-  }
-}
+  },
+  id='COLLATZ',
+  unlockedBy='RAM8',
+})

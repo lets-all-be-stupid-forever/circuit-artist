@@ -116,6 +116,7 @@ function Tester:onClock(inputs)
   -- If we have been through all the tests cases, then we declare the test as successful and stop the clock.
   if self.curi == #self.schedule + 1 then
     self.result = 1
+    notifyLevelCompleted()
     self.clocks_taken = stopClock()
     return
   end
@@ -163,7 +164,7 @@ function Tester:onDraw(rt, cam, disp1)
     local tw = rt.texture.width
     if self.result == 1 then
       -- table.insert(msgs, {text='Success (' .. self.clocks_taken .. ' clocks)', color=green})
-      table.insert(msgs, {text='Success', color=green})
+      table.insert(msgs, {text='Level Complete', color=green})
     elseif self.result == -1 then
       table.insert(msgs, {text='Failure', color=red})
     else

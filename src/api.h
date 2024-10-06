@@ -29,6 +29,13 @@ typedef struct {
     Sprite icon;
     // Sprites associated with the desc string.
     Sprite sprites[20];
+    // Flag when level is complete
+    bool complete;
+    // Used to define whether a level is locked or not.
+    // It will be locked if:
+    // (i) unlocked_by >= 0 AND
+    // (ii) options[unlocked_by].complete is false
+    int unlocked_by;
   } options[60];
   // Image that is loaded on the game startup
   char* startup_image_path;

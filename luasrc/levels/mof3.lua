@@ -28,7 +28,7 @@ function MultipleOf3:new()
   self.schedule = schedule
 end
 
-return {
+addLevel({
     icon = "../luasrc/imgs/levels/mof3_icon.png",
     name = "Multiple of 3",
     desc = [[
@@ -51,5 +51,7 @@ n=111 --> mof3=1
     chips = {
       Clock(true),
       MultipleOf3(),
-    }
-}
+    },
+    id='MOF3',
+    unlockedBy='BUS',
+})

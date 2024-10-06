@@ -137,6 +137,7 @@ void ApiLoad() {
 }
 
 void ApiUnload() {
+  LuaCall("apiOnExit()");
   if (_L) {
     lua_close(_L);
   }

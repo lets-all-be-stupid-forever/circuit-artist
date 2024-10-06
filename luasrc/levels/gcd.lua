@@ -43,7 +43,7 @@ function GCD:new()
   self.schedule = cases
 end
 
-return {
+addLevel({
     icon = "../luasrc/imgs/levels/gcd_icon.png",
     name = "Greatest Common Divisor",
     desc=[[
@@ -89,5 +89,7 @@ For example, computing the GCD between 10 and 6:
   chips = {
     Clock(),
     GCD(),
-  }
-}
+  },
+  id='GCD',
+  unlockedBy='COLLATZ',
+})

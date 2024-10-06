@@ -88,6 +88,7 @@ function Hanoi:onClock(inputs, reset)
   -- movement succeeded
   if #self.state[1] == 0 and #self.state[2] == 0 then
     self.result = 1
+    notifyLevelCompleted()
     stopClock()
   end
 end
@@ -119,7 +120,7 @@ function Hanoi:onDraw(rt, cam, disp1)
     if self.result == -1 then
       status = 'Failure.'
     elseif self.result == 1 then
-      status = 'Success!'
+      status = 'Level Complete'
     end
     C.CaDrawTextBox(status, 40, 20, 80, c2)
     rl.DrawRectangle(30, y0, 3*tower_width, 5, c2)
@@ -140,7 +141,7 @@ function Hanoi:onDraw(rt, cam, disp1)
   rl.EndTextureMode()
 end
 
-return {
+addLevel({
   name="Hanoi Tower",
   icon="../luasrc/imgs/levels/hanoi_icon.png",
   desc=[[
@@ -176,6 +177,7 @@ Below one example of how to solve the game with 2 pieces:
     chips = {
       Clock(),
       Hanoi(10),
-    }
-}
-
+    },
+    id='HANOI',
+    unlockedBy='ALU32',
+})

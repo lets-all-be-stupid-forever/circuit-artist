@@ -44,7 +44,7 @@ function BroadcastBus:new()
   self.schedule = schedule
 end
 
-return {
+addLevel({
   icon="../luasrc/imgs/levels/bus_icon.png",
   name="Broadcast Bus",
   desc=[[
@@ -88,5 +88,7 @@ There will be a total of 32 tests.
     chips = {
       Clock(true),
       BroadcastBus(4),
-    }
-}
+    },
+    id='BUS',
+    unlockedBy='7SEG',
+})

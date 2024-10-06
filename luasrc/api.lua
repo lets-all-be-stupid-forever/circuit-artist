@@ -4,12 +4,18 @@ local C = require 'c_api'
 local help = require 'tutorial'
 local Camera = require 'camera'
 local textbox = require 'textbox'
+local utils = require 'utils'
+
+-- File storing the save data for the game.
+local SAVEFILE_PATH='../save.json'
 
 local S = C.GetSharedState()
 local free = ffi.C.free
 local malloc = ffi.C.malloc
 local cast = ffi.cast
 local sizeof = ffi.sizeof
+
+local idToLevelLut = {}
 
 -- Level registry
 local levelOptions = {}
@@ -83,12 +89,22 @@ end
 function addLevel(co)
   table.insert(levelOptions, co)
   local i = #levelOptions
+  local levelId = co.id
+  if levelId ~= nil then
+    idToLevelLut[levelId] = i
+  end
   print('added level ' .. i .. ' ' .. co.name)
   -- local co = levelOptions[i]
   local opt = S.level_options.options[i-1]
   opt.ilevel = i-1
+  if co.unlockedBy ~= nil then
+    opt.unlocked_by = idToLevelLut[co.unlockedBy] - 1
+  else
+    opt.unlocked_by = -1
+  end
   local icon = R.LoadTexture(co.icon)
   opt.icon = toSprite({icon, 0, 0, 33, 33})
+  opt.complete = false;
   local t = textbox.prepareText(co.desc)
   co._t = t
   -- Hack to make lua keep the table with the string so the reference in C is
@@ -289,3 +305,59 @@ function setStartupImage(image_path)
   C.CaSetStartupImage(image_path)
 end
 
+function notifyLevelCompleted()
+  local opt = S.level_options.options[S.level_desc.ilevel]
+  local complete_before = opt.complete
+  opt.complete = true
+  if not complete_before then
+    saveProgress()
+    local levelId = getLevel().id
+    if levelId ~= nil then
+      for i=1,#levelOptions do
+        if levelOptions[i].unlockedBy == levelId then
+          C.CaAddMessage("Unlocked New Level: " .. levelOptions[i].name, 10)
+        end
+      end
+    end
+    C.CaAddMessage("Level Complete!", 4)
+  end
+end
+
+-- loadProgress() should be called after all levels have been defined. It will
+-- read the save json file and override the C structs with the data written in
+-- the json.
+function loadProgress()
+  local progress = utils.loadJson(SAVEFILE_PATH)
+  if progress == nil then
+    return
+  end
+  -- Checks whether a level is complete or not.
+  for i=1,#levelOptions do
+    local levelId = levelOptions[i].id
+    if levelId ~= nil then
+      local complete = progress['COMPLETE_' .. levelId]
+      if complete ~= nil then
+        S.level_options.options[i-1].complete = complete
+      end
+    end
+  end
+end
+
+-- The saveProgress() function will read the data from the C structs and write
+-- a JSON file.
+-- Progress for levels need a "id" field in the level definition.
+function saveProgress()
+  local progress = {}
+  for i=1,#levelOptions do
+    local levelId = levelOptions[i].id
+    if levelId ~= nil then
+      progress['COMPLETE_' .. levelId] = S.level_options.options[i-1].complete
+    end
+  end
+  utils.saveJson(progress, SAVEFILE_PATH)
+end
+
+-- Called by C API before API is closed.
+function apiOnExit()
+  saveProgress()
+end

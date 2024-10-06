@@ -25,7 +25,7 @@ table.insert(chips, ram)
 table.insert(chips, ramDisplay)
 
 
-return {
+addLevel({
     icon = "../luasrc/imgs/levels/sandbox_icon.png",
     name = 'Sandbox',
     desc = [[
@@ -58,5 +58,5 @@ You can open the game folder in steam via right click on the game name in "libra
 
 `Attention:` Mind not modifying scripts outside the `luasrc/scripts/` folder because they are overidden in updates.
 ]],
-    chips = chips
-}
+    chips = chips,
+})

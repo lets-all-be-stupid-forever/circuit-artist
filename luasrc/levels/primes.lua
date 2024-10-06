@@ -43,7 +43,7 @@ function Primes:new(n)
   self.schedule = schedule
 end
 
-return {
+addLevel({
     icon = "../luasrc/imgs/levels/primes_icon.png",
     name = "Primes",
     desc=[[
@@ -58,5 +58,7 @@ You can use `multiple clock cycles` to compute the result. The result will only 
     chips = {
       Clock(),
       Primes(250),
-    }
-}
+    },
+    id='PRIMES',
+    unlockedBy='HANOI',
+})

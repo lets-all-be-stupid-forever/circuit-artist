@@ -88,7 +88,7 @@ function SevenSeg:customDraw(rt)
   rl.rlPopMatrix()
 end
 
-return {
+addLevel({
     icon = "../luasrc/imgs/levels/seven_seg_icon.png",
     name = "Seven Segments",
     desc=[[
@@ -107,5 +107,7 @@ For validation, each number between 0 and 9 will be tested.
     chips = {
       Clock(true),
       SevenSeg(),
-    }
-}
+    },
+    id='7SEG',
+    unlockedBy=nil,
+})
