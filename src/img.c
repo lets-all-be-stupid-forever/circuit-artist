@@ -249,14 +249,14 @@ void ImageEnsureMaxSize(Image* img) {
 }
 
 void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
-                       RectangleInt img_rect, int ls, bool corner,
+                       RectangleInt img_rect, int ls, int sep, bool corner,
                        bool end_corner, Color c, Image* out, Vector2Int* off) {
   const int DIR_HORIZONTAL = 0;
   const int DIR_VERTICAL = 1;
   RectangleInt r = tool_rect;
   int startx = start.x;
   int starty = start.y;
-  int endx = 2 * r.x + r.width - startx - 1;
+  int endx = 2 * r.x + r.width - startx - 1;  // r.x+r.width ->
   int endy = 2 * r.y + r.height - starty - 1;
 
   int dir = -1;
@@ -266,14 +266,14 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
         .x = r.x,
         .y = starty,
         .width = r.width,
-        .height = 2 * ls - 1,
+        .height = (sep + 1) * ls - 1,
     };
   } else {
     dir = DIR_VERTICAL;
     r = (RectangleInt){
         .x = startx,
         .y = r.y,
-        .width = 2 * ls - 1,
+        .width = (sep + 1) * ls - 1,
         .height = r.height,
     };
   }
@@ -285,13 +285,15 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
   }
   int w = r.width;
   int h = r.height;
+  int hh = 2 * ls - 1;
+  int ww = 2 * ls - 1;
   Image img = GenImageFilled(w, h, BLANK);
   *out = img;
   // horizontal
   Color* data = GetPixels(*out);
   if (dir == DIR_HORIZONTAL) {
-    for (int y = 0; y < img.height; y += 2) {
-      Color* line = data + y * img.width;
+    for (int yy = 0, y = 0; yy < img.height; yy += sep + 1, y += 2) {
+      Color* line = data + yy * img.width;
       for (int x = 0; x < img.width; x++) {
         // Horizontal lines
         // When end_corner is true, it's like it starts from the other end.
@@ -301,7 +303,7 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
           dx = dx < 0 ? -dx : dx;
           dy = dy < 0 ? -dy : dy;
           if (endx > startx && dx < dy) continue;
-          if (endx < startx && dx < (h - dy - 1)) continue;
+          if (endx < startx && dx < (hh - dy - 1)) continue;
         }
         if (end_corner) {
           // Just exchange startx and endx
@@ -310,7 +312,7 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
           dx = dx < 0 ? -dx : dx;
           dy = dy < 0 ? -dy : dy;
           if (startx > endx && dx < dy) continue;
-          if (startx < endx && dx < (h - dy - 1)) continue;
+          if (startx < endx && dx < (hh - dy - 1)) continue;
         }
         line[x] = c;
       }
@@ -318,14 +320,14 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
   } else {
     for (int y = 0; y < img.height; y++) {
       Color* line = data + y * img.width;
-      for (int x = 0; x < img.width; x += 2) {
+      for (int xx = 0, x = 0; xx < img.width; xx += sep + 1, x += 2) {
         if (corner) {
           int dx = x + r.x - startx;
           int dy = y + r.y - starty;
           dx = dx < 0 ? -dx : dx;
           dy = dy < 0 ? -dy : dy;
           if (endy > starty && dx > dy) continue;
-          if (endy < starty && (w - dx - 1) > dy) continue;
+          if (endy < starty && (ww - dx - 1) > dy) continue;
         }
         if (end_corner) {
           int dx = x + r.x - startx;
@@ -333,9 +335,9 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
           dx = dx < 0 ? -dx : dx;
           dy = dy < 0 ? -dy : dy;
           if (starty > endy && dx > dy) continue;
-          if (starty < endy && (w - dx - 1) > dy) continue;
+          if (starty < endy && (ww - dx - 1) > dy) continue;
         }
-        line[x] = c;
+        line[xx] = c;
       }
     }
   }

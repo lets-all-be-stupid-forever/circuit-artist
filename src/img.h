@@ -84,11 +84,13 @@ Color* GetPixels(Image img);
 // `corner` is a flag for the corner at the beginning tip of the wire and
 // `end_corner` is a flag for corenr at the end tip of the lines.
 //
+// `sep` is the separation between consecutive lines.
+//
 // The generated image `out` is a subset of the full image . The full image
 // size is defined by `img_rect`,  and the offset of the subimage within the
 // full image is given by the `off` output.
 void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
-                       RectangleInt img_rect, int ls, bool corner,
+                       RectangleInt img_rect, int ls, int sep, bool corner,
                        bool end_corner, Color c, Image* out, Vector2Int* off);
 
 // Algorithm for the "Bucket Tool".

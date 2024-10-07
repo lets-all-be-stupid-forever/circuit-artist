@@ -298,6 +298,7 @@ bool BtnUpdate(Btn* b, Ui* ui) {
 }
 
 void BtnDrawText(Btn* b, int ui_scale, const char* text) {
+  if (b->hidden) return;
   Vector2 size = GetRenderedTextSize(text);
   int fx = (b->hitbox.x + b->hitbox.width / 2) / ui_scale - size.x / 2;
   int fy = (b->hitbox.y + b->hitbox.height / 2) / ui_scale - size.y / 2 + 1;
@@ -338,9 +339,9 @@ void BtnDrawText(Btn* b, int ui_scale, const char* text) {
   }
 
   rlPopMatrix();
-  if (b->pressed) {
+  if ((b->pressed || b->toggled) && (!b->disabled)) {
     Color bl = BLACK;
-    bl.a = 50;
+    bl.a = 100;
     DrawRectangle(x, y, w, h, bl);
   }
 }

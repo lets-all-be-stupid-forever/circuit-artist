@@ -22,6 +22,17 @@
 
 #define MSG_DURATION 2
 
+#define LINE_WIDTH_NUM_OPTIONS 16
+#define LINE_SEP_NUM_OPTIONS 32
+
+const int line_width_options[] = {1,  2,  3,  4,  5,  6,  7,   8,
+                                  16, 24, 32, 48, 64, 96, 128, 256};
+
+const int line_sep_options[] = {
+    1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
+    18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 44, 48, 52, 56,
+};
+
 static struct {
   bool inited;
   // Image Drawing target, has same size as the original image
@@ -65,6 +76,14 @@ static struct {
   Btn btn_sel_open;
   Btn btn_sel_save;
   Btn btn_clockopt[6];
+  Btn btn_line_width;
+  Btn btn_line_sep;
+
+  bool line_width_open;
+  bool line_sep_open;
+
+  Btn line_width_grid[LINE_WIDTH_NUM_OPTIONS];
+  Btn line_sep_grid[LINE_SEP_NUM_OPTIONS];
 
   // Right side buttons
   Btn btn_challenge;
@@ -293,6 +312,42 @@ void MainUpdateHud(Ui* ui) {
   if (BtnUpdate(&C.btn_sel_open, ui)) MainOpenSelection(ui);
   if (BtnUpdate(&C.btn_sel_save, ui)) MainSaveSelection(ui);
 
+  if (BtnUpdate(&C.btn_line_width, ui)) {
+    C.line_width_open = !C.line_width_open;
+    C.line_sep_open = false;
+  }
+
+  if (BtnUpdate(&C.btn_line_sep, ui)) {
+    C.line_sep_open = !C.line_sep_open;
+    C.line_width_open = false;
+  }
+
+  if (C.line_width_open) {
+    for (int i = 0; i < LINE_WIDTH_NUM_OPTIONS; i++) {
+      if (BtnUpdate(&C.line_width_grid[i], ui)) {
+        PaintSetLineWidth(&C.ca, line_width_options[i]);
+        C.line_width_open = false;
+      }
+    }
+    int lw = PaintGetLineWidth(&C.ca);
+    for (int i = 0; i < LINE_WIDTH_NUM_OPTIONS; i++) {
+      C.line_width_grid[i].toggled = (lw == line_width_options[i]);
+    }
+  }
+
+  if (C.line_sep_open) {
+    for (int i = 0; i < LINE_SEP_NUM_OPTIONS; i++) {
+      if (BtnUpdate(&C.line_sep_grid[i], ui)) {
+        PaintSetLineSep(&C.ca, line_sep_options[i]);
+        C.line_sep_open = false;
+      }
+    }
+    int lw = PaintGetLineSep(&C.ca);
+    for (int i = 0; i < LINE_SEP_NUM_OPTIONS; i++) {
+      C.line_sep_grid[i].toggled = (lw == line_sep_options[i]);
+    }
+  }
+
   if (BtnUpdate(&C.btn_line, ui)) PaintSetTool(&C.ca, TOOL_LINE);
   if (BtnUpdate(&C.btn_brush, ui)) PaintSetTool(&C.ca, TOOL_BRUSH);
   if (BtnUpdate(&C.btn_marquee, ui)) PaintSetTool(&C.ca, TOOL_SEL);
@@ -323,7 +378,7 @@ void MainUpdateHud(Ui* ui) {
     ui->hit_count++;
   }
   for (int i = 0; i < C.num_colors; i++) {
-    if (RectHover(C.color_btn[i], pos)) {
+    if (RectHover(C.color_btn[i], pos) && ui->hit_count == 0) {
       ui->hit_count++;
       if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         PaintSetColor(&C.ca, C.palette[i]);
@@ -409,6 +464,7 @@ void MainDraw(Ui* ui) {
       C.level_overlay_tex.texture.height,
   };
   DrawWidgetFrame(ui, inner_content);
+  MainDrawStatusBar(ui);
 
   LevelOptions* co = ApiGetLevelOptions();
   LevelDesc* cd = ApiGetLevelDesc();
@@ -442,12 +498,16 @@ void MainDraw(Ui* ui) {
 #else
   BtnDrawIcon(&C.btn_challenge, bscale, ui->sprites, rect_sandbox);
 #endif
-
   BtnDrawText(&C.btn_tutorial, bscale, "Tutorial");
 
   bool color_disabled = PaintGetMode(&C.ca) != MODE_EDIT;
   BtnDrawColor(ui, C.fg_color_rect, PaintGetColor(&C.ca), false,
                color_disabled);
+  for (int i = 0; i < C.num_colors; i++) {
+    BtnDrawColor(ui, C.color_btn[i], C.palette[i],
+                 COLOR_EQ(C.palette[i], PaintGetColor(&C.ca)), color_disabled);
+  }
+
   BtnDrawIcon(&C.btn_line, bscale, ui->sprites, rect_line);
   BtnDrawIcon(&C.btn_brush, bscale, ui->sprites, rect_brush);
   BtnDrawIcon(&C.btn_picker, bscale, ui->sprites, rect_picker);
@@ -461,6 +521,32 @@ void MainDraw(Ui* ui) {
   BtnDrawIcon(&C.btn_sel_open, bscale, ui->sprites, rect_sel_open);
   BtnDrawIcon(&C.btn_sel_save, bscale, ui->sprites, rect_sel_save);
 
+  if (C.line_width_open) {
+    BtnDrawText(&C.btn_line_width, bscale, "x");
+    char txt[10];
+    for (int i = 0; i < LINE_WIDTH_NUM_OPTIONS; i++) {
+      sprintf(txt, "%d", line_width_options[i]);
+      BtnDrawText(&C.line_width_grid[i], bscale, txt);
+    }
+  } else {
+    char txt[10];
+    sprintf(txt, "w=%d", C.ca.line_tool_size);
+    BtnDrawText(&C.btn_line_width, bscale, txt);
+  }
+
+  if (C.line_sep_open) {
+    BtnDrawText(&C.btn_line_sep, bscale, "x");
+    char txt[10];
+    for (int i = 0; i < LINE_SEP_NUM_OPTIONS; i++) {
+      sprintf(txt, "%d", line_sep_options[i]);
+      BtnDrawText(&C.line_sep_grid[i], bscale, txt);
+    }
+  } else {
+    char txt[10];
+    sprintf(txt, "s=%d", PaintGetLineSep(&C.ca));
+    BtnDrawText(&C.btn_line_sep, bscale, txt);
+  }
+
   BtnDrawIcon(&C.btn_clockopt[0], bscale, ui->sprites, rect_hz0);
   BtnDrawIcon(&C.btn_clockopt[1], bscale, ui->sprites, rect_hz1);
   BtnDrawIcon(&C.btn_clockopt[2], bscale, ui->sprites, rect_hz4);
@@ -469,10 +555,6 @@ void MainDraw(Ui* ui) {
   BtnDrawIcon(&C.btn_clockopt[5], bscale, ui->sprites, rect_hz1k);
 
   MsgDraw(ui);
-  for (int i = 0; i < C.num_colors; i++) {
-    BtnDrawColor(ui, C.color_btn[i], C.palette[i],
-                 COLOR_EQ(C.palette[i], PaintGetColor(&C.ca)), color_disabled);
-  }
 
   if (C.ca.mode == MODE_SIMU) {
     if (C.ca.s.status != SIMU_STATUS_OK) {
@@ -499,8 +581,8 @@ void MainDraw(Ui* ui) {
                   "Brush tool (B)\nLeft mouse button: draw\nRight mouse "
                   "button: erase\nPress (ALT) to pick color.");
     BtnDrawLegend(&C.btn_line, bscale,
-                  "Line tool (L)\nType (NUMBER) to change line size.\nPress "
-                  "(SHIFT) while drawing to add corner to start of "
+                  "Line tool (L)\n"
+                  "Press (SHIFT) while drawing to add corner to start of "
                   "line.\nPress (CTRL) while drawing to add corner to end of "
                   "line.\nLeft mouse button: Draw\nRight mouse button: "
                   "Erase\nPress (ALT) to pick color.");
@@ -528,6 +610,16 @@ void MainDraw(Ui* ui) {
                   "mechanics.\n`-` Introduces a "
                   "number of digital logic concepts and components.");
 
+    if (!C.line_width_open) {
+      BtnDrawLegend(&C.btn_line_width, bscale,
+                    "Number of lines\nType (W then NUMBER) to change it.");
+    }
+    if (!C.line_sep_open) {
+      BtnDrawLegend(&C.btn_line_sep, bscale,
+                    "Number of pixels between "
+                    "consecutive lines.\nType (S then NUMBER) to change it. ");
+    }
+
     BtnDrawLegend(&C.btn_clockopt[0], bscale, "0 Hz Simulation");
     BtnDrawLegend(&C.btn_clockopt[1], bscale, "1 Hz Simulation");
     BtnDrawLegend(&C.btn_clockopt[2], bscale, "4 Hz Simulation");
@@ -536,7 +628,6 @@ void MainDraw(Ui* ui) {
     BtnDrawLegend(&C.btn_clockopt[5], bscale, "1024 Hz Simulation");
   }
 
-  MainDrawStatusBar(ui);
   if (ui->window == WINDOW_MAIN) {
     MainDrawMouseExtra(ui);
   }
@@ -624,6 +715,47 @@ void MainUpdateLayout(Ui* ui) {
     C.btn_clockopt[3].hitbox = (Rectangle){bx1, by4, bw, bh};
     C.btn_clockopt[4].hitbox = (Rectangle){bx0, by5, bw, bh};
     C.btn_clockopt[5].hitbox = (Rectangle){bx1, by5, bw, bh};
+
+    C.btn_line_width.hitbox = (Rectangle){bx0, by3, 35 * s, bh};
+    C.btn_line_sep.hitbox = (Rectangle){bx0, by4, 35 * s, bh};
+
+    {
+      Rectangle ref = C.btn_line_width.hitbox;
+      int cbw = 28 * s;
+      int cbh = bh;
+      int nx = 4;
+      int ny = 4;
+      int x0 = ref.x + ref.width + s;
+      int y0 = ref.y;
+      int sh = GetScreenHeight();
+      y0 = y0 + MinInt(sh - (y0 + cbh * ny), 0);
+      for (int y = 0; y < ny; y++) {
+        for (int x = 0; x < nx; x++) {
+          int i = y * nx + x;
+          C.line_width_grid[i].hitbox =
+              (Rectangle){x0 + x * cbw, y0 + y * cbh, cbw, cbh};
+        }
+      }
+    }
+
+    {
+      Rectangle ref = C.btn_line_sep.hitbox;
+      int cbw = 28 * s;
+      int cbh = bh;
+      int nx = 8;
+      int ny = 4;
+      int x0 = ref.x + ref.width + s;
+      int y0 = ref.y;
+      int sh = GetScreenHeight();
+      y0 = y0 + MinInt(sh - (y0 + cbh * ny), 0);
+      for (int y = 0; y < ny; y++) {
+        for (int x = 0; x < nx; x++) {
+          int i = y * nx + x;
+          C.line_sep_grid[i].hitbox =
+              (Rectangle){x0 + x * cbw, y0 + y * cbh, cbw, cbh};
+        }
+      }
+    }
 
     int cy = (sh - 2 * 18 - 2) * s;
     int cx = 4 * s + 35 * s + 4 * s;
@@ -820,11 +952,20 @@ void MainDrawMouseExtra(Ui* ui) {
     int s = ui->scale;
     bool just_changed = PaintGetKeyLineWidthHasJustChanged(&C.ca);
     char txt[20];
-    sprintf(txt, "w=%d", C.ca.line_tool_size);
+    int key_mode = PaintSetLineKeyMode(&C.ca);
+    sprintf(txt, "w=%d", PaintGetLineWidth(&C.ca));
     rlPushMatrix();
     rlTranslatef(pos.x + 8 * s, pos.y + 8 * s, 0);
     rlScalef(ui->scale, ui->scale, 1);
-    FontDrawTexture(txt, 0, 0, just_changed ? YELLOW : WHITE);
+    FontDrawTexture(txt, 0, 0,
+                    (just_changed && key_mode == 0) ? YELLOW : WHITE);
+    int sep = PaintGetLineSep(&C.ca);
+    if (sep != 1 || (just_changed && key_mode == 1)) {
+      rlTranslatef(0, 10, 0);
+      sprintf(txt, "s=%d", sep);
+      FontDrawTexture(txt, 0, 0,
+                      (just_changed && key_mode == 1) ? YELLOW : WHITE);
+    }
     rlPopMatrix();
   }
 }
@@ -867,6 +1008,16 @@ void MainUpdateWidgets() {
   C.btn_flipv.disabled = !has_sel || ned;
   C.btn_fliph.disabled = !has_sel || ned;
   C.btn_fill.disabled = !has_sel || ned;
+
+  C.btn_line_width.hidden = tool != TOOL_LINE;
+  for (int i = 0; i < LINE_WIDTH_NUM_OPTIONS; i++) {
+    C.line_width_grid[i].hidden = !C.line_width_open || tool != TOOL_LINE;
+  }
+
+  C.btn_line_sep.hidden = tool != TOOL_LINE;
+  for (int i = 0; i < LINE_SEP_NUM_OPTIONS; i++) {
+    C.line_sep_grid[i].hidden = !C.line_sep_open || tool != TOOL_LINE;
+  }
 
   C.btn_sel_open.disabled = ned;
   C.btn_sel_save.disabled = !has_sel || ned;
