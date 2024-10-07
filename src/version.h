@@ -1,7 +1,20 @@
 #ifndef VERSION_H
 #define VERSION_H
-#define CA_VERSION "v1.0.4 - 22Sep2024"
+#define CA_VERSION "v1.0.5 - 07Oct2024"
 
+// v1.0.4 --> v1.0.4: Level Progression
+//   - Added Level Progression and Steam Achievements.
+//   - Added 2 dark colors to default palette
+//   - Added feature to save and load a selection (to mitigate lack of blueprint
+//   support)
+//   - Added possibility to change spacing between consecutive lines in line
+//   tool.
+//   - Removed minimap and moved sidebar buttons to topbar
+//   - Added number of pixels to selection on status bar
+//   - Rename circuitopedia to "Tutorial"
+//   - Fix bug in SRLATCH image schema
+//   - Fix a bug in 9 picture in the 7seg level
+//   - Fix crash when window too small
 // v1.0.3 --> v1.0.4: Improved Lua Support
 //  - (QoL) Loads lua scripts from luasrc/scripts folder.
 //          Improved Sandbox level with Keyboard + ROM + RAM + Display
