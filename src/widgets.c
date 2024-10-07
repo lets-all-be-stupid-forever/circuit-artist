@@ -313,8 +313,7 @@ void BtnDrawText(Btn* b, int ui_scale, const char* text) {
   Color c1 = GetLutColor(COLOR_BTN1);
   Color c2 = GetLutColor(COLOR_BTN2);
   Color cbg = GetLutColor(COLOR_BTN_BG);
-  // DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
-  DrawRectangle(x, y, w + 1 * s, h + 1 * s, cbg);
+  DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
   DrawRectangle(x, y, w, h, c1);
   if ((b->pressed || b->toggled) && (!b->disabled)) {
     DrawRectangle(x, y, w, s, c0);  // TOP
@@ -360,8 +359,7 @@ void BtnDrawIcon(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
   Color c1 = GetLutColor(COLOR_BTN1);
   Color c2 = GetLutColor(COLOR_BTN2);
   Color cbg = GetLutColor(COLOR_BTN_BG);
-  // DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
-  DrawRectangle(x, y, w + 1 * s, h + 1 * s, cbg);
+  DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
   DrawRectangle(x, y, w, h, c1);
   if ((b->pressed || b->toggled) && (!b->disabled)) {
     DrawRectangle(x, y, w, s, c0);  // TOP

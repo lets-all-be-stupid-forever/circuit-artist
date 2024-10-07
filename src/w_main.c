@@ -496,8 +496,12 @@ void MainDraw(Ui* ui) {
   // }
 
   C.btn_challenge.disabled = PaintGetMode(&C.ca) != MODE_EDIT;
-  BtnDrawIcon(&C.btn_challenge, bscale, co->options[cd->ilevel].icon.tex,
-              co->options[cd->ilevel].icon.region);
+  {
+    char txt[400];
+    sprintf(txt, "Lvl: %s", co->options[cd->ilevel].name);
+    BtnDrawText(&C.btn_challenge, bscale, txt);
+  }
+
 #else
   BtnDrawIcon(&C.btn_challenge, bscale, ui->sprites, rect_sandbox);
 #endif
@@ -665,6 +669,7 @@ void MainUpdateLayout(Ui* ui) {
     int x8 = x7 + 18 * s;
     int x9 = x8 + 18 * s;
     int x10 = x9 + 18 * s;
+    int x11 = x10 + 18 * s;
     int bw = 17 * s;
     int bh = 17 * s;
     C.btn_new.hitbox = (Rectangle){x0, y0, bw, bh};
@@ -674,6 +679,7 @@ void MainUpdateLayout(Ui* ui) {
     C.btn_about.hitbox = (Rectangle){x4, y0, bw, bh};
     C.btn_exit.hitbox = (Rectangle){x5, y0, bw, bh};
     C.btn_tutorial.hitbox = (Rectangle){x7, y0, 3 * bw, bh};
+    C.btn_challenge.hitbox = (Rectangle){x11, y0, 15 * bw, bh};
   }
 
   int sh = GetScreenHeight() / s;
@@ -681,9 +687,6 @@ void MainUpdateLayout(Ui* ui) {
     int bx0 = 4 * s;
     int by0 = (30) * s;
     int by0_simu = by0;
-    C.btn_challenge.hitbox = (Rectangle){bx0, by0, 35 * s, s * 35};
-
-    by0 = by0 + 2 * 18 * s + 4 * s;
     C.btn_simu.hitbox = (Rectangle){bx0, by0, (2 * 17 + 1) * s, 17 * s};
     by0 = by0 + 18 * s;
     by0 = by0 + 4 * s;
