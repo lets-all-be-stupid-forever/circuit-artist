@@ -552,8 +552,8 @@ void PaintRender(Paint* ca) {
     }
 
     // Mouse selection preview
-    if ((tool == TOOL_SEL || tool == TOOL_BUCKET) && !ca->tool_pressed &&
-        IsCursorOnScreen() && !PaintGetMouseOverSel(ca) &&
+    if ((tool == TOOL_SEL || tool == TOOL_BUCKET || tool == TOOL_PICKER) &&
+        !ca->tool_pressed && IsCursorOnScreen() && !PaintGetMouseOverSel(ca) &&
         ca->mouse_on_target) {
       Image buffer = HistGetBuffer(&ca->h);
       if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < buffer.width &&
