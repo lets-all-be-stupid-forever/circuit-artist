@@ -141,7 +141,10 @@ void MainInit(Ui* ui) {
   C.palette[13] = BEIGE;
   C.palette[14] = DARKBLUE;
   C.palette[15] = LIME;
-  C.num_colors = 16;
+
+  C.palette[16] = GetColor(0x111111FF);
+  C.palette[17] = GetColor(0x333333FF);
+  C.num_colors = 18;
   C.header_size = 24 * ui->scale;
   C.bottom_size = 3 * 17 * 1 * ui->scale - 6 * ui->scale;
 
