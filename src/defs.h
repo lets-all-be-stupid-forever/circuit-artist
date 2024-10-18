@@ -2,7 +2,7 @@
 #define DEFS_H
 // poor CLion can't tell this is used by everyone who includes defs.h
 // ReSharper disable once CppUnusedIncludeDirective
-#include "raylib.h"
+#include <raylib.h>
 
 #define COLOR_EQ(u, v) \
   (((u).r == (v).r) && ((u).g == (v).g) && ((u).b == (v).b) && ((u).a == (v).a))

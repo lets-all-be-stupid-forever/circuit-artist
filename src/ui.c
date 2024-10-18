@@ -3,8 +3,8 @@
 #include "api.h"
 #include "colors.h"
 #include "font.h"
-#include "raylib.h"
-#include "rlgl.h"
+#include <raylib.h>
+#include <rlgl.h>
 #include "steam.h"
 #include "w_about.h"
 #include "w_dialog.h"

@@ -2,10 +2,10 @@
 
 #include "colors.h"
 #include "font.h"
-#include "math.h"
-#include "rlgl.h"
-#include "stb_ds.h"
-#include "stdlib.h"
+#include <math.h>
+#include <rlgl.h>
+#include <stb_ds.h>
+#include <stdlib.h>
 #include "ui.h"
 #include "utils.h"
 

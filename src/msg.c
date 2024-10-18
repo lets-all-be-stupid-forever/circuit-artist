@@ -2,10 +2,10 @@
 
 #include "colors.h"
 #include "font.h"
-#include "math.h"
-#include "raylib.h"
-#include "rlgl.h"
-#include "stdlib.h"
+#include <math.h>
+#include <raylib.h>
+#include <rlgl.h>
+#include <stdlib.h>
 #include "utils.h"
 
 typedef struct Msg {

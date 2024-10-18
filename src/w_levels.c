@@ -3,9 +3,9 @@
 #include "api.h"
 #include "colors.h"
 #include "font.h"
-#include "rlgl.h"
-#include "stdio.h"
-#include "string.h"
+#include <rlgl.h>
+#include <stdio.h>
+#include <string.h>
 #include "tiling.h"
 #include "ui.h"
 #include "widgets.h"

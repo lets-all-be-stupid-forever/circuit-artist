@@ -1,6 +1,6 @@
 #include "clip_api.h"
 
-#include "clip.h"
+#include <clip.h>
 #include "img.h"
 
 Image ImageFromClipboard()

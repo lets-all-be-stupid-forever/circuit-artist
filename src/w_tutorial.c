@@ -2,9 +2,9 @@
 
 #include "api.h"
 #include "font.h"
-#include "raylib.h"
-#include "rlgl.h"
-#include "stb_ds.h"
+#include <raylib.h>
+#include <rlgl.h>
+#include <stb_ds.h>
 #include "tiling.h"
 #include "ui.h"
 #include "widgets.h"

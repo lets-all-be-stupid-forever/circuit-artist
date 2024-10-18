@@ -2,10 +2,10 @@
 
 #include <stdio.h>
 
-#include "assert.h"
+#include <assert.h>
 #include "colors.h"
 #include "font.h"
-#include "stdlib.h"
+#include <stdlib.h>
 
 // Makes sure the alpha is 255
 static Color ToValidColor(Color c) { return (Color){c.r, c.g, c.b, 255}; }

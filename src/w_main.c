@@ -6,11 +6,11 @@
 #include "font.h"
 #include "msg.h"
 #include "paint.h"
-#include "raylib.h"
-#include "rlgl.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <raylib.h>
+#include <rlgl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "tiling.h"
 #include "utils.h"
 #include "w_about.h"

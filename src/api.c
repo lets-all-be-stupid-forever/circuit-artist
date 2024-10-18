@@ -6,9 +6,9 @@
 
 #include "font.h"
 #include "msg.h"
-#include "stb_ds.h"
-#include "stdio.h"
-#include "stdlib.h"
+#include <stb_ds.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "ui.h"
 #include "utils.h"
 #include "w_main.h"

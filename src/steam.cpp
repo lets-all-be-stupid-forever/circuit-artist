@@ -1,6 +1,6 @@
 #include "steam.h"
 
-#include "stdio.h"
+#include <stdio.h>
 
 #ifdef WITH_STEAM
 #include "steam/steam_api_flat.h"

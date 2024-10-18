@@ -1,6 +1,6 @@
 #ifndef CLIP_API_H
 #define CLIP_API_H
-#include "raylib.h"
+#include <raylib.h>
 
 #if defined(__cplusplus)
 extern "C" {

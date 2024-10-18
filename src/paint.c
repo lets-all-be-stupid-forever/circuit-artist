@@ -5,9 +5,9 @@
 #include "clip_api.h"
 #include "colors.h"
 #include "hist.h"
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static const int MAX_LINE_WIDTH = 256;
 static const int RESIZE_HANDLE_SIZE = 20;
