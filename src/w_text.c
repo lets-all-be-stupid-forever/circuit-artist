@@ -2,7 +2,7 @@
 
 #include "colors.h"
 #include "font.h"
-#include "rlgl.h"
+#include <rlgl.h>
 #include "tiling.h"
 #include "ui.h"
 #include "w_main.h"

@@ -3,8 +3,8 @@
 #include "colors.h"
 #include "hist.h"
 #include "img.h"
-#include "math.h"
-#include "rlgl.h"
+#include <math.h>
+#include <rlgl.h>
 #include "ui.h"
 
 void CollectSnapshot(Image buf, Image* img) {

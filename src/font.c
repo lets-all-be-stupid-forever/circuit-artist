@@ -1,11 +1,11 @@
 #include "font.h"
 
-#include "assert.h"
+#include <assert.h>
 #include "colors.h"
 #include "img.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct {
   // Atlas image.

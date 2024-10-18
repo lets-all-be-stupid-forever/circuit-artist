@@ -1,9 +1,9 @@
 #include "filedialog.h"
 
-#include "stdlib.h"
+#include <stdlib.h>
 
 #define NFD_NATIVE
-#include "nfd.h"
+#include <nfd.h>
 
 ModalResult ModalSaveFile(const char* default_path, const char* default_name) {
   ModalResult mr = {0};

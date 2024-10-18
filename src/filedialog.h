@@ -1,6 +1,6 @@
 #ifndef FILEDIALOG_H
 #define FILEDIALOG_H
-#include "stdbool.h"
+#include <stdbool.h>
 
 // Result of the call to a file modal (open or save).
 // There's a need to call UnloadModalResult once the results have been treated.

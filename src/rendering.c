@@ -2,11 +2,11 @@
 
 #include "colors.h"
 #include "font.h"
-#include "math.h"
+#include <math.h>
 #if defined(WITH_OPENMP)
-#include "omp.h"
+#include <omp.h>
 #endif
-#include "string.h"
+#include <string.h>
 
 void RenderImageSimple(Image* out, Image img, float pixel_size, int camera_x,
                        int camera_y, int offx, int offy) {

@@ -1,7 +1,7 @@
 #include "brush.h"
 
-#include "assert.h"
-#include "stdlib.h"
+#include <assert.h>
+#include <stdlib.h>
 
 void BrushLoad(Brush* b) {
   *b = (Brush){0};

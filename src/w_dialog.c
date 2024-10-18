@@ -1,8 +1,8 @@
 #include "w_dialog.h"
 
 #include "font.h"
-#include "rlgl.h"
-#include "stdlib.h"
+#include <rlgl.h>
+#include <stdlib.h>
 #include "tiling.h"
 #include "ui.h"
 #include "utils.h"
