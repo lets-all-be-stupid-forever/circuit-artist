@@ -5,7 +5,7 @@
 #include "font.h"
 #include "raylib.h"
 #include "rlgl.h"
-//#include "steam.h"
+#include "steam.h"
 #include "w_about.h"
 #include "w_dialog.h"
 #include "w_levels.h"
