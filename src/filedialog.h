@@ -15,6 +15,12 @@ typedef struct {
   const char* error_msg;
 } ModalResult;
 
+// Initialize the file system modal library
+void ModalLoad();
+
+// De-initialize the file system modal library
+void ModalUnload();
+
 // Opens a save file system modal.
 ModalResult ModalSaveFile(const char* default_path, const char* default_name);
 

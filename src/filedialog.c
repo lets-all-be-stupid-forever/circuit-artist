@@ -5,6 +5,16 @@
 #define NFD_NATIVE
 #include <nfd.h>
 
+static nfdresult_t ModalInitResult = NFD_ERROR;
+// TODO: do something in case of error
+void ModalLoad() {
+    ModalInitResult = NFD_Init();
+}
+
+void ModalUnload() {
+    if(ModalInitResult == NFD_OKAY) NFD_Quit();
+}
+
 ModalResult ModalSaveFile(const char* default_path, const char* default_name) {
   ModalResult mr = {0};
   nfdchar_t* outpath = NULL;
