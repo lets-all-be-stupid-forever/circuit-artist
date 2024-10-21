@@ -703,12 +703,12 @@ void PaintUnload(Paint* ca) {
 }
 
 static Vector2 ProjectPointIntoRect(Vector2 p, Rectangle r) {
-  int x0 = r.x;
-  int y0 = r.y;
-  int x1 = r.x + r.width;
-  int y1 = r.y + r.height;
-  int px = p.x;
-  int py = p.y;
+  float x0 = r.x;
+  float y0 = r.y;
+  float x1 = r.x + r.width;
+  float y1 = r.y + r.height;
+  float px = p.x;
+  float py = p.y;
   px = px < x0 ? x0 : px;
   px = px > x1 ? x1 : px;
   py = py < y0 ? y0 : py;
@@ -720,15 +720,7 @@ static Vector2 ProjectPointIntoRect(Vector2 p, Rectangle r) {
 }
 
 void PaintEnforceMouseOnImageIfNeed(Paint* ca) {
-  // There's something weird with the GetMousePosition() returning a non-int
-  // mouse coordinate, which leads to issues here. Need to check on raylib why
-  // it happens. This workaround should work for now.
-  // When we have the non-int position, the camera gets shifted everytime a
-  // tool is used.
-  Vector2 pos = {
-      GetMouseX(),
-      GetMouseY(),
-  };
+  Vector2 pos = GetMousePosition();
   RectangleInt r = ca->viewport;
   Rectangle target_rect = {r.x, r.y, r.width, r.height};
   if (ca->tool_pressed) {
