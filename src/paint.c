@@ -720,16 +720,18 @@ static Vector2 ProjectPointIntoRect(Vector2 p, Rectangle r) {
 }
 
 void PaintEnforceMouseOnImageIfNeed(Paint* ca) {
-  Vector2 pos = GetMousePosition();
-  RectangleInt r = ca->viewport;
-  Rectangle target_rect = {r.x, r.y, r.width, r.height};
   if (ca->tool_pressed) {
+    Vector2 pos = GetMousePosition();
+    RectangleInt r = ca->viewport;
+    Rectangle target_rect = {r.x, r.y, r.width, r.height};
     // Need to project mouse into the rectangle
     Vector2 new_pos = ProjectPointIntoRect(pos, target_rect);
-    SetMousePosition(new_pos.x, new_pos.y);
-    ca->camera_x += new_pos.x - pos.x;
-    ca->camera_y += new_pos.y - pos.y;
-    PaintEnsureCameraWithinBounds(ca);
+    if(new_pos.x != pos.x || new_pos.y != pos.y) {
+      SetMousePosition(new_pos.x, new_pos.y);
+      ca->camera_x += new_pos.x - pos.x;
+      ca->camera_y += new_pos.y - pos.y;
+      PaintEnsureCameraWithinBounds(ca);
+    }
   }
 }
 
