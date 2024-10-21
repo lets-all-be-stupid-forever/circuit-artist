@@ -12,6 +12,7 @@
 #include "w_main.h"
 #include "w_text.h"
 #include "w_tutorial.h"
+#include "filedialog.h"
 
 static void UiDrawMouse(Ui* ui);  // Draws the mouse cursor. It's last thing
                                   // that is drawn in the screen.
@@ -50,11 +51,13 @@ void UiLoad(Ui* ui) {
   ui->sprites = LoadTexture("../assets/sprite4.png");
   HideCursor();
   ApiLoad();
+  ModalLoad();
   MainOpen(ui);
 }
 
 void UiUnload(Ui* ui) {
   MainUnload();
+  ModalUnload();
 #ifdef WITH_STEAM
   SteamShutdown();
 #endif
