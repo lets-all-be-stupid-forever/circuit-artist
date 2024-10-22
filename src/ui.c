@@ -1,11 +1,13 @@
 #include "ui.h"
 
+#include <raylib.h>
+#include <rlgl.h>
+
 #include "api.h"
 #include "colors.h"
+#include "filedialog.h"
 #include "font.h"
-#include "raylib.h"
-#include "rlgl.h"
-//#include "steam.h"
+#include "steam.h"
 #include "w_about.h"
 #include "w_dialog.h"
 #include "w_levels.h"
@@ -50,11 +52,13 @@ void UiLoad(Ui* ui) {
   ui->sprites = LoadTexture("../assets/sprite4.png");
   HideCursor();
   ApiLoad();
+  ModalLoad();
   MainOpen(ui);
 }
 
 void UiUnload(Ui* ui) {
   MainUnload();
+  ModalUnload();
 #ifdef WITH_STEAM
   SteamShutdown();
 #endif

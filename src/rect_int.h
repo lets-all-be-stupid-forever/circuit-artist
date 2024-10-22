@@ -1,6 +1,6 @@
 #ifndef RECT_INT_H
 #define RECT_INT_H
-#include "stdbool.h"
+#include <stdbool.h>
 
 // Rectangle with int coordinates.
 typedef struct {
