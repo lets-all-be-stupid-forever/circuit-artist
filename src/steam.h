@@ -22,4 +22,3 @@ CA_API void SteamRefreshAchievement();
 #endif
 
 #endif
-

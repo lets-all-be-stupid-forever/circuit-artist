@@ -1,10 +1,10 @@
 #include "clip_api.h"
 
 #include <clip.h>
+
 #include "img.h"
 
-Image ImageFromClipboard()
-{
+Image ImageFromClipboard() {
   clip::image img;
   if (!clip::get_image(img)) {
     // std::cout << "Error getting image from clipboard\n";
@@ -32,8 +32,7 @@ Image ImageFromClipboard()
         colors[y * w + x].a = a;
       }
     }
-  }
-  else {
+  } else {
     for (unsigned long y = 0; y < spec.height; ++y) {
       char* src = (img.data() + y * spec.bytes_per_row);
       for (unsigned long x = 0; x < spec.width; ++x) {
@@ -51,8 +50,7 @@ Image ImageFromClipboard()
   return ret;
 }
 
-void ImageToClipboard(Image img)
-{
+void ImageToClipboard(Image img) {
   clip::image_spec spec;
   spec.width = img.width;
   spec.height = img.height;
@@ -69,4 +67,3 @@ void ImageToClipboard(Image img)
   clip::image clip_img((void*)GetPixels(img), spec);
   clip::set_image(clip_img);
 }
-

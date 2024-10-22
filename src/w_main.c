@@ -1,16 +1,17 @@
 #include "w_main.h"
 
+#include <raylib.h>
+#include <rlgl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "api.h"
 #include "colors.h"
 #include "filedialog.h"
 #include "font.h"
 #include "msg.h"
 #include "paint.h"
-#include <raylib.h>
-#include <rlgl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "tiling.h"
 #include "utils.h"
 #include "w_about.h"
@@ -1137,4 +1138,3 @@ void MainPasteText(const char* txt) {
   Image img = RenderText(txt, C.ca.fg_color);
   PaintPasteImage(&C.ca, img);
 }
-

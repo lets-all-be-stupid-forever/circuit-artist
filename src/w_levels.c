@@ -1,11 +1,12 @@
 #include "w_levels.h"
 
-#include "api.h"
-#include "colors.h"
-#include "font.h"
 #include <rlgl.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "api.h"
+#include "colors.h"
+#include "font.h"
 #include "tiling.h"
 #include "ui.h"
 #include "widgets.h"

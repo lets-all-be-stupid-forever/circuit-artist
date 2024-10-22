@@ -2,9 +2,10 @@
 
 #include <assert.h>
 #include <math.h>
-#include "pyramid.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "pyramid.h"
 
 #define ALPHA_OFF 50
 #define ALPHA_ON 255
