@@ -79,4 +79,3 @@ void SteamRefreshAchievement() {
   }
 }
 #endif
-

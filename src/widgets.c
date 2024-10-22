@@ -1,11 +1,12 @@
 #include "widgets.h"
 
-#include "colors.h"
-#include "font.h"
 #include <math.h>
 #include <rlgl.h>
 #include <stb_ds.h>
 #include <stdlib.h>
+
+#include "colors.h"
+#include "font.h"
 #include "ui.h"
 #include "utils.h"
 
@@ -512,4 +513,3 @@ void DrawTitle(Ui* ui, Rectangle modal, const char* title) {
   FontDrawTexture(title, offx, offy, WHITE);
   rlPopMatrix();
 }
-

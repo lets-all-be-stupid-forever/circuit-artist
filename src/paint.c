@@ -1,13 +1,14 @@
 #include "paint.h"
 
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "api.h"
 #include "brush.h"
 #include "clip_api.h"
 #include "colors.h"
 #include "hist.h"
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 static const int MAX_LINE_WIDTH = 256;
 static const int RESIZE_HANDLE_SIZE = 20;
@@ -726,7 +727,7 @@ void PaintEnforceMouseOnImageIfNeed(Paint* ca) {
     Rectangle target_rect = {r.x, r.y, r.width, r.height};
     // Need to project mouse into the rectangle
     Vector2 new_pos = ProjectPointIntoRect(pos, target_rect);
-    if(new_pos.x != pos.x || new_pos.y != pos.y) {
+    if (new_pos.x != pos.x || new_pos.y != pos.y) {
       SetMousePosition(new_pos.x, new_pos.y);
       ca->camera_x += new_pos.x - pos.x;
       ca->camera_y += new_pos.y - pos.y;

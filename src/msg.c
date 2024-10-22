@@ -1,11 +1,12 @@
 #include "msg.h"
 
-#include "colors.h"
-#include "font.h"
 #include <math.h>
 #include <raylib.h>
 #include <rlgl.h>
 #include <stdlib.h>
+
+#include "colors.h"
+#include "font.h"
 #include "utils.h"
 
 typedef struct Msg {
@@ -17,7 +18,9 @@ typedef struct Msg {
   struct Msg* nxt;
 } Msg;
 
-static struct { Msg* msg_queue; } C = {0};
+static struct {
+  Msg* msg_queue;
+} C = {0};
 
 void MsgAdd(const char* msg_txt, float duration) {
   Msg* m = malloc(sizeof(Msg));

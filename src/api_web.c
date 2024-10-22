@@ -1,9 +1,10 @@
 // Mock for the WEB version.
-#include "api.h"
-#include "font.h"
 #include <stb_ds.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "api.h"
+#include "font.h"
 #include "ui.h"
 #include "utils.h"
 

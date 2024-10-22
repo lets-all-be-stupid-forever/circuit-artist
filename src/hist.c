@@ -1,10 +1,11 @@
 #include "hist.h"
 
 #include <assert.h>
-#include "img.h"
-#include "pyramid.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "img.h"
+#include "pyramid.h"
 
 static Cmd* LoadCmd(ToolType t, CmdActionType act);
 static void CmdUnload(Cmd* c);

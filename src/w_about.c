@@ -1,7 +1,8 @@
 #include "w_about.h"
 
-#include "font.h"
 #include <rlgl.h>
+
+#include "font.h"
 #include "tiling.h"
 #include "ui.h"
 #include "version.h"

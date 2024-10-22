@@ -1,10 +1,12 @@
 #include "ui.h"
 
-#include "api.h"
-#include "colors.h"
-#include "font.h"
 #include <raylib.h>
 #include <rlgl.h>
+
+#include "api.h"
+#include "colors.h"
+#include "filedialog.h"
+#include "font.h"
 #include "steam.h"
 #include "w_about.h"
 #include "w_dialog.h"
@@ -12,7 +14,6 @@
 #include "w_main.h"
 #include "w_text.h"
 #include "w_tutorial.h"
-#include "filedialog.h"
 
 static void UiDrawMouse(Ui* ui);  // Draws the mouse cursor. It's last thing
                                   // that is drawn in the screen.

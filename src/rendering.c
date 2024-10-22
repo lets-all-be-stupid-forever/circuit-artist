@@ -1,8 +1,9 @@
 #include "rendering.h"
 
+#include <math.h>
+
 #include "colors.h"
 #include "font.h"
-#include <math.h>
 #if defined(WITH_OPENMP)
 #include <omp.h>
 #endif

@@ -1,7 +1,8 @@
 #include "pyramid.h"
 
-#include "colors.h"
 #include <stdlib.h>
+
+#include "colors.h"
 
 // Left 2 implementations for pyramid: averaging color or "max" color.
 // The average one will lead to issues whenever we stick with a limited palette.
