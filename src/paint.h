@@ -57,8 +57,6 @@ typedef struct {
   bool tool_pressed;
   // Line size for Line tool.
   int line_tool_size;
-  // line tool separation size
-  int line_tool_sep;
   // Shift of the image on screen in screen pixels (x).
   float camera_x;
   // Shift of the image on screen in screen pixels (y).
@@ -106,9 +104,6 @@ typedef struct {
   int extray;
   // Line width entered via keyboard. (line tool)
   int line_key;
-  // mode=0 --> changing width
-  // mode=1 --> changing sep
-  int line_key_mode;
   // Frame where change was made.
   // It's used to allow the user to type a multi-digit line width.
   double line_key_time;
@@ -249,11 +244,6 @@ bool PaintGetIsToolSelMoving(Paint* ca);
 // Returns the active line width for the line tool.
 int PaintGetLineWidth(Paint* ca);
 int PaintSetLineWidth(Paint* ca, int lw);
-
-int PaintSetLineKeyMode(Paint* ca);
-//
-int PaintGetLineSep(Paint* ca);
-int PaintSetLineSep(Paint* ca, int sep);
 
 // Returns whether the line width for the line tool has just changed (ie, the
 // user is still entering the width size on keyboard).

@@ -215,7 +215,6 @@ void PaintLoad(Paint* ca) {
   ca->camera_x = 0;
   ca->camera_y = 0;
   ca->line_tool_size = 1;
-  ca->line_tool_sep = 1;
   ca->queued_toggled_x = -1;
   ca->queued_toggled_y = -1;
   ca->fg_color = WHITE;
@@ -383,10 +382,9 @@ static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off) {
         .height = buffer.height,
     };
     int ls = ca->line_tool_size == 0 ? 1 : ca->line_tool_size;
-    int sep = ca->line_tool_sep <= 0 ? 1 : ca->line_tool_sep;
     bool corner = IsKeyDown(KEY_LEFT_SHIFT);
     bool end_corner = IsKeyDown(KEY_LEFT_CONTROL);
-    DrawImageLineTool(start, PaintMakeToolRect(ca), img_rect, ls, sep, corner,
+    DrawImageLineTool(start, PaintMakeToolRect(ca), img_rect, ls, corner,
                       end_corner, c, img, off);
   } else if (HistGetTool(&ca->h) == TOOL_BRUSH) {
     BrushMakeImage(&ca->brush, c, buffer.width, buffer.height, img, off);
@@ -855,8 +853,7 @@ static void PaintAppendLineWidthNumber(Paint* ca, int key) {
   if (new_size > MAX_LINE_WIDTH) new_size = MAX_LINE_WIDTH;
   if (new_size > 0) {
     ca->line_key = new_size;
-    if (ca->line_key_mode == 0) ca->line_tool_size = new_size;
-    if (ca->line_key_mode == 1) ca->line_tool_sep = new_size;
+    ca->line_tool_size = new_size;
     ca->line_key_time = GetTime();
   }
 }
@@ -867,16 +864,6 @@ void PaintHandleKeys(Paint* ca) {
   }
   if (ca->mode == MODE_EDIT) {
     if (PaintGetTool(ca) == TOOL_LINE) {
-      if (IsKeyPressed(KEY_W)) {
-        ca->line_key = 0;
-        ca->line_key_mode = 0;
-        ca->line_key_time = GetTime();
-      }
-      if (IsKeyPressed(KEY_S)) {
-        ca->line_key = 0;
-        ca->line_key_mode = 1;
-        ca->line_key_time = GetTime();
-      }
       int key = GetNumberKeyPressed();
       if (key >= 0) {
         PaintAppendLineWidthNumber(ca, key);
@@ -1161,9 +1148,6 @@ void PaintGetSimuPixelToggleState(Paint* ca, int* cur_state) {
 int PaintGetLineWidth(Paint* ca) { return ca->line_tool_size; }
 int PaintSetLineWidth(Paint* ca, int lw) { ca->line_tool_size = lw; }
 
-int PaintGetLineSep(Paint* ca) { return ca->line_tool_sep; }
-int PaintSetLineSep(Paint* ca, int sep) { ca->line_tool_sep = sep; }
-
 bool PaintGetKeyLineWidthHasJustChanged(Paint* ca) {
   double t = GetTime();
   double last_t = ca->line_key_time;
@@ -1206,4 +1190,3 @@ void PaintSetClockSpeed(Paint* ca, int c) {
 
 int PaintGetClockSpeed(Paint* ca) { return ca->clock_speed; }
 
-int PaintSetLineKeyMode(Paint* ca) { return ca->line_key_mode; }
