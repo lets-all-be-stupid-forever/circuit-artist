@@ -170,8 +170,6 @@ void LevelsDraw(Ui* ui) {
   LevelOptions* co = ApiGetLevelOptions();
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
     if (co->options[i].name) {
-      printf("lvl %d %s\n", i, co->options[i].name);
-      // && !C.btn_opts[i].hidden
       BtnDrawIcon(&C.btn_opts[i], ui->scale, co->options[i].icon.tex,
                   co->options[i].icon.region);
       if (co->options[i].complete) {
