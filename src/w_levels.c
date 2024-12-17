@@ -11,7 +11,7 @@
 #include "ui.h"
 #include "widgets.h"
 
-#define NUM_LEVEL_OPTS 16
+#define NUM_LEVEL_OPTS 24
 
 static struct {
   bool inited;
@@ -81,11 +81,6 @@ static void LevelsUpdateLayout(Ui* ui) {
   };
   C.textbox_wrap = box;
   Rectangle box2 = box;
-  // box2.x = box.x + s;
-  // box2.y = box.y + 4 * s;
-  // box2.height = box.height - 2 * 4 * s;
-  // box2.width = box.width - 2 * s;
-
   TextboxSetBox(&C.level_textbox, box2);
 
   int xb = box.x + box.width - 8 * bsize - 8 * s;
@@ -131,7 +126,8 @@ void LevelsUpdate(Ui* ui) {
 
     // Checks if option is locked
     if (co->options[i].unlocked_by >= 0) {
-      C.btn_opts[i].hidden = !co->options[co->options[i].unlocked_by].complete;
+      C.btn_opts[i].disabled =
+          !co->options[co->options[i].unlocked_by].complete;
     }
 
     if (BtnUpdate(&C.btn_opts[i], ui)) {
@@ -173,10 +169,12 @@ void LevelsDraw(Ui* ui) {
   DrawTitle(ui, C.modal, "LEVEL SELECTION");
   LevelOptions* co = ApiGetLevelOptions();
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
-    if (co->options[i].name && !C.btn_opts[i].hidden) {
+    if (co->options[i].name) {
+      printf("lvl %d %s\n", i, co->options[i].name);
+      // && !C.btn_opts[i].hidden
       BtnDrawIcon(&C.btn_opts[i], ui->scale, co->options[i].icon.tex,
                   co->options[i].icon.region);
-      if (co->options[i].complete && true) {
+      if (co->options[i].complete) {
         Rectangle box = C.btn_opts[i].hitbox;
         int x = box.x;
         int y = box.y;
@@ -191,7 +189,6 @@ void LevelsDraw(Ui* ui) {
         for (int a = -1; a <= 1; a++)
           for (int b = -1; b <= 1; b++)
             DrawTextureRec(ui->sprites, rect, (Vector2){a, b}, BLACK);
-        // Color c = GetColor(0x06ff04ff);
         Color c = GREEN;
         DrawTextureRec(ui->sprites, rect, (Vector2){0, 0}, c);
         rlPopMatrix();
@@ -205,8 +202,16 @@ void LevelsDraw(Ui* ui) {
   DrawWidgetFrameInv(ui, C.modal);
   TextboxDraw(&C.level_textbox, ui);
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
-    if (co->options[i].name && !C.btn_opts[i].hidden) {
-      BtnDrawLegend(&C.btn_opts[i], ui->scale, co->options[i].name);
+    if (co->options[i].name) {
+      if (!C.btn_opts[i].disabled) {
+        BtnDrawLegend(&C.btn_opts[i], ui->scale, co->options[i].name);
+      } else {
+        char txt[500];
+        int unlock_idx = co->options[i].unlocked_by;
+        sprintf(txt, "%s\n`LOCKED`\nRequires: %s", co->options[i].name,
+                co->options[unlock_idx].name);
+        BtnDrawLegend(&C.btn_opts[i], ui->scale, txt);
+      }
     }
   }
 }
