@@ -277,22 +277,6 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
         .height = r.height,
     };
   }
-  // Now I adjust offset to make sure the mouse is in the right side of the
-  // line drawn
-  if (dir == DIR_HORIZONTAL) {
-    //
-    //    If cursor is here, we want to shift the rectagnle up.
-    // ---X------->
-    //
-    if (endy < starty) {
-      r.y -= r.height - 1;
-    }
-  }
-  if (dir == DIR_VERTICAL) {
-    if (endx < startx) {
-      r.x -= r.width - 1;
-    }
-  }
   r = GetCollisionRecInt(r, img_rect);
   if (r.width == 0 || r.height == 0) {
     *out = (Image){0};
@@ -355,6 +339,22 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
         }
         line[xx] = c;
       }
+    }
+  }
+  // Now I adjust offset to make sure the mouse is in the right side of the
+  // line drawn
+  if (dir == DIR_HORIZONTAL) {
+    //
+    //    If cursor is here, we want to shift the rectagnle up.
+    // ---X------->
+    //
+    if (endy < starty) {
+      r.y -= r.height - 1;
+    }
+  }
+  if (dir == DIR_VERTICAL) {
+    if (endx < startx) {
+      r.x -= r.width - 1;
     }
   }
 
