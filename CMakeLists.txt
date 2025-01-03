@@ -91,6 +91,7 @@ SET(ca_src
   src/w_text.c
   src/w_tutorial.c
   src/w_dialog.c
+  src/profiler.c
   src/clip_api.cpp
   src/steam.cpp
 

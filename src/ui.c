@@ -7,6 +7,7 @@
 #include "colors.h"
 #include "filedialog.h"
 #include "font.h"
+#include "profiler.h"
 #include "steam.h"
 #include "w_about.h"
 #include "w_dialog.h"
@@ -22,7 +23,6 @@ static void UiClose(Ui* ui);  // Callback called when user clicks on the close
 
 void UiLoad(Ui* ui) {
   *ui = (Ui){0};
-
   bool steam_enabled = SteamEnabled();
   if (steam_enabled) {
 #ifdef WITH_STEAM
@@ -79,17 +79,20 @@ void UiUpdateFrame(Ui* ui) {
 
   // Resets the hit count for the frame.
   ui->hit_count = 0;
+  ProfilerReset();
 
   // *** Update Step ***
   // Assigining here because the variable can change during the update.
   ui->cursor = MOUSE_ARROW;
   int update_window = ui->window;
+  ProfilerTic("GameUpdate");
   if (update_window == WINDOW_TEXT) TextModalUpdate(ui);
   if (update_window == WINDOW_MAIN) MainUpdate(ui);
   if (update_window == WINDOW_LEVELS) LevelsUpdate(ui);
   if (update_window == WINDOW_TUTORIAL) TutorialUpdate(ui);
   if (update_window == WINDOW_ABOUT) AboutUpdate(ui);
   if (update_window == WINDOW_DIALOG) DialogUpdate(ui);
+  ProfilerTac();
 
   // We stop the app here if should_close is flagged.
   if (ui->should_close) {
@@ -98,6 +101,7 @@ void UiUpdateFrame(Ui* ui) {
 
   // *** Draw Step ***
   BeginDrawing();
+  ProfilerTic("GameDraw");
   MainDraw(ui);
   if (ui->window == WINDOW_TEXT) TextModalDraw(ui);
   if (ui->window == WINDOW_ABOUT) AboutDraw(ui);
@@ -105,6 +109,11 @@ void UiUpdateFrame(Ui* ui) {
   if (ui->window == WINDOW_LEVELS) LevelsDraw(ui);
   if (ui->window == WINDOW_DIALOG) DialogDraw(ui);
   UiDrawMouse(ui);
+  ProfilerTac();
+  if (ui->debug) {
+    ProfilerDraw();
+    DrawFPS(120, 80);
+  }
   EndDrawing();
 }
 

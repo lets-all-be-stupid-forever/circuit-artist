@@ -42,6 +42,8 @@ typedef struct {
   // UI hitbox counter to see which widget is on foreground and which ones are
   // in background (increased with every hit each frame).
   int hit_count;
+  // Debug flag, for profiling and others.
+  bool debug;
 } Ui;
 
 void UiLoad(Ui* ui);

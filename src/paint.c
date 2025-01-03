@@ -9,6 +9,7 @@
 #include "clip_api.h"
 #include "colors.h"
 #include "hist.h"
+#include "profiler.h"
 
 static const int MAX_LINE_WIDTH = 256;
 static const int RESIZE_HANDLE_SIZE = 20;
@@ -272,10 +273,14 @@ void PaintStartSimu(Paint* ca) {
   ca->clock_count = 0;
   ca->tool_pressed = false;
   ca->mode = MODE_COMPILING;
+  ProfilerTicSingle("ParseImage");
   ca->pi = ParseImage(HistGetBuffer(&ca->h));
+  ProfilerTacSingle("ParseImage");
   LevelDesc* cd = ApiGetLevelDesc();
+  ProfilerTicSingle("SimLoad");
   SimLoad(&ca->s, ca->pi, cd->num_components, cd->extcomps,
           ApiUpdateLevelComponent, NULL);
+  ProfilerTacSingle("SimLoad");
   if (ca->s.status == SIMU_STATUS_OK) {
     ApiStartLevelSimulation();
     SimSimulate(&ca->s, 0);
@@ -325,7 +330,9 @@ void PaintUpdateSimu(Paint* ca, float delta) {
     SimSimulate(&ca->s, clock_time);
     ca->simu_time -= clock_time;
   }
+  ProfilerTic("SimGenImage");
   SimGenImage(&ca->s);
+  ProfilerTac();
 }
 
 bool PaintGetHasSelection(Paint* ca) { return HistGetHasSelection(&ca->h); }
@@ -1159,10 +1166,10 @@ void PaintGetSimuPixelToggleState(Paint* ca, int* cur_state) {
 }
 
 int PaintGetLineWidth(Paint* ca) { return ca->line_tool_size; }
-int PaintSetLineWidth(Paint* ca, int lw) { ca->line_tool_size = lw; }
+void PaintSetLineWidth(Paint* ca, int lw) { ca->line_tool_size = lw; }
 
 int PaintGetLineSep(Paint* ca) { return ca->line_tool_sep; }
-int PaintSetLineSep(Paint* ca, int sep) { ca->line_tool_sep = sep; }
+void PaintSetLineSep(Paint* ca, int sep) { ca->line_tool_sep = sep; }
 
 bool PaintGetKeyLineWidthHasJustChanged(Paint* ca) {
   double t = GetTime();

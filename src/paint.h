@@ -248,12 +248,12 @@ bool PaintGetIsToolSelMoving(Paint* ca);
 
 // Returns the active line width for the line tool.
 int PaintGetLineWidth(Paint* ca);
-int PaintSetLineWidth(Paint* ca, int lw);
+void PaintSetLineWidth(Paint* ca, int lw);
 
 int PaintSetLineKeyMode(Paint* ca);
 //
 int PaintGetLineSep(Paint* ca);
-int PaintSetLineSep(Paint* ca, int sep);
+void PaintSetLineSep(Paint* ca, int sep);
 
 // Returns whether the line width for the line tool has just changed (ie, the
 // user is still entering the width size on keyboard).

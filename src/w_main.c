@@ -12,6 +12,7 @@
 #include "font.h"
 #include "msg.h"
 #include "paint.h"
+#include "profiler.h"
 #include "tiling.h"
 #include "utils.h"
 #include "w_about.h"
@@ -202,6 +203,9 @@ void MainUpdateControls(Ui* ui) {
     TutorialOpen(ui);
   }
 #endif
+  if (IsKeyPressed(KEY_F10)) {
+    ui->debug = !ui->debug;
+  }
   if (IsKeyPressed(KEY_S) && IsKeyDown(KEY_LEFT_CONTROL)) {
     MainOnSaveClick(ui, false);
   }
