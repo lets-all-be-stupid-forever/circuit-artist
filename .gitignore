@@ -2,6 +2,7 @@
 cmake-build-*
 third_party/*.gz
 build
+build-demo
 wip
 todo.txt
 sdk

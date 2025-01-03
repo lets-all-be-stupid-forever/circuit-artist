@@ -150,15 +150,11 @@ void MainInit(Ui* ui) {
   C.header_size = 24 * ui->scale;
   C.bottom_size = 3 * 17 * 1 * ui->scale - 6 * ui->scale;
 
-#ifdef WEB
-  C.btn_challenge.disabled = true;
-  C.btn_tutorial.disabled = true;
-  C.btn_new.disabled = true;
+#ifdef DEMO_VERSION
   C.btn_save.disabled = true;
   C.btn_saveas.disabled = true;
-  C.btn_open.disabled = true;
-  C.btn_exit.disabled = true;
 #endif
+
   PaintLoad(&C.ca);
   LevelOptions* opt = ApiGetLevelOptions();
   if (!opt->startup_image_path) {
@@ -198,17 +194,18 @@ void MainUpdate(Ui* ui) {
 
 void MainUpdateControls(Ui* ui) {
   MainUpdateHud(ui);
-#ifndef WEB
   if (IsKeyPressed(KEY_TAB)) {
     TutorialOpen(ui);
   }
-#endif
   if (IsKeyPressed(KEY_F10)) {
     ui->debug = !ui->debug;
   }
+
+#ifndef DEMO_VERSION
   if (IsKeyPressed(KEY_S) && IsKeyDown(KEY_LEFT_CONTROL)) {
     MainOnSaveClick(ui, false);
   }
+#endif
 
   bool mouse_on_target = MainGetIsCursorInTargeTimage() && ui->hit_count == 0;
   C.mouse_on_target = mouse_on_target;
@@ -376,10 +373,8 @@ void MainUpdateHud(Ui* ui) {
   if (BtnUpdate(&C.btn_clockopt[5], ui)) PaintSetClockSpeed(&C.ca, 5);
 
   if (BtnUpdate(&C.btn_simu, ui)) PaintToggleSimu(&C.ca);
-#ifndef WEB
   if (BtnUpdate(&C.btn_challenge, ui)) LevelsOpen(ui);
   if (BtnUpdate(&C.btn_tutorial, ui)) TutorialOpen(ui);
-#endif
 
   Vector2 pos = GetMousePosition();
   if (RectHover(C.fg_color_rect, pos)) {
@@ -457,6 +452,17 @@ void MainDraw(Ui* ui) {
         sprintf(txt, "Drag to resize");
       }
       FontDrawTexture(txt, 0, 0, WHITE);
+
+#ifdef DEMO_VERSION
+      const char msg1[] = "Max image size in demo version is 512x512";
+      const char msg2[] = "Full version available on Steam.";
+      rlTranslatef(0, -14, 0);
+      FontDrawTexture(msg2, 2, 2, BLACK);
+      FontDrawTexture(msg2, 0, 0, RED);
+      rlTranslatef(0, -14, 0);
+      FontDrawTexture(msg1, 2, 2, BLACK);
+      FontDrawTexture(msg1, 0, 0, RED);
+#endif
       rlPopMatrix();
       EndScissorMode();
     }
@@ -488,7 +494,6 @@ void MainDraw(Ui* ui) {
   bool simu_on = PaintGetMode(&C.ca) == MODE_SIMU;
   BtnDrawIcon(&C.btn_simu, bscale, ui->sprites,
               simu_on ? rect_stop : rect_start);
-#ifndef WEB
   // {
   //   int x = C.btn_challenge.hitbox.x;
   //   int y = C.btn_challenge.hitbox.y - 10 * 2;
@@ -506,10 +511,6 @@ void MainDraw(Ui* ui) {
     sprintf(txt, "Lvl: %s", co->options[cd->ilevel].name);
     BtnDrawText(&C.btn_challenge, bscale, txt);
   }
-
-#else
-  BtnDrawIcon(&C.btn_challenge, bscale, ui->sprites, rect_sandbox);
-#endif
   BtnDrawText(&C.btn_tutorial, bscale, "Tutorial");
 
   bool color_disabled = PaintGetMode(&C.ca) != MODE_EDIT;
@@ -578,13 +579,23 @@ void MainDraw(Ui* ui) {
   if (ui->window == WINDOW_MAIN) {
     BtnDrawLegend(&C.btn_new, bscale, "New Image");
     BtnDrawLegend(&C.btn_open, bscale, "Load Image");
-    BtnDrawLegend(&C.btn_save, bscale, "Save Image (C-S)");
-    BtnDrawLegend(&C.btn_saveas, bscale, "Save Image As...");
     BtnDrawLegend(&C.btn_about, bscale, "About Circuit Artist");
     BtnDrawLegend(&C.btn_exit, bscale, "Exit");
-
     BtnDrawLegend(&C.btn_sel_open, bscale, "Load Selection from Image");
+
+#ifndef DEMO_VERSION
+    BtnDrawLegend(&C.btn_save, bscale, "Save Image (C-S)");
+    BtnDrawLegend(&C.btn_saveas, bscale, "Save Image As...");
     BtnDrawLegend(&C.btn_sel_save, bscale, "Save Selection as Image");
+#else
+    BtnDrawLegend(&C.btn_save, bscale,
+                  "Save Image (C-S)\n`Not available in demo version.`");
+    BtnDrawLegend(&C.btn_saveas, bscale,
+                  "Save Image As...\n`Not available in demo version.`");
+    BtnDrawLegend(&C.btn_sel_save, bscale,
+                  "Save Selection as Image\n`Not available in demo version.`");
+
+#endif
 
     BtnDrawLegend(
         &C.btn_simu, bscale,
@@ -931,9 +942,15 @@ void MainDrawStatusBar(Ui* ui) {
   sprintf(txt, "[level] %s", co->options[cd->ilevel].name);
   FontDrawTextureOutlined(txt, xc, yc7, tc, bg);
 
+#ifndef DEMO_VERSION
   const char* fname = GetFileName(MainGetFilename());
   sprintf(txt, "[img] %s", fname);
   FontDrawTextureOutlined(txt, xc, yc8, tc, bg);
+#else
+  const char* msg = "[Demo] Full version available on Steam.";
+  FontDrawTextureOutlined(msg, xc, yc8, tc, RED);
+#endif
+
   Image img = PaintGetEditImage(&C.ca);
   sprintf(txt, "[img] w: %d h: %d", img.width, img.height);
   FontDrawTextureOutlined(txt, xc, yc9, tc, bg);
@@ -1032,6 +1049,9 @@ void MainUpdateWidgets() {
 
   C.btn_sel_open.disabled = ned;
   C.btn_sel_save.disabled = !has_sel || ned;
+#ifdef DEMO_VERSION
+  C.btn_sel_save.disabled = true;
+#endif
 
   C.btn_rotate.hidden = (tool != TOOL_SEL) || ned;
   C.btn_flipv.hidden = (tool != TOOL_SEL) || ned;

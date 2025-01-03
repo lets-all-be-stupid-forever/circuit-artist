@@ -1121,7 +1121,13 @@ void PaintHandleCameraMovement(Paint* ca) {
   }
 }
 
-bool PaintGetIsDirty(Paint* ca) { return HistGetIsDirty(&ca->h); }
+bool PaintGetIsDirty(Paint* ca) {
+#ifdef DEMO_VERSION
+  return false;
+#else
+  return HistGetIsDirty(&ca->h);
+#endif
+}
 
 Image PaintGetSelBuffer(Paint* ca) { return HistGetSelBuffer(&ca->h); }
 

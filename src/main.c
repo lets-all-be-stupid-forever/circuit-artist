@@ -4,10 +4,6 @@
 #include <omp.h>
 #endif
 
-#if defined(PLATFORM_WEB)
-#include <emscripten/emscripten.h>
-#endif
-
 #ifdef WIN32
 #ifndef CA_SHOW_CONSOLE
 // This pragma hides the console app terminal in window.
@@ -15,8 +11,6 @@
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 #endif
 #endif
-
-static void WebUpdateDrawFrame(void);  // Update and Draw one frame
 
 static Ui _ui = {0};
 
@@ -31,9 +25,6 @@ int main() {
   omp_set_num_threads(nt);
 #endif
 
-#if defined(PLATFORM_WEB)
-  emscripten_set_main_loop(web_update_draw_frame, 0, 1);
-#else
   SetExitKey(0);  // Avoids window closing with escape key
   SetTargetFPS(60);
   SetTraceLogLevel(LOG_ERROR);
@@ -43,10 +34,7 @@ int main() {
       break;
     }
   }
-#endif
   UiUnload(&_ui);
   CloseWindow();
   return 0;
 }
-
-void WebUpdateDrawFrame() { UiUpdateFrame(&_ui); }

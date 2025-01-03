@@ -7,7 +7,7 @@
 #define COLOR_EQ(u, v) \
   (((u).r == (v).r) && ((u).g == (v).g) && ((u).b == (v).b) && ((u).a == (v).a))
 
-#ifndef WEB
+#ifndef DEMO_VERSION
 // Maximum image size is 8k.
 // For images bigger than that, a dedicated exporter/reader is necessary
 // (stb_image blocks at 8k by default)
@@ -37,9 +37,6 @@
 // Play/Stop icons
 #define rect_start ((Rectangle){16 * 0, 16 * 1, 13, 13})
 #define rect_stop ((Rectangle){16 * 2, 16 * 1, 13, 13})
-
-// Icon of the sandbox challenge for the WEB version, which doesn't have lua.
-#define rect_sandbox ((Rectangle){368, 80, 33, 33})
 
 // Logo of CircuitArtist (for About page)
 #define rect_logo ((Rectangle){160, 80, 158, 67})

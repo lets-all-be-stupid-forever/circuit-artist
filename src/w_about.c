@@ -27,10 +27,6 @@ static void AboutUpdateLayout() {
   int total_w = bw + 2 * 2;
   int x = (sw - total_w) / 2;
   int bh = 9 * 35 * s;
-#ifdef WEB
-  // Making it smaller for the web version
-  bh = 4 * 35 * 2;
-#endif
   int total_h = (bh + 35 * 1 + 35 * 1);
   int pad = 10 * s;
   while (total_h + 2 * pad + 10 > sh) {

@@ -4,6 +4,11 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 OPTION(OPENMP "Use OpenMP for thread detection")
 OPTION(STEAM "Steam support")
+OPTION(DEMO "Demo Version")
+
+IF (DEMO)
+  add_compile_definitions(DEMO_VERSION=1)
+ENDIF()
 
 IF (OPENMP)
   find_package(OpenMP REQUIRED)
