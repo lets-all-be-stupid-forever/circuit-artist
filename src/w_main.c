@@ -18,22 +18,12 @@
 #include "w_about.h"
 #include "w_dialog.h"
 #include "w_levels.h"
+#include "w_number.h"
 #include "w_text.h"
 #include "w_tutorial.h"
 #include "widgets.h"
 
 #define MSG_DURATION 2
-
-#define LINE_WIDTH_NUM_OPTIONS 16
-#define LINE_SEP_NUM_OPTIONS 32
-
-const int line_width_options[] = {1,  2,  3,  4,  5,  6,  7,   8,
-                                  16, 24, 32, 48, 64, 96, 128, 256};
-
-const int line_sep_options[] = {
-    1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
-    18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 44, 48, 52, 56,
-};
 
 static struct {
   bool inited;
@@ -78,14 +68,8 @@ static struct {
   Btn btn_sel_open;
   Btn btn_sel_save;
   Btn btn_clockopt[6];
-  Btn btn_line_width;
   Btn btn_line_sep;
-
-  bool line_width_open;
-  bool line_sep_open;
-
-  Btn line_width_grid[LINE_WIDTH_NUM_OPTIONS];
-  Btn line_sep_grid[LINE_SEP_NUM_OPTIONS];
+  Btn btn_line_sep_r;
 
   // Right side buttons
   Btn btn_challenge;
@@ -261,6 +245,13 @@ void MainUpdateControls(Ui* ui) {
     if (IsKeyPressed(KEY_T)) {
       TextModalOpen(ui);
     }
+    ToolType tool = PaintGetDisplayTool(&C.ca);
+    if (tool == TOOL_LINE && IsKeyPressed(KEY_S)) {
+      NumberModalOpen(ui);
+    }
+    if (tool == TOOL_LINE && IsKeyPressed(KEY_R)) {
+      MainSetLineSep(1);
+    }
   }
   PaintHandleMouse(&C.ca, C.mouse_on_target);
   PaintHandleKeys(&C.ca);
@@ -317,42 +308,6 @@ void MainUpdateHud(Ui* ui) {
   if (BtnUpdate(&C.btn_sel_open, ui)) MainOpenSelection(ui);
   if (BtnUpdate(&C.btn_sel_save, ui)) MainSaveSelection(ui);
 
-  if (BtnUpdate(&C.btn_line_width, ui)) {
-    C.line_width_open = !C.line_width_open;
-    C.line_sep_open = false;
-  }
-
-  if (BtnUpdate(&C.btn_line_sep, ui)) {
-    C.line_sep_open = !C.line_sep_open;
-    C.line_width_open = false;
-  }
-
-  if (C.line_width_open) {
-    for (int i = 0; i < LINE_WIDTH_NUM_OPTIONS; i++) {
-      if (BtnUpdate(&C.line_width_grid[i], ui)) {
-        PaintSetLineWidth(&C.ca, line_width_options[i]);
-        C.line_width_open = false;
-      }
-    }
-    int lw = PaintGetLineWidth(&C.ca);
-    for (int i = 0; i < LINE_WIDTH_NUM_OPTIONS; i++) {
-      C.line_width_grid[i].toggled = (lw == line_width_options[i]);
-    }
-  }
-
-  if (C.line_sep_open) {
-    for (int i = 0; i < LINE_SEP_NUM_OPTIONS; i++) {
-      if (BtnUpdate(&C.line_sep_grid[i], ui)) {
-        PaintSetLineSep(&C.ca, line_sep_options[i]);
-        C.line_sep_open = false;
-      }
-    }
-    int lw = PaintGetLineSep(&C.ca);
-    for (int i = 0; i < LINE_SEP_NUM_OPTIONS; i++) {
-      C.line_sep_grid[i].toggled = (lw == line_sep_options[i]);
-    }
-  }
-
   if (BtnUpdate(&C.btn_line, ui)) PaintSetTool(&C.ca, TOOL_LINE);
   if (BtnUpdate(&C.btn_brush, ui)) PaintSetTool(&C.ca, TOOL_BRUSH);
   if (BtnUpdate(&C.btn_marquee, ui)) PaintSetTool(&C.ca, TOOL_SEL);
@@ -364,6 +319,9 @@ void MainUpdateHud(Ui* ui) {
   if (BtnUpdate(&C.btn_fliph, ui)) PaintActSelFlipH(&C.ca);
   if (BtnUpdate(&C.btn_flipv, ui)) PaintActSelFlipV(&C.ca);
   if (BtnUpdate(&C.btn_fill, ui)) PaintActSelFill(&C.ca);
+
+  if (BtnUpdate(&C.btn_line_sep, ui)) NumberModalOpen(ui);
+  if (BtnUpdate(&C.btn_line_sep_r, ui)) MainSetLineSep(1);
 
   if (BtnUpdate(&C.btn_clockopt[0], ui)) PaintSetClockSpeed(&C.ca, 0);
   if (BtnUpdate(&C.btn_clockopt[1], ui)) PaintSetClockSpeed(&C.ca, 1);
@@ -531,34 +489,10 @@ void MainDraw(Ui* ui) {
   BtnDrawIcon(&C.btn_fliph, bscale, ui->sprites, rect_fliph);
   BtnDrawIcon(&C.btn_flipv, bscale, ui->sprites, rect_flipv);
   BtnDrawIcon(&C.btn_fill, bscale, ui->sprites, rect_fill);
+  BtnDrawIcon(&C.btn_line_sep, bscale, ui->sprites, rect_line_sep);
+  BtnDrawIcon(&C.btn_line_sep_r, bscale, ui->sprites, rect_line_sep_r);
   BtnDrawIcon(&C.btn_sel_open, bscale, ui->sprites, rect_sel_open);
   BtnDrawIcon(&C.btn_sel_save, bscale, ui->sprites, rect_sel_save);
-
-  if (C.line_width_open) {
-    BtnDrawText(&C.btn_line_width, bscale, "x");
-    char txt[10];
-    for (int i = 0; i < LINE_WIDTH_NUM_OPTIONS; i++) {
-      sprintf(txt, "%d", line_width_options[i]);
-      BtnDrawText(&C.line_width_grid[i], bscale, txt);
-    }
-  } else {
-    char txt[10];
-    sprintf(txt, "w=%d", C.ca.line_tool_size);
-    BtnDrawText(&C.btn_line_width, bscale, txt);
-  }
-
-  if (C.line_sep_open) {
-    BtnDrawText(&C.btn_line_sep, bscale, "x");
-    char txt[10];
-    for (int i = 0; i < LINE_SEP_NUM_OPTIONS; i++) {
-      sprintf(txt, "%d", line_sep_options[i]);
-      BtnDrawText(&C.line_sep_grid[i], bscale, txt);
-    }
-  } else {
-    char txt[10];
-    sprintf(txt, "s=%d", PaintGetLineSep(&C.ca));
-    BtnDrawText(&C.btn_line_sep, bscale, txt);
-  }
 
   BtnDrawIcon(&C.btn_clockopt[0], bscale, ui->sprites, rect_hz0);
   BtnDrawIcon(&C.btn_clockopt[1], bscale, ui->sprites, rect_hz1);
@@ -605,6 +539,7 @@ void MainDraw(Ui* ui) {
                   "button: erase\nPress (ALT) to pick color.");
     BtnDrawLegend(&C.btn_line, bscale,
                   "Line tool (L)\n"
+                  "Type (NUMBER) to change line size.\n"
                   "Press (SHIFT) while drawing to add corner to start of "
                   "line.\nPress (CTRL) while drawing to add corner to end of "
                   "line.\nLeft mouse button: Draw\nRight mouse button: "
@@ -627,21 +562,14 @@ void MainDraw(Ui* ui) {
     BtnDrawLegend(&C.btn_flipv, bscale, "Flip selection vertically (V)");
     BtnDrawLegend(&C.btn_rotate, bscale, "Rotate selection (R)");
     BtnDrawLegend(&C.btn_fill, bscale, "Fill selection (F)");
+    BtnDrawLegend(&C.btn_line_sep, bscale, "Define line separation width (S)");
+    BtnDrawLegend(&C.btn_line_sep_r, bscale,
+                  "Reset line separation width to 1 (R)");
     BtnDrawLegend(&C.btn_challenge, bscale, "Select Level");
     BtnDrawLegend(&C.btn_tutorial, bscale,
                   "Tutorial (TAB)\n`-` Describes core game concepts and "
                   "mechanics.\n`-` Introduces a "
                   "number of digital logic concepts and components.");
-
-    if (!C.line_width_open) {
-      BtnDrawLegend(&C.btn_line_width, bscale,
-                    "Number of lines\nType (W then NUMBER) to change it.");
-    }
-    if (!C.line_sep_open) {
-      BtnDrawLegend(&C.btn_line_sep, bscale,
-                    "Number of pixels between "
-                    "consecutive lines.\nType (S then NUMBER) to change it. ");
-    }
 
     BtnDrawLegend(&C.btn_clockopt[0], bscale, "0 Hz Simulation");
     BtnDrawLegend(&C.btn_clockopt[1], bscale, "1 Hz Simulation");
@@ -724,6 +652,9 @@ void MainUpdateLayout(Ui* ui) {
     C.btn_bucket.hitbox = (Rectangle){bx0, by2, bw, bh};
     C.btn_picker.hitbox = (Rectangle){bx1, by2, bw, bh};
 
+    C.btn_line_sep.hitbox = (Rectangle){bx0, by3, bw, bh};
+    C.btn_line_sep_r.hitbox = (Rectangle){bx1, by3, bw, bh};
+
     C.btn_fliph.hitbox = (Rectangle){bx0, by3, bw, bh};
     C.btn_flipv.hitbox = (Rectangle){bx1, by3, bw, bh};
     C.btn_rotate.hitbox = (Rectangle){bx0, by4, bw, bh};
@@ -737,47 +668,6 @@ void MainUpdateLayout(Ui* ui) {
     C.btn_clockopt[3].hitbox = (Rectangle){bx1, by4, bw, bh};
     C.btn_clockopt[4].hitbox = (Rectangle){bx0, by5, bw, bh};
     C.btn_clockopt[5].hitbox = (Rectangle){bx1, by5, bw, bh};
-
-    C.btn_line_width.hitbox = (Rectangle){bx0, by3, 35 * s, bh};
-    C.btn_line_sep.hitbox = (Rectangle){bx0, by4, 35 * s, bh};
-
-    {
-      Rectangle ref = C.btn_line_width.hitbox;
-      int cbw = 28 * s;
-      int cbh = bh;
-      int nx = 4;
-      int ny = 4;
-      int x0 = ref.x + ref.width + s;
-      int y0 = ref.y;
-      int sh = GetScreenHeight();
-      y0 = y0 + MinInt(sh - (y0 + cbh * ny), 0);
-      for (int y = 0; y < ny; y++) {
-        for (int x = 0; x < nx; x++) {
-          int i = y * nx + x;
-          C.line_width_grid[i].hitbox =
-              (Rectangle){x0 + x * cbw, y0 + y * cbh, cbw, cbh};
-        }
-      }
-    }
-
-    {
-      Rectangle ref = C.btn_line_sep.hitbox;
-      int cbw = 28 * s;
-      int cbh = bh;
-      int nx = 8;
-      int ny = 4;
-      int x0 = ref.x + ref.width + s;
-      int y0 = ref.y;
-      int sh = GetScreenHeight();
-      y0 = y0 + MinInt(sh - (y0 + cbh * ny), 0);
-      for (int y = 0; y < ny; y++) {
-        for (int x = 0; x < nx; x++) {
-          int i = y * nx + x;
-          C.line_sep_grid[i].hitbox =
-              (Rectangle){x0 + x * cbw, y0 + y * cbh, cbw, cbh};
-        }
-      }
-    }
 
     int cy = (sh - 2 * 18 - 2) * s;
     int cx = 4 * s + 35 * s + 4 * s;
@@ -980,19 +870,16 @@ void MainDrawMouseExtra(Ui* ui) {
     int s = ui->scale;
     bool just_changed = PaintGetKeyLineWidthHasJustChanged(&C.ca);
     char txt[20];
-    int key_mode = PaintSetLineKeyMode(&C.ca);
     sprintf(txt, "w=%d", PaintGetLineWidth(&C.ca));
     rlPushMatrix();
     rlTranslatef(pos.x + 8 * s, pos.y + 8 * s, 0);
     rlScalef(ui->scale, ui->scale, 1);
-    FontDrawTexture(txt, 0, 0,
-                    (just_changed && key_mode == 0) ? YELLOW : WHITE);
+    FontDrawTexture(txt, 0, 0, (just_changed ? YELLOW : WHITE));
     int sep = PaintGetLineSep(&C.ca);
-    if (sep != 1 || (just_changed && key_mode == 1)) {
+    if (sep != 1) {
       rlTranslatef(0, 10, 0);
       sprintf(txt, "s=%d", sep);
-      FontDrawTexture(txt, 0, 0,
-                      (just_changed && key_mode == 1) ? YELLOW : WHITE);
+      FontDrawTexture(txt, 0, 0, WHITE);
     }
     rlPopMatrix();
   }
@@ -1037,15 +924,8 @@ void MainUpdateWidgets() {
   C.btn_fliph.disabled = !has_sel || ned;
   C.btn_fill.disabled = !has_sel || ned;
 
-  C.btn_line_width.hidden = tool != TOOL_LINE;
-  for (int i = 0; i < LINE_WIDTH_NUM_OPTIONS; i++) {
-    C.line_width_grid[i].hidden = !C.line_width_open || tool != TOOL_LINE;
-  }
-
-  C.btn_line_sep.hidden = tool != TOOL_LINE;
-  for (int i = 0; i < LINE_SEP_NUM_OPTIONS; i++) {
-    C.line_sep_grid[i].hidden = !C.line_sep_open || tool != TOOL_LINE;
-  }
+  C.btn_line_sep.disabled = ned;
+  C.btn_line_sep_r.disabled = ned || PaintGetLineSep(&C.ca) == 1;
 
   C.btn_sel_open.disabled = ned;
   C.btn_sel_save.disabled = !has_sel || ned;
@@ -1057,6 +937,9 @@ void MainUpdateWidgets() {
   C.btn_flipv.hidden = (tool != TOOL_SEL) || ned;
   C.btn_fliph.hidden = (tool != TOOL_SEL) || ned;
   C.btn_fill.hidden = (tool != TOOL_SEL) || ned;
+
+  C.btn_line_sep.hidden = (tool != TOOL_LINE) || ned;
+  C.btn_line_sep_r.hidden = (tool != TOOL_LINE) || ned;
 
   C.btn_sel_open.hidden = (tool != TOOL_SEL) || ned;
   C.btn_sel_save.hidden = (tool != TOOL_SEL) || ned;
@@ -1161,4 +1044,10 @@ void MainAskForSaveAndProceed(Ui* ui, UiCallback next_action) {
 void MainPasteText(const char* txt) {
   Image img = RenderText(txt, C.ca.fg_color);
   PaintPasteImage(&C.ca, img);
+}
+
+void MainSetLineSep(int n) {
+  if (n <= 1) n = 1;
+  if (n >= 128) n = 128;
+  PaintSetLineSep(&C.ca, n);
 }

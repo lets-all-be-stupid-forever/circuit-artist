@@ -92,6 +92,7 @@ SET(ca_src
   src/ui.c
   src/w_about.c
   src/w_main.c
+  src/w_number.c
   src/w_levels.c
   src/w_text.c
   src/w_tutorial.c

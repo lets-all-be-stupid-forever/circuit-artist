@@ -13,6 +13,7 @@
 #include "w_dialog.h"
 #include "w_levels.h"
 #include "w_main.h"
+#include "w_number.h"
 #include "w_text.h"
 #include "w_tutorial.h"
 
@@ -87,6 +88,7 @@ void UiUpdateFrame(Ui* ui) {
   int update_window = ui->window;
   ProfilerTic("GameUpdate");
   if (update_window == WINDOW_TEXT) TextModalUpdate(ui);
+  if (update_window == WINDOW_NUMBER) NumberModalUpdate(ui);
   if (update_window == WINDOW_MAIN) MainUpdate(ui);
   if (update_window == WINDOW_LEVELS) LevelsUpdate(ui);
   if (update_window == WINDOW_TUTORIAL) TutorialUpdate(ui);
@@ -104,6 +106,7 @@ void UiUpdateFrame(Ui* ui) {
   ProfilerTic("GameDraw");
   MainDraw(ui);
   if (ui->window == WINDOW_TEXT) TextModalDraw(ui);
+  if (ui->window == WINDOW_NUMBER) NumberModalDraw(ui);
   if (ui->window == WINDOW_ABOUT) AboutDraw(ui);
   if (ui->window == WINDOW_TUTORIAL) TutorialDraw(ui);
   if (ui->window == WINDOW_LEVELS) LevelsDraw(ui);

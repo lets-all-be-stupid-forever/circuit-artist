@@ -13,6 +13,7 @@ void MainUnload();
 void MainSetPaletteFromImage(Image img);
 void MainAskForSaveAndProceed(Ui* ui, UiCallback next_action);
 void MainPasteText(const char* txt);
+void MainSetLineSep(int n);
 int MainOnSaveClick(Ui* ui, bool saveas);
 
 #endif

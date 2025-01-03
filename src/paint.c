@@ -862,8 +862,7 @@ static void PaintAppendLineWidthNumber(Paint* ca, int key) {
   if (new_size > MAX_LINE_WIDTH) new_size = MAX_LINE_WIDTH;
   if (new_size > 0) {
     ca->line_key = new_size;
-    if (ca->line_key_mode == 0) ca->line_tool_size = new_size;
-    if (ca->line_key_mode == 1) ca->line_tool_sep = new_size;
+    ca->line_tool_size = new_size;
     ca->line_key_time = GetTime();
   }
 }
@@ -874,16 +873,6 @@ void PaintHandleKeys(Paint* ca) {
   }
   if (ca->mode == MODE_EDIT) {
     if (PaintGetTool(ca) == TOOL_LINE) {
-      if (IsKeyPressed(KEY_W)) {
-        ca->line_key = 0;
-        ca->line_key_mode = 0;
-        ca->line_key_time = GetTime();
-      }
-      if (IsKeyPressed(KEY_S)) {
-        ca->line_key = 0;
-        ca->line_key_mode = 1;
-        ca->line_key_time = GetTime();
-      }
       int key = GetNumberKeyPressed();
       if (key >= 0) {
         PaintAppendLineWidthNumber(ca, key);
@@ -1218,5 +1207,3 @@ void PaintSetClockSpeed(Paint* ca, int c) {
 }
 
 int PaintGetClockSpeed(Paint* ca) { return ca->clock_speed; }
-
-int PaintSetLineKeyMode(Paint* ca) { return ca->line_key_mode; }

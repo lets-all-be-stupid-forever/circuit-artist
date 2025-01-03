@@ -106,9 +106,6 @@ typedef struct {
   int extray;
   // Line width entered via keyboard. (line tool)
   int line_key;
-  // mode=0 --> changing width
-  // mode=1 --> changing sep
-  int line_key_mode;
   // Frame where change was made.
   // It's used to allow the user to type a multi-digit line width.
   double line_key_time;
@@ -250,8 +247,6 @@ bool PaintGetIsToolSelMoving(Paint* ca);
 int PaintGetLineWidth(Paint* ca);
 void PaintSetLineWidth(Paint* ca, int lw);
 
-int PaintSetLineKeyMode(Paint* ca);
-//
 int PaintGetLineSep(Paint* ca);
 void PaintSetLineSep(Paint* ca, int sep);
 

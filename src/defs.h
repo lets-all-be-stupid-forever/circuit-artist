@@ -66,6 +66,8 @@
 #define rect_fliph ((Rectangle){112, 0 * 0, 13, 13})
 #define rect_flipv ((Rectangle){128, 0 * 0, 13, 13})
 #define rect_fill ((Rectangle){144, 0 * 0, 13, 13})
+#define rect_line_sep ((Rectangle){480, 16, 13, 13})
+#define rect_line_sep_r ((Rectangle){496, 16, 13, 13})
 
 // minimap icon
 #define rect_map ((Rectangle){448, 0, 13, 13})
