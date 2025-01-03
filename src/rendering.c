@@ -198,7 +198,7 @@ void RenderImageSelRect(Image* out, float pixel_size, int camera_x,
 }
 
 void DrawImageSceneRect(Image* out, float pixel_size, int camera_x,
-                        int camera_y, RectangleInt r, Color c) {
+                        int camera_y, Rectangle r, Color c) {
   int w = out->width;
   int h = out->height;
 

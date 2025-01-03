@@ -12,7 +12,7 @@
 #include "profiler.h"
 
 static const int MAX_LINE_WIDTH = 256;
-static const int RESIZE_HANDLE_SIZE = 20;
+static const float RESIZE_HANDLE_SIZE = 20;
 static const double line_modif_threshold = 1;
 
 static const float zoom_lut[] = {
@@ -620,7 +620,7 @@ void PaintRender(Paint* ca) {
           c = WHITE;
         }
       }
-      RectangleInt rect = {
+      Rectangle rect = {
           resize_rect.x,
           resize_rect.y,
           RESIZE_HANDLE_SIZE / r.pixel_size,

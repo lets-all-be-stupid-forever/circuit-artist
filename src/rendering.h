@@ -81,7 +81,7 @@ void RenderImageSelRect(Image* out, float pixel_size, int camera_x,
 // Renders a filled rectangle in camera space.
 // Used for the resizing handle.
 void DrawImageSceneRect(Image* out, float pixel_size, int camera_x,
-                        int camera_y, RectangleInt r, Color c);
+                        int camera_y, Rectangle r, Color c);
 
 // Draws the wire API in the leftr side of the image.
 void RenderImageCompInput(Image* out, Image buffer, Sim* simu, int ncomp,
