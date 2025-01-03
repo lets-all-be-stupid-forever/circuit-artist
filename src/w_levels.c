@@ -129,11 +129,6 @@ void LevelsUpdate(Ui* ui) {
       C.btn_opts[i].disabled = true;
     }
 
-    // Checks if option is locked
-    if (co->options[i].unlocked_by >= 0) {
-      C.btn_opts[i].hidden = !co->options[co->options[i].unlocked_by].complete;
-    }
-
     if (BtnUpdate(&C.btn_opts[i], ui)) {
       LevelsSetSel(i);
     }

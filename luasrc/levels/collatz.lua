@@ -80,5 +80,4 @@ The first 16 tests will be the positive numbers from `n`=1 to `n`=16. The 8 next
     Collatz(),
   },
   id='COLLATZ',
-  unlockedBy='RAM8',
 })

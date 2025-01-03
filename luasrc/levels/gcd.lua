@@ -91,5 +91,4 @@ For example, computing the GCD between 10 and 6:
     GCD(),
   },
   id='GCD',
-  unlockedBy='COLLATZ',
 })

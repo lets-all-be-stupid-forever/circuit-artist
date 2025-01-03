@@ -109,5 +109,4 @@ For validation, each number between 0 and 9 will be tested.
       SevenSeg(),
     },
     id='7SEG',
-    unlockedBy=nil,
 })

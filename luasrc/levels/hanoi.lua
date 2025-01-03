@@ -179,5 +179,4 @@ Below one example of how to solve the game with 2 pieces:
       Hanoi(10),
     },
     id='HANOI',
-    unlockedBy='ALU32',
 })

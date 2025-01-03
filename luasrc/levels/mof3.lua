@@ -53,5 +53,4 @@ n=111 --> mof3=1
       MultipleOf3(),
     },
     id='MOF3',
-    unlockedBy='BUS',
 })

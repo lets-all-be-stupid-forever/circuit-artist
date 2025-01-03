@@ -90,5 +90,4 @@ There will be a total of 32 tests.
       BroadcastBus(4),
     },
     id='BUS',
-    unlockedBy='7SEG',
 })

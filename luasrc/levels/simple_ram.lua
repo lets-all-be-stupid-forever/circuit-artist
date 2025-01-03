@@ -95,5 +95,4 @@ For the tests, we will fill each memory address with random values, and then on 
       SimpleRam(),
     },
     id='RAM8',
-    unlockedBy='MOF3',
 })

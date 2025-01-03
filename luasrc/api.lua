@@ -97,11 +97,6 @@ function addLevel(co)
   -- local co = levelOptions[i]
   local opt = S.level_options.options[i-1]
   opt.ilevel = i-1
-  if co.unlockedBy ~= nil then
-    opt.unlocked_by = idToLevelLut[co.unlockedBy] - 1
-  else
-    opt.unlocked_by = -1
-  end
   local icon = R.LoadTexture(co.icon)
   opt.icon = toSprite({icon, 0, 0, 33, 33})
   opt.complete = false;
@@ -334,13 +329,6 @@ function notifyLevelCompleted()
   if not complete_before then
     saveProgress()
     local levelId = getLevel().id
-    if levelId ~= nil then
-      for i=1,#levelOptions do
-        if levelOptions[i].unlockedBy == levelId then
-          C.CaAddMessage("Unlocked New Level: " .. levelOptions[i].name, 10)
-        end
-      end
-    end
     C.CaAddMessage("Level Complete!", 4)
     updateSteamAchievements()
   end

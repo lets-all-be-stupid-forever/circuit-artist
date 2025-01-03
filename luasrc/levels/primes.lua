@@ -60,5 +60,4 @@ You can use `multiple clock cycles` to compute the result. The result will only 
       Primes(250),
     },
     id='PRIMES',
-    unlockedBy='HANOI',
 })

@@ -19,7 +19,6 @@ typedef struct {
     Sprite icon;
     Sprite sprites[20];
     bool complete;
-    int unlocked_by;
   } options[60];
   char* startup_image_path;
 } LevelOptions;

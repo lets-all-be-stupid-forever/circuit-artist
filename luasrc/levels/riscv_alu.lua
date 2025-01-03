@@ -299,5 +299,4 @@ SLT(100, 3)=0
       RiscvALU(),
     },
     id='ALU32',
-    unlockedBy='GCD',
 })
