@@ -6,7 +6,7 @@ return {
   -- require 'tutorial.not',
   -- require 'tutorial.and',
   -- require 'tutorial.or',
-  require 'tutorial.xor',
+  -- require 'tutorial.xor',
   require 'tutorial.mux',
   require 'tutorial.demux',
   require 'tutorial.decoder',
