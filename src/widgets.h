@@ -53,6 +53,7 @@ typedef struct {
   bool toggled;
   bool hover;
   bool hidden;
+  bool gradient;
   Rectangle hitbox;
 } Btn;
 

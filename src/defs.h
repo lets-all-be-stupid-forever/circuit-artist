@@ -109,7 +109,6 @@
 #define rect_fullscreen ((Rectangle){256, 0, 13, 13})
 #define rect_thumbsup ((Rectangle){0, 128, 48, 48})
 #define rect_thumbsup2 ((Rectangle){0, 176, 48, 64})
-#define rect_check2 ((Rectangle){65, 128, 15, 13})
 #define rect_normalscreen ((Rectangle){272, 0, 13, 13})
 #define rect_img ((Rectangle){288, 16, 13, 13})
 #define rect_monitor ((Rectangle){304, 16, 13, 13})

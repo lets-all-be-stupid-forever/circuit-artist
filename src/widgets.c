@@ -361,7 +361,14 @@ void BtnDrawIcon(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
   Color c2 = GetLutColor(COLOR_BTN2);
   Color cbg = GetLutColor(COLOR_BTN_BG);
   DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
-  DrawRectangle(x, y, w, h, c1);
+
+  if (b->gradient) {
+    Color top = GetColor(0xF4D949FF);
+    Color bottom = GetColor(0x762E10FF);
+    DrawRectangleGradientV(x, y, w, h, top, bottom);
+  } else {
+    DrawRectangle(x, y, w, h, c1);
+  }
   if ((b->pressed || b->toggled) && (!b->disabled)) {
     DrawRectangle(x, y, w, s, c0);  // TOP
     DrawRectangle(x, y, s, h, c0);  // LEFT
@@ -374,7 +381,12 @@ void BtnDrawIcon(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
   rlPushMatrix();
   rlScalef(ui_scale, ui_scale, 1);
   if (!b->disabled) {
-    DrawTextureRec(texture, source, (Vector2){fx, fy}, BLACK);
+    if (!b->gradient) {
+      DrawTextureRec(texture, source, (Vector2){fx, fy}, BLACK);
+    } else {
+      DrawTextureRec(texture, source, (Vector2){fx, fy + 1}, BLACK);
+      DrawTextureRec(texture, source, (Vector2){fx, fy}, WHITE);
+    }
   } else {
     DrawTextureRec(texture, source, (Vector2){fx + 1, fy}, c2);
     DrawTextureRec(texture, source, (Vector2){fx, fy + 1}, c2);

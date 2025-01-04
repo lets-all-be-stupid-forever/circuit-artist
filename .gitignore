@@ -13,4 +13,5 @@ third_party/steam
 third_party/redistributable_bin
 src/raylib.h
 src/rlgl.h
+src/stb_ds.h
 .DS_Store

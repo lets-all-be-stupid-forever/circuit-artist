@@ -169,28 +169,9 @@ void LevelsDraw(Ui* ui) {
   LevelOptions* co = ApiGetLevelOptions();
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
     if (co->options[i].name && !C.btn_opts[i].hidden) {
+      C.btn_opts[i].gradient = co->options[i].complete;
       BtnDrawIcon(&C.btn_opts[i], ui->scale, co->options[i].icon.tex,
                   co->options[i].icon.region);
-      if (co->options[i].complete && true) {
-        Rectangle box = C.btn_opts[i].hitbox;
-        int x = box.x;
-        int y = box.y;
-        rlPushMatrix();
-        int d = 0;
-        if (C.btn_opts[i].pressed) {
-          d = 2;
-        }
-        Rectangle rect = rect_check2;
-        rlTranslatef(x + 4, y + d + 4, 0);
-        rlScalef(2, 2, 1);
-        for (int a = -1; a <= 1; a++)
-          for (int b = -1; b <= 1; b++)
-            DrawTextureRec(ui->sprites, rect, (Vector2){a, b}, BLACK);
-        // Color c = GetColor(0x06ff04ff);
-        Color c = GREEN;
-        DrawTextureRec(ui->sprites, rect, (Vector2){0, 0}, c);
-        rlPopMatrix();
-      }
     }
   }
   BtnDrawText(&C.btn_ok, ui->scale, "CHOOSE LEVEL");
@@ -201,7 +182,13 @@ void LevelsDraw(Ui* ui) {
   TextboxDraw(&C.level_textbox, ui);
   for (int i = 0; i < NUM_LEVEL_OPTS; i++) {
     if (co->options[i].name && !C.btn_opts[i].hidden) {
-      BtnDrawLegend(&C.btn_opts[i], ui->scale, co->options[i].name);
+      char txt[200];
+      if (co->options[i].complete) {
+        sprintf(txt, "%s\n`Completed`", co->options[i].name);
+      } else {
+        sprintf(txt, "%s", co->options[i].name);
+      }
+      BtnDrawLegend(&C.btn_opts[i], ui->scale, txt);
     }
   }
 }

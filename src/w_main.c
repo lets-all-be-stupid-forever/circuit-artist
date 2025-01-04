@@ -452,23 +452,11 @@ void MainDraw(Ui* ui) {
   bool simu_on = PaintGetMode(&C.ca) == MODE_SIMU;
   BtnDrawIcon(&C.btn_simu, bscale, ui->sprites,
               simu_on ? rect_stop : rect_start);
-  // {
-  //   int x = C.btn_challenge.hitbox.x;
-  //   int y = C.btn_challenge.hitbox.y - 10 * 2;
-  //   rlPushMatrix();
-  //   rlTranslatef(x, y, 0);
-  //   rlScalef(2, 2, 1);
-  //   FontDrawTexture("Level", 1, 1, BLACK);
-  //   FontDrawTexture("Level", 0, 0, WHITE);
-  //   rlPopMatrix();
-  // }
 
   C.btn_challenge.disabled = PaintGetMode(&C.ca) != MODE_EDIT;
-  {
-    char txt[400];
-    sprintf(txt, "Lvl: %s", co->options[cd->ilevel].name);
-    BtnDrawText(&C.btn_challenge, bscale, txt);
-  }
+  C.btn_challenge.gradient = co->options[cd->ilevel].complete;
+  BtnDrawIcon(&C.btn_challenge, bscale, co->options[cd->ilevel].icon.tex,
+              co->options[cd->ilevel].icon.region);
   BtnDrawText(&C.btn_tutorial, bscale, "Tutorial");
 
   bool color_disabled = PaintGetMode(&C.ca) != MODE_EDIT;
@@ -623,7 +611,6 @@ void MainUpdateLayout(Ui* ui) {
     C.btn_about.hitbox = (Rectangle){x4, y0, bw, bh};
     C.btn_exit.hitbox = (Rectangle){x5, y0, bw, bh};
     C.btn_tutorial.hitbox = (Rectangle){x7, y0, 3 * bw, bh};
-    C.btn_challenge.hitbox = (Rectangle){x11, y0, 15 * bw, bh};
   }
 
   int sh = GetScreenHeight() / s;
@@ -688,8 +675,8 @@ void MainUpdateLayout(Ui* ui) {
       };
     }
 
-    // int chax = GetScreenWidth() - 6 * s - 35 * s;
-    // C.btn_challenge.hitbox = (Rectangle){chax, by0_simu, 35 * s, s * 35};
+    int chax = GetScreenWidth() - 6 * s - 35 * s;
+    C.btn_challenge.hitbox = (Rectangle){chax, by0_simu, 35 * s, s * 35};
   }
 }
 
@@ -704,7 +691,7 @@ void MainUpdateViewport(Ui* ui) {
       .x = pad + 42 * scale + tt,
       .y = C.header_size + 2 * scale + tt,
   };
-  int tgt_size_x = sw - C.target_pos.x - pad - tt - 2 * scale;
+  int tgt_size_x = sw - C.target_pos.x - pad - tt - 8 * scale - 35 * scale;
   int tgt_size_y = sh - C.bottom_size - C.header_size - tt;
   // Avoids crashing when window is too small
   const int min_tgt_size = 32;
