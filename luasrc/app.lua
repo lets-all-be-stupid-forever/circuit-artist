@@ -18,6 +18,7 @@ require 'levels.collatz'
 require 'levels.gcd'
 require 'levels.riscv_alu'
 require 'levels.hanoi'
+require 'levels.custom_components'
 -- require 'levels.primes'
 
 loadProgress()
