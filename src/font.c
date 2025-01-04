@@ -495,7 +495,7 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color,
           offx = (linew - iw) / 2;
           if (height == NULL) {
             DrawTextureRec(sprites[k].tex, sprites[k].region,
-                           (Vector2){offx, offy}, WHITE);
+                           (Vector2){offx, offy}, first_color);
           }
           offy += ih;
           offx = 0;
