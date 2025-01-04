@@ -46,5 +46,3 @@ An AND gate can be created using 2 NAND gates, as shown below. That is equivalen
     },
     id='AND',
 })
-
-

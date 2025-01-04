@@ -5,7 +5,7 @@ return {
   -- require 'tutorial.wire',
   -- require 'tutorial.not',
   -- require 'tutorial.and',
-  require 'tutorial.or',
+  -- require 'tutorial.or',
   require 'tutorial.xor',
   require 'tutorial.mux',
   require 'tutorial.demux',
