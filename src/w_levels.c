@@ -11,7 +11,7 @@
 #include "ui.h"
 #include "widgets.h"
 
-#define NUM_LEVEL_OPTS 16
+#define NUM_LEVEL_OPTS 32
 
 static struct {
   bool inited;
