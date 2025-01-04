@@ -7,7 +7,7 @@ return {
   -- require 'tutorial.and',
   -- require 'tutorial.or',
   -- require 'tutorial.xor',
-  require 'tutorial.mux',
+  -- require 'tutorial.mux',
   require 'tutorial.demux',
   require 'tutorial.decoder',
   require 'tutorial.posint',

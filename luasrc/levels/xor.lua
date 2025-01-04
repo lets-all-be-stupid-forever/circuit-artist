@@ -11,10 +11,10 @@ function Xor:new()
     {'input', 1, 'xor_a_b'},
   }
   self.schedule = {
-    {a=0, b=0, or_a_b=0},
-    {a=1, b=0, or_a_b=1},
-    {a=0, b=1, or_a_b=1},
-    {a=1, b=1, or_a_b=0},
+    {a=0, b=0, xor_a_b=0},
+    {a=1, b=0, xor_a_b=1},
+    {a=0, b=1, xor_a_b=1},
+    {a=1, b=1, xor_a_b=0},
   }
 end
 

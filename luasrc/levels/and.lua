@@ -11,10 +11,10 @@ function And:new()
     {'input', 1, 'and_a_b'},
   }
   self.schedule = {
-    {a=0, b=0, nand_a_b=0},
-    {a=1, b=0, nand_a_b=0},
-    {a=0, b=1, nand_a_b=0},
-    {a=1, b=1, nand_a_b=1},
+    {a=0, b=0, and_a_b=0},
+    {a=1, b=0, and_a_b=0},
+    {a=0, b=1, and_a_b=0},
+    {a=1, b=1, and_a_b=1},
   }
 end
 
