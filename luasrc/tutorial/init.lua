@@ -9,7 +9,7 @@ return {
   -- require 'tutorial.xor',
   -- require 'tutorial.mux',
   require 'tutorial.demux',
-  require 'tutorial.decoder',
+  -- require 'tutorial.decoder',
   require 'tutorial.posint',
   require 'tutorial.negint',
   require 'tutorial.addition',
