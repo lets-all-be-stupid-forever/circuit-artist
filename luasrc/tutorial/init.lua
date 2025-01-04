@@ -1,7 +1,7 @@
 -- tutorial stuff
 return {
   require 'tutorial.basic',
-  require 'tutorial.nand',
+  --require 'tutorial.nand',
   -- require 'tutorial.wire',
   require 'tutorial.not',
   require 'tutorial.and',

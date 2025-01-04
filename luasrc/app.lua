@@ -11,6 +11,7 @@ initTutorial()
 -- Loads each level
 require 'levels.sandbox'
 require 'levels.wires'
+require 'levels.nand'
 require 'levels.seven_seg'
 require 'levels.bus'
 require 'levels.mof3'
