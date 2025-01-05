@@ -92,7 +92,7 @@ function Tester:onClock(inputs)
       if not isValid(inputs[name]) then
         table.insert(self.errors, {name=name, expected=ans, result='undefined'})
       end
-      local r = self:toNumber(inputs[name])
+      local r = self:toNumber(inputs[name], ans)
       -- checks if returned value (r) is different of the desired answer (ans),
       -- in which case, an error is created.
       if r ~= ans then

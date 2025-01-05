@@ -174,12 +174,22 @@ function LevelComponent:setBits(arr, value)
 end
 
 -- Helper function to convert a list of bits into a number
-function LevelComponent:toNumber(v)
+function LevelComponent:toNumber(v, ref)
   local out = 0
   for i = 1,#v do
     if v[i] == 1 then
       local m = lshift(1, i-1)
       out = bor(out, m)
+    end
+  end
+  if ref ~= nil then
+    if ref < 0 then
+      local h1 = lshift(1, #v-1)
+      local h2 = lshift(1, #v-0)
+      -- 255 --> -1
+      if out >= h1 then
+        out = -(h2 - out)
+      end
     end
   end
   return out

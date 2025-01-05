@@ -3,7 +3,7 @@ local Clock = require 'clock'
 local Adder = Tester:extend()
 local math = require 'math'
 
-function Adder :new()
+function Adder:new()
   Adder.super.new(self)
   self.has_submit = false
   self.pins = {
