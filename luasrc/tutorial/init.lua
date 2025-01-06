@@ -14,7 +14,7 @@ return {
   -- require 'tutorial.negint',
   -- require 'tutorial.addition',
   -- require 'tutorial.subtraction',
-  require 'tutorial.comparator',
+  -- require 'tutorial.comparator',
   require 'tutorial.shifter',
   require 'tutorial.srlatch',
   require 'tutorial.dlatch',
