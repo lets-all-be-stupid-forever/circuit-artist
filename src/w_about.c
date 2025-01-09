@@ -8,6 +8,12 @@
 #include "version.h"
 #include "widgets.h"
 
+#ifdef DEMO_VERSION
+#define DEMO_STR "`Demo Version (max image size 256)`\n"
+#else
+#define DEMO_STR
+#endif
+
 static struct {
   bool inited;
   Textbox tb;
@@ -53,7 +59,7 @@ static void AboutUpdateLayout() {
 void AboutOpen(Ui* ui) {
   ui->window = WINDOW_ABOUT;
   const char* about_page =
-      "\n!img:0\n\n" CA_VERSION
+      "\n!img:0\n\n" DEMO_STR CA_VERSION
       "\n"
       "A game by `lets_all_be_stupid_forever`.\n"
       "circuitartistgame@gmail.com\n"

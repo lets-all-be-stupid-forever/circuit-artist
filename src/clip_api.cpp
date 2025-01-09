@@ -5,12 +5,6 @@
 #include "img.h"
 
 Image ImageFromClipboard() {
-#ifdef DEMO_VERSION
-  {
-    Image r = {0, 0, 0, 0, 0};
-    return r;
-  }
-#endif
   clip::image img;
   if (!clip::get_image(img)) {
     // std::cout << "Error getting image from clipboard\n";
@@ -57,9 +51,6 @@ Image ImageFromClipboard() {
 }
 
 void ImageToClipboard(Image img) {
-#ifdef DEMO_VERSION
-  return;
-#endif
   clip::image_spec spec;
   spec.width = img.width;
   spec.height = img.height;

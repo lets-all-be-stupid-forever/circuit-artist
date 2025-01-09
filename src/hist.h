@@ -104,7 +104,7 @@ void HistUndo(Hist* h);
 void HistRedo(Hist* h);
 
 // Resets history and creates an empty image. (New button in the UI)
-void HistNewBuffer(Hist* h);
+void HistNewBuffer(Hist* h, int bw, int bh);
 
 // Dispatchs an action to resize the image.
 void HistActChangeImageSize(Hist* h, int deltax, int deltay);

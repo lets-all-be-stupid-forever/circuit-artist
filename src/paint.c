@@ -664,7 +664,7 @@ void PaintRender(Paint* ca) {
 
 void PaintNewBuffer(Paint* ca) {
   PaintStopSimu(ca);
-  HistNewBuffer(&ca->h);
+  HistNewBuffer(&ca->h, 256, 256);
   PaintResetCamera(ca);
 }
 
@@ -1110,13 +1110,7 @@ void PaintHandleCameraMovement(Paint* ca) {
   }
 }
 
-bool PaintGetIsDirty(Paint* ca) {
-#ifdef DEMO_VERSION
-  return false;
-#else
-  return HistGetIsDirty(&ca->h);
-#endif
-}
+bool PaintGetIsDirty(Paint* ca) { return HistGetIsDirty(&ca->h); }
 
 Image PaintGetSelBuffer(Paint* ca) { return HistGetSelBuffer(&ca->h); }
 

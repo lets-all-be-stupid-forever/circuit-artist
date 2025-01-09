@@ -2,6 +2,16 @@
 #define VERSION_H
 #define CA_VERSION "v1.0.5 - 07Oct2024"
 
+// v1.0.5 -->
+//   - Changed complete level icons
+//   - Splitted sandbox in sandbox and custom component levels.
+//   - Updated some icons (flag)
+//   - Updated UI of line tool: separation width has a dedicated button like the
+//   text tool.
+//   - Moved tutorial initial image to the tutorial section as TLDR section.
+//   - Removed dependency on levels so user can pick the one he wants directly.
+//   - Added a DEMO version with limited image size (256) to make freely
+//   available.
 // v1.0.4 --> v1.0.4: Level Progression
 //   - Added Level Progression and Steam Achievements.
 //   - Added 2 dark colors to default palette

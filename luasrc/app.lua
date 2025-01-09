@@ -10,21 +10,8 @@ initTutorial()
 
 -- Loads each level
 require 'levels.sandbox'
-require 'levels.wires'
-require 'levels.nand'
-require 'levels.not'
-require 'levels.and'
-require 'levels.or'
-require 'levels.xor'
-require 'levels.mux'
-require 'levels.decoder'
-require 'levels.demux'
 require 'levels.bus'
 require 'levels.seven_seg'
-require 'levels.adder'
-require 'levels.subtractor'
-require 'levels.comparator'
-require 'levels.shifter'
 require 'levels.mof3'
 require 'levels.simple_ram'
 require 'levels.collatz'
@@ -33,6 +20,22 @@ require 'levels.riscv_alu'
 require 'levels.hanoi'
 require 'levels.custom_components'
 -- require 'levels.primes'
+
+
+-- Legacy levels
+-- require 'levels.legacy_levels.wires'
+-- require 'levels.legacy_levels.nand'
+-- require 'levels.legacy_levels.not'
+-- require 'levels.legacy_levels.and'
+-- require 'levels.legacy_levels.or'
+-- require 'levels.legacy_levels.xor'
+-- require 'levels.legacy_levels.mux'
+-- require 'levels.legacy_levels.decoder'
+-- require 'levels.legacy_levels.demux'
+-- require 'levels.legacy_levels.adder'
+-- require 'levels.legacy_levels.subtractor'
+-- require 'levels.legacy_levels.comparator'
+-- require 'levels.legacy_levels.shifter'
 
 loadProgress()
 

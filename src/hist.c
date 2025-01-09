@@ -591,10 +591,10 @@ void HistSetBuffer(Hist* h, Image buffer) {
   HistResetUndoHistory(h);
 }
 
-void HistNewBuffer(Hist* h) {
+void HistNewBuffer(Hist* h, int bw, int bh) {
   HistClearBufer(h);
-  int w = 128;
-  int hh = 128;
+  int w = bw;
+  int hh = bh;
   h->buffer[0] = GenImageFilled(w, hh, BLANK);
   h->buffer[1] = PyramidGenImage(h->buffer[0]);
   h->buffer[2] = PyramidGenImage(h->buffer[1]);

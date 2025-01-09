@@ -134,19 +134,10 @@ void MainInit(Ui* ui) {
   C.header_size = 24 * ui->scale;
   C.bottom_size = 3 * 17 * 1 * ui->scale - 6 * ui->scale;
 
-#ifdef DEMO_VERSION
-  C.btn_save.disabled = true;
-  C.btn_saveas.disabled = true;
-#endif
-
   PaintLoad(&C.ca);
   LevelOptions* opt = ApiGetLevelOptions();
   if (!opt->startup_image_path) {
-    // This way here is not the same as MainLoadImageFromPath: when we load
-    // image this way, the image's path is not associated to it, so the user
-    // can't override the initial tutorial image directly by pressing "save".
-    Image img = LoadImage("../assets/tutorial.png");
-    PaintLoadImage(&C.ca, img);
+    PaintNewBuffer(&C.ca);
   } else {
     MainLoadImageFromPath(opt->startup_image_path);
   }
@@ -185,11 +176,9 @@ void MainUpdateControls(Ui* ui) {
     ui->debug = !ui->debug;
   }
 
-#ifndef DEMO_VERSION
   if (IsKeyPressed(KEY_S) && IsKeyDown(KEY_LEFT_CONTROL)) {
     MainOnSaveClick(ui, false);
   }
-#endif
 
   bool mouse_on_target = MainGetIsCursorInTargeTimage() && ui->hit_count == 0;
   C.mouse_on_target = mouse_on_target;
@@ -505,19 +494,9 @@ void MainDraw(Ui* ui) {
     BtnDrawLegend(&C.btn_exit, bscale, "Exit");
     BtnDrawLegend(&C.btn_sel_open, bscale, "Load Selection from Image");
 
-#ifndef DEMO_VERSION
     BtnDrawLegend(&C.btn_save, bscale, "Save Image (C-S)");
     BtnDrawLegend(&C.btn_saveas, bscale, "Save Image As...");
     BtnDrawLegend(&C.btn_sel_save, bscale, "Save Selection as Image");
-#else
-    BtnDrawLegend(&C.btn_save, bscale,
-                  "Save Image (C-S)\n`Not available in demo version.`");
-    BtnDrawLegend(&C.btn_saveas, bscale,
-                  "Save Image As...\n`Not available in demo version.`");
-    BtnDrawLegend(&C.btn_sel_save, bscale,
-                  "Save Selection as Image\n`Not available in demo version.`");
-
-#endif
 
     BtnDrawLegend(
         &C.btn_simu, bscale,
@@ -748,7 +727,7 @@ void MainDrawErrorMessage(Ui* ui) {
 void MainDrawStatusBar(Ui* ui) {
   int ui_scale = ui->scale;
   Color tc = WHITE;
-  int num_lines = 8;
+  int num_lines = 7;
   int yc1 = (C.target_pos.y + C.img_target_tex.texture.height) / ui_scale -
             19 * num_lines;
   int xc = 1 * 4 + C.target_pos.x / ui_scale;
@@ -814,23 +793,12 @@ void MainDrawStatusBar(Ui* ui) {
     }
   }
 
-  LevelOptions* co = ApiGetLevelOptions();
-  LevelDesc* cd = ApiGetLevelDesc();
-  sprintf(txt, "[level] %s", co->options[cd->ilevel].name);
-  FontDrawTextureOutlined(txt, xc, yc7, tc, bg);
-
-#ifndef DEMO_VERSION
   const char* fname = GetFileName(MainGetFilename());
   sprintf(txt, "[img] %s", fname);
-  FontDrawTextureOutlined(txt, xc, yc8, tc, bg);
-#else
-  const char* msg = "[Demo] Full version available on Steam.";
-  FontDrawTextureOutlined(msg, xc, yc8, tc, RED);
-#endif
-
+  FontDrawTextureOutlined(txt, xc, yc7, tc, bg);
   Image img = PaintGetEditImage(&C.ca);
   sprintf(txt, "[img] w: %d h: %d", img.width, img.height);
-  FontDrawTextureOutlined(txt, xc, yc9, tc, bg);
+  FontDrawTextureOutlined(txt, xc, yc8, tc, bg);
   rlPopMatrix();
 }
 
@@ -916,9 +884,6 @@ void MainUpdateWidgets() {
 
   C.btn_sel_open.disabled = ned;
   C.btn_sel_save.disabled = !has_sel || ned;
-#ifdef DEMO_VERSION
-  C.btn_sel_save.disabled = true;
-#endif
 
   C.btn_rotate.hidden = (tool != TOOL_SEL) || ned;
   C.btn_flipv.hidden = (tool != TOOL_SEL) || ned;

@@ -13,7 +13,7 @@
 // (stb_image blocks at 8k by default)
 #define MAX_IMG_SIZE (8 * 1024)
 #else
-#define MAX_IMG_SIZE 512
+#define MAX_IMG_SIZE 256
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)
