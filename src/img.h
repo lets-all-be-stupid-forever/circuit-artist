@@ -56,7 +56,7 @@ void ImageRemoveBlacks(Image* img);
 void ImageAddBlacks(Image img);
 
 // Ensures an image is smaller than a given size. (defined by a macro)
-void ImageEnsureMaxSize(Image* img);
+void ImageEnsureMaxSize(Image* img, int max_size);
 
 // Returns the RectangleInt containing the whole image.
 RectangleInt GetImageRect(Image img);
