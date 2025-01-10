@@ -228,8 +228,7 @@ void ImageAddBlacks(Image img) {
   }
 }
 
-void ImageEnsureMaxSize(Image* img) {
-  int max_size = MAX_IMG_SIZE;
+void ImageEnsureMaxSize(Image* img, int max_size) {
   if (img->width > max_size || img->height > max_size) {
     int w = img->width;
     int h = img->height;

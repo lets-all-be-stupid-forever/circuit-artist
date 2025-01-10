@@ -7,15 +7,6 @@
 #define COLOR_EQ(u, v) \
   (((u).r == (v).r) && ((u).g == (v).g) && ((u).b == (v).b) && ((u).a == (v).a))
 
-#ifndef DEMO_VERSION
-// Maximum image size is 8k.
-// For images bigger than that, a dedicated exporter/reader is necessary
-// (stb_image blocks at 8k by default)
-#define MAX_IMG_SIZE (8 * 1024)
-#else
-#define MAX_IMG_SIZE 256
-#endif
-
 #if defined(__linux__) || defined(__APPLE__)
 #define CA_API
 #elif _WIN32

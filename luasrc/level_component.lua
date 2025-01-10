@@ -182,7 +182,7 @@ function LevelComponent:toNumber(v, ref)
       out = bor(out, m)
     end
   end
-  if ref ~= nil then
+  if ref ~= nil and #v ~= 32 then
     if ref < 0 then
       local h1 = lshift(1, #v-1)
       local h2 = lshift(1, #v-0)

@@ -22,8 +22,9 @@ static void UiDrawMouse(Ui* ui);  // Draws the mouse cursor. It's last thing
 static void UiClose(Ui* ui);  // Callback called when user clicks on the close
                               // "X" in the game window.
 
-void UiLoad(Ui* ui) {
+void UiLoad(Ui* ui, bool demo) {
   *ui = (Ui){0};
+  ui->demo = demo;
   bool steam_enabled = SteamEnabled();
   if (steam_enabled) {
 #ifdef WITH_STEAM

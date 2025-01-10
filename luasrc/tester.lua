@@ -234,7 +234,7 @@ function Tester:onDraw(rt, cam, disp1)
         local ct = ty * nx + tx + 1
         if ct <= nt then
           local bg = black
-          local fg = white
+          local fg = c2
           if ct == self.curi then
             if self.result == 0 then
               bg = yellow

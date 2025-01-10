@@ -4,6 +4,7 @@
 #include "hist.h"
 #include "img.h"
 #include "sim.h"
+#include "ui.h"
 
 typedef enum {
   LEFT_BTN,
@@ -121,10 +122,12 @@ typedef struct {
   bool tool_pressed_with_alt;
   // Whether alt is being pressed in this frame.
   bool alt_down;
+  // maximum size for an image.
+  int max_img_size;
 } Paint;
 
 // Constructor.
-void PaintLoad(Paint* ca);
+void PaintLoad(Paint* ca, Ui* ui);
 
 // Destructor.
 void PaintUnload(Paint* ca);

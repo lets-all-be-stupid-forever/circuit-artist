@@ -45,9 +45,11 @@ typedef struct {
   int hit_count;
   // Debug flag, for profiling and others.
   bool debug;
+  // Wether it's demo version.
+  bool demo;
 } Ui;
 
-void UiLoad(Ui* ui);
+void UiLoad(Ui* ui, bool demo);
 void UiUpdateFrame(Ui* ui);
 void UiUnload(Ui* ui);
 

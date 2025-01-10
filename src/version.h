@@ -1,8 +1,8 @@
 #ifndef VERSION_H
 #define VERSION_H
-#define CA_VERSION "v1.0.5 - 07Oct2024"
+#define CA_VERSION "v1.0.6 - 09Jan2025"
 
-// v1.0.5 -->
+// v1.0.6 - 09Jan2025
 //   - Changed complete level icons
 //   - Splitted sandbox in sandbox and custom component levels.
 //   - Updated some icons (flag)

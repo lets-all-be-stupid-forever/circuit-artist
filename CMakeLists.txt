@@ -4,11 +4,6 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 OPTION(OPENMP "Use OpenMP for thread detection")
 OPTION(STEAM "Steam support")
-OPTION(DEMO "Demo Version")
-
-IF (DEMO)
-  add_compile_definitions(DEMO_VERSION=1)
-ENDIF()
 
 IF (OPENMP)
   find_package(OpenMP REQUIRED)
@@ -163,4 +158,11 @@ IF (WIN32)
   add_executable(ca_console src/main.c)
   target_link_libraries(ca_console calib)
   target_compile_definitions(ca_console PRIVATE CA_SHOW_CONSOLE=1)
+
+  # Demo version
+  add_executable(ca_demo src/main.c)
+  target_link_libraries(ca_demo calib)
+  target_compile_definitions(ca_demo PRIVATE DEMO_VERSION=1)
+
+  add_custom_target(ca_all DEPENDS ca ca_console ca_demo)
 ENDIF()

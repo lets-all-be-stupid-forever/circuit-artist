@@ -134,7 +134,7 @@ void MainInit(Ui* ui) {
   C.header_size = 24 * ui->scale;
   C.bottom_size = 3 * 17 * 1 * ui->scale - 6 * ui->scale;
 
-  PaintLoad(&C.ca);
+  PaintLoad(&C.ca, ui);
   LevelOptions* opt = ApiGetLevelOptions();
   if (!opt->startup_image_path) {
     PaintNewBuffer(&C.ca);
@@ -400,16 +400,16 @@ void MainDraw(Ui* ui) {
       }
       FontDrawTexture(txt, 0, 0, WHITE);
 
-#ifdef DEMO_VERSION
-      const char msg1[] = "Max image size in demo version is 512x512";
-      const char msg2[] = "Full version available on Steam.";
-      rlTranslatef(0, -14, 0);
-      FontDrawTexture(msg2, 2, 2, BLACK);
-      FontDrawTexture(msg2, 0, 0, RED);
-      rlTranslatef(0, -14, 0);
-      FontDrawTexture(msg1, 2, 2, BLACK);
-      FontDrawTexture(msg1, 0, 0, RED);
-#endif
+      if (ui->demo) {
+        const char msg1[] = "Max image size in demo version is 512x512";
+        const char msg2[] = "Full version available on Steam.";
+        rlTranslatef(0, -14, 0);
+        FontDrawTexture(msg2, 2, 2, BLACK);
+        FontDrawTexture(msg2, 0, 0, RED);
+        rlTranslatef(0, -14, 0);
+        FontDrawTexture(msg1, 2, 2, BLACK);
+        FontDrawTexture(msg1, 0, 0, RED);
+      }
       rlPopMatrix();
       EndScissorMode();
     }

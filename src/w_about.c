@@ -3,16 +3,11 @@
 #include <rlgl.h>
 
 #include "font.h"
+#include "string.h"
 #include "tiling.h"
 #include "ui.h"
 #include "version.h"
 #include "widgets.h"
-
-#ifdef DEMO_VERSION
-#define DEMO_STR "`Demo Version (max image size 256)`\n"
-#else
-#define DEMO_STR
-#endif
 
 static struct {
   bool inited;
@@ -58,8 +53,14 @@ static void AboutUpdateLayout() {
 
 void AboutOpen(Ui* ui) {
   ui->window = WINDOW_ABOUT;
-  const char* about_page =
-      "\n!img:0\n\n" DEMO_STR CA_VERSION
+  const char* demo_str = "";
+  if (ui->demo) {
+    demo_str = "`Demo Version (max image size 256)`\n";
+  }
+  char about_page[1000];
+  sprintf(
+      about_page,
+      "\n!img:0\n\n%s" CA_VERSION
       "\n"
       "A game by `lets_all_be_stupid_forever`.\n"
       "circuitartistgame@gmail.com\n"
@@ -92,7 +93,8 @@ void AboutOpen(Ui* ui) {
       "`Classes in lua`\nclassic.lua by rxi\n"
       "https://github.com/rxi/classic\n\n"
       "`JSON in lua`\njson.lua by rxi\n"
-      "https://github.com/rxi/json.lua";
+      "https://github.com/rxi/json.lua",
+      demo_str);
   C.closed = false;
   if (!C.inited) {
     C.inited = true;

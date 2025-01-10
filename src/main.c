@@ -15,7 +15,11 @@
 static Ui _ui = {0};
 
 int main() {
-  UiLoad(&_ui);
+  int demo = 0;
+#ifdef DEMO_VERSION
+  demo = 1;
+#endif
+  UiLoad(&_ui, demo);
 #if defined(WITH_OPENMP)
   // OpenMP is getting all CPU at Windows for some reason...
   // Add limit of 6 threads to reduce its effect until a better solution is

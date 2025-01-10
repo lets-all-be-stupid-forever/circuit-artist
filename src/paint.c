@@ -177,12 +177,12 @@ void PaintEnsureCameraWithinBounds(Paint* ca) {
   // Mind that `camera_x` is the position in window pixels in the screen where
   // I draw the image texture.
   // So drawing image at -iw means it doesnt appear on window.
-  float x_max = sw - fmin(iw, sw / 2) + eiw;
-  float x_min = -iw + fmin(iw, sw / 2) + eiw;
-  float y_max = sh - fmin(ih, sh / 2) + eih;
-  float y_min = -ih + fmin(ih, sh / 2) + eih;
-  ca->camera_x = fmax(fmin(ca->camera_x, x_max), x_min);
-  ca->camera_y = fmax(fmin(ca->camera_y, y_max), y_min);
+  float x_max = round(sw - fmin(iw, sw / 2) + eiw);
+  float x_min = round(-iw + fmin(iw, sw / 2) + eiw);
+  float y_max = round(sh - fmin(ih, sh / 2) + eih);
+  float y_min = round(-ih + fmin(ih, sh / 2) + eih);
+  ca->camera_x = round(fmax(fmin(ca->camera_x, x_max), x_min));
+  ca->camera_y = round(fmax(fmin(ca->camera_y, y_max), y_min));
 }
 
 void PaintCenterCamera(Paint* ca) {
@@ -204,12 +204,21 @@ void PaintCenterCamera(Paint* ca) {
   float x_min = -iw + fmin(iw, sw / 2);
   float y_max = sh - fmin(ih, sh / 2);
   float y_min = -ih + fmin(ih, sh / 2);
-  ca->camera_x = (x_max + x_min) / 2;
-  ca->camera_y = (y_max + y_min) / 2;
+  ca->camera_x = round((x_max + x_min) / 2);
+  ca->camera_y = round((y_max + y_min) / 2);
 }
 
-void PaintLoad(Paint* ca) {
+void PaintLoad(Paint* ca, Ui* ui) {
   *ca = (Paint){0};
+  if (ui->demo) {
+    ca->max_img_size = 256;
+  } else {
+    // Maximum image size is 8k.
+    // For images bigger than that, a dedicated exporter/reader is necessary
+    // (stb_image blocks at 8k by default)
+    ca->max_img_size = 8 * 1024;
+  }
+
   ca->grid_on_zoom = false;
   ca->camera_i = 5;
   ca->camera_s = zoom_lut[ca->camera_i];
@@ -233,7 +242,7 @@ void PaintLoad(Paint* ca) {
 }
 
 void PaintImageIngress(Paint* ca, Image* img) {
-  ImageEnsureMaxSize(img);
+  ImageEnsureMaxSize(img, ca->max_img_size);
   ImageRemoveBlacks(img);
 }
 
@@ -598,7 +607,7 @@ void PaintRender(Paint* ca) {
       if (ca->resize_pressed) {
         int sizex = ca->pixel_cursor_x < 8 ? 8 : ca->pixel_cursor_x;
         int sizey = ca->pixel_cursor_y < 8 ? 8 : ca->pixel_cursor_y;
-        int max_size = MAX_IMG_SIZE;
+        int max_size = ca->max_img_size;
         if (max_size > 0) {
           sizex = sizex > max_size ? max_size : sizex;
           sizey = sizey > max_size ? max_size : sizey;
@@ -736,8 +745,8 @@ void PaintEnforceMouseOnImageIfNeed(Paint* ca) {
     Vector2 new_pos = ProjectPointIntoRect(pos, target_rect);
     if (new_pos.x != pos.x || new_pos.y != pos.y) {
       SetMousePosition(new_pos.x, new_pos.y);
-      ca->camera_x += new_pos.x - pos.x;
-      ca->camera_y += new_pos.y - pos.y;
+      ca->camera_x += round(new_pos.x - pos.x);
+      ca->camera_y += round(new_pos.y - pos.y);
       PaintEnsureCameraWithinBounds(ca);
     }
   }
@@ -1066,7 +1075,7 @@ void PaintHandleMouse(Paint* ca, bool is_target) {
         new_x = new_x < 8 ? 8 : new_x;
         new_y = new_y < 8 ? 8 : new_y;
 
-        int max_size = MAX_IMG_SIZE;
+        int max_size = ca->max_img_size;
         if (max_size > 0) {
           new_x = new_x > max_size ? max_size : new_x;
           new_y = new_y > max_size ? max_size : new_y;
