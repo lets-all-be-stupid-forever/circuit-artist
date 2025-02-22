@@ -10,6 +10,7 @@
 #include "colors.h"
 #include "hist.h"
 #include "profiler.h"
+#include "utils.h"
 
 static const int MAX_LINE_WIDTH = 256;
 static const float RESIZE_HANDLE_SIZE = 20;
@@ -401,7 +402,7 @@ static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off) {
     int ls = ca->line_tool_size == 0 ? 1 : ca->line_tool_size;
     int sep = ca->line_tool_sep <= 0 ? 1 : ca->line_tool_sep;
     bool corner = IsKeyDown(KEY_LEFT_SHIFT);
-    bool end_corner = IsKeyDown(KEY_LEFT_CONTROL);
+    bool end_corner = IsControlDown();
     DrawImageLineTool(start, PaintMakeToolRect(ca), img_rect, ls, sep, corner,
                       end_corner, c, img, off);
   } else if (HistGetTool(&ca->h) == TOOL_BRUSH) {
@@ -876,10 +877,26 @@ static void PaintAppendLineWidthNumber(Paint* ca, int key) {
   }
 }
 
+static void PaintCheckDirectionKeyPressed(Paint* ca) {
+  // If control is pressed, don't do anything, to avoid conflict with save
+  // (Ctrl+S) or other command.
+  if (IsControlDown()) {
+    return;
+  }
+  int dy = IsKeyDown(KEY_W) - IsKeyDown(KEY_S);
+  int dx = IsKeyDown(KEY_A) - IsKeyDown(KEY_D);
+  if (dx != 0 || dy != 0) {
+    ca->camera_x += dx * 10;
+    ca->camera_y += dy * 10;
+    PaintEnsureCameraWithinBounds(ca);
+  }
+}
+
 void PaintHandleKeys(Paint* ca) {
   if (IsKeyPressed(KEY_SPACE)) {
     PaintToggleSimu(ca);
   }
+  PaintCheckDirectionKeyPressed(ca);
   if (ca->mode == MODE_EDIT) {
     if (PaintGetTool(ca) == TOOL_LINE) {
       int key = GetNumberKeyPressed();
@@ -888,24 +905,31 @@ void PaintHandleKeys(Paint* ca) {
       }
     }
 
-    if (IsKeyPressed(KEY_Z) && IsKeyDown(KEY_LEFT_CONTROL)) {
-      HistUndo(&ca->h);
-      PaintOnToolChange(ca);
-      PaintEnsureCameraWithinBounds(ca);
-    }
+    // For macos, we accept the COMMMAND key too.
+    if (IsControlDown()) {
+      // Undo
+      if (IsKeyPressed(KEY_Z)) {
+        HistUndo(&ca->h);
+        PaintOnToolChange(ca);
+        PaintEnsureCameraWithinBounds(ca);
+      }
 
-    if (IsKeyPressed(KEY_Y) && IsKeyDown(KEY_LEFT_CONTROL)) {
-      HistRedo(&ca->h);
-      PaintOnToolChange(ca);
-      PaintEnsureCameraWithinBounds(ca);
-    }
+      // Redo
+      if (IsKeyPressed(KEY_Y)) {
+        HistRedo(&ca->h);
+        PaintOnToolChange(ca);
+        PaintEnsureCameraWithinBounds(ca);
+      }
 
-    if (IsKeyPressed(KEY_C) && IsKeyDown(KEY_LEFT_CONTROL)) {
-      PaintCopyToClipboard(ca);
-    }
+      // Copy
+      if (IsKeyPressed(KEY_C)) {
+        PaintCopyToClipboard(ca);
+      }
 
-    if (IsKeyPressed(KEY_V) && IsKeyDown(KEY_LEFT_CONTROL)) {
-      PaintPasteFromClipboard(ca);
+      // Paste
+      if (IsKeyPressed(KEY_V)) {
+        PaintPasteFromClipboard(ca);
+      }
     }
 
     if (IsKeyPressed(KEY_L)) {
@@ -943,7 +967,7 @@ void PaintHandleKeys(Paint* ca) {
         int dx = 0;
         int dy = 0;
         // When we press control it moves 2 spaces at a time
-        int d = IsKeyDown(KEY_LEFT_CONTROL) ? 4 : 1;
+        int d = IsControlDown() ? 4 : 1;
         if (IsKeyPressed(KEY_DOWN)) dy += d;
         if (IsKeyPressed(KEY_UP)) dy -= d;
         if (IsKeyPressed(KEY_LEFT)) dx -= d;
@@ -958,7 +982,7 @@ void PaintHandleKeys(Paint* ca) {
       if (has_sel && IsKeyPressed(KEY_R)) {
         HistActSelFlip(&ca->h, ACTION_SEL_ROTATE);
       }
-      if (has_sel && IsKeyPressed(KEY_V) && !IsKeyDown(KEY_LEFT_CONTROL)) {
+      if (has_sel && IsKeyPressed(KEY_V) && !IsControlDown()) {
         HistActSelFlip(&ca->h, ACTION_SEL_FLIP_V);
       }
 
@@ -1104,7 +1128,7 @@ static void PaintOnToolStart(Paint* ca) {
 
   if (HistGetTool(&ca->h) == TOOL_SEL) {
     // Duplicates selection when moving with CTRL
-    if (IsKeyDown(KEY_LEFT_CONTROL) && PaintGetIsToolSelMoving(ca)) {
+    if (IsControlDown() && PaintGetIsToolSelMoving(ca)) {
       HistActCloneSel(&ca->h);
     }
   }

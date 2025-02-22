@@ -176,7 +176,7 @@ void MainUpdateControls(Ui* ui) {
     ui->debug = !ui->debug;
   }
 
-  if (IsKeyPressed(KEY_S) && IsKeyDown(KEY_LEFT_CONTROL)) {
+  if (IsKeyPressed(KEY_S) && IsControlDown()) {
     MainOnSaveClick(ui, false);
   }
 
@@ -234,13 +234,14 @@ void MainUpdateControls(Ui* ui) {
     if (IsKeyPressed(KEY_T)) {
       TextModalOpen(ui);
     }
-    ToolType tool = PaintGetDisplayTool(&C.ca);
-    if (tool == TOOL_LINE && IsKeyPressed(KEY_S)) {
-      NumberModalOpen(ui);
-    }
-    if (tool == TOOL_LINE && IsKeyPressed(KEY_R)) {
-      MainSetLineSep(1);
-    }
+    // Disabling the line separation hotkey due to conflict with "WASD"
+    // movement. ToolType tool = PaintGetDisplayTool(&C.ca); if (tool ==
+    // TOOL_LINE && IsKeyPressed(KEY_S)) {
+    //   NumberModalOpen(ui);
+    // }
+    // if (tool == TOOL_LINE && IsKeyPressed(KEY_R)) {
+    //   MainSetLineSep(1);
+    // }
   }
   PaintHandleMouse(&C.ca, C.mouse_on_target);
   PaintHandleKeys(&C.ca);
@@ -529,9 +530,9 @@ void MainDraw(Ui* ui) {
     BtnDrawLegend(&C.btn_flipv, bscale, "Flip selection vertically (V)");
     BtnDrawLegend(&C.btn_rotate, bscale, "Rotate selection (R)");
     BtnDrawLegend(&C.btn_fill, bscale, "Fill selection (F)");
-    BtnDrawLegend(&C.btn_line_sep, bscale, "Define line separation width (S)");
+    BtnDrawLegend(&C.btn_line_sep, bscale, "Define line separation width");
     BtnDrawLegend(&C.btn_line_sep_r, bscale,
-                  "Reset line separation width to 1 (R)");
+                  "Reset line separation width to 1");
     BtnDrawLegend(&C.btn_challenge, bscale, "Select Level");
     BtnDrawLegend(&C.btn_tutorial, bscale,
                   "Tutorial (TAB)\n`-` Describes core game concepts and "
