@@ -3,6 +3,7 @@
 #include <rlgl.h>
 
 #include "font.h"
+#include "stdio.h"
 #include "string.h"
 #include "tiling.h"
 #include "ui.h"
