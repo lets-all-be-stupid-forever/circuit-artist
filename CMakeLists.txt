@@ -73,12 +73,10 @@ SET(ca_src
   src/colors.c
   src/tiling.c
   src/msg.c
-  src/minimap.c
   src/api.c
   src/font.c
   src/rect_int.c
   src/rendering.c
-  src/pyramid.c
   src/widgets.c
   src/sim.c
   src/utils.c
@@ -93,6 +91,7 @@ SET(ca_src
   src/w_tutorial.c
   src/w_dialog.c
   src/profiler.c
+  src/shaders.c
   src/clip_api.cpp
   src/steam.cpp
 
@@ -166,3 +165,6 @@ IF (WIN32)
 
   add_custom_target(ca_all DEPENDS ca ca_console ca_demo)
 ENDIF()
+
+add_executable(tmp src/tmp.c)
+target_link_libraries(tmp raylib)

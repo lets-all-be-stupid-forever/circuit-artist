@@ -45,6 +45,7 @@ void CopyImage(Image src, RectangleInt r, Image* dst, Vector2Int offset);
 // pixels (full transparency). Also makes sure there's no actual black in the
 // image but BLANKS.
 void ImageCombine(Image src, RectangleInt r, Image* dst, Vector2Int offset);
+void ImageCombine2(Image src, RectangleInt r, Image* dst, Vector2Int offset);
 
 // Replaces Blacks in images by BLANKs inplace.
 // Also remove weird transparent pixels.
@@ -108,6 +109,29 @@ void DrawImageLineTool(Vector2Int start, RectangleInt tool_rect,
 // It's up to the caller to take ownership of the generated `out` image.
 void DrawImageBucketTool(Image img, int x, int y, int sw, int sh, Color c,
                          Image* out, Vector2Int* off);
+
+RenderTexture2D CloneTexture(RenderTexture2D img);
+RenderTexture2D CloneTextureFromImage(Image img);
+RenderTexture2D CropTexture(RenderTexture2D img, RectangleInt region);
+void TextureCombine(RenderTexture2D src, RectangleInt r, RenderTexture2D* dst,
+                    Vector2Int offset);
+void FillTextureRect(RenderTexture* img, RectangleInt r, Color c);
+void CopyTexture(RenderTexture2D src, RectangleInt r, RenderTexture2D* dst,
+                 Vector2Int offset);
+
+void FlipTextureVInplace(RenderTexture2D* img);
+void FlipTextureHInplace(RenderTexture2D* img);
+RenderTexture2D RotateTexture(RenderTexture2D img, int ccw);
+
+void draw_rt_on_screen(RenderTexture2D rt, Vector2 pos);
+void draw_main_img(int mode, Texture2D wire_tpl, RenderTexture2D img,
+                   Texture2D tx, Texture2D ty, Texture2D ts, int simu_state,
+                   RenderTexture2D sel, float sel_off_x, float sel_off_y,
+                   RenderTexture2D tool, float tool_x, float tool_y, float cx,
+                   float cy, float cs, RenderTexture2D* tmp,
+                   RenderTexture2D* target);
+void draw_rect(float x, float y, float w, int h, Color c);
+
 #if defined(__cplusplus)
 }
 #endif

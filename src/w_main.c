@@ -13,6 +13,7 @@
 #include "msg.h"
 #include "paint.h"
 #include "profiler.h"
+#include "shaders.h"
 #include "tiling.h"
 #include "utils.h"
 #include "w_about.h"
@@ -111,6 +112,7 @@ void MainOpen(Ui* ui) {
 }
 
 void MainInit(Ui* ui) {
+  InitShaders();
   C.palette[0] = WHITE;
   C.palette[1] = BLACK;
   C.palette[2] = RED;
@@ -158,8 +160,7 @@ void MainUpdate(Ui* ui) {
     PaintUpdateSimu(&C.ca, delta);
   }
   MainUpdateWidgets();
-  PaintRender(&C.ca);
-  UpdateTexture(C.img_target_tex.texture, GetPixels(C.ca.tmp_render));
+  PaintRenderTexture(&C.ca, C.img_target_tex);
   BeginTextureMode(C.level_overlay_tex);
   ClearBackground(BLANK);
   EndTextureMode();
@@ -338,86 +339,71 @@ void MainUpdateHud(Ui* ui) {
   }
 }
 
+void draw_resize_handle(Ui* ui) {
+  // Drawing the text in the resize rectangle of the image.
+  // I'm drawing here and not in the img because I want to scale the font.
+  // When it's dragging, it displays the image size.
+  if (C.ca.resize_hovered || C.ca.resize_pressed) {
+    ui->cursor = MOUSE_RESIZE;
+    BeginScissorMode(C.target_pos.x, C.target_pos.y,
+                     C.img_target_tex.texture.width,
+                     C.img_target_tex.texture.height);
+    rlPushMatrix();
+    rlTranslatef(C.target_pos.x, C.target_pos.y, 0);
+    rlTranslatef(C.ca.camera_x, C.ca.camera_y, 0);
+    rlScalef(C.ca.camera_s, C.ca.camera_s, 1);
+
+    Image img = PaintGetEditImage(&C.ca);
+    if (C.ca.resize_pressed) {
+      rlTranslatef(C.ca.resize_region.width, C.ca.resize_region.height, 0);
+    } else {
+      rlTranslatef(img.width, img.height, 0);
+    }
+
+    rlScalef(1 / C.ca.camera_s, 1 / C.ca.camera_s, 1);
+    rlScalef(2, 2, 1);
+    rlTranslatef(10, -14, 0);
+
+    char txt[100];
+    if (C.ca.resize_pressed) {
+      int w = C.ca.resize_region.width;
+      int h = C.ca.resize_region.height;
+      sprintf(txt, "%d x %d", w, h);
+    } else {
+      sprintf(txt, "Drag to resize");
+    }
+    FontDrawTexture(txt, 0, 0, WHITE);
+
+    if (ui->demo) {
+      const char msg1[] = "Max image size in demo version is 512x512";
+      const char msg2[] = "Full version available on Steam.";
+      rlTranslatef(0, -14, 0);
+      FontDrawTexture(msg2, 2, 2, BLACK);
+      FontDrawTexture(msg2, 0, 0, RED);
+      rlTranslatef(0, -14, 0);
+      FontDrawTexture(msg1, 2, 2, BLACK);
+      FontDrawTexture(msg1, 0, 0, RED);
+    }
+    rlPopMatrix();
+    EndScissorMode();
+  }
+}
+
 void MainDraw(Ui* ui) {
   ClearBackground(BLANK);
   DrawDefaultTiledScreen(ui);
 
   // Draws target
-  {
-    Rectangle source = {
-        .x = 0,
-        .y = 0,
-        .width = C.img_target_tex.texture.width,
-        .height = C.img_target_tex.texture.height,
-    };
-    Rectangle source_inverted = {
-        .x = 0,
-        .y = 0,
-        .width = source.width,
-        .height = -source.height,
-    };
-    Rectangle target = {
-        .x = C.target_pos.x,
-        .y = C.target_pos.y,
-        .width = source.width,
-        .height = source.height,
-    };
-    DrawRectangle(C.target_pos.x, C.target_pos.y, source.width, source.height,
-                  BLACK);
-    DrawTexturePro(C.img_target_tex.texture, source, target,
-                   (Vector2){.x = 0, .y = 0}, 0.0f, WHITE);
-
-    // Drawing the text in the resize rectangle of the image.
-    // I'm drawing here and not in the img because I want to scale the font.
-    // When it's dragging, it displays the image size.
-    if (C.ca.resize_hovered || C.ca.resize_pressed) {
-      ui->cursor = MOUSE_RESIZE;
-      BeginScissorMode(C.target_pos.x, C.target_pos.y,
-                       C.img_target_tex.texture.width,
-                       C.img_target_tex.texture.height);
-      rlPushMatrix();
-      rlTranslatef(C.target_pos.x, C.target_pos.y, 0);
-      rlTranslatef(C.ca.camera_x, C.ca.camera_y, 0);
-      rlScalef(C.ca.camera_s, C.ca.camera_s, 1);
-
-      Image img = PaintGetEditImage(&C.ca);
-      if (C.ca.resize_pressed) {
-        rlTranslatef(C.ca.resize_region.width, C.ca.resize_region.height, 0);
-      } else {
-        rlTranslatef(img.width, img.height, 0);
-      }
-
-      rlScalef(1 / C.ca.camera_s, 1 / C.ca.camera_s, 1);
-      rlScalef(2, 2, 1);
-      rlTranslatef(10, -14, 0);
-
-      char txt[100];
-      if (C.ca.resize_pressed) {
-        int w = C.ca.resize_region.width;
-        int h = C.ca.resize_region.height;
-        sprintf(txt, "%d x %d", w, h);
-      } else {
-        sprintf(txt, "Drag to resize");
-      }
-      FontDrawTexture(txt, 0, 0, WHITE);
-
-      if (ui->demo) {
-        const char msg1[] = "Max image size in demo version is 512x512";
-        const char msg2[] = "Full version available on Steam.";
-        rlTranslatef(0, -14, 0);
-        FontDrawTexture(msg2, 2, 2, BLACK);
-        FontDrawTexture(msg2, 0, 0, RED);
-        rlTranslatef(0, -14, 0);
-        FontDrawTexture(msg1, 2, 2, BLACK);
-        FontDrawTexture(msg1, 0, 0, RED);
-      }
-      rlPopMatrix();
-      EndScissorMode();
-    }
-
-    DrawTexturePro(C.level_overlay_tex.texture, source_inverted, target,
-                   (Vector2){.x = 0, .y = 0}, 0.0f, WHITE);
-  }
+  int th = C.img_target_tex.texture.height;
+  int tw = C.img_target_tex.texture.width;
+  Vector2 rpos = C.target_pos;
+  // Background
+  DrawRectangle(rpos.x, rpos.y, tw, th, BLACK);
+  // Main image
+  draw_rt_on_screen(C.img_target_tex, rpos);
+  draw_resize_handle(ui);
+  // Overlay image, drawn by lua
+  draw_rt_on_screen(C.level_overlay_tex, rpos);
 
   Rectangle inner_content = {
       C.target_pos.x,

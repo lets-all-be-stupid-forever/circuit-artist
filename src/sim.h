@@ -99,8 +99,6 @@ typedef struct {
   int* nands;
   // Time spent parsing the image in seconds.
   double time_parsing;
-  // Pixel coordinate of each nand (top-left pixel).
-  int* nand_coord;
   // Offset of pixels per component (used to extract size as well).
   int* comp_off;
   // Pixel index of each component.
@@ -342,6 +340,12 @@ typedef struct {
   double time_simulation_last_simulate;
   // Total cumulated number of updates since start.
   int total_updates;
+  int state_w;
+  int state_h;
+  float* state_buffer;
+  Texture2D t_comp_x;
+  Texture2D t_comp_y;
+  Texture2D t_state;
 } Sim;
 
 // Parses a raw image into an intermediate data structure to be fed into the

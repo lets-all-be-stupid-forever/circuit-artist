@@ -5,7 +5,6 @@
 #include <stdlib.h>
 
 #include "img.h"
-#include "pyramid.h"
 
 static Cmd* LoadCmd(ToolType t, CmdActionType act);
 static void CmdUnload(Cmd* c);
@@ -19,17 +18,17 @@ static void HistEnsureUndoSize(Hist* h);
 static void HistClearBuffer(Hist* h);
 
 static void HistClearBufer(Hist* h) {
-  if (h->buffer[0].width) {
-    for (int i = 0; i < HIST_PYR_LVLS; i++) {
-      UnloadImage(h->buffer[i]);
-      h->buffer[i] = (Image){0};
-    }
+  if (h->buffer.width) {
+    UnloadImage(h->buffer);
+    h->buffer = (Image){0};
+    UnloadRenderTexture(h->t_buffer);
   }
-  if (h->selbuffer[0].width) {
+  if (h->selbuffer.width) {
     for (int i = 0; i < HIST_PYR_LVLS; i++) {
-      UnloadImage(h->selbuffer[i]);
-      h->selbuffer[i] = (Image){0};
+      UnloadImage(h->selbuffer);
+      h->selbuffer = (Image){0};
     }
+    UnloadRenderTexture(h->t_selbuffer);
   }
 }
 
@@ -37,7 +36,7 @@ ToolType HistGetTool(Hist* h) { return h->tool; }
 
 void HistSetTool(Hist* h, ToolType t) { h->tool = t; }
 
-Image HistGetSelBuffer(Hist* h) { return h->selbuffer[0]; }
+Image HistGetSelBuffer(Hist* h) { return h->selbuffer; }
 
 Vector2Int HistGetSelOffset(Hist* h) { return h->seloff; }
 
@@ -48,7 +47,7 @@ void HistLoad(Hist* h) {
 
 void HistUnload(Hist* h) { HistClearBufer(h); }
 
-bool HistGetHasSelection(Hist* h) { return h->selbuffer[0].width > 0; }
+bool HistGetHasSelection(Hist* h) { return h->selbuffer.width > 0; }
 
 void HistUndo(Hist* h) {
   if (!h->undo_hist) {
@@ -72,7 +71,7 @@ void HistRedo(Hist* h) {
   h->undo_hist = c;
 }
 
-Image HistGetBuffer(Hist* h) { return h->buffer[0]; }
+Image HistGetBuffer(Hist* h) { return h->buffer; }
 
 static RectangleInt AddOffsetToRect(RectangleInt r, Vector2Int v) {
   return (RectangleInt){
@@ -96,9 +95,8 @@ void CmdUndo(Cmd* c, Hist* h) {
           .width = c->data_after.width,
           .height = c->data_after.height,
       };
-      CopyImage(c->data_before, r, &h->buffer[0], c->offset);
-      PyramidUpdateRect2(HIST_PYR_LVLS, h->buffer,
-                         AddOffsetToRect(r, c->offset));
+      CopyImage(c->data_before, r, &h->buffer, c->offset);
+      CopyTexture(c->t_data_before, r, &h->t_buffer, c->offset);
       break;
     }
     case ACTION_SEL_CREATE: {
@@ -111,16 +109,16 @@ void CmdUndo(Cmd* c, Hist* h) {
           // to combine)
           RectangleInt r = {.x = 0,
                             .y = 0,
-                            .width = h->selbuffer[0].width,
-                            .height = h->selbuffer[0].height};
+                            .width = h->selbuffer.width,
+                            .height = h->selbuffer.height};
           Vector2Int off = (Vector2Int){.x = c->sel_rect.x, .y = c->sel_rect.y};
-          ImageCombine(h->selbuffer[0], r, &h->buffer[0], off);
-          PyramidUpdateRect2(HIST_PYR_LVLS, h->buffer, AddOffsetToRect(r, off));
+          ImageCombine(h->selbuffer, r, &h->buffer, off);
+          TextureCombine(h->t_selbuffer, r, &h->t_buffer, off);
         }
-        UnloadImage(h->selbuffer[0]);
-        UnloadImage(h->selbuffer[1]);
-        UnloadImage(h->selbuffer[2]);
-        h->selbuffer[0] = (Image){0};
+        UnloadImage(h->selbuffer);
+        UnloadRenderTexture(h->t_selbuffer);
+        h->selbuffer = (Image){0};
+        h->t_selbuffer = (RenderTexture){0};
         h->seloff = (Vector2Int){0};
       }
       if (c->data_after.width > 0) {
@@ -128,21 +126,20 @@ void CmdUndo(Cmd* c, Hist* h) {
         // The selection itself could be outside of the volume region, so it's
         // important to check that we are pasting at the correct place.
         // Mind that data_before might be cropped because of that.
-        assert(h->selbuffer[0].width == 0);
-        h->selbuffer[0] = CloneImage(c->data_after);
-        h->selbuffer[1] = PyramidGenImage(h->selbuffer[0]);
-        h->selbuffer[2] = PyramidGenImage(h->selbuffer[1]);
+        assert(h->selbuffer.width == 0);
+        h->selbuffer = CloneImage(c->data_after);
+        h->t_selbuffer = CloneTexture(c->t_data_after);
         h->seloff = c->offset;
         // The c->offset  is the offset of the selection, not of the
         // data_before buffer, so we need to fix that.
         RectangleInt selrect = {
             .x = h->seloff.x,
             .y = h->seloff.y,
-            .width = h->selbuffer[0].width,
-            .height = h->selbuffer[0].height,
+            .width = h->selbuffer.width,
+            .height = h->selbuffer.height,
         };
         RectangleInt valid =
-            GetCollisionRecInt(selrect, GetImageRect(h->buffer[0]));
+            GetCollisionRecInt(selrect, GetImageRect(h->buffer));
         if (!IsRecIntEmpty(valid) && c->data_before.width > 0) {
           Vector2Int valid_offset = {.x = valid.x, .y = valid.y};
           // The valid region should have the same size as the data_before
@@ -152,9 +149,8 @@ void CmdUndo(Cmd* c, Hist* h) {
           assert(c->data_before.height == valid.height);
           RectangleInt r = {
               .x = 0, .y = 0, .width = valid.width, .height = valid.height};
-          CopyImage(c->data_before, r, &h->buffer[0], valid_offset);
-          PyramidUpdateRect2(HIST_PYR_LVLS, h->buffer,
-                             AddOffsetToRect(r, valid_offset));
+          CopyImage(c->data_before, r, &h->buffer, valid_offset);
+          CopyTexture(c->t_data_before, r, &h->t_buffer, valid_offset);
         }
       }
       break;
@@ -165,33 +161,30 @@ void CmdUndo(Cmd* c, Hist* h) {
       break;
     }
     case ACTION_SEL_FLIP_H: {
-      FlipImageHInplace(&h->selbuffer[0]);
-      PyramidUpdateRect2(HIST_PYR_LVLS, h->selbuffer,
-                         GetImageRect(h->selbuffer[0]));
+      FlipImageHInplace(&h->selbuffer);
+      FlipTextureHInplace(&h->t_selbuffer);
       break;
     }
     case ACTION_SEL_FLIP_V: {
-      FlipImageVInplace(&h->selbuffer[0]);
-      PyramidUpdateRect2(HIST_PYR_LVLS, h->selbuffer,
-                         GetImageRect(h->selbuffer[0]));
+      FlipImageVInplace(&h->selbuffer);
+      FlipTextureVInplace(&h->t_selbuffer);
       break;
     }
     case ACTION_SEL_ROTATE: {
-      Image tmp = h->selbuffer[0];
-      h->selbuffer[0] = RotateImage(h->selbuffer[0], 1);
+      Image tmp = h->selbuffer;
+      RenderTexture2D t_tmp = h->t_selbuffer;
+      h->selbuffer = RotateImage(h->selbuffer, 1);
+      h->t_selbuffer = RotateTexture(h->t_selbuffer, 1);
+      UnloadRenderTexture(t_tmp);
       UnloadImage(tmp);
-      UnloadImage(h->selbuffer[1]);
-      UnloadImage(h->selbuffer[2]);
-      h->selbuffer[1] = PyramidGenImage(h->selbuffer[0]);
-      h->selbuffer[2] = PyramidGenImage(h->selbuffer[1]);
       break;
     }
     case ACTION_RESIZE: {
       int deltax = c->resize_delta.x;
       int deltay = c->resize_delta.y;
-      int new_w = h->buffer[0].width - deltax;
-      int new_h = h->buffer[0].height - deltay;
-      Image img1 = h->buffer[0];
+      int new_w = h->buffer.width - deltax;
+      int new_h = h->buffer.height - deltay;
+      Image img1 = h->buffer;
       Image img2 = GenImageFilled(new_w, new_h, BLANK);
       Color* c0 = GetPixels(img1);
       Color* c1 = GetPixels(img2);
@@ -201,10 +194,21 @@ void CmdUndo(Cmd* c, Hist* h) {
           c1[y * img2.width + x] = c0[y * img1.width + x];
         }
       }
-      h->buffer[0] = img2;
+      h->buffer = img2;
       UnloadImage(img1);
-      UnloadImage(h->buffer[1]);
-      UnloadImage(h->buffer[2]);
+
+      RenderTexture2D tex1 = h->t_buffer;
+      RenderTexture2D tex2 = LoadRenderTexture(new_w, new_h);
+      Vector2Int offset = {0, 0};
+      RectangleInt source = {
+          0.f,
+          0.f,
+          tex1.texture.width,
+          tex1.texture.height,
+      };
+      CopyTexture(tex1, source, &tex2, offset);
+      h->t_buffer = tex2;
+      UnloadRenderTexture(tex1);
       if (c->resize_img_delta_x.width > 0) {
         int w = img2.width;
         int h = img2.height;
@@ -218,6 +222,9 @@ void CmdUndo(Cmd* c, Hist* h) {
             dst[y * w + x] = src[y * ww + x - x0];
           }
         }
+        Vector2Int offset = {x0, 0};
+        RectangleInt source = {0, 0, c->resize_img_delta_x.width, h};
+        CopyTexture(c->t_resize_img_delta_x, source, &tex2, offset);
       }
       if (c->resize_img_delta_y.width > 0) {
         int w = img2.width;
@@ -231,9 +238,10 @@ void CmdUndo(Cmd* c, Hist* h) {
             dst[y * w + x] = src[(y - y0) * w + x];
           }
         }
+        Vector2Int offset = {0, y0};
+        RectangleInt source = {0, 0, w, c->resize_img_delta_y.height};
+        CopyTexture(c->t_resize_img_delta_y, source, &tex2, offset);
       }
-      h->buffer[1] = PyramidGenImage(h->buffer[0]);
-      h->buffer[2] = PyramidGenImage(h->buffer[1]);
       break;
     };
   }
@@ -251,9 +259,8 @@ void CmdDo(Cmd* c, Hist* h) {
           .width = c->data_after.width,
           .height = c->data_after.height,
       };
-      ImageCombine(c->data_after, r, &h->buffer[0], c->offset);
-      PyramidUpdateRect2(HIST_PYR_LVLS, h->buffer,
-                         AddOffsetToRect(r, c->offset));
+      ImageCombine(c->data_after, r, &h->buffer, c->offset);
+      TextureCombine(c->t_data_after, r, &h->t_buffer, c->offset);
       break;
     }
     case ACTION_SEL_CREATE: {
@@ -273,7 +280,7 @@ void CmdDo(Cmd* c, Hist* h) {
         rdst.x = off.x;
         rdst.y = off.y;
         RectangleInt fixed_rdst =
-            GetCollisionRecInt(rdst, GetImageRect(h->buffer[0]));
+            GetCollisionRecInt(rdst, GetImageRect(h->buffer));
         // The scenario here is when the user drags the selection outside of the
         // image When we are deleting the selection, the data_before will be
         // empty.
@@ -287,14 +294,14 @@ void CmdDo(Cmd* c, Hist* h) {
           // Uses the size of the cropped region
           r.width = fixed_rdst.width;
           r.height = fixed_rdst.height;
-          ImageCombine(c->data_after, r, &h->buffer[0], off);
-          PyramidUpdateRect2(HIST_PYR_LVLS, h->buffer, AddOffsetToRect(r, off));
+          ImageCombine(c->data_after, r, &h->buffer, off);
+          TextureCombine(c->t_data_after, r, &h->t_buffer, off);
         }
-        UnloadImage(h->selbuffer[0]);
-        UnloadImage(h->selbuffer[1]);
-        UnloadImage(h->selbuffer[2]);
+        UnloadRenderTexture(h->t_selbuffer);
+        UnloadImage(h->selbuffer);
         h->seloff = (Vector2Int){0};
-        h->selbuffer[0] = (Image){0};
+        h->selbuffer = (Image){0};
+        h->t_selbuffer = (RenderTexture){0};
       }
       h->seloff.x = c->sel_rect.x;
       h->seloff.y = c->sel_rect.y;
@@ -305,21 +312,20 @@ void CmdDo(Cmd* c, Hist* h) {
         // Since the selection buffer is restricted by the image's size, we
         // don't need special treatment for region outside of the image (it
         // only appears when the selection is moved).
-        assert(h->selbuffer[0].width == 0);
+        assert(h->selbuffer.width == 0);
         if (c->paste_data.width == 0) {
           // Selection coming from mouse in the screen.
-          h->selbuffer[0] =
+          h->selbuffer =
               GenImageFilled(c->sel_rect.width, c->sel_rect.height, BLANK);
-          CopyImage(h->buffer[0], c->sel_rect, &h->selbuffer[0],
-                    (Vector2Int){0});
-          FillImageRect(&h->buffer[0], c->sel_rect, BLANK);
-          PyramidUpdateRect2(HIST_PYR_LVLS, h->buffer, c->sel_rect);
+          CopyImage(h->buffer, c->sel_rect, &h->selbuffer, (Vector2Int){0});
+          h->t_selbuffer = CropTexture(h->t_buffer, c->sel_rect);
+          FillImageRect(&h->buffer, c->sel_rect, BLANK);
+          FillTextureRect(&h->t_buffer, c->sel_rect, BLACK);
         } else {
           // Here we have a selection coming from a "Paste", or Ctr-V
-          h->selbuffer[0] = CloneImage(c->paste_data);
+          h->selbuffer = CloneImage(c->paste_data);
+          h->t_selbuffer = CloneTexture(c->t_paste_data);
         }
-        h->selbuffer[1] = PyramidGenImage(h->selbuffer[0]);
-        h->selbuffer[2] = PyramidGenImage(h->selbuffer[1]);
       }
       break;
     }
@@ -329,31 +335,28 @@ void CmdDo(Cmd* c, Hist* h) {
       break;
     }
     case ACTION_SEL_FLIP_H: {
-      FlipImageHInplace(&h->selbuffer[0]);
-      PyramidUpdateRect2(HIST_PYR_LVLS, h->selbuffer,
-                         GetImageRect(h->selbuffer[0]));
+      FlipImageHInplace(&h->selbuffer);
+      FlipTextureHInplace(&h->t_selbuffer);
       break;
     }
     case ACTION_SEL_FLIP_V: {
-      FlipImageVInplace(&h->selbuffer[0]);
-      PyramidUpdateRect2(HIST_PYR_LVLS, h->selbuffer,
-                         GetImageRect(h->selbuffer[0]));
+      FlipImageVInplace(&h->selbuffer);
+      FlipTextureVInplace(&h->t_selbuffer);
       break;
     }
     case ACTION_SEL_ROTATE: {
-      Image tmp = h->selbuffer[0];
-      h->selbuffer[0] = RotateImage(h->selbuffer[0], 0);
+      Image tmp = h->selbuffer;
+      h->selbuffer = RotateImage(h->selbuffer, 0);
+      RenderTexture2D t_tmp = h->t_selbuffer;
+      h->t_selbuffer = RotateTexture(h->t_selbuffer, 0);
+      UnloadRenderTexture(t_tmp);
       UnloadImage(tmp);
-      UnloadImage(h->selbuffer[1]);
-      UnloadImage(h->selbuffer[2]);
-      h->selbuffer[1] = PyramidGenImage(h->selbuffer[0]);
-      h->selbuffer[2] = PyramidGenImage(h->selbuffer[1]);
       break;
     }
     case ACTION_RESIZE: {
-      int new_w = h->buffer[0].width + c->resize_delta.x;
-      int new_h = h->buffer[0].height + c->resize_delta.y;
-      Image img1 = h->buffer[0];
+      int new_w = h->buffer.width + c->resize_delta.x;
+      int new_h = h->buffer.height + c->resize_delta.y;
+      Image img1 = h->buffer;
       Image img2 = GenImageFilled(new_w, new_h, BLANK);
       Color* c0 = GetPixels(img1);
       Color* c1 = GetPixels(img2);
@@ -363,12 +366,20 @@ void CmdDo(Cmd* c, Hist* h) {
           c1[y * img2.width + x] = c0[y * img1.width + x];
         }
       }
-      h->buffer[0] = img2;
+      h->buffer = img2;
       UnloadImage(img1);
-      UnloadImage(h->buffer[1]);
-      UnloadImage(h->buffer[2]);
-      h->buffer[1] = PyramidGenImage(h->buffer[0]);
-      h->buffer[2] = PyramidGenImage(h->buffer[1]);
+      RenderTexture2D tex1 = h->t_buffer;
+      RenderTexture2D tex2 = LoadRenderTexture(new_w, new_h);
+      Vector2Int offset = {0, 0};
+      RectangleInt source = {
+          0.f,
+          0.f,
+          tex1.texture.width,
+          tex1.texture.height,
+      };
+      CopyTexture(tex1, source, &tex2, offset);
+      h->t_buffer = tex2;
+      UnloadRenderTexture(tex1);
       break;
     };
   }
@@ -382,8 +393,8 @@ void HistActChangeImageSize(Hist* h, int deltax, int deltay) {
   Cmd* c = LoadCmd(h->tool, ACTION_RESIZE);
   c->resize_delta = (Vector2Int){.x = deltax, .y = deltay};
 
-  int w = h->buffer[0].width;
-  int hh = h->buffer[0].height;
+  int w = h->buffer.width;
+  int hh = h->buffer.height;
   if (deltax < 0) {
     RectangleInt xrect = {
         .x = w + deltax,
@@ -391,7 +402,8 @@ void HistActChangeImageSize(Hist* h, int deltax, int deltay) {
         .width = -deltax,
         .height = hh,
     };
-    c->resize_img_delta_x = CropImage(h->buffer[0], xrect);
+    c->resize_img_delta_x = CropImage(h->buffer, xrect);
+    c->t_resize_img_delta_x = CropTexture(h->t_buffer, xrect);
   }
 
   if (deltay < 0) {
@@ -401,7 +413,8 @@ void HistActChangeImageSize(Hist* h, int deltax, int deltay) {
         .width = w,
         .height = -deltay,
     };
-    c->resize_img_delta_y = CropImage(h->buffer[0], yrect);
+    c->resize_img_delta_y = CropImage(h->buffer, yrect);
+    c->t_resize_img_delta_y = CropTexture(h->t_buffer, yrect);
   }
   c->next = h->undo_hist;
   h->undo_hist = c;
@@ -419,7 +432,7 @@ void HistEmptyRedo(Hist* h) {
 
 void HistActSelFlip(Hist* h, CmdActionType act) {
   Cmd* c = LoadCmd(TOOL_SEL, act);
-  assert(h->selbuffer[0].width > 0);
+  assert(h->selbuffer.width > 0);
   c->next = h->undo_hist;
   h->undo_hist = c;
   HistEmptyRedo(h);
@@ -448,13 +461,14 @@ void HistActMoveSel(Hist* h, int dx, int dy) {
 }
 
 void HistActDeleteSel(Hist* h) {
-  if (h->selbuffer[0].width == 0) {
+  if (h->selbuffer.width == 0) {
     return;
   }
   Cmd* c = LoadCmd(TOOL_SEL, ACTION_SEL_CREATE);
   // makes the selection be empty after modif
   c->sel_rect = (RectangleInt){0};
-  c->data_after = CloneImage(h->selbuffer[0]);
+  c->data_after = CloneImage(h->selbuffer);
+  c->t_data_after = CloneTexture(h->t_selbuffer);
   c->offset = (Vector2Int){.x = h->seloff.x, .y = h->seloff.y};
   // I leave data_before as empty showing it has no impact on image
   c->next = h->undo_hist;
@@ -464,23 +478,25 @@ void HistActDeleteSel(Hist* h) {
 }
 
 void HistActSelFill(Hist* h, Color fill_color) {
-  if (h->selbuffer[0].width == 0) {
+  if (h->selbuffer.width == 0) {
     return;
   }
   Cmd* c = LoadCmd(TOOL_SEL, ACTION_SEL_CREATE);
-  c->data_after = CloneImage(h->selbuffer[0]);
+  c->data_after = CloneImage(h->selbuffer);
+  c->t_data_after = CloneTexture(h->t_selbuffer);
   c->offset.x = h->seloff.x;
   c->offset.y = h->seloff.y;
   // I leave data_before as empty showing it has no impact on image
 
   c->next = h->undo_hist;
   c->paste_data =
-      GenImageFilled(h->selbuffer[0].width, h->selbuffer[0].height, fill_color);
+      GenImageFilled(h->selbuffer.width, h->selbuffer.height, fill_color);
+  c->t_paste_data = CloneTextureFromImage(c->paste_data);
   c->sel_rect = (RectangleInt){
       .x = h->seloff.x,
       .y = h->seloff.y,
-      .width = h->selbuffer[0].width,
-      .height = h->selbuffer[0].height,
+      .width = h->selbuffer.width,
+      .height = h->selbuffer.height,
   };
 
   c->next = h->undo_hist;
@@ -501,8 +517,10 @@ void HistActBuffer(Hist* h, Image img, Vector2Int off) {
       .width = img.width,
       .height = img.height,
   };
-  c->data_before = CropImage(h->buffer[0], r);
+  c->data_before = CropImage(h->buffer, r);
+  c->t_data_before = CropTexture(h->t_buffer, r);
   c->data_after = img;
+  c->t_data_after = CloneTextureFromImage(img);
   c->next = h->undo_hist;
   h->undo_hist = c;
   HistEmptyRedo(h);
@@ -511,23 +529,25 @@ void HistActBuffer(Hist* h, Image img, Vector2Int off) {
 
 void HistActCommitSel(Hist* h, RectangleInt tool_rect) {
   Cmd* c = LoadCmd(TOOL_SEL, ACTION_SEL_CREATE);
-  c->sel_rect = GetCollisionRecInt(tool_rect, GetImageRect(h->buffer[0]));
+  c->sel_rect = GetCollisionRecInt(tool_rect, GetImageRect(h->buffer));
   // We consider rects of size 1 to be empty.
   bool is_empty = c->sel_rect.width * c->sel_rect.height <= 1;
   if (is_empty) {
     c->sel_rect = (RectangleInt){0};
   }
-  if (h->selbuffer[0].width > 0) {
-    c->data_after = CloneImage(h->selbuffer[0]);
+  if (h->selbuffer.width > 0) {
+    c->data_after = CloneImage(h->selbuffer);
+    c->t_data_after = CloneTexture(h->t_selbuffer);
     RectangleInt r = {
         .x = h->seloff.x,
         .y = h->seloff.y,
-        .width = h->selbuffer[0].width,
-        .height = h->selbuffer[0].height,
+        .width = h->selbuffer.width,
+        .height = h->selbuffer.height,
     };
-    RectangleInt cropped_r = GetCollisionRecInt(r, GetImageRect(h->buffer[0]));
+    RectangleInt cropped_r = GetCollisionRecInt(r, GetImageRect(h->buffer));
     if (cropped_r.width * cropped_r.height > 0) {
-      c->data_before = CropImage(h->buffer[0], cropped_r);
+      c->data_before = CropImage(h->buffer, cropped_r);
+      c->t_data_before = CropTexture(h->t_buffer, cropped_r);
     }
     c->offset = (Vector2Int){.x = h->seloff.x, .y = h->seloff.y};
   } else if (is_empty) {
@@ -548,17 +568,19 @@ void HistActPasteImage(Hist* h, Vector2Int offset, Image img) {
   }
   Cmd* c = LoadCmd(TOOL_SEL, ACTION_SEL_CREATE);
 
-  if (h->selbuffer[0].width > 0) {
-    c->data_after = CloneImage(h->selbuffer[0]);
+  if (h->selbuffer.width > 0) {
+    c->data_after = CloneImage(h->selbuffer);
+    c->t_data_after = CloneTexture(h->t_selbuffer);
     RectangleInt r = {
         .x = h->seloff.x,
         .y = h->seloff.y,
-        .width = h->selbuffer[0].width,
-        .height = h->selbuffer[0].height,
+        .width = h->selbuffer.width,
+        .height = h->selbuffer.height,
     };
-    RectangleInt cropped_r = GetCollisionRecInt(r, GetImageRect(h->buffer[0]));
+    RectangleInt cropped_r = GetCollisionRecInt(r, GetImageRect(h->buffer));
     if (cropped_r.width * cropped_r.height > 0) {
-      c->data_before = CropImage(h->buffer[0], cropped_r);
+      c->data_before = CropImage(h->buffer, cropped_r);
+      c->t_data_before = CropTexture(h->t_buffer, cropped_r);
     }
     c->offset = (Vector2Int){.x = h->seloff.x, .y = h->seloff.y};
   }
@@ -570,6 +592,7 @@ void HistActPasteImage(Hist* h, Vector2Int offset, Image img) {
       .height = img.height,
   };
   c->paste_data = CloneImage(img);
+  c->t_paste_data = CloneTextureFromImage(img);
   c->next = h->undo_hist;
   h->undo_hist = c;
   HistEmptyRedo(h);
@@ -578,28 +601,22 @@ void HistActPasteImage(Hist* h, Vector2Int offset, Image img) {
 
 void HistSetBuffer(Hist* h, Image buffer) {
   HistClearBufer(h);
-  h->buffer[0] = buffer;
+  h->buffer = buffer;
   // Here is the case where the loading has failed.
-  if (h->buffer[0].width == 0) {
+  if (h->buffer.width == 0) {
     int ww = 1024;
     int hh = 1024;
-    h->buffer[0] = GenImageFilled(ww, hh, BLANK);
+    h->buffer = GenImageFilled(ww, hh, BLANK);
   }
-  ImageRemoveBlacks(&h->buffer[0]);
-  h->buffer[1] = PyramidGenImage(h->buffer[0]);
-  h->buffer[2] = PyramidGenImage(h->buffer[1]);
+  ImageRemoveBlacks(&h->buffer);
+  h->t_buffer = CloneTextureFromImage(h->buffer);
+  h->dirty = false;
   HistResetUndoHistory(h);
 }
 
 void HistNewBuffer(Hist* h, int bw, int bh) {
-  HistClearBufer(h);
-  int w = bw;
-  int hh = bh;
-  h->buffer[0] = GenImageFilled(w, hh, BLANK);
-  h->buffer[1] = PyramidGenImage(h->buffer[0]);
-  h->buffer[2] = PyramidGenImage(h->buffer[1]);
-  HistResetUndoHistory(h);
-  h->dirty = false;
+  Image img = GenImageFilled(bw, bh, BLANK);
+  HistSetBuffer(h, img);
 }
 
 bool HistGetIsDirty(Hist* h) { return h->dirty; }
@@ -647,18 +664,23 @@ Cmd* LoadCmd(ToolType t, CmdActionType act) {
 void CmdUnload(Cmd* c) {
   if (c->data_after.width > 0) {
     UnloadImage(c->data_after);
+    UnloadRenderTexture(c->t_data_after);
   }
   if (c->data_before.width > 0) {
     UnloadImage(c->data_before);
+    UnloadRenderTexture(c->t_data_before);
   }
   if (c->paste_data.width > 0) {
     UnloadImage(c->paste_data);
+    UnloadRenderTexture(c->t_paste_data);
   }
   if (c->resize_img_delta_x.width > 0) {
     UnloadImage(c->resize_img_delta_x);
+    UnloadRenderTexture(c->t_resize_img_delta_x);
   }
   if (c->resize_img_delta_y.width > 0) {
     UnloadImage(c->resize_img_delta_y);
+    UnloadRenderTexture(c->t_resize_img_delta_y);
   }
   free(c);
 }

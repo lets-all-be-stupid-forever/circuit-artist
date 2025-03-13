@@ -124,6 +124,12 @@ typedef struct {
   bool alt_down;
   // maximum size for an image.
   int max_img_size;
+  // Texture used for the side panel with pins.
+  Texture2D t_side_panel;
+
+  // Tmp render with black pixels
+  RenderTexture2D t_tmp;
+  Texture2D t_tpl;
 } Paint;
 
 // Constructor.
@@ -157,7 +163,7 @@ void PaintStopSimu(Paint* ca);
 void PaintUpdateSimu(Paint* ca, float delta);
 
 // Renders the drawing image+tools at the target render texture.
-void PaintRender(Paint* ca);
+void PaintRenderTexture(Paint* ca, RenderTexture2D target);
 
 // Creates a new empty drawing buffer. (and throws away old one).
 void PaintNewBuffer(Paint* ca);
@@ -225,6 +231,12 @@ int PaintGetClockSpeed(Paint* ca);
 // Returns a reference to the main editting image.
 // Used for example when we want to save the image to the disk.
 Image PaintGetEditImage(Paint* ca);
+
+// Returns the image for an specific layer
+Image PaintGetEditImageLayer(Paint* ca, int l);
+
+// Returns the number of layers in the image
+int PaintGetNumLayers(Paint* ca);
 
 // Returns the active tool selected color.
 Color PaintGetColor(Paint* ca);

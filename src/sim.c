@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "pyramid.h"
+#include "profiler.h"
 
 #define ALPHA_OFF 50
 #define ALPHA_ON 255
@@ -21,6 +21,9 @@ static const char CRASH_REASON_MISSING_OUTPUT[] =
     "NANDs must be connected to an output wire.";
 static void MakeNandLut(int* nand_lut);
 static void SimQueueInitialInputEvents(Sim* s);
+
+void SimInitCompVisu(Sim* s);
+void UpdateStateTexture(Sim* s);
 
 // Union-find Find
 static inline int UfFind(int* c, int a) {
@@ -663,6 +666,8 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
     s->last_render_state[i] = -1;
   }
 
+  SimInitCompVisu(s);
+  UpdateStateTexture(s);
   double end = GetTime();
   s->time_creation = 1000 * (end - start);
   s->wire_has_changed = malloc(s->nc * sizeof(bool));
@@ -933,6 +938,16 @@ void SimUnload(Sim* s) {
     if (s->simulated[i].width > 0) {
       UnloadImage(s->simulated[i]);
     }
+    if (s->t_comp_x.width > 0) {
+      UnloadTexture(s->t_comp_x);
+      UnloadTexture(s->t_comp_y);
+    }
+  }
+  if (s->t_state.width > 0) {
+    UnloadTexture(s->t_state);
+  }
+  if (s->state_buffer) {
+    free(s->state_buffer);
   }
   if (s->nand_error_status) {
     free(s->nand_error_status);
@@ -964,76 +979,11 @@ void SimGenImage(Sim* s) {
   Color one = GetColor(0xFA3410FF);
   Color nand = GetColor(0x945044FF);
   Color black = BLACK;
-  Color* original_pixels = GetPixels(s->pi.original_image);
   Color undefined = MAGENTA;
   Color bugged = RED;
-  if (!s->ok_creation) {
-    nand.a = 10;
-    undefined.a = 10;
-  }
-  if (s->simulated[0].width == 0) {
-    s->simulated[0] = GenImageFilled(w, h, black);
-    // renders nands...
-    Color* pixels = GetPixels(s->simulated[0]);
-    for (int i = 0; i < s->pi.num_nand_pixels; i++) {
-      int ix = s->pi.nand_pixels[2 * i + 0];
-      int iy = s->pi.nand_pixels[2 * i + 1];
-      int idx = iy * w + ix;
-      Color target_color = ColorWithAlpha(original_pixels[idx], 100);
-      int nand_idx = i / 3;
-      NandStatusEnum status = s->nand_error_status[nand_idx];
-      if (s->ok_creation) {
-        pixels[idx] = target_color;
-      } else {
-        switch (status) {
-          case NAND_STATUS_OK:
-            pixels[idx] = undefined;
-            break;
-          case NAND_STATUS_MISSING_INPUT:
-          case NAND_STATUS_MISSING_OUTPUT:
-            pixels[idx] = bugged;
-            break;
-        }
-      }
-    }
-    s->simulated[1] = PyramidGenImage(s->simulated[0]);
-    s->simulated[2] = PyramidGenImage(s->simulated[1]);
-  }
-  Color* pixels = GetPixels(s->simulated[0]);
-  Color lut[] = {
-      zero,
-      one,
-      undefined,
-      bugged,
-  };
-
-  // Much faster version: I only draw the diff of state!
-  // i dont care about component 0 (thats the background)
-  for (int c = 1; c < s->nc; c++) {
-    if (s->state[c] == s->last_render_state[c]) {
-      continue;
-    }
-    int cs = s->state[c];
-    s->last_render_state[c] = cs;
-    int color_alpha = cs == BIT_0 ? ALPHA_OFF : ALPHA_ON;
-    Color k = lut[cs];
-    int p0 = s->pi.comp_off[c - 1];
-    int p1 = s->pi.comp_off[c];
-    for (int ip = p0; ip < p1; ip++) {
-      int idx = s->pi.comp_pixels[ip];
-      if (cs == BIT_BUGGED || cs == BIT_UNDEFINED) {
-        pixels[idx] = k;
-      } else {
-        Color tmp = original_pixels[idx];
-        tmp.a = color_alpha;
-        pixels[idx] = tmp;
-      }
-      int y = idx / s->simulated[0].width;
-      int x = idx % s->simulated[0].width;
-      PyramidUpdatePixel(s->simulated[0], &s->simulated[1], x >> 1, y >> 1);
-      PyramidUpdatePixel(s->simulated[1], &s->simulated[2], x >> 2, y >> 2);
-    }
-  }
+  ProfilerTic("SimGenGPU");
+  UpdateStateTexture(s);
+  ProfilerTac();
   s->time_gen_image = 1000 * (GetTime() - start);
 }
 
@@ -1107,4 +1057,126 @@ void SimDispatchComponent(Sim* s, int icomp) {
       s->ne++;
     }
   }
+}
+
+void SimInitCompVisu(Sim* s) {
+  // if (!s->ok_creation) {
+  //   return;
+  // }
+
+  s->state_w = 1024;
+  int state_size = s->nc + s->pi.num_nands;
+  s->state_h = (state_size / 1024) + 2;
+  s->state_buffer = malloc(s->state_w * s->state_h * sizeof(float));
+
+  Image img_state = {.data = s->state_buffer,
+                     .mipmaps = 1,
+                     .height = s->state_h,
+                     .width = s->state_w,
+                     .format = PIXELFORMAT_UNCOMPRESSED_R32};
+  s->t_state = LoadTextureFromImage(img_state);
+
+  int w = s->pi.original_image.width;
+  int h = s->pi.original_image.height;
+  float* tmp_x = malloc(w * h * sizeof(float));
+  float* tmp_y = malloc(w * h * sizeof(float));
+
+  int sw = s->state_w;
+  int sh = s->state_h;
+  // how to do this?
+  // isso ta na vdd na parsedimage
+  int off = 0;  // l * w * h;
+  int* comp = &s->pi.comp[off];
+  // TODO: care with pixel order!
+  int k = 0;
+  for (int y = 0; y < h; y++) {
+    int off = (h - 1 - y) * w;
+    for (int x = 0; x < w; x++) {
+      tmp_x[off + x] = (comp[k] % sw) / ((float)(sw - 1));
+      tmp_y[off + x] = (comp[k] / sw) / ((float)(sh - 1));
+      k++;
+    }
+  }
+
+  // TODO: set components of nands.
+  for (int i = 0; i < s->pi.num_nand_pixels; i++) {
+    // int iz = s->pi.nand_pixels[3 * i + 2];
+    // if (iz != l) continue;
+    int ix = s->pi.nand_pixels[2 * i + 0];
+    int iy = s->pi.nand_pixels[2 * i + 1];
+    // int off = (h - 1 - iy) * w;
+    int off = (h - 1 - iy) * w;
+    int idx = off + ix;
+    int nand_idx = i / 3;
+    int c = nand_idx + s->nc;
+    tmp_x[idx] = (c % sw) / ((float)(sw - 1));
+    tmp_y[idx] = (c / sw) / ((float)(sh - 1));
+    // TODO: Render nands separately
+    // if (s->ok_creation) {
+    //   tmp_x[idx] = 0.91;
+    //   tmp_y[idx] = 0.91;
+    // } else {
+    //   switch (status) {
+    //     case NAND_STATUS_OK:
+    //       // pixels[idx] = undefined;
+    //       tmp_x[idx] = 0.92;
+    //       tmp_y[idx] = 0.92;
+    //       break;
+    //     case NAND_STATUS_MISSING_INPUT:
+    //     case NAND_STATUS_MISSING_OUTPUT:
+    //       // pixels[idx] = bugged;
+    //       tmp_x[idx] = 0.93;
+    //       tmp_y[idx] = 0.93;
+    //       break;
+    //   }
+    // }
+  }
+
+  Image img_x = {.data = tmp_x,
+                 .height = h,
+                 .width = w,
+                 .mipmaps = 1,
+                 .format = PIXELFORMAT_UNCOMPRESSED_R32};
+  Image img_y = {.data = tmp_y,
+                 .height = h,
+                 .width = w,
+                 .mipmaps = 1,
+                 .format = PIXELFORMAT_UNCOMPRESSED_R32};
+  s->t_comp_x = LoadTextureFromImage(img_x);
+  s->t_comp_y = LoadTextureFromImage(img_y);
+  free(tmp_x);
+  free(tmp_y);
+}
+
+void UpdateStateTexture(Sim* s) {
+  // if (!s->ok_creation) {
+  //   return;
+  // }
+  float lut[5];
+  lut[BIT_0] = 0.3;
+  lut[BIT_1] = 0.4;
+  lut[BIT_UNDEFINED] = 0.2;
+  lut[BIT_BUGGED] = 0.1;
+  s->state_buffer[0] = 0.0;
+  for (int c = 1; c < s->nc; c++) {
+    int cs = s->state[c];
+    s->state_buffer[c] = lut[cs];
+  }
+
+  for (int i = 0; i < s->pi.num_nands; i++) {
+    NandStatusEnum status = s->nand_error_status[i];
+    int idx = i + s->nc;
+    switch (status) {
+      case NAND_STATUS_OK: {
+        s->state_buffer[idx] = 0.5;
+        break;
+      }
+      case NAND_STATUS_MISSING_INPUT:
+      case NAND_STATUS_MISSING_OUTPUT:
+        s->state_buffer[idx] = lut[BIT_BUGGED];
+        break;
+    }
+  }
+
+  UpdateTexture(s->t_state, s->state_buffer);
 }

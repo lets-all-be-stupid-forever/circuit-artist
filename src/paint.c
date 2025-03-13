@@ -10,17 +10,25 @@
 #include "colors.h"
 #include "hist.h"
 #include "profiler.h"
+#include "rlgl.h"
+#include "shaders.h"
 #include "utils.h"
 
 static const int MAX_LINE_WIDTH = 256;
 static const float RESIZE_HANDLE_SIZE = 20;
 static const double line_modif_threshold = 1;
 
+// static const float zoom_lut[] = {
+//     -1,  0.2, 0.25, 0.33, 0.5,  1.0,  2.0,  3.0,  4.0, 5.0,
+//     6.0, 8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, -1,
+// };
 static const float zoom_lut[] = {
-    -1,  0.2, 0.25, 0.33, 0.5,  1.0,  2.0,  3.0,  4.0, 5.0,
-    6.0, 8.0, 12.0, 16.0, 24.0, 32.0, 48.0, 64.0, -1,
+    -1,  0.125, 0.25, 0.5,  1.0,  2.0,  3.0,  4.0,  5.0,
+    6.0, 8.0,   12.0, 16.0, 24.0, 32.0, 48.0, 64.0, -1,
 };
 
+static void PaintRenderTextureSimu(Paint* ca, RenderTexture2D target);
+static void PaintRenderTextureEdit(Paint* ca, RenderTexture2D target);
 static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off);
 static void PaintPickColorUnderCursor(Paint* ca);
 static void PaintResetCamera(Paint* ca);
@@ -36,6 +44,8 @@ static RectangleInt PaintCropRectInBuffer(Paint* ca, RectangleInt r);
 static RectangleInt PaintMakeToolRect(Paint* ca);
 static Vector2Int PaintFindBestOffsetForClipboard(Paint* ca);
 static bool PaintGetToolIsPickerInPractice(Paint* ca);
+static void RenderSidePanel(Paint* ca);
+static void PaintCameraMove(Paint* ca, int dx, int dy);
 
 static void PaintOnToolChange(Paint* ca) {
   ca->line_key = 0;
@@ -453,222 +463,22 @@ ToolType PaintGetDisplayTool(Paint* ca) {
   return tool;
 }
 
-void PaintRender(Paint* ca) {
-  RectangleInt r = ca->viewport;
-  int tw = r.width;
-  int th = r.height;
-  if (ca->tmp_render.width == 0 || ca->tmp_render.width != tw ||
-      ca->tmp_render.height != th) {
-    if (ca->tmp_render.width > 0) {
-      UnloadImage(ca->tmp_render);
+void PaintRenderTexture(Paint* ca, RenderTexture2D target) {
+  int tw = ca->h.t_buffer.texture.width;
+  int th = ca->h.t_buffer.texture.height;
+  int tmp_w = ca->t_tmp.texture.width;
+  int tmp_h = ca->t_tmp.texture.height;
+  if (tmp_w != tw || tmp_h != th) {
+    if (tmp_w > 0) {
+      UnloadRenderTexture(ca->t_tmp);
     }
-    ca->tmp_render = GenImageSimple(tw, th);
+    ca->t_tmp = LoadRenderTexture(tw, th);
   }
-  Color bg_color = ca->out_color;
-  if (ca->mode == MODE_EDIT || ca->mode == MODE_COMPILING) {
-    RenderImgCtx r = {0};
-    if (ca->grid_on_zoom && ca->camera_s >= 8) {
-      r.grid = true;
-      r.grid_color = (Color){40, 40, 40, 255};
-    }
-    int offx = ca->h.seloff.x;
-    int offy = ca->h.seloff.y;
-    if (ca->tool_pressed && PaintGetIsToolSelMoving(ca)) {
-      int dx, dy;
-      PaintGetSelMovingOffset(ca, &dx, &dy);
-      offx += dx;
-      offy += dy;
-    }
-    r.sel_off_x = offx;
-    r.sel_off_y = offy;
-    for (int i = 0; i < 3; i++) {
-      r.img[i] = ca->h.buffer[i];
-      r.sel[i] = ca->h.selbuffer[i];
-    }
-    r.out = ca->tmp_render;
-    r.pixel_size = ca->camera_s;
-    r.camera_x = -ca->camera_x;
-    r.camera_y = -ca->camera_y;
-    r.bg = bg_color;
-    ToolType tool = HistGetTool(&ca->h);
-    if (PaintGetToolIsPickerInPractice(ca)) {
-      tool = TOOL_PICKER;
-    }
 
-    if ((tool == TOOL_LINE || tool == TOOL_BRUSH) && ca->tool_pressed) {
-      Vector2Int off;
-      PaintMakeToolSubImage(ca, &r.tool_img, &off);
-      r.tool_off_x = off.x;
-      r.tool_off_y = off.y;
-    }
-    if ((tool == TOOL_LINE || tool == TOOL_BRUSH) && !ca->tool_pressed &&
-        IsCursorOnScreen() && ca->mouse_on_target) {
-      r.pixel_preview = true;
-      r.pixel_preview_x = ca->pixel_cursor_x;
-      r.pixel_preview_y = ca->pixel_cursor_y;
-      r.pixel_preview_color = ca->fg_color;
-    }
-    FillImage(&r.out, bg_color);
-    RenderImageEdit(r);
-
-    double t = GetTime();
-    if (tool == TOOL_SEL && !ca->tool_pressed && r.sel[0].width > 0) {
-      RectangleInt sel_rect = (RectangleInt){
-          r.sel_off_x,
-          r.sel_off_y,
-          r.sel[0].width,
-          r.sel[0].height,
-      };
-      RenderImageSelRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y,
-                         sel_rect, 1, t);
-      RenderImageSelRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y,
-                         sel_rect, 2, t);
-    }
-
-    // Creating the selection
-    if (tool == TOOL_SEL && ca->tool_pressed) {
-      if (!PaintGetIsToolSelMoving(ca)) {
-        RectangleInt rect = PaintCropRectInBuffer(ca, PaintMakeToolRect(ca));
-        if (rect.width > 0 && rect.height > 0) {
-          int x0 = rect.x;
-          int y0 = rect.y;
-          int x1 = rect.x + rect.width;
-          int y1 = rect.y + rect.height;
-          RectangleInt sel_rect = (RectangleInt){
-              x0,
-              y0,
-              x1 - x0,
-              y1 - y0,
-          };
-          RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x,
-                                r.camera_y, sel_rect, 1, t, WHITE);
-          RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x,
-                                r.camera_y, sel_rect, 2, t, WHITE);
-        }
-      }
-    }
-
-    if (tool == TOOL_BUCKET && ca->tool_pressed) {
-      RectangleInt rect = PaintCropRectInBuffer(ca, PaintMakeToolRect(ca));
-      if (rect.width > 0 && rect.height > 0) {
-        int x0 = rect.x;
-        int y0 = rect.y;
-        int x1 = rect.x + rect.width;
-        int y1 = rect.y + rect.height;
-        RectangleInt bucket_rect = (RectangleInt){
-            x0,
-            y0,
-            x1 - x0,
-            y1 - y0,
-        };
-        Color c = ca->fg_color;
-        RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x,
-                              r.camera_y, bucket_rect, 1, t, c);
-        RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x,
-                              r.camera_y, bucket_rect, 2, t, c);
-      }
-    }
-
-    // Mouse selection preview
-    if ((tool == TOOL_SEL || tool == TOOL_BUCKET || tool == TOOL_PICKER) &&
-        !ca->tool_pressed && IsCursorOnScreen() && !PaintGetMouseOverSel(ca) &&
-        ca->mouse_on_target) {
-      Image buffer = HistGetBuffer(&ca->h);
-      if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < buffer.width &&
-          ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < buffer.height) {
-        int x0 = ca->pixel_cursor_x;
-        int y0 = ca->pixel_cursor_y;
-        int x1 = ca->pixel_cursor_x + 1;
-        int y1 = ca->pixel_cursor_y + 1;
-        RectangleInt sel_rect = (RectangleInt){
-            x0,
-            y0,
-            x1 - x0,
-            y1 - y0,
-        };
-        Color c = WHITE;
-        RenderImageSimpleRect(&ca->tmp_render, r.pixel_size, r.camera_x,
-                              r.camera_y, sel_rect, 1, t, c);
-      }
-    }
-
-    // Resize stuff
-    {
-      Image buffer = HistGetBuffer(&ca->h);
-      Rectangle resize_rect = {
-          .x = buffer.width,
-          .y = buffer.height,
-          .width = RESIZE_HANDLE_SIZE / ca->camera_s,
-          .height = RESIZE_HANDLE_SIZE / ca->camera_s,
-      };
-      Color c = GRAY;
-      Vector2 pixel_pos = {.x = ca->pixel_cursor_x, ca->pixel_cursor_y};
-      bool is_on_resize_rect = CheckCollisionPointRec(pixel_pos, resize_rect);
-      ca->resize_hovered = is_on_resize_rect;
-      if (ca->resize_pressed) {
-        int sizex = ca->pixel_cursor_x < 8 ? 8 : ca->pixel_cursor_x;
-        int sizey = ca->pixel_cursor_y < 8 ? 8 : ca->pixel_cursor_y;
-        int max_size = ca->max_img_size;
-        if (max_size > 0) {
-          sizex = sizex > max_size ? max_size : sizex;
-          sizey = sizey > max_size ? max_size : sizey;
-        }
-        resize_rect.x = sizex;
-        resize_rect.y = sizey;
-        c = WHITE;
-        RectangleInt reg = {
-            0,
-            0,
-            sizex,
-            sizey,
-        };
-        ca->resize_region = reg;
-        RenderImageSelRect(&ca->tmp_render, r.pixel_size, r.camera_x,
-                           r.camera_y, reg, 1, t);
-      } else {
-        if (is_on_resize_rect) {
-          c = WHITE;
-        }
-      }
-      Rectangle rect = {
-          resize_rect.x,
-          resize_rect.y,
-          RESIZE_HANDLE_SIZE / r.pixel_size,
-          RESIZE_HANDLE_SIZE / r.pixel_size,
-      };
-      DrawImageSceneRect(&ca->tmp_render, r.pixel_size, r.camera_x, r.camera_y,
-                         rect, c);
-    }
-    if (r.tool_img.width > 0) {
-      UnloadImage(r.tool_img);
-    }
+  if (ca->mode == MODE_SIMU) {
+    PaintRenderTextureSimu(ca, target);
   } else {
-    RenderImgCtx r = {0};
-    for (int i = 0; i < 3; i++) {
-      r.img[i] = ca->s.simulated[i];
-    }
-    r.out = ca->tmp_render;
-    r.pixel_size = ca->camera_s;
-    r.camera_x = -ca->camera_x;
-    r.camera_y = -ca->camera_y;
-    r.bg = bg_color;
-    FillImage(&r.out, bg_color);
-    RenderImageEdit(r);
-  }
-
-  {
-    // not sure if this size is ok
-    Image tmp = GenImageSimple(200, 800);
-    const LevelDesc* cd = ApiGetLevelDesc();
-    Sim* s = ca->mode == MODE_EDIT ? NULL : &ca->s;
-    RenderImageCompInput(&tmp, HistGetBuffer(&ca->h), s, cd->num_components,
-                         cd->pindesc);
-    float pixel_size = ca->camera_s;
-    int camera_x = -ca->camera_x;
-    int camera_y = -ca->camera_y;
-    RenderImageSimple(&ca->tmp_render, tmp, pixel_size, camera_x, camera_y,
-                      -tmp.width, 0);
-    UnloadImage(tmp);
+    PaintRenderTextureEdit(ca, target);
   }
 }
 
@@ -718,6 +528,9 @@ void PaintToggleSimu(Paint* ca) {
 void PaintUnload(Paint* ca) {
   BrushUnload(&ca->brush);
   HistUnload(&ca->h);
+  if (ca->t_side_panel.width > 0) {
+    UnloadTexture(ca->t_side_panel);
+  }
 }
 
 static Vector2 ProjectPointIntoRect(Vector2 p, Rectangle r) {
@@ -889,6 +702,17 @@ static void PaintCheckDirectionKeyPressed(Paint* ca) {
     ca->camera_x += dx * 10;
     ca->camera_y += dy * 10;
     PaintEnsureCameraWithinBounds(ca);
+  }
+
+  int zoom = IsKeyDown(KEY_EQUAL) - IsKeyDown(KEY_MINUS);
+  if (zoom != 0) {
+    // todo: should be center of view
+    RectangleInt r = ca->viewport;
+    Vector2 screenpos = {
+        .x = r.x + r.width / 2,
+        .y = r.y + r.height / 2,
+    };
+    PaintZoomCameraAt(ca, screenpos, zoom);
   }
 }
 
@@ -1234,3 +1058,348 @@ void PaintSetClockSpeed(Paint* ca, int c) {
 }
 
 int PaintGetClockSpeed(Paint* ca) { return ca->clock_speed; }
+
+static void UpdateTextureFilter(Paint* ca, Texture2D tex) {
+  float s = ca->camera_s;
+  float eps = 1e-3f;
+  if (s >= 0.90 - eps) {
+    SetTextureFilter(tex, TEXTURE_FILTER_POINT);
+  } else if (s >= 0.5 - eps) {
+    SetTextureFilter(tex, TEXTURE_FILTER_BILINEAR);
+  } else if (s >= 0.25 - eps) {
+    SetTextureFilter(tex, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(tex, TEXTURE_FILTER_ANISOTROPIC_4X);
+  } else {
+    SetTextureFilter(tex, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(tex, TEXTURE_FILTER_ANISOTROPIC_8X);
+  }
+}
+
+void PaintRenderTextureEdit(Paint* ca, RenderTexture2D target) {
+  Texture2D img = ca->h.t_buffer.texture;
+  Texture2D sel = ca->h.t_selbuffer.texture;
+  int offx = ca->h.seloff.x;
+  int offy = ca->h.seloff.y;
+  if (ca->tool_pressed && PaintGetIsToolSelMoving(ca)) {
+    int dx, dy;
+    PaintGetSelMovingOffset(ca, &dx, &dy);
+    offx += dx;
+    offy += dy;
+  }
+  int sel_off_x = offx;
+  int sel_off_y = offy;
+
+  ToolType tool = HistGetTool(&ca->h);
+  if (PaintGetToolIsPickerInPractice(ca)) {
+    tool = TOOL_PICKER;
+  }
+
+  int tool_off_x = 0;
+  int tool_off_y = 0;
+  Image tool_img;
+  RenderTexture2D t_tool = {0};
+  if ((tool == TOOL_LINE || tool == TOOL_BRUSH) && ca->tool_pressed) {
+    Vector2Int off;
+    PaintMakeToolSubImage(ca, &tool_img, &off);
+    if (tool_img.width > 0) {
+      t_tool = CloneTextureFromImage(tool_img);
+      UnloadImage(tool_img);
+    }
+    tool_off_x = off.x;
+    tool_off_y = off.y;
+  }
+
+  bool pixel_preview = false;
+  int pixel_preview_x = -1;
+  int pixel_preview_y = -1;
+  Color pixel_preview_color;
+  if ((tool == TOOL_LINE || tool == TOOL_BRUSH) && !ca->tool_pressed &&
+      IsCursorOnScreen() && ca->mouse_on_target) {
+    pixel_preview = true;
+    //     pixel_preview_x = ca->pixel_cursor_x;
+    //     pixel_preview_y = ca->pixel_cursor_y;
+    //     pixel_preview_color = ca->fg_color;
+    tool_off_x = ca->pixel_cursor_x;
+    tool_off_y = ca->pixel_cursor_y;
+    t_tool = LoadRenderTexture(1, 1);
+    BeginTextureMode(t_tool);
+    ClearBackground(ca->fg_color);
+    EndTextureMode();
+  }
+
+  BeginTextureMode(target);
+  ClearBackground(GetLutColor(COLOR_DARKGRAY));
+
+  int tw = ca->h.t_buffer.texture.width;
+  int th = ca->h.t_buffer.texture.height;
+  float cx = ca->camera_x - 1e-2;
+  float cy = ca->camera_y - 1e-2;
+  float cs = ca->camera_s;
+  draw_rect(cx, cy, tw * cs, th * cs, BLACK);
+  EndTextureMode();
+  draw_main_img(0, ca->t_tpl, ca->h.t_buffer, (Texture2D){0}, (Texture2D){0},
+                (Texture2D){0}, 0, ca->h.t_selbuffer, sel_off_x, sel_off_y,
+                t_tool, tool_off_x, tool_off_y, cx, cy, cs, &ca->t_tmp,
+                &target);
+  BeginTextureMode(target);
+  // if (sel.width > 0) {
+  //   draw_edit_img(ca->h.t_selbuffer, ca->h.t_selbuffer, sx, sy, cs);
+  // }
+
+#if 0
+  // ------------------------------------------------------------------------------------
+  if (t_tool.texture.width > 0) {
+    Rectangle source = {
+        0,
+        0,
+        (float)t_tool.texture.width,
+        (float)-t_tool.texture.height,
+    };
+    Rectangle target_rect = {
+        ca->camera_x + tool_off_x * ca->camera_s,
+        ca->camera_y + tool_off_y * ca->camera_s,
+        (float)t_tool.texture.width * ca->camera_s,
+        (float)t_tool.texture.height * ca->camera_s,
+    };
+    Vector2 position = {0.f, 0.f};
+    float rot = 0.f;
+    DrawTexturePro(t_tool.texture, source, target_rect, position, rot, WHITE);
+  }
+#endif
+
+  // ------------------------------------------------------------------------------------
+#if 0
+  if (pixel_preview) {
+    Rectangle target_rect = {
+        ca->camera_x + pixel_preview_x * ca->camera_s,
+        ca->camera_y + pixel_preview_y * ca->camera_s,
+        (float)1 * ca->camera_s,
+        (float)1 * ca->camera_s,
+    };
+    Vector2 position = {0.f, 0.f};
+    float rot = 0.f;
+    DrawRectanglePro(target_rect, position, rot, pixel_preview_color);
+  }
+#endif
+
+  // ------------------------------------------------------------------------------------
+  double t = GetTime();
+  if (tool == TOOL_SEL && !ca->tool_pressed && sel.width > 0) {
+    Rectangle target_rect2 = {
+        ca->camera_x + sel_off_x * ca->camera_s - 2,
+        ca->camera_y + sel_off_y * ca->camera_s - 2,
+        (float)sel.width * ca->camera_s + 4,
+        (float)sel.height * ca->camera_s + 4,
+    };
+    Rectangle target_rect1 = {
+        ca->camera_x + sel_off_x * ca->camera_s - 1,
+        ca->camera_y + sel_off_y * ca->camera_s - 1,
+        (float)sel.width * ca->camera_s + 2,
+        (float)sel.height * ca->camera_s + 2,
+    };
+    DrawRectangleLinesEx(target_rect1, 1.0, GREEN);
+    DrawRectangleLinesEx(target_rect2, 1.0, GREEN);
+  }
+
+  // ------------------------------------------------------------------------------------
+  // Creating the selection
+  if (tool == TOOL_SEL && ca->tool_pressed) {
+    if (!PaintGetIsToolSelMoving(ca)) {
+      RectangleInt rect = PaintCropRectInBuffer(ca, PaintMakeToolRect(ca));
+      if (rect.width > 0 && rect.height > 0) {
+        int x0 = rect.x;
+        int y0 = rect.y;
+        int x1 = rect.x + rect.width;
+        int y1 = rect.y + rect.height;
+        Rectangle target_rect2 = {
+            ca->camera_x + x0 * ca->camera_s - 2,
+            ca->camera_y + y0 * ca->camera_s - 2,
+            (float)(x1 - x0) * ca->camera_s + 4,
+            (float)(y1 - y0) * ca->camera_s + 4,
+        };
+        Rectangle target_rect1 = {
+            ca->camera_x + x0 * ca->camera_s - 1,
+            ca->camera_y + y0 * ca->camera_s - 1,
+            (float)(x1 - x0) * ca->camera_s + 2,
+            (float)(y1 - y0) * ca->camera_s + 2,
+        };
+        DrawRectangleLinesEx(target_rect1, 1.0, GREEN);
+        DrawRectangleLinesEx(target_rect2, 1.0, GREEN);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------------------------
+  if (tool == TOOL_BUCKET && ca->tool_pressed) {
+    RectangleInt rect = PaintCropRectInBuffer(ca, PaintMakeToolRect(ca));
+    if (rect.width > 0 && rect.height > 0) {
+      int x0 = rect.x;
+      int y0 = rect.y;
+      int x1 = rect.x + rect.width;
+      int y1 = rect.y + rect.height;
+      Color c = ca->fg_color;
+
+      Rectangle target_rect2 = {
+          ca->camera_x + x0 * ca->camera_s - 2,
+          ca->camera_y + y0 * ca->camera_s - 2,
+          (float)(x1 - x0) * ca->camera_s + 4,
+          (float)(y1 - y0) * ca->camera_s + 4,
+      };
+
+      Rectangle target_rect1 = {
+          ca->camera_x + x0 * ca->camera_s - 1,
+          ca->camera_y + y0 * ca->camera_s - 1,
+          (float)(x1 - x0) * ca->camera_s + 2,
+          (float)(y1 - y0) * ca->camera_s + 2,
+      };
+
+      DrawRectangleLinesEx(target_rect1, 1.0, c);
+      DrawRectangleLinesEx(target_rect2, 1.0, c);
+    }
+  }
+
+  // ------------------------------------------------------------------------------------
+  // Mouse selection preview
+  if ((tool == TOOL_SEL || tool == TOOL_BUCKET || tool == TOOL_PICKER) &&
+      !ca->tool_pressed && IsCursorOnScreen() && !PaintGetMouseOverSel(ca) &&
+      ca->mouse_on_target) {
+    Image buffer = HistGetBuffer(&ca->h);
+    if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < buffer.width &&
+        ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < buffer.height) {
+      int x0 = ca->pixel_cursor_x;
+      int y0 = ca->pixel_cursor_y;
+      int x1 = ca->pixel_cursor_x + 1;
+      int y1 = ca->pixel_cursor_y + 1;
+      Color c = WHITE;
+      Rectangle target_rect1 = {
+          ca->camera_x + x0 * ca->camera_s - 1,
+          ca->camera_y + y0 * ca->camera_s - 1,
+          (float)(x1 - x0) * ca->camera_s + 2,
+          (float)(y1 - y0) * ca->camera_s + 2,
+      };
+      DrawRectangleLinesEx(target_rect1, 1.0, c);
+    }
+  }
+
+  // ------------------------------------------------------------------------------------
+  // Resize stuff
+  {
+    Image buffer = HistGetBuffer(&ca->h);
+    Rectangle resize_rect = {
+        .x = buffer.width,
+        .y = buffer.height,
+        .width = RESIZE_HANDLE_SIZE / ca->camera_s,
+        .height = RESIZE_HANDLE_SIZE / ca->camera_s,
+    };
+    Color c = DARKGRAY;
+    Vector2 pixel_pos = {.x = ca->pixel_cursor_x, ca->pixel_cursor_y};
+    bool is_on_resize_rect = CheckCollisionPointRec(pixel_pos, resize_rect);
+    ca->resize_hovered = is_on_resize_rect;
+    if (ca->resize_pressed) {
+      int sizex = ca->pixel_cursor_x < 8 ? 8 : ca->pixel_cursor_x;
+      int sizey = ca->pixel_cursor_y < 8 ? 8 : ca->pixel_cursor_y;
+      int max_size = ca->max_img_size;
+      if (max_size > 0) {
+        sizex = sizex > max_size ? max_size : sizex;
+        sizey = sizey > max_size ? max_size : sizey;
+      }
+      resize_rect.x = sizex;
+      resize_rect.y = sizey;
+      c = WHITE;
+      RectangleInt reg = {
+          0,
+          0,
+          sizex,
+          sizey,
+      };
+      ca->resize_region = reg;
+
+      Rectangle target_rect1 = {
+          ca->camera_x + reg.x * ca->camera_s - 1,
+          ca->camera_y + reg.y * ca->camera_s - 1,
+          (float)(reg.width) * ca->camera_s + 2,
+          (float)(reg.height) * ca->camera_s + 2,
+      };
+      DrawRectangleLinesEx(target_rect1, 1.0, c);
+    } else {
+      if (is_on_resize_rect) {
+        c = WHITE;
+      }
+    }
+    RectangleInt rect = {
+        resize_rect.x,
+        resize_rect.y,
+        RESIZE_HANDLE_SIZE / ca->camera_s,
+        RESIZE_HANDLE_SIZE / ca->camera_s,
+    };
+    Rectangle target_rect1 = {
+        ca->camera_x + rect.x * ca->camera_s - 1,
+        ca->camera_y + rect.y * ca->camera_s - 1,
+        (float)(rect.width) * ca->camera_s + 2,
+        (float)(rect.height) * ca->camera_s + 2,
+    };
+    Vector2 position = {0.f, 0.f};
+    float rot = 0.f;
+    DrawRectanglePro(target_rect1, position, rot, c);
+  }
+
+  // Pin connections and text at the side of the image
+  RenderSidePanel(ca);
+  EndTextureMode();
+  if (t_tool.texture.width > 0) {
+    UnloadRenderTexture(t_tool);
+  }
+}
+
+void PaintRenderTextureSimu(Paint* ca, RenderTexture2D target) {
+  BeginTextureMode(target);
+  ClearBackground(ca->out_color);
+  int tw = ca->h.t_buffer.texture.width;
+  int th = ca->h.t_buffer.texture.height;
+  float cx = ca->camera_x - 1e-2;
+  float cy = ca->camera_y - 1e-2;
+  float cs = ca->camera_s;
+  draw_rect(cx, cy, tw * cs, th * cs, BLACK);
+  EndTextureMode();
+
+  Texture2D tx = ca->s.t_comp_x;
+  Texture2D ty = ca->s.t_comp_y;
+  Texture2D ts = ca->s.t_state;
+  int simu_state = ca->s.status == SIMU_STATUS_OK ? 0 : 1;
+  draw_main_img(1, ca->t_tpl, ca->h.t_buffer, tx, ty, ts, simu_state,
+                (RenderTexture2D){0}, 0, 0, (RenderTexture2D){0}, 0, 0, cx, cy,
+                cs, &ca->t_tmp, &target);
+  BeginTextureMode(target);
+  RenderSidePanel(ca);
+  EndTextureMode();
+}
+
+void RenderSidePanel(Paint* ca) {
+  // TODO: move to GL later
+  // not sure if this size is ok
+  if (ca->t_side_panel.width > 0) {
+    UnloadTexture(ca->t_side_panel);
+  }
+  Image tmp = GenImageSimple(200, 800);
+  const LevelDesc* cd = ApiGetLevelDesc();
+  Sim* s = ca->mode == MODE_EDIT ? NULL : &ca->s;
+  RenderImageCompInput(&tmp, HistGetBuffer(&ca->h), s, cd->num_components,
+                       cd->pindesc);
+  ca->t_side_panel = LoadTextureFromImage(tmp);
+  Rectangle source = {
+      0,
+      0,
+      (float)ca->t_side_panel.width,
+      (float)ca->t_side_panel.height,
+  };
+  Rectangle target_rect = {
+      ca->camera_x + -ca->t_side_panel.width * ca->camera_s,
+      ca->camera_y + 0 * ca->camera_s,
+      (float)ca->t_side_panel.width * ca->camera_s,
+      (float)ca->t_side_panel.height * ca->camera_s,
+  };
+  Vector2 position = {0.f, 0.f};
+  float rot = 0.f;
+  DrawTexturePro(ca->t_side_panel, source, target_rect, position, rot, WHITE);
+  UnloadImage(tmp);
+}

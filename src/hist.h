@@ -66,6 +66,13 @@ typedef struct Cmd {
   int tool;
   // Next element in the Linked list.
   struct Cmd* next;
+  // Now the GPU-related stuff...
+  RenderTexture2D t_data_before;
+  RenderTexture2D t_popped_layer;
+  RenderTexture2D t_data_after;
+  RenderTexture2D t_paste_data;
+  RenderTexture2D t_resize_img_delta_x;
+  RenderTexture2D t_resize_img_delta_y;
 } Cmd;
 
 // Image history change manager.
@@ -75,11 +82,11 @@ typedef struct {
   ToolType tool;
   // Working image buffer (aka real image) stored in a pyramid style.
   // The pyramids are important for zoom-out visualization.
-  Image buffer[HIST_PYR_LVLS];
+  Image buffer;
   // Offset of selection image
   Vector2Int seloff;
   // Selection buffer (also stored as pyramid).
-  Image selbuffer[HIST_PYR_LVLS];
+  Image selbuffer;
   // First undo command (linked list)
   Cmd* undo_hist;
   // First redo command (linked list)
@@ -89,6 +96,10 @@ typedef struct {
   bool dirty;
   // maximum size of undo history (after which we will start removing undos)
   int max_undo_hist_size;
+  // Texture version of buffers, for rendering.
+  // It's alwyas synced with the buffers.
+  RenderTexture2D t_buffer;
+  RenderTexture2D t_selbuffer;
 } Hist;
 
 // Initializes History change buffers.

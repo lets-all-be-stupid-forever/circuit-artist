@@ -6,6 +6,9 @@
 
 #include "colors.h"
 #include "font.h"
+#include "math.h"
+#include "rlgl.h"
+#include "shaders.h"
 
 // Makes sure the alpha is 255
 static Color ToValidColor(Color c) { return (Color){c.r, c.g, c.b, 255}; }
@@ -614,4 +617,356 @@ void DrawImageRectSimple(Image* img, int x, int y, int w, int h, Color c) {
     colors[y0 * ww + x] = c;
     colors[(y0 + h - 1) * ww + x] = c;
   }
+}
+
+void ImageCombine2(Image src, RectangleInt r, Image* dst, Vector2Int offset) {
+  assert(r.x >= 0 && r.y >= 0 && r.x + r.width <= src.width &&
+         r.y + r.height <= src.height);
+  assert(offset.x >= 0 && offset.y >= 0 && offset.x + r.width <= dst->width &&
+         offset.y + r.height <= dst->height);
+  Color* csrc = GetPixels(src);
+  Color* cdst = GetPixels(*dst);
+  int w = r.width;
+  int h = r.height;
+  int ox1 = r.x;
+  int oy1 = r.y;
+  int ox2 = offset.x;
+  int oy2 = offset.y;
+  for (int y = 0; y < h; y++) {
+    for (int x = 0; x < w; x++) {
+      int y1 = oy1 + y;
+      int x1 = ox1 + x;
+      int y2 = oy2 + y;
+      int x2 = ox2 + x;
+      int p1 = y1 * src.width + x1;
+      int p2 = y2 * dst->width + x2;
+      if (csrc[p1].a == 0) {
+        // When it's black, I want to keep blank in the dest image
+        // cdst[p2] = csrc[p1];
+      } else if (!COLOR_EQ(csrc[p1], BLACK)) {
+        cdst[p2] = csrc[p1];
+      }
+    }
+  }
+}
+
+RenderTexture2D CloneTexture(RenderTexture2D img) {
+  RenderTexture2D out =
+      LoadRenderTexture(img.texture.width, img.texture.height);
+  BeginTextureMode(out);
+  float tw = (float)img.texture.width;
+  float th = (float)img.texture.height;
+  Rectangle source = {0, 0, tw, -th};
+  Rectangle target = {0, 0, tw, th};
+  Vector2 pos = {0, 0};
+  float rot = 0;
+  DrawTexturePro(img.texture, source, target, pos, rot, WHITE);
+  EndTextureMode();
+  return out;
+}
+
+RenderTexture2D CropTexture(RenderTexture2D img, RectangleInt region) {
+  int w = region.width;
+  int h = region.height;
+  RenderTexture2D out = LoadRenderTexture(w, h);
+  BeginTextureMode(out);
+  int th = img.texture.height;
+  Rectangle source = {
+      .x = (float)region.x,
+      .y = (float)(th - region.y - region.height),
+      .width = (float)region.width,
+      .height = (float)-region.height,
+  };
+  Rectangle target = {
+      0,
+      0,
+      (float)region.width,
+      (float)region.height,
+  };
+  Vector2 position = {0, 0};
+  DrawTexturePro(img.texture, source, target, position, 0, WHITE);
+  EndTextureMode();
+  return out;
+}
+
+RenderTexture2D CloneTextureFromImage(Image img) {
+  RenderTexture2D out = LoadRenderTexture(img.width, img.height);
+  BeginTextureMode(out);
+  Texture2D t = LoadTextureFromImage(img);
+  DrawTexture(t, 0, 0, WHITE);
+  EndTextureMode();
+  UnloadTexture(t);
+  return out;
+}
+
+void TextureCombine(RenderTexture2D src, RectangleInt r, RenderTexture2D* dst,
+                    Vector2Int offset) {
+  assert(r.x >= 0 && r.y >= 0 && r.x + r.width <= src.texture.width &&
+         r.y + r.height <= src.texture.height);
+  assert(offset.x >= 0 && offset.y >= 0 &&
+         offset.x + r.width <= dst->texture.width &&
+         offset.y + r.height <= dst->texture.height);
+  BeginTextureMode(*dst);
+  int th = src.texture.height;
+  Rectangle source = {
+      .x = (float)r.x,
+      // Need to shift a bit here because the texture is inverted
+      .y = (float)(th - (r.y + r.height)),
+      .width = (float)r.width,
+      .height = (float)-r.height,
+  };
+  Rectangle target = {
+      .x = (float)offset.x,
+      .y = (float)offset.y,
+      .width = (float)r.width,
+      .height = (float)r.height,
+  };
+  rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
+  BeginBlendMode(BLEND_CUSTOM);
+  begin_shader(comb);
+  int src_size[2] = {src.texture.width, src.texture.height};
+  int dst_size[2] = {dst->texture.width, dst->texture.height};
+  int roi_size[2] = {r.width, r.height};
+  int src_off[2] = {r.x, r.y};
+  int dst_off[2] = {offset.x, offset.y};
+  set_shader_tex(comb, dst_tex, dst->texture);
+  set_shader_ivec2(comb, src_size, &src_size);
+  set_shader_ivec2(comb, dst_size, &dst_size);
+  set_shader_ivec2(comb, roi_size, &roi_size);
+  set_shader_ivec2(comb, src_off, &src_off);
+  set_shader_ivec2(comb, dst_off, &dst_off);
+  DrawTexturePro(src.texture, source, target, (Vector2){.x = 0, .y = 0}, 0.0f,
+                 WHITE);
+  end_shader();
+  EndBlendMode();
+  EndTextureMode();
+}
+
+void FillTextureRect(RenderTexture* img, RectangleInt r, Color c) {
+  BeginTextureMode(*img);
+  rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
+  BeginBlendMode(BLEND_CUSTOM);
+  begin_shader(fill);
+  DrawRectangle(r.x, r.y, r.width, r.height, c);
+  end_shader();
+  EndBlendMode();
+  EndTextureMode();
+}
+
+void CopyTexture(RenderTexture2D src, RectangleInt r, RenderTexture2D* dst,
+                 Vector2Int offset) {
+  assert(r.x >= 0 && r.y >= 0 && r.x + r.width <= src.texture.width &&
+         r.y + r.height <= src.texture.height);
+  assert(offset.x >= 0 && offset.y >= 0 &&
+         offset.x + r.width <= dst->texture.width &&
+         offset.y + r.height <= dst->texture.height);
+  BeginTextureMode(*dst);
+  Rectangle source = {
+      .x = (float)r.x,
+      .y = (float)r.y,
+      .width = (float)r.width,
+      .height = (float)-r.height,
+  };
+  Rectangle target = {
+      .x = (float)offset.x,
+      .y = (float)offset.y,  // th - bottom,
+      .width = (float)r.width,
+      .height = (float)r.height,
+  };
+  rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
+  BeginBlendMode(BLEND_CUSTOM);
+  DrawTexturePro(src.texture, source, target, (Vector2){.x = 0, .y = 0}, 0.0f,
+                 WHITE);
+  EndBlendMode();
+  EndTextureMode();
+}
+
+void FlipTextureHInplace(RenderTexture2D* img) {
+  RenderTexture2D tmp = CloneTexture(*img);
+  BeginTextureMode(*img);
+  float tw = (float)img->texture.width;
+  float th = (float)img->texture.height;
+  Rectangle source = {0, 0, -tw, -th};
+  Rectangle target = {0, 0, tw, th};
+  Vector2 pos = {0, 0};
+  float rot = 0;
+  rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
+  BeginBlendMode(BLEND_CUSTOM);
+  DrawTexturePro(tmp.texture, source, target, pos, rot, WHITE);
+  EndTextureMode();
+  EndBlendMode();
+  UnloadRenderTexture(tmp);
+}
+
+void FlipTextureVInplace(RenderTexture2D* img) {
+  RenderTexture2D tmp = CloneTexture(*img);
+  BeginTextureMode(*img);
+  float tw = (float)img->texture.width;
+  float th = (float)img->texture.height;
+  Rectangle source = {0, 0, tw, th};
+  Rectangle target = {0, 0, tw, th};
+  Vector2 pos = {0, 0};
+  float rot = 0;
+  rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
+  BeginBlendMode(BLEND_CUSTOM);
+  DrawTexturePro(tmp.texture, source, target, pos, rot, WHITE);
+  EndBlendMode();
+  EndTextureMode();
+  UnloadRenderTexture(tmp);
+}
+
+RenderTexture2D RotateTexture(RenderTexture2D img, int ccw) {
+  int tw = img.texture.width;
+  int th = img.texture.height;
+  RenderTexture2D out = LoadRenderTexture(th, tw);
+  BeginTextureMode(out);
+  Rectangle source = {0, 0, (float)tw, (float)-th};
+  Rectangle target = {0, 0, (float)th, (float)tw};
+  Vector2 pos = {0, 0};
+  float rot = 0;
+  rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
+  BeginBlendMode(BLEND_CUSTOM);
+  begin_shader(rotate);
+  int _ccw = ccw;
+  set_shader_int(rotate, ccw, &_ccw);
+  DrawTexturePro(img.texture, source, target, pos, rot, WHITE);
+  end_shader();
+  EndBlendMode();
+  EndTextureMode();
+  return out;
+}
+
+void draw_rt_on_screen(RenderTexture2D rt, Vector2 pos) {
+  int tw = rt.texture.width;
+  int th = rt.texture.height;
+  Rectangle source = {
+      .x = 0,
+      .y = 0,
+      .width = tw,
+      .height = -th,
+  };
+  Rectangle target = {
+      .x = pos.x,
+      .y = pos.y,
+      .width = tw,
+      .height = th,
+  };
+  Vector2 v0 = {0};
+  DrawTexturePro(rt.texture, source, target, v0, 0.0f, WHITE);
+}
+
+void draw_rect(float x, float y, float w, int h, Color c) {
+  Vector2 position = {0.f, 0.f};
+  float rot = 0.f;
+  DrawRectanglePro((Rectangle){x, y, w, h}, position, rot, c);
+}
+
+void draw_main_img(int mode, Texture2D wire_tpl, RenderTexture2D img,
+                   Texture2D tx, Texture2D ty, Texture2D ts, int simu_state,
+                   RenderTexture2D sel, float sel_off_x, float sel_off_y,
+                   RenderTexture2D tool, float tool_x, float tool_y, float cx,
+                   float cy, float cs, RenderTexture2D* tmp,
+                   RenderTexture2D* target) {
+  BeginTextureMode(*tmp);
+  ClearBackground(BLANK);
+  SetTextureFilter(img.texture, TEXTURE_FILTER_POINT);
+  SetTextureFilter(sel.texture, TEXTURE_FILTER_POINT);
+
+  // Step1: Update pixels in (tmp) image.
+  // tmp is a "mirror" of the raw image.
+  // It's used for 2 main reasons:
+  //  (i) During edition, merge selection and target image in a single image.
+  //  (ii) During simulation, update colors using wire state.
+
+  int img_w = img.texture.width;
+  int img_h = img.texture.height;
+  int img_size[2] = {img_w, img_h};
+  int sel_size[2] = {sel.texture.width, sel.texture.height};
+  int sel_off[2] = {sel_off_x, sel_off_y};
+  int tool_size[2] = {tool.texture.width, tool.texture.height};
+  int tool_off[2] = {tool_x, tool_y};
+  Vector4 bg_color = ColorNormalize(BLANK);
+  Vector4 bugged_color = ColorNormalize(RED);
+  Vector4 undefined_color = ColorNormalize(MAGENTA);
+
+  int tgt_w = target->texture.width;
+  int tgt_h = target->texture.height;
+
+  float fx0 = (-cx) / cs - 8;
+  float fy0 = (-cy) / cs - 8;
+  float fx1 = (-cx + tgt_w) / cs + 8;
+  float fy1 = (-cy + tgt_h) / cs + 8;
+
+  int ix0 = floorf(fx0);
+  int iy0 = floorf(fy0);
+  int ix1 = ceilf(fx1);
+  int iy1 = ceilf(fy1);
+
+  ix0 = MaxInt(0, MinInt(ix0, img_w));
+  ix1 = MaxInt(0, MinInt(ix1, img_w));
+  iy0 = MaxInt(0, MinInt(iy0, img_h));
+  iy1 = MaxInt(0, MinInt(iy1, img_h));
+
+  begin_shader(update);
+  set_shader_int(update, mode, &mode);
+  set_shader_ivec2(update, img_size, &img_size);
+  set_shader_ivec2(update, sel_off, &sel_off);
+  set_shader_ivec2(update, sel_size, &sel_size);
+  set_shader_tex(update, sel, sel.texture);
+  set_shader_ivec2(update, tool_off, &tool_off);
+  set_shader_ivec2(update, tool_size, &tool_size);
+  set_shader_tex(update, tool, tool.texture);
+  set_shader_int(update, simu_state, &simu_state);
+  set_shader_tex(update, comp_x, tx);
+  set_shader_tex(update, comp_y, ty);
+  set_shader_tex(update, state_buf, ts);
+  set_shader_vec4(update, bg_color, &bg_color);
+  set_shader_vec4(update, bugged_color, &bugged_color);
+  set_shader_vec4(update, undefined_color, &undefined_color);
+  {
+    int rx = ix0;
+    int ry = iy0;
+    int rw = ix1 - ix0 + 1;
+    int rh = iy1 - iy0 + 1;
+    Rectangle source = {
+        .x = (float)rx,
+        .y = (float)(img_h - (ry + rh)),
+        .width = (float)rw,
+        .height = (float)-rh,
+    };
+    Rectangle target = {
+        .x = (float)rx,
+        .y = (float)ry,
+        .width = (float)rw,
+        .height = (float)rh,
+    };
+    DrawTexturePro(img.texture, source, target, (Vector2){.x = 0, .y = 0}, 0.0f,
+                   WHITE);
+  }
+  end_shader();
+  EndTextureMode();
+
+  Vector2 sp = {
+      (float)cs,
+      (float)cs,
+  };
+
+  int tmp_size[2] = {tmp->texture.width, tmp->texture.height};
+
+  // Step2: Draw updated pixels on screen.
+  BeginTextureMode(*target);
+  begin_shader(project);
+  SetTextureFilter(tmp->texture, TEXTURE_FILTER_POINT);
+  SetTextureFilter(wire_tpl, TEXTURE_FILTER_POINT);
+  set_shader_vec2(project, sp, &sp);
+  set_shader_tex(project, tpl, wire_tpl);
+  set_shader_ivec2(project, img_size, &tmp_size);
+  int mw = img_size[0];
+  int mh = img_size[1];
+  DrawTexturePro(
+      tmp->texture,
+      (Rectangle){0, (tmp_size[1] - (0 + img_size[1])), (float)mw, (float)-mh},
+      (Rectangle){cx, cy, mw * cs, mh * cs}, (Vector2){0, 0}, 0, WHITE);
+  end_shader();
+  EndTextureMode();
 }
