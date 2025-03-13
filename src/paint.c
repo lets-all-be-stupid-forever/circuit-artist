@@ -314,9 +314,7 @@ void PaintStopSimu(Paint* ca) {
   if (ca->mode != MODE_SIMU) {
     return;
   }
-  if (ca->s.status == SIMU_STATUS_OK) {
-    ApiStopLevelSimulation();
-  }
+  ApiStopLevelSimulation();
   SimUnload(&ca->s);
   UnloadParsedImage(ca->pi);
   ca->mode = MODE_EDIT;
@@ -335,7 +333,7 @@ void PaintUpdateSimu(Paint* ca, float delta) {
   }
 
   // Simulation Ticks
-  while (ca->simu_time > clock_time) {
+  while (ca->simu_time > clock_time && ca->s.status == SIMU_STATUS_OK) {
     TickResult tr = ApiOnLevelTick(clock_time);
     if (tr.clock_updated) {
       SimDispatchComponent(&ca->s, 0);

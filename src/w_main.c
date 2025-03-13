@@ -164,8 +164,10 @@ void MainUpdate(Ui* ui) {
   BeginTextureMode(C.level_overlay_tex);
   ClearBackground(BLANK);
   EndTextureMode();
-  ApiOnLevelDraw(C.level_overlay_tex, C.ca.camera_x, C.ca.camera_y,
-                 C.ca.camera_s);
+  if (C.ca.mode == MODE_EDIT || C.ca.s.status == SIMU_STATUS_OK) {
+    ApiOnLevelDraw(C.level_overlay_tex, C.ca.camera_x, C.ca.camera_y,
+                   C.ca.camera_s);
+  }
 }
 
 void MainUpdateControls(Ui* ui) {
