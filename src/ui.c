@@ -2,6 +2,7 @@
 
 #include <raylib.h>
 #include <rlgl.h>
+#include <stdio.h>
 
 #include "api.h"
 #include "colors.h"
@@ -123,9 +124,23 @@ void UiUpdateFrame(Ui* ui) {
 
 void UiDrawMouse(Ui* ui) {
   // Doesn't draw if cursor is not on screen.
+#ifdef __APPLE__
+  // Workaround for MACOS:
+  // It seems that raylib should start with cursor_on_screen=True but it starts
+  // with a false value, the result being the cursor not being visible when the
+  // user starts the application.
+  static bool use_raylib = false;
+  if (IsCursorOnScreen()) {
+    use_raylib = true;
+  }
+  if (use_raylib && !IsCursorOnScreen()) {
+    return;
+  }
+#else
   if (!IsCursorOnScreen()) {
     return;
   }
+#endif
 
   Vector2 pos = GetMousePosition();
   Rectangle source = rect_mouse_arrow;
