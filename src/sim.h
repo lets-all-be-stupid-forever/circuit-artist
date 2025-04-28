@@ -1,6 +1,7 @@
 #ifndef SIM_H
 #define SIM_H
 #include "img.h"
+#include "loop_detector.h"
 
 // Maximum number of wires per simulation external component (or chip).
 #define MAX_SLOTS 128
@@ -257,11 +258,6 @@ typedef struct {
   // wire.
   // Has maximum size of `2*nc`.
   int* fo;
-  // Update count of each wire.
-  // Allows the detection of loops: a wire that has been updated too many times
-  // is identified as a buggy loop wire.
-  // Has size `nc`.
-  int* update_count;
   // Place in the queue where the given circuit is queued.
   // Buffer used during the call to simulate. Allows us to avoid queueing event
   // of the same wire more than once per simulation step.
@@ -279,15 +275,6 @@ typedef struct {
   // We keep a lut so we can quickly do things like NAND with undefined bits.
   // It's 4x4 because we consider 4 states for a wire.
   int nand_lut[4 * 4];
-  // Flag describing whether a given wire has changed state during a simulation
-  // (simulate) step. Used for tracking which wires have updated in a simulation
-  // step. Only used during the call to `simulate`. Has size `nc`.
-  bool* wire_has_changed;
-  // Stack containing the wires that have changed during simulation.
-  // It is used to avoid iterating through all the wires to find out those who
-  // have changed at each iteration.
-  // Has max size `nc`.
-  int* wire_changed_stack;
   // Number of external components attached to the simulation context.
   // It requires at least one component to run.
   int necomps;
@@ -324,6 +311,7 @@ typedef struct {
   Texture2D t_comp_x;
   Texture2D t_comp_y;
   Texture2D t_state;
+  LoopDetector loop_detector;
 } Sim;
 
 // Parses a raw image into an intermediate data structure to be fed into the

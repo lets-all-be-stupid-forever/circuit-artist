@@ -71,6 +71,7 @@ SET(ca_src
   src/paint.c
   src/filedialog.c
   src/colors.c
+  src/loop_detector.c
   src/tiling.c
   src/msg.c
   src/api.c

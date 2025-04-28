@@ -10,7 +10,6 @@
 #define ALPHA_OFF 50
 #define ALPHA_ON 255
 
-static int MAX_CIRCUIT_UPDATE_COUNT = 100;
 //////////////////
 // Compile-time crash
 //////////////////
@@ -572,7 +571,6 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
   s->ok_creation = true;
   s->nfo = malloc((s->nc + 1) * sizeof(int));
   s->fo = malloc((2 * s->nc) * sizeof(int));
-  s->update_count = malloc(s->nc * sizeof(int));
   s->queued_at = malloc(s->nc * sizeof(int));
   s->crash_reason = NULL;
   s->status = SIMU_STATUS_OK;
@@ -692,20 +690,17 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
   UpdateStateTexture(s);
   double end = GetTime();
   s->time_creation = 1000 * (end - start);
-  s->wire_has_changed = malloc(s->nc * sizeof(bool));
-  s->wire_changed_stack = malloc(s->nc * sizeof(int));
 
   // Resets the update count of each gate
   // This takes time when there's no activity
   for (int i = 0; i < s->nc; i++) {
-    s->wire_has_changed[i] = false;
-    s->update_count[i] = 0;
     s->queued_at[i] = -1;  // -1 == not queued.
   }
   s->time_parsing = s->pi.time_parsing;
   if (s->ok_creation) {
     SimQueueInitialInputEvents(s);
   }
+  LoadLoopDetector(&s->loop_detector, s->nc);
 }
 
 void SimQueueInitialInputEvents(Sim* s) {
@@ -755,7 +750,7 @@ static void SimCrashSimulation(Sim* s) {
   s->ok_creation = false;
   for (int i = 0; i < s->nc; i++) {
     s->state[i] = BIT_UNDEFINED;
-    if (s->update_count[i] > MAX_CIRCUIT_UPDATE_COUNT / 2) {
+    if (LoopDetectorIsWireLooping(&s->loop_detector, i)) {
       s->state[i] = BIT_BUGGED;
     }
   }
@@ -810,15 +805,7 @@ void SimSimulate(Sim* s) {
       if (s->state[k] == v) {
         continue;
       }
-      // Actual wire Update has happened
-      // Attention: wire update is differetn from nand update
-      s->update_count[k]++;
-      // the purpose of wire_has_changed right now is to set update to 0
-      if (!s->wire_has_changed[k]) {
-        s->wire_has_changed[k] = true;
-        s->wire_changed_stack[num_updated++] = k;
-      }
-      if (s->update_count[k] > MAX_CIRCUIT_UPDATE_COUNT) {
+      if (LoopDetectorNotify(&s->loop_detector, k)) {
         SimCrashSimulation(s);
         s->status = SIMU_STATUS_LOOP;
         s->crash_reason = CRASH_REASON_TOO_MANY_UPDATES;
@@ -908,12 +895,7 @@ void SimSimulate(Sim* s) {
       break;
     }
   }
-
-  for (int i = 0; i < num_updated; i++) {
-    int w = s->wire_changed_stack[i];
-    s->wire_has_changed[w] = false;
-    s->update_count[w] = 0;
-  }
+  LoopDetectorReset(&s->loop_detector);
   s->total_updates = s->num_updates_last_simulate + s->total_updates;
 }
 
@@ -940,8 +922,7 @@ void SimUnload(Sim* s) {
   if (s->nand_error_status) {
     free(s->nand_error_status);
   }
-  free(s->wire_has_changed);
-  free(s->wire_changed_stack);
+  UnloadLoopDetector(&s->loop_detector);
   free(s->nfo);
   free(s->bugged_flag);
   free(s->fo);
@@ -949,7 +930,6 @@ void SimUnload(Sim* s) {
   free(s->state);
   free(s->ev);
   free(s->ev_swap);
-  free(s->update_count);
   free(s->queued_at);
   *s = (Sim){0};
 }
