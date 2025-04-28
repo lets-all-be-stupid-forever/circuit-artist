@@ -223,6 +223,7 @@ typedef struct {
   // Event queues are how we handle changes in state. An item in the queue
   // consists of a pair (wire_number, new_wire_value).
   int ne;
+  int ne_swap;
   // Max allowed number of ingress events in the event queue. If we receive a
   // number of event higher than this value, they are ignored. It's there
   // mostly to avoid potential memory corruption/overflow, in practice it's
@@ -233,7 +234,8 @@ typedef struct {
   // It's used for example when the user clicks on a wire to toggle it. In that
   // case an event is created, which is resolved in the next call to simulate.
   // Has size `2*max_events`.
-  int* events;
+  int* ev;
+  int* ev_swap;
   // A flag array containing for each wire wheter the wire is the source of a
   // "bug" (for example being the output of more than one NAND). It's used
   // during rendering so the user can see which wire is causing issues. 0 means
@@ -255,16 +257,6 @@ typedef struct {
   // wire.
   // Has maximum size of `2*nc`.
   int* fo;
-  // Temporary working buffer 1 used as event queue during simulation (same as
-  // in `events` array).
-  // It is only used during the call to `simulate`.
-  // Has maximum size of `2*nc`.
-  int* e1;
-  // Temporary working buffer 2 used as event queue during simulation (same as
-  // in `events` array).
-  // It is only used during the call to `simulate`.
-  // Has maximum size of `2*nc`.
-  int* e2;
   // Update count of each wire.
   // Allows the detection of loops: a wire that has been updated too many times
   // is identified as a buggy loop wire.

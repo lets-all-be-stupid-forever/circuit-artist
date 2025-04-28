@@ -11,19 +11,43 @@
 #define ALPHA_ON 255
 
 static int MAX_CIRCUIT_UPDATE_COUNT = 100;
+//////////////////
+// Compile-time crash
+//////////////////
 static const char CRASH_REASON_MULTIPLE_GATE_CIRCUIT[] =
     "Circuits with multiple input gates.";
-static const char CRASH_REASON_TOO_MANY_UPDATES[] =
-    "Circuit updated too many times (infinite loop?).";
 static const char CRASH_REASON_MISSING_INPUTS[] =
     "NANDs must have its 2 inputs filled";
 static const char CRASH_REASON_MISSING_OUTPUT[] =
     "NANDs must be connected to an output wire.";
+
+//////////////////
+// Runtime crash
+//////////////////
+static const char CRASH_REASON_TOO_MANY_UPDATES[] =
+    "Circuit updated too many times (infinite loop?).";
+
 static void MakeNandLut(int* nand_lut);
 static void SimQueueInitialInputEvents(Sim* s);
 
 void SimInitCompVisu(Sim* s);
 void UpdateStateTexture(Sim* s);
+
+static inline void SimQueueEvent(Sim* s, int j, int vj) {
+  if (s->queued_at[j] != -1) {
+    // Here, we avoid queueing twice and only update the active queued
+    // place.
+    int kk = s->queued_at[j];
+    s->ev[2 * kk + 0] = j;
+    s->ev[2 * kk + 1] = vj;
+  } else {
+    s->num_updates_last_simulate++;
+    s->queued_at[j] = s->ne;
+    s->ev[2 * s->ne + 0] = j;
+    s->ev[2 * s->ne + 1] = vj;
+    s->ne++;
+  }
+}
 
 // Union-find Find
 static inline int UfFind(int* c, int a) {
@@ -482,9 +506,7 @@ void SimTogglePixel(Sim* s, int x, int y) {
   int c = s->pi.comp[idx];
   // Don't want to simulate background component
   if (c != 0 && s->ok_creation) {
-    s->events[2 * s->ne + 0] = c;
-    s->events[2 * s->ne + 1] = !s->state[c];
-    s->ne++;
+    SimQueueEvent(s, c, !s->state[c]);
   }
 }
 
@@ -544,12 +566,12 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
   }
   s->max_events = s->nc;
   s->ne = 0;
-  s->events = malloc(2 * s->max_events * sizeof(int));
+  s->ne_swap = 0;
+  s->ev = malloc(2 * s->nc * sizeof(int));
+  s->ev_swap = malloc(2 * s->nc * sizeof(int));
   s->ok_creation = true;
   s->nfo = malloc((s->nc + 1) * sizeof(int));
   s->fo = malloc((2 * s->nc) * sizeof(int));
-  s->e1 = malloc((2 * s->nc) * sizeof(int));
-  s->e2 = malloc((2 * s->nc) * sizeof(int));
   s->update_count = malloc(s->nc * sizeof(int));
   s->queued_at = malloc(s->nc * sizeof(int));
   s->crash_reason = NULL;
@@ -694,9 +716,7 @@ void SimQueueInitialInputEvents(Sim* s) {
     int ca = s->graph[2 * i + 0];
     int cb = s->graph[2 * i + 1];
     if (ca == 0 && cb == 0) {
-      s->events[2 * s->ne + 0] = i;
-      s->events[2 * s->ne + 1] = 0;
-      s->ne++;
+      SimQueueEvent(s, i, 0);
     }
   }
 }
@@ -741,6 +761,19 @@ static void SimCrashSimulation(Sim* s) {
   }
 }
 
+static void SimSwapEvent(Sim* s) {
+  // Resets queue flags
+  for (int i2 = 0; i2 < s->ne; i2++) {
+    int k = s->ev[2 * i2 + 0];  // the gate
+    s->queued_at[k] = -1;
+  }
+  s->ne_swap = s->ne;
+  s->ne = 0;
+  int* tmp = s->ev;
+  s->ev = s->ev_swap;
+  s->ev_swap = tmp;
+}
+
 void SimSimulate(Sim* s) {
   // No change in circuit if there was parsing errors
   if (s->ok_creation == false) {
@@ -748,45 +781,39 @@ void SimSimulate(Sim* s) {
   }
   double start = GetTime();
 
-  // Resets the update count of each gate
-  // This takes time when there's no activity
-  // Asuming this is true at start...
-  //  for (int i = 0; i < s->nc; i++) {
-  //    s->update_count[i] = 0;
-  //  }
-
-  int n1 = 0;
-  int n2 = 0;
-  int* e1 = s->e1;
-  int* e2 = s->e2;
-  // Initialize the event queue.
-  for (int i = 0; i < s->ne; i++) {
-    int k = s->events[2 * i + 0];
-    int v = s->events[2 * i + 1];
-    e1[2 * n1 + 0] = k;
-    e1[2 * n1 + 1] = v;
-    n1++;
-  }
+  // int n1 = 0;
+  // int n2 = 0;
+  // int* e1 = s->e1;
+  // int* e2 = s->e2;
+  // // Initialize the event queue.
+  // for (int i = 0; i < s->ne; i++) {
+  //   int k = s->events[2 * i + 0];
+  //   int v = s->events[2 * i + 1];
+  //   e1[2 * n1 + 0] = k;
+  //   e1[2 * n1 + 1] = v;
+  //   n1++;
+  // }
+  // e1 --> queued for processing now.
+  // e2 --> next processing
 
   int num_updated = 0;
   // Resets events
   s->num_updates_last_simulate = 0;
-
-  s->ne = 0;
   // int num_comp_updates = 0;
   while (true) {
-    // e1 --> current
-    for (int i1 = 0; i1 < n1; i1++) {
+    SimSwapEvent(s);
+    for (int i1 = 0; i1 < s->ne_swap; i1++) {
       // k is the ID of the component to be updated
-      int k = e1[2 * i1 + 0];
+      int k = s->ev_swap[2 * i1 + 0];
       // v is the new value of this component (ie output)
-      int v = e1[2 * i1 + 1];
+      int v = s->ev_swap[2 * i1 + 1];
       if (s->state[k] == v) {
         continue;
       }
       // Actual wire Update has happened
       // Attention: wire update is differetn from nand update
       s->update_count[k]++;
+      // the purpose of wire_has_changed right now is to set update to 0
       if (!s->wire_has_changed[k]) {
         s->wire_has_changed[k] = true;
         s->wire_changed_stack[num_updated++] = k;
@@ -797,7 +824,6 @@ void SimSimulate(Sim* s) {
         s->crash_reason = CRASH_REASON_TOO_MANY_UPDATES;
         return;
       }
-
       s->state[k] = v;
       int nf = s->nfo[k + 1] - s->nfo[k];
       int off = s->nfo[k];
@@ -811,29 +837,12 @@ void SimSimulate(Sim* s) {
         int v1 = s->state[i1];
         int v2 = s->state[i2];
         int next_vj = s->nand_lut[(v1 << 2) + v2];
-        if (s->queued_at[j] != -1) {
-          // Here, we avoid queueing twice and only update the active queued
-          // place.
-          int kk = s->queued_at[j];
-          e2[2 * kk + 0] = j;
-          e2[2 * kk + 1] = next_vj;
-        } else {
-          s->num_updates_last_simulate++;
-          s->queued_at[j] = n2;
-          e2[2 * n2 + 0] = j;
-          e2[2 * n2 + 1] = next_vj;
-          n2++;
-        }
+        SimQueueEvent(s, j, next_vj);
       }
-    }
-    // Resets queue flags
-    for (int i2 = 0; i2 < n2; i2++) {
-      int k = e2[2 * i2 + 0];  // the gate
-      s->queued_at[k] = -1;
     }
 
     // Trying to simulate external components
-    if (n2 == 0) {
+    if (s->ne == 0) {
       // Pseudo-code:
       // int nextInputs[MAX_SLOTS];
       // int prevInputs[MAX_SLOTS];
@@ -888,24 +897,14 @@ void SimSimulate(Sim* s) {
             int w = SimGetWireAtPixel(s, ox, oy);
             int prev_output = s->state[w];
             if (prev_output != next_outputs[i] && w != 0) {
-              e2[2 * n2 + 0] = w;
-              e2[2 * n2 + 1] = next_outputs[i];
-              n2++;
+              SimQueueEvent(s, w, next_outputs[i]);
             }
           }
         }
       }
     }
-
-    // inverts e1 and e2
-    n1 = n2;
-    n2 = 0;
-    int* t = e2;
-    e2 = e1;
-    e1 = t;
-
     // stops when event queue is empty
-    if (n1 == 0) {
+    if (s->ne == 0) {
       break;
     }
   }
@@ -943,14 +942,13 @@ void SimUnload(Sim* s) {
   }
   free(s->wire_has_changed);
   free(s->wire_changed_stack);
-  free(s->e1);
-  free(s->e2);
   free(s->nfo);
   free(s->bugged_flag);
   free(s->fo);
   free(s->graph);
   free(s->state);
-  free(s->events);
+  free(s->ev);
+  free(s->ev_swap);
   free(s->update_count);
   free(s->queued_at);
   *s = (Sim){0};
@@ -1041,9 +1039,10 @@ void SimDispatchComponent(Sim* s, int icomp) {
     int w = SimGetWireAtPixel(s, ox, oy);
     int prev_output = s->state[w];
     if (prev_output != next_outputs[i] && w != 0) {
-      s->events[2 * s->ne + 0] = w;
-      s->events[2 * s->ne + 1] = next_outputs[i];
-      s->ne++;
+      SimQueueEvent(s, w, next_outputs[i]);
+      // s->ev[2 * s->ne + 0] = w;
+      // s->ev[2 * s->ne + 1] = next_outputs[i];
+      // s->ne++;
     }
   }
 }
