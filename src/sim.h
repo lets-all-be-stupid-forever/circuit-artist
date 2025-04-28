@@ -322,22 +322,8 @@ typedef struct {
   // Time spent rendering the simulated image in the last call to
   // SimGenImage().
   double time_gen_image;
-  // Total simulation time elapsed.
-  double total_simu_elapsed;
-  // Total busy simulation time passed.
-  // This is different from the elapsed time: comparing busy and elapsed times
-  // allow you to see how much of computing power is spent on the simulation
-  // itself. If you have busy >= elapsed, it means that the simulation update
-  // rate is too high for the workload, and the clock frequency might need to
-  // be reduced.
-  double total_simu_busy;
   // Number of updates in the last simulate.
   int num_updates_last_simulate;
-  // Total simulation "delay time" in the last simulate call.
-  // Each delay time is a "sycnhronous" round of updates.
-  int total_delay_last_simulate;
-  // Total elapsed time in seconds in the last simulate call.
-  double time_simulation_last_simulate;
   // Total cumulated number of updates since start.
   int total_updates;
   int state_w;
@@ -411,7 +397,7 @@ void SimUnload(Sim* s);
 //    ENDREPEAT
 // ENDFUNC
 //
-void SimSimulate(Sim* s, double dt);
+void SimSimulate(Sim* s);
 
 // Enqueues an event that will toggle (invert) the wire value at the exact
 // pixel position (x, y).

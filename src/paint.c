@@ -303,7 +303,7 @@ void PaintStartSimu(Paint* ca) {
   ProfilerTacSingle("SimLoad");
   if (ca->s.status == SIMU_STATUS_OK) {
     ApiStartLevelSimulation();
-    SimSimulate(&ca->s, 0);
+    SimSimulate(&ca->s);
   }
   ca->simu_time = 0;
   SimGenImage(&ca->s);
@@ -329,7 +329,7 @@ void PaintUpdateSimu(Paint* ca, float delta) {
     ca->queued_toggled_x = -1;
     ca->queued_toggled_y = -1;
     // Do I really need to simulate here?
-    SimSimulate(&ca->s, 0);
+    SimSimulate(&ca->s);
   }
 
   // Simulation Ticks
@@ -345,7 +345,7 @@ void PaintUpdateSimu(Paint* ca, float delta) {
       }
     }
     ca->clock_count = tr.clock_count;
-    SimSimulate(&ca->s, clock_time);
+    SimSimulate(&ca->s);
     ca->simu_time -= clock_time;
   }
   ProfilerTic("SimGenImage");

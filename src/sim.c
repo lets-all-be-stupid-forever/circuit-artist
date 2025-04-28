@@ -741,9 +741,8 @@ static void SimCrashSimulation(Sim* s) {
   }
 }
 
-void SimSimulate(Sim* s, double dt) {
+void SimSimulate(Sim* s) {
   // No change in circuit if there was parsing errors
-  s->time_simulation_last_simulate = 0;
   if (s->ok_creation == false) {
     return;
   }
@@ -771,16 +770,12 @@ void SimSimulate(Sim* s, double dt) {
 
   int num_updated = 0;
   // Resets events
-  s->total_delay_last_simulate = 0;
   s->num_updates_last_simulate = 0;
 
   s->ne = 0;
   // int num_comp_updates = 0;
   while (true) {
     // e1 --> current
-    if (n1 > 0) {
-      s->total_delay_last_simulate++;
-    }
     for (int i1 = 0; i1 < n1; i1++) {
       // k is the ID of the component to be updated
       int k = e1[2 * i1 + 0];
@@ -816,20 +811,18 @@ void SimSimulate(Sim* s, double dt) {
         int v1 = s->state[i1];
         int v2 = s->state[i2];
         int next_vj = s->nand_lut[(v1 << 2) + v2];
-        if (true) {
-          if (s->queued_at[j] != -1) {
-            // Here, we avoid queueing twice and only update the active queued
-            // place.
-            int kk = s->queued_at[j];
-            e2[2 * kk + 0] = j;
-            e2[2 * kk + 1] = next_vj;
-          } else {
-            s->num_updates_last_simulate++;
-            s->queued_at[j] = n2;
-            e2[2 * n2 + 0] = j;
-            e2[2 * n2 + 1] = next_vj;
-            n2++;
-          }
+        if (s->queued_at[j] != -1) {
+          // Here, we avoid queueing twice and only update the active queued
+          // place.
+          int kk = s->queued_at[j];
+          e2[2 * kk + 0] = j;
+          e2[2 * kk + 1] = next_vj;
+        } else {
+          s->num_updates_last_simulate++;
+          s->queued_at[j] = n2;
+          e2[2 * n2 + 0] = j;
+          e2[2 * n2 + 1] = next_vj;
+          n2++;
         }
       }
     }
@@ -922,10 +915,6 @@ void SimSimulate(Sim* s, double dt) {
     s->wire_has_changed[w] = false;
     s->update_count[w] = 0;
   }
-  double end = GetTime();
-  s->time_simulation_last_simulate = 1000 * (end - start);
-  s->total_simu_busy = s->total_simu_busy + s->time_simulation_last_simulate;
-  s->total_simu_elapsed = s->total_simu_elapsed + dt;
   s->total_updates = s->num_updates_last_simulate + s->total_updates;
 }
 
