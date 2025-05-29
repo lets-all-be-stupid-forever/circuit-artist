@@ -69,6 +69,12 @@ typedef struct {
   int update_loc_prev_state_f;
   int update_loc_unchanged_alpha;
 
+  Shader selrect_shader;
+  int selrect_loc_rsize;
+  int selrect_loc_rect_pos;
+  int selrect_loc_pattern_shift;
+  int selrect_loc_pattern_width;
+
 } Shaders;
 
 void InitShaders();

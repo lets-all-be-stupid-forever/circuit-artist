@@ -1231,20 +1231,25 @@ void PaintRenderTextureEdit(Paint* ca, RenderTexture2D target) {
   // ------------------------------------------------------------------------------------
   double t = GetTime();
   if (tool == TOOL_SEL && !ca->tool_pressed && sel.width > 0) {
-    Rectangle target_rect2 = {
-        ca->camera_x + sel_off_x * ca->camera_s - 2,
-        ca->camera_y + sel_off_y * ca->camera_s - 2,
-        (float)sel.width * ca->camera_s + 4,
-        (float)sel.height * ca->camera_s + 4,
-    };
-    Rectangle target_rect1 = {
-        ca->camera_x + sel_off_x * ca->camera_s - 1,
-        ca->camera_y + sel_off_y * ca->camera_s - 1,
-        (float)sel.width * ca->camera_s + 2,
-        (float)sel.height * ca->camera_s + 2,
-    };
-    DrawRectangleLinesEx(target_rect1, 1.0, GREEN);
-    DrawRectangleLinesEx(target_rect2, 1.0, GREEN);
+    DrawSelRect(ca->camera_x + sel_off_x * ca->camera_s,
+                ca->camera_y + sel_off_y * ca->camera_s,
+                (float)sel.width * ca->camera_s,
+                (float)sel.height * ca->camera_s, t);
+    //
+    //    Rectangle target_rect2 = {
+    //        ca->camera_x + sel_off_x * ca->camera_s - 2,
+    //        ca->camera_y + sel_off_y * ca->camera_s - 2,
+    //        (float)sel.width * ca->camera_s + 4,
+    //        (float)sel.height * ca->camera_s + 4,
+    //    };
+    //    Rectangle target_rect1 = {
+    //        ca->camera_x + sel_off_x * ca->camera_s - 1,
+    //        ca->camera_y + sel_off_y * ca->camera_s - 1,
+    //        (float)sel.width * ca->camera_s + 2,
+    //        (float)sel.height * ca->camera_s + 2,
+    //    };
+    //    DrawRectangleLinesEx(target_rect1, 1.0, GREEN);
+    //    DrawRectangleLinesEx(target_rect2, 1.0, GREEN);
   }
 
   // ------------------------------------------------------------------------------------

@@ -970,3 +970,44 @@ void draw_main_img(draw_params* p) {
   end_shader();
   EndTextureMode();
 }
+
+void DrawSelRectLine(Rectangle r, double t) {
+  begin_shader(selrect);
+  float size[2] = {r.width, r.height};
+  float pos[2] = {r.x, r.y};
+  int width = 8;
+  int shift = 2 * width - ((int)(20 * t)) % (2 * width);
+  set_shader_vec2(selrect, rsize, size);
+  set_shader_vec2(selrect, rect_pos, pos);
+  set_shader_int(selrect, pattern_shift, &shift);
+  set_shader_int(selrect, pattern_width, &width);
+  Vector2 topLeft = {r.x, r.y};
+  Vector2 bottomLeft = {r.x, r.y + r.height};
+  Vector2 topRight = {r.x + r.width, r.y};
+  Vector2 bottomRight = {r.x + r.width, r.y + r.height};
+  rlBegin(RL_QUADS);
+  rlNormal3f(0.0f, 0.0f, 1.0f);
+  rlColor4ub(1.0, 1.0, 1.0, 1.0);
+  rlTexCoord2f(0, 0);
+  rlVertex2f(topLeft.x, topLeft.y);
+  rlTexCoord2f(0, 1);
+  rlVertex2f(bottomLeft.x, bottomLeft.y);
+  rlTexCoord2f(1, 1);
+  rlVertex2f(bottomRight.x, bottomRight.y);
+  rlTexCoord2f(1, 0);
+  rlVertex2f(topRight.x, topRight.y);
+  rlEnd();
+  end_shader();
+}
+
+void DrawSelRect(float x, float y, float w, int h, double t) {
+  int s = 2;
+  Rectangle r_top = {x - s, y - s, w + 2 * s, s};
+  Rectangle r_bot = {x - s, y + h, w + 2 * s, s};
+  Rectangle r_left = {x - s, y - s, s, h + 2 * s};
+  Rectangle r_right = {x + w, y - s, s, h + 2 * s};
+  DrawSelRectLine(r_top, t);
+  DrawSelRectLine(r_bot, t);
+  DrawSelRectLine(r_left, t);
+  DrawSelRectLine(r_right, t);
+}
