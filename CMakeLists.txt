@@ -97,6 +97,7 @@ SET(ca_src
   src/steam.cpp
 
   # Stuff for copy-paste
+  third_party/binn/src/binn.c
   third_party/clip/image.cpp
   third_party/clip/clip.cpp
   )
@@ -124,6 +125,7 @@ target_include_directories(calib PRIVATE
   src
   third_party
   third_party/clip
+  third_party/binn/src
   third_party/nativefiledialog-extended/src/include
   LuaJIT/src
   )

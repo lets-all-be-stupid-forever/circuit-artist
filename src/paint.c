@@ -303,7 +303,8 @@ void PaintStartSimu(Paint* ca) {
   ProfilerTacSingle("SimLoad");
   if (ca->s.status == SIMU_STATUS_OK) {
     ApiStartLevelSimulation();
-    SimSimulate(&ca->s);
+    float time_used = 0;
+    SimUpdate(&ca->s, 0, &time_used, &ca->use_delay_time);
   }
   ca->simu_time = 0;
   SimGenImage(&ca->s);
@@ -320,6 +321,22 @@ void PaintStopSimu(Paint* ca) {
   ca->mode = MODE_EDIT;
 }
 
+void LuaUpdate(Paint* ca, float clock_time) {
+  // This is a lua update
+  // I only run Lua updates when my the simulation is idle.
+  TickResult tr = ApiOnLevelTick(clock_time);
+  if (tr.clock_updated) {
+    SimDispatchComponent(&ca->s, 0);
+    LevelDesc* cd = ApiGetLevelDesc();
+    if (tr.clock_value == 1) {
+      for (int i = 0; i < cd->num_components; i++) {
+        ApiLevelClock(i, SimGetComponentInputs(&ca->s, i), tr.reset);
+      }
+    }
+  }
+  ca->clock_count = tr.clock_count;
+}
+
 void PaintUpdateSimu(Paint* ca, float delta) {
   float clock_time = 1 / ca->clock_frequency;
   ca->simu_time += delta;
@@ -329,24 +346,21 @@ void PaintUpdateSimu(Paint* ca, float delta) {
     ca->queued_toggled_x = -1;
     ca->queued_toggled_y = -1;
     // Do I really need to simulate here?
-    SimSimulate(&ca->s);
+    // SimUpdate(&ca->s);
   }
 
+  ca->s.nand_activation_delay = ca->clock_speed;
   // Simulation Ticks
+  LuaUpdate(ca, 0);
   while (ca->simu_time > clock_time && ca->s.status == SIMU_STATUS_OK) {
-    TickResult tr = ApiOnLevelTick(clock_time);
-    if (tr.clock_updated) {
-      SimDispatchComponent(&ca->s, 0);
-      LevelDesc* cd = ApiGetLevelDesc();
-      if (tr.clock_value == 1) {
-        for (int i = 0; i < cd->num_components; i++) {
-          ApiLevelClock(i, SimGetComponentInputs(&ca->s, i), tr.reset);
-        }
-      }
+    if (SimIsBusy(&ca->s)) {
+      float sim_time_used = 0;
+      SimUpdate(&ca->s, ca->simu_time, &sim_time_used, &ca->use_delay_time);
+      ca->simu_time -= sim_time_used;
+    } else {
+      LuaUpdate(ca, clock_time);
+      ca->simu_time -= clock_time;
     }
-    ca->clock_count = tr.clock_count;
-    SimSimulate(&ca->s);
-    ca->simu_time -= clock_time;
   }
   ProfilerTic("SimGenImage");
   SimGenImage(&ca->s);
@@ -718,6 +732,10 @@ void PaintHandleKeys(Paint* ca) {
   if (IsKeyPressed(KEY_SPACE)) {
     PaintToggleSimu(ca);
   }
+  if (IsKeyPressed(KEY_F5)) {
+    ca->use_delay_time = !ca->use_delay_time;
+  }
+
   PaintCheckDirectionKeyPressed(ca);
   if (ca->mode == MODE_EDIT) {
     if (PaintGetTool(ca) == TOOL_LINE) {
@@ -1031,31 +1049,32 @@ void PaintActSelFlipH(Paint* ca) { HistActSelFlip(&ca->h, ACTION_SEL_FLIP_H); }
 void PaintActSelFlipV(Paint* ca) { HistActSelFlip(&ca->h, ACTION_SEL_FLIP_V); }
 
 void PaintSetClockSpeed(Paint* ca, int c) {
-  ca->clock_speed = c;
+  ca->clock_speed_idx = c;
   double one_hz = 0.5;
   switch (c) {
     case 0:
-      ApiSetClockTime(100000);
+      ca->clock_speed = 100000;
       break;
     case 1:  // 1hz
-      ApiSetClockTime(one_hz);
+      ca->clock_speed = one_hz;
       break;
     case 2:  // 4hz
-      ApiSetClockTime(one_hz / 4.0);
+      ca->clock_speed = one_hz / 4.0;
       break;
     case 3:  // 16hz
-      ApiSetClockTime(one_hz / 16.0);
+      ca->clock_speed = one_hz / 16.0;
       break;
     case 4:  // 64 hz
-      ApiSetClockTime(one_hz / 64.0);
+      ca->clock_speed = one_hz / 64.0;
       break;
     case 5:  // 1024 hz
-      ApiSetClockTime(one_hz / 1024.0);
+      ca->clock_speed = one_hz / 1024.0;
       break;
   }
+  ApiSetClockTime(ca->clock_speed);
 }
 
-int PaintGetClockSpeed(Paint* ca) { return ca->clock_speed; }
+int PaintGetClockSpeed(Paint* ca) { return ca->clock_speed_idx; }
 
 static void UpdateTextureFilter(Paint* ca, Texture2D tex) {
   float s = ca->camera_s;
@@ -1074,7 +1093,6 @@ static void UpdateTextureFilter(Paint* ca, Texture2D tex) {
 }
 
 void PaintRenderTextureEdit(Paint* ca, RenderTexture2D target) {
-  Texture2D img = ca->h.t_buffer.texture;
   Texture2D sel = ca->h.t_selbuffer.texture;
   int offx = ca->h.seloff.x;
   int offy = ca->h.seloff.y;
@@ -1135,10 +1153,40 @@ void PaintRenderTextureEdit(Paint* ca, RenderTexture2D target) {
   float cs = ca->camera_s;
   draw_rect(cx, cy, tw * cs, th * cs, BLACK);
   EndTextureMode();
-  draw_main_img(0, ca->t_tpl, ca->h.t_buffer, (Texture2D){0}, (Texture2D){0},
-                (Texture2D){0}, 0, ca->h.t_selbuffer, sel_off_x, sel_off_y,
-                t_tool, tool_off_x, tool_off_y, cx, cy, cs, &ca->t_tmp,
-                &target);
+  float unchanged_alpha = 1.0;
+  if (ca->use_delay_time) {
+    unchanged_alpha = 0.5;
+  }
+
+  draw_params p = {.mode = 0,
+                   .wire_tpl = ca->t_tpl,
+                   .img = ca->h.t_buffer,
+                   .tx = (Texture2D){0},
+                   .ty = (Texture2D){0},
+                   .ts = (Texture2D){0},
+                   .prev_ts = (Texture2D){0},
+                   .fprev = 0,
+                   .unchanged_alpha = unchanged_alpha,
+                   .simu_state = 0,
+                   .sel = (RenderTexture2D){0},
+                   .sel_off_x = 0,
+                   .sel_off_y = 0,
+                   .tool = t_tool,
+                   .tool_x = tool_off_x,
+                   .tool_y = tool_off_y,
+                   .cx = cx,
+                   .cy = cy,
+                   .cs = cs,
+                   .tmp = &ca->t_tmp,
+                   .target = &target};
+
+  if (tool == TOOL_SEL) {
+    p.sel = ca->h.t_selbuffer;
+    p.sel_off_x = sel_off_x;
+    p.sel_off_y = sel_off_y;
+  }
+
+  draw_main_img(&p);
   BeginTextureMode(target);
   // if (sel.width > 0) {
   //   draw_edit_img(ca->h.t_selbuffer, ca->h.t_selbuffer, sx, sy, cs);
@@ -1362,11 +1410,43 @@ void PaintRenderTextureSimu(Paint* ca, RenderTexture2D target) {
 
   Texture2D tx = ca->s.t_comp_x;
   Texture2D ty = ca->s.t_comp_y;
-  Texture2D ts = ca->s.t_state;
+  Texture2D ts = ca->s.t_state[ca->s.istate];
+  Texture2D prev_ts = ca->s.t_state[(ca->s.istate + 1) % 2];
+
+  float fprev = 0;
+  if (ca->s.nand_activation_delay > 1e-5) {
+    fprev = ca->s.next_update_delay / ca->s.nand_activation_delay;
+  }
+  float unchanged_alpha = 1.0;
+  if (ca->use_delay_time) {
+    unchanged_alpha = 0.5;
+  }
+
   int simu_state = ca->s.status == SIMU_STATUS_OK ? 0 : 1;
-  draw_main_img(1, ca->t_tpl, ca->h.t_buffer, tx, ty, ts, simu_state,
-                (RenderTexture2D){0}, 0, 0, (RenderTexture2D){0}, 0, 0, cx, cy,
-                cs, &ca->t_tmp, &target);
+
+  draw_params p = {.mode = 1,
+                   .wire_tpl = ca->t_tpl,
+                   .img = ca->h.t_buffer,
+                   .tx = tx,
+                   .ty = ty,
+                   .ts = ts,
+                   .prev_ts = prev_ts,
+                   .fprev = fprev,
+                   .unchanged_alpha = unchanged_alpha,
+                   .simu_state = simu_state,
+                   .sel = (RenderTexture2D){0},
+                   .sel_off_x = 0,
+                   .sel_off_y = 0,
+                   .tool = (RenderTexture2D){0},
+                   .tool_x = 0,
+                   .tool_y = 0,
+                   .cx = cx,
+                   .cy = cy,
+                   .cs = cs,
+                   .tmp = &ca->t_tmp,
+                   .target = &target};
+
+  draw_main_img(&p);
   BeginTextureMode(target);
   RenderSidePanel(ca);
   EndTextureMode();
@@ -1401,3 +1481,7 @@ void RenderSidePanel(Paint* ca) {
   DrawTexturePro(ca->t_side_panel, source, target_rect, position, rot, WHITE);
   UnloadImage(tmp);
 }
+
+void PaintSetSimulationModeClock(Paint* ca) { ca->use_delay_time = false; }
+
+void PaintSetSimulationModeNand(Paint* ca) { ca->use_delay_time = true; }

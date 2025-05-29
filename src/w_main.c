@@ -10,6 +10,7 @@
 #include "colors.h"
 #include "filedialog.h"
 #include "font.h"
+#include "lang.h"
 #include "msg.h"
 #include "paint.h"
 #include "profiler.h"
@@ -69,6 +70,8 @@ static struct {
   Btn btn_sel_open;
   Btn btn_sel_save;
   Btn btn_clockopt[6];
+  Btn btn_simu_step;
+  Btn btn_simu_over;
   Btn btn_line_sep;
   Btn btn_line_sep_r;
 
@@ -82,7 +85,7 @@ static void MainUpdateTitle();
 static void MainUpdateLayout(Ui* ui);
 static void MainUpdateViewport(Ui* ui);
 static void MainDrawStatusBar(Ui* ui);
-static void MainDrawErrorMessage(Ui* ui);
+static void MainDrawErrorMessage(Ui* ui, const char* msg);
 static void MainDrawMouseExtra(Ui* ui);
 static void MainCheckFileDrop();
 static void MainUpdateWidgets();
@@ -147,6 +150,18 @@ void MainInit(Ui* ui) {
   MainUpdateViewport(ui);
   MainUpdateTitle();
   MainUpdateWidgets();
+}
+
+static const char* GetCrashReason(int status) {
+  switch (status) {
+    case SIMU_STATUS_NAND_MISSING_INPUT:
+      return TXT_CRASH_REASON_MISSING_INPUTS;
+    case SIMU_STATUS_NAND_MISSING_OUTPUT:
+      return TXT_CRASH_REASON_MISSING_OUTPUT;
+    case SIMU_STATUS_WIRE:
+      return TXT_CRASH_REASON_MULTIPLE_GATE_CIRCUIT;
+  }
+  return NULL;
 }
 
 void MainUpdate(Ui* ui) {
@@ -323,6 +338,9 @@ void MainUpdateHud(Ui* ui) {
   if (BtnUpdate(&C.btn_clockopt[4], ui)) PaintSetClockSpeed(&C.ca, 4);
   if (BtnUpdate(&C.btn_clockopt[5], ui)) PaintSetClockSpeed(&C.ca, 5);
 
+  if (BtnUpdate(&C.btn_simu_over, ui)) PaintSetSimulationModeClock(&C.ca);
+  if (BtnUpdate(&C.btn_simu_step, ui)) PaintSetSimulationModeNand(&C.ca);
+
   if (BtnUpdate(&C.btn_simu, ui)) PaintToggleSimu(&C.ca);
   if (BtnUpdate(&C.btn_challenge, ui)) LevelsOpen(ui);
   if (BtnUpdate(&C.btn_tutorial, ui)) TutorialOpen(ui);
@@ -467,11 +485,19 @@ void MainDraw(Ui* ui) {
   BtnDrawIcon(&C.btn_clockopt[4], bscale, ui->sprites, rect_hz64);
   BtnDrawIcon(&C.btn_clockopt[5], bscale, ui->sprites, rect_hz1k);
 
+  BtnDrawIcon(&C.btn_simu_step, bscale, ui->sprites, rect_simu_step);
+  BtnDrawIcon(&C.btn_simu_over, bscale, ui->sprites, rect_simu_over);
+
   MsgDraw(ui);
 
   if (C.ca.mode == MODE_SIMU) {
     if (C.ca.s.status != SIMU_STATUS_OK) {
-      MainDrawErrorMessage(ui);
+      char txt[500];
+      sprintf(txt, "ERROR: %s", GetCrashReason(C.ca.s.status));
+      MainDrawErrorMessage(ui, txt);
+    }
+    if (C.ca.s.is_looping) {
+      MainDrawErrorMessage(ui, TXT_SIMU_LOOPING);
     }
   }
 
@@ -533,6 +559,14 @@ void MainDraw(Ui* ui) {
     BtnDrawLegend(&C.btn_clockopt[3], bscale, "16 Hz Simulation");
     BtnDrawLegend(&C.btn_clockopt[4], bscale, "64 Hz Simulation");
     BtnDrawLegend(&C.btn_clockopt[5], bscale, "1024 Hz Simulation");
+
+    BtnDrawLegend(&C.btn_simu_over, bscale,
+                  "Simulate clock by clock.\nRuns simulation until all wires "
+                  "stop updating.\nFaster mode.");
+    BtnDrawLegend(
+        &C.btn_simu_step, bscale,
+        "Simulate wire by wire.\nRuns simulation with focus on changing "
+        "wires. Useful for seeing how wires are changing.\nSlower mode.");
   }
 
   if (ui->window == WINDOW_MAIN) {
@@ -624,6 +658,9 @@ void MainUpdateLayout(Ui* ui) {
     C.btn_clockopt[4].hitbox = (Rectangle){bx0, by5, bw, bh};
     C.btn_clockopt[5].hitbox = (Rectangle){bx1, by5, bw, bh};
 
+    C.btn_simu_over.hitbox = (Rectangle){bx0, by5 + (18 + 4) * s, bw, bh};
+    C.btn_simu_step.hitbox = (Rectangle){bx1, by5 + (18 + 4) * s, bw, bh};
+
     int cy = (sh - 2 * 18 - 2) * s;
     int cx = 4 * s + 35 * s + 4 * s;
     C.fg_color_rect = (Rectangle){
@@ -694,22 +731,19 @@ void MainUpdateTitle() {
   SetWindowTitle(tmp);
 }
 
-void MainDrawErrorMessage(Ui* ui) {
+void MainDrawErrorMessage(Ui* ui, const char* msg) {
   int x = C.target_pos.x;
   int y = C.target_pos.y;
-
   rlPushMatrix();
   rlTranslatef(x + 20, y + 20, 0);
   rlScalef(ui->scale, ui->scale, 1);
-  char txt[500];
-  sprintf(txt, "ERROR: %s", C.ca.s.crash_reason);
-  int tw = GetRenderedTextSize(txt).x;
+  int tw = GetRenderedTextSize(msg).x;
   int lh = GetFontLineHeight();
   int th = 17;
   int dy = (th - lh) / 2;
   int pad = 10;
   DrawRectangle(0, 0, tw + 2 * pad, th + 2 * pad, RED);
-  DrawTextBox(txt, (Rectangle){pad, pad + dy, 1000, 0}, WHITE, NULL);
+  DrawTextBox(msg, (Rectangle){pad, pad + dy, 1000, 0}, WHITE, NULL);
   rlPopMatrix();
 }
 
@@ -777,7 +811,7 @@ void MainDrawStatusBar(Ui* ui) {
       sprintf(txt, "NAND Updates: %d", updates);
       FontDrawTextureOutlined(txt, xc, yc6, tc, bg);
     } else {
-      sprintf(txt, "ERROR: %s", C.ca.s.crash_reason);
+      sprintf(txt, "ERROR: %s", GetCrashReason(C.ca.s.status));
       FontDrawTextureOutlined(txt, xc, yc4, tc, bg);
     }
   }
@@ -889,6 +923,10 @@ void MainUpdateWidgets() {
     C.btn_clockopt[i].hidden = C.ca.mode != MODE_SIMU;
     C.btn_clockopt[i].toggled = PaintGetClockSpeed(&C.ca) == i;
   }
+  C.btn_simu_over.hidden = C.ca.mode != MODE_SIMU;
+  C.btn_simu_step.hidden = C.ca.mode != MODE_SIMU;
+  C.btn_simu_over.toggled = !C.ca.use_delay_time;
+  C.btn_simu_step.toggled = !C.btn_simu_over.toggled;
 
   {
     RectangleInt r = MainGetTargetRegion();
@@ -992,3 +1030,5 @@ void MainSetLineSep(int n) {
   if (n >= 128) n = 128;
   PaintSetLineSep(&C.ca, n);
 }
+
+Paint* MainGetPaint() { return &C.ca; }

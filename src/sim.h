@@ -13,9 +13,6 @@ typedef enum {
   // During compilation it found a wire with two nands pointing to it, which is
   // not allowed.
   SIMU_STATUS_WIRE,
-  // During simulation, a loop was detected (ie, a wire was updated too many
-  // times).
-  SIMU_STATUS_LOOP,
   // During compilation it found at least one NAND that doesn't have 2 inputs,
   // which is not allowed.
   SIMU_STATUS_NAND_MISSING_INPUT,
@@ -263,9 +260,6 @@ typedef struct {
   // of the same wire more than once per simulation step.
   // Has size `nc`.
   int* queued_at;
-  // String containing the reason why the simulation has crashed.
-  // If no crash happend, contains a NULL value.
-  const char* crash_reason;
   // Status of the simulation.
   SimuStatus status;
   // Rendered simulated image at different resolutions (pyramid).
@@ -310,8 +304,26 @@ typedef struct {
   float* state_buffer;
   Texture2D t_comp_x;
   Texture2D t_comp_y;
-  Texture2D t_state;
+  int istate;
+  Texture2D t_state[2];
   LoopDetector loop_detector;
+
+  // Whether to use delay in next_update_delay.
+  // A time of 0 means the simulation is "synchronous", ie, it will update
+  // until there's no change left.
+  bool use_delay_time;
+
+  // Delay time to be used
+  float nand_activation_delay;
+
+  // Time to wait until we can run a next simulation update.
+  // Used for detailed simulation.
+  float next_update_delay;
+
+  bool needs_update_state_texture;
+
+  // If true, it means a loop has been detected during simulation.
+  bool is_looping;
 } Sim;
 
 // Parses a raw image into an intermediate data structure to be fed into the
@@ -377,7 +389,8 @@ void SimUnload(Sim* s);
 //    ENDREPEAT
 // ENDFUNC
 //
-void SimSimulate(Sim* s);
+void SimUpdate(Sim* s, float time_budget, float* time_used,
+               bool* use_delay_time);
 
 // Enqueues an event that will toggle (invert) the wire value at the exact
 // pixel position (x, y).
@@ -442,5 +455,7 @@ Color GetSimuColorOnWire(Color c, int v);
 
 // Get default color value for a wire when we don't know its pixel color.
 Color GetWireColor(int wire_value);
+
+bool SimIsBusy(Sim* s);
 
 #endif

@@ -14,12 +14,16 @@ uniform int mode;
 
 // Simulation
 uniform int simu_state;
+uniform float unchanged_alpha;
 uniform vec4 bg_color;
 uniform vec4 bugged_color;
 uniform vec4 undefined_color;
 uniform sampler2D comp_x;
 uniform sampler2D comp_y;
 uniform sampler2D state_buf;
+
+uniform sampler2D prev_state_buf;
+uniform vec4 prev_state_f;
 
 // Output fragment color
 out vec4 finalColor;
@@ -81,8 +85,12 @@ vec4 sample(vec2 pos) {
     vec4 texelColor;
     texelColor = src;
     vec4 ts = texture(state_buf, vec2(tx.r, ty.r));
+    vec4 prev_ts = texture(prev_state_buf, vec2(tx.r, ty.r));
+
     texelColor = src;
     float s = ts.r;
+    float sprev = prev_ts.r;
+    float f = prev_state_f.r;
     if (s <= 0.05) {
       // state=Background
       texelColor = bg_color;
@@ -100,10 +108,32 @@ vec4 sample(vec2 pos) {
       }
     } else if (s < 0.35) {
       // Wire is off
-      texelColor.rgb = ( 75.0 / 255.0) * texelColor.rgb;
+      vec3 off = ( 75.0 / 255.0) * texelColor.rgb;
+      vec3 on = texelColor.rgb;
+      if (sprev != s) {
+        // vec3 r = on * f + (1.0 -f) * off;
+        vec3 r = off;
+        texelColor.rgb = r;
+      } else {
+        texelColor.rgb = off;
+        texelColor.a = unchanged_alpha;
+      }
+
     } else if (s < 0.45)  {
       // Wire is on
-      texelColor.a = 1.0;
+      // texelColor.a = 1.0;
+
+      vec3 off = ( 75.0 / 255.0) * texelColor.rgb;
+      vec3 on = texelColor.rgb;
+      if (sprev != s) {
+        // vec3 r = off * f + (1.0 -f) * on;
+        vec3 r = on;
+        texelColor.rgb = r;
+      } else {
+        texelColor.a = unchanged_alpha;
+        texelColor.rgb = on;
+      }
+
     } else if (s < 0.55)  {
       // default nand color
       if (simu_state == 0)  {

@@ -22,6 +22,10 @@
   SetShaderValue(GetShaders()->name##_shader, GetShaders()->name##_loc_##loc, \
                  (val), SHADER_UNIFORM_INT);
 
+#define set_shader_float(name, loc, val)                                      \
+  SetShaderValue(GetShaders()->name##_shader, GetShaders()->name##_loc_##loc, \
+                 (val), SHADER_UNIFORM_FLOAT);
+
 #define begin_shader(name) BeginShaderMode(GetShaders()->name##_shader)
 #define end_shader() EndShaderMode()
 
@@ -61,6 +65,9 @@ typedef struct {
   int update_loc_comp_x;
   int update_loc_comp_y;
   int update_loc_state_buf;
+  int update_loc_prev_state_buf;
+  int update_loc_prev_state_f;
+  int update_loc_unchanged_alpha;
 
 } Shaders;
 

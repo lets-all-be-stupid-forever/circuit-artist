@@ -52,6 +52,10 @@
 #define rect_hz64 ((Rectangle){368, 16, 13, 13})
 #define rect_hz1k ((Rectangle){384, 16, 13, 13})
 
+// Simulation mode
+#define rect_simu_over ((Rectangle){512, 0, 13, 13})
+#define rect_simu_step ((Rectangle){528, 0, 13, 13})
+
 // Marquee sub-tools icons
 #define rect_rot ((Rectangle){160, 0, 13, 13})
 #define rect_fliph ((Rectangle){112, 0 * 0, 13, 13})

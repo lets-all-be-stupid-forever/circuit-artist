@@ -9,23 +9,14 @@ uniform sampler2D texture0;
 uniform sampler2D comp_x;
 uniform sampler2D comp_y;
 uniform sampler2D state_buf;
+uniform sampler2D prev_state_buf;
 
-// 0 = Edit
-// 1 = Simu
-uniform int mode;
-
-// Simulation State
-uniform int simu_state;
-uniform vec4 bg_color;
-uniform vec4 bugged_color;
-uniform vec4 undefined_color;
-
-// Edition State
 uniform int simu_state;
 uniform vec4 bg_color;
 uniform vec4 bugged_color;
 uniform vec4 undefined_color;
 uniform vec2 size_factor;
+uniform vec4 prev_state_f;
 
 uniform vec4 colDiffuse;
 
@@ -45,10 +36,15 @@ void main()
     vec4 texelColor;
     texelColor = src;
      // Normal wire.
-     //if (ty.r < 0.9) {
+     if (ty.r < 0.9) {
        vec4 ts = texture(state_buf, vec2(tx.r, ty.r));
+       vec4 prev_ts = texture(prev_state_buf, vec2(tx.r, ty.r));
        texelColor = src;
+
        float s = ts.r;
+       float sprev = prev_ts.r;
+       float f = prev_state_f.r;
+
        if (s <= 0.05) {
          texelColor = bg_color;
        } else if (s < 0.15) {
@@ -61,31 +57,32 @@ void main()
             texelColor.rgb = 0.1 * texelColor.rgb;
          }
        } else if (s < 0.35) {
+         // OFF pixel
          // texelColor = ( 50.0 / 255.0) * texelColor;
          texelColor.rgb = ( 150.0 / 255.0) * texelColor.rgb;
+         texelColor = texelColor  * f;
        } else if (s < 0.45)  {
-         texelColor.a = 1.0;
+         // ON pixel
+         texelColor.a = f;
+         // texelColor = texelColor  * f;
        }
-     //} 
-     
-//     else {
-//       // Here we have a nand pixel
-//       if (tx.r < 0.915)  {
-//          // 0.91
-//         texelColor = src;
-//         texelColor.rgb = (100.0 / 255.0) * texelColor.rgb;
-//       } else if (tx.r < 0.925) {
-//          // 0.92
-//         texelColor = undefined_color;
-//         if (simu_state == 1) {
-//            texelColor.rgb = 0.2 * texelColor.rgb;
-//         }
-//       } else if (tx.r < 0.935) {
-//         // 0.93
-//         texelColor = bugged_color;
-//       }
-//     }
+     } else {
+       // Here we have a nand pixel
+       if (tx.r < 0.915)  {
+          // 0.91
+         texelColor = src;
+         texelColor.rgb = (100.0 / 255.0) * texelColor.rgb;
+       } else if (tx.r < 0.925) {
+          // 0.92
+         texelColor = undefined_color;
+         if (simu_state == 1) {
+            texelColor.rgb = 0.2 * texelColor.rgb;
+         }
+       } else if (tx.r < 0.935) {
+         // 0.93
+         texelColor = bugged_color;
+       }
+     }
 
     finalColor = texelColor*colDiffuse;
 }
-

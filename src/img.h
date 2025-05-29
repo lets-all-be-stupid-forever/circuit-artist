@@ -124,12 +124,32 @@ void FlipTextureHInplace(RenderTexture2D* img);
 RenderTexture2D RotateTexture(RenderTexture2D img, int ccw);
 
 void draw_rt_on_screen(RenderTexture2D rt, Vector2 pos);
-void draw_main_img(int mode, Texture2D wire_tpl, RenderTexture2D img,
-                   Texture2D tx, Texture2D ty, Texture2D ts, int simu_state,
-                   RenderTexture2D sel, float sel_off_x, float sel_off_y,
-                   RenderTexture2D tool, float tool_x, float tool_y, float cx,
-                   float cy, float cs, RenderTexture2D* tmp,
-                   RenderTexture2D* target);
+
+typedef struct {
+  int mode;
+  Texture2D wire_tpl;
+  RenderTexture2D img;
+  Texture2D tx;
+  Texture2D ty;
+  Texture2D ts;
+  Texture2D prev_ts;
+  float fprev;
+  float unchanged_alpha;
+  int simu_state;
+  RenderTexture2D sel;
+  float sel_off_x;
+  float sel_off_y;
+  RenderTexture2D tool;
+  float tool_x;
+  float tool_y;
+  float cx;
+  float cy;
+  float cs;
+  RenderTexture2D* tmp;
+  RenderTexture2D* target;
+} draw_params;
+
+void draw_main_img(draw_params* p);
 void draw_rect(float x, float y, float w, int h, Color c);
 
 #if defined(__cplusplus)

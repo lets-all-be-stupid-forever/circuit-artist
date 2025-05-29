@@ -43,6 +43,9 @@ void InitShaders() {
   SHADER_LOC(update, comp_x);
   SHADER_LOC(update, comp_y);
   SHADER_LOC(update, state_buf);
+  SHADER_LOC(update, prev_state_buf);
+  SHADER_LOC(update, prev_state_f);
+  SHADER_LOC(update, unchanged_alpha);
 }
 
 Shaders* GetShaders() { return &_s; }

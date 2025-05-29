@@ -111,7 +111,10 @@ typedef struct {
   // It's used to allow the user to type a multi-digit line width.
   double line_key_time;
   // Clock speed index. 0 = slower, 5 = faster.
-  int clock_speed;
+  int clock_speed_idx;
+
+  // Clock speed in ms
+  double clock_speed;
   // Temporary new size when user is changing the size of the image via the
   // small square in the bottom-right corner.
   RectangleInt resize_region;
@@ -130,6 +133,9 @@ typedef struct {
   // Tmp render with black pixels
   RenderTexture2D t_tmp;
   Texture2D t_tpl;
+
+  bool use_delay_time;
+
 } Paint;
 
 // Constructor.
@@ -288,4 +294,6 @@ ToolType PaintGetTool(Paint* ca);
 // presses alt, we want to see the tool color picker)
 ToolType PaintGetDisplayTool(Paint* ca);
 
+void PaintSetSimulationModeClock(Paint* ca);
+void PaintSetSimulationModeNand(Paint* ca);
 #endif

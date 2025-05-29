@@ -861,16 +861,11 @@ void draw_rect(float x, float y, float w, int h, Color c) {
   DrawRectanglePro((Rectangle){x, y, w, h}, position, rot, c);
 }
 
-void draw_main_img(int mode, Texture2D wire_tpl, RenderTexture2D img,
-                   Texture2D tx, Texture2D ty, Texture2D ts, int simu_state,
-                   RenderTexture2D sel, float sel_off_x, float sel_off_y,
-                   RenderTexture2D tool, float tool_x, float tool_y, float cx,
-                   float cy, float cs, RenderTexture2D* tmp,
-                   RenderTexture2D* target) {
-  BeginTextureMode(*tmp);
+void draw_main_img(draw_params* p) {
+  BeginTextureMode(*p->tmp);
   ClearBackground(BLANK);
-  SetTextureFilter(img.texture, TEXTURE_FILTER_POINT);
-  SetTextureFilter(sel.texture, TEXTURE_FILTER_POINT);
+  SetTextureFilter(p->img.texture, TEXTURE_FILTER_POINT);
+  SetTextureFilter(p->sel.texture, TEXTURE_FILTER_POINT);
 
   // Step1: Update pixels in (tmp) image.
   // tmp is a "mirror" of the raw image.
@@ -878,24 +873,24 @@ void draw_main_img(int mode, Texture2D wire_tpl, RenderTexture2D img,
   //  (i) During edition, merge selection and target image in a single image.
   //  (ii) During simulation, update colors using wire state.
 
-  int img_w = img.texture.width;
-  int img_h = img.texture.height;
+  int img_w = p->img.texture.width;
+  int img_h = p->img.texture.height;
   int img_size[2] = {img_w, img_h};
-  int sel_size[2] = {sel.texture.width, sel.texture.height};
-  int sel_off[2] = {sel_off_x, sel_off_y};
-  int tool_size[2] = {tool.texture.width, tool.texture.height};
-  int tool_off[2] = {tool_x, tool_y};
+  int sel_size[2] = {p->sel.texture.width, p->sel.texture.height};
+  int sel_off[2] = {p->sel_off_x, p->sel_off_y};
+  int tool_size[2] = {p->tool.texture.width, p->tool.texture.height};
+  int tool_off[2] = {p->tool_x, p->tool_y};
   Vector4 bg_color = ColorNormalize(BLANK);
   Vector4 bugged_color = ColorNormalize(RED);
   Vector4 undefined_color = ColorNormalize(MAGENTA);
 
-  int tgt_w = target->texture.width;
-  int tgt_h = target->texture.height;
+  int tgt_w = p->target->texture.width;
+  int tgt_h = p->target->texture.height;
 
-  float fx0 = (-cx) / cs - 8;
-  float fy0 = (-cy) / cs - 8;
-  float fx1 = (-cx + tgt_w) / cs + 8;
-  float fy1 = (-cy + tgt_h) / cs + 8;
+  float fx0 = (-p->cx) / p->cs - 8;
+  float fy0 = (-p->cy) / p->cs - 8;
+  float fx1 = (-p->cx + tgt_w) / p->cs + 8;
+  float fy1 = (-p->cy + tgt_h) / p->cs + 8;
 
   int ix0 = floorf(fx0);
   int iy0 = floorf(fy0);
@@ -906,23 +901,27 @@ void draw_main_img(int mode, Texture2D wire_tpl, RenderTexture2D img,
   ix1 = MaxInt(0, MinInt(ix1, img_w));
   iy0 = MaxInt(0, MinInt(iy0, img_h));
   iy1 = MaxInt(0, MinInt(iy1, img_h));
+  float pp[4] = {p->fprev, p->fprev, p->fprev, p->fprev};
 
   begin_shader(update);
-  set_shader_int(update, mode, &mode);
+  set_shader_int(update, mode, &p->mode);
   set_shader_ivec2(update, img_size, &img_size);
   set_shader_ivec2(update, sel_off, &sel_off);
   set_shader_ivec2(update, sel_size, &sel_size);
-  set_shader_tex(update, sel, sel.texture);
+  set_shader_tex(update, sel, p->sel.texture);
   set_shader_ivec2(update, tool_off, &tool_off);
   set_shader_ivec2(update, tool_size, &tool_size);
-  set_shader_tex(update, tool, tool.texture);
-  set_shader_int(update, simu_state, &simu_state);
-  set_shader_tex(update, comp_x, tx);
-  set_shader_tex(update, comp_y, ty);
-  set_shader_tex(update, state_buf, ts);
+  set_shader_tex(update, tool, p->tool.texture);
+  set_shader_int(update, simu_state, &p->simu_state);
+  set_shader_tex(update, comp_x, p->tx);
+  set_shader_tex(update, comp_y, p->ty);
+  set_shader_tex(update, state_buf, p->ts);
+  set_shader_tex(update, prev_state_buf, p->prev_ts);
   set_shader_vec4(update, bg_color, &bg_color);
+  set_shader_vec4(update, prev_state_f, pp);
   set_shader_vec4(update, bugged_color, &bugged_color);
   set_shader_vec4(update, undefined_color, &undefined_color);
+  set_shader_float(update, unchanged_alpha, &p->unchanged_alpha);
   {
     int rx = ix0;
     int ry = iy0;
@@ -940,33 +939,34 @@ void draw_main_img(int mode, Texture2D wire_tpl, RenderTexture2D img,
         .width = (float)rw,
         .height = (float)rh,
     };
-    DrawTexturePro(img.texture, source, target, (Vector2){.x = 0, .y = 0}, 0.0f,
-                   WHITE);
+    DrawTexturePro(p->img.texture, source, target, (Vector2){.x = 0, .y = 0},
+                   0.0f, WHITE);
   }
   end_shader();
   EndTextureMode();
 
   Vector2 sp = {
-      (float)cs,
-      (float)cs,
+      (float)p->cs,
+      (float)p->cs,
   };
 
-  int tmp_size[2] = {tmp->texture.width, tmp->texture.height};
+  int tmp_size[2] = {p->tmp->texture.width, p->tmp->texture.height};
 
   // Step2: Draw updated pixels on screen.
-  BeginTextureMode(*target);
+  BeginTextureMode(*p->target);
   begin_shader(project);
-  SetTextureFilter(tmp->texture, TEXTURE_FILTER_POINT);
-  SetTextureFilter(wire_tpl, TEXTURE_FILTER_POINT);
+  SetTextureFilter(p->tmp->texture, TEXTURE_FILTER_POINT);
+  SetTextureFilter(p->wire_tpl, TEXTURE_FILTER_POINT);
   set_shader_vec2(project, sp, &sp);
-  set_shader_tex(project, tpl, wire_tpl);
+  set_shader_tex(project, tpl, p->wire_tpl);
   set_shader_ivec2(project, img_size, &tmp_size);
   int mw = img_size[0];
   int mh = img_size[1];
   DrawTexturePro(
-      tmp->texture,
+      p->tmp->texture,
       (Rectangle){0, (tmp_size[1] - (0 + img_size[1])), (float)mw, (float)-mh},
-      (Rectangle){cx, cy, mw * cs, mh * cs}, (Vector2){0, 0}, 0, WHITE);
+      (Rectangle){p->cx, p->cy, mw * p->cs, mh * p->cs}, (Vector2){0, 0}, 0,
+      WHITE);
   end_shader();
   EndTextureMode();
 }

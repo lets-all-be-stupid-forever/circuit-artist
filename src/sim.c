@@ -13,18 +13,6 @@
 //////////////////
 // Compile-time crash
 //////////////////
-static const char CRASH_REASON_MULTIPLE_GATE_CIRCUIT[] =
-    "Circuits with multiple input gates.";
-static const char CRASH_REASON_MISSING_INPUTS[] =
-    "NANDs must have its 2 inputs filled";
-static const char CRASH_REASON_MISSING_OUTPUT[] =
-    "NANDs must be connected to an output wire.";
-
-//////////////////
-// Runtime crash
-//////////////////
-static const char CRASH_REASON_TOO_MANY_UPDATES[] =
-    "Circuit updated too many times (infinite loop?).";
 
 static void MakeNandLut(int* nand_lut);
 static void SimQueueInitialInputEvents(Sim* s);
@@ -506,6 +494,7 @@ void SimTogglePixel(Sim* s, int x, int y) {
   // Don't want to simulate background component
   if (c != 0 && s->ok_creation) {
     SimQueueEvent(s, c, !s->state[c]);
+    s->next_update_delay = 0;
   }
 }
 
@@ -551,8 +540,10 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
              ComponentUpdateCallback update_cb, void* update_ctx) {
   double start = GetTime();
   *s = (Sim){0};
+  s->is_looping = false;
   s->update_cb = update_cb;
   s->update_ctx = update_ctx;
+  s->next_update_delay = 0;
   s->pi = pi;
   s->nc = s->pi.nc;
   s->state = malloc(s->nc * sizeof(int));
@@ -572,7 +563,6 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
   s->nfo = malloc((s->nc + 1) * sizeof(int));
   s->fo = malloc((2 * s->nc) * sizeof(int));
   s->queued_at = malloc(s->nc * sizeof(int));
-  s->crash_reason = NULL;
   s->status = SIMU_STATUS_OK;
   s->necomps = necomps;
   if (s->necomps > 0) {
@@ -609,14 +599,12 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
     // If it's not connected anywhere, ignore it.
     if (cc == 0) {
       s->nand_error_status[i] = NAND_STATUS_MISSING_OUTPUT;
-      s->crash_reason = CRASH_REASON_MISSING_OUTPUT;
       s->status = SIMU_STATUS_NAND_MISSING_OUTPUT;
       s->ok_creation = false;
       continue;
     }
     if (ca == 0 || cb == 0) {
       s->nand_error_status[i] = NAND_STATUS_MISSING_INPUT;
-      s->crash_reason = CRASH_REASON_MISSING_INPUTS;
       s->status = SIMU_STATUS_NAND_MISSING_INPUT;
       s->ok_creation = false;
       continue;
@@ -636,7 +624,6 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
       // here, we have a connection that already exists!
       // This means that the output wire is buggy!
       s->ok_creation = false;
-      s->crash_reason = CRASH_REASON_MULTIPLE_GATE_CIRCUIT;
       s->status = SIMU_STATUS_WIRE;
       s->bugged_flag[cc]++;
     } else {
@@ -667,7 +654,6 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
       int prev_b = s->graph[2 * cc + 1];
       if ((prev_a != 0) || (prev_b != 0)) {
         s->ok_creation = false;
-        s->crash_reason = CRASH_REASON_MULTIPLE_GATE_CIRCUIT;
         s->status = SIMU_STATUS_WIRE;
         s->bugged_flag[cc]++;
       }
@@ -769,134 +755,148 @@ static void SimSwapEvent(Sim* s) {
   s->ev_swap = tmp;
 }
 
-void SimSimulate(Sim* s) {
+static void SimStep(Sim* s, bool* use_delay_time) {
+  SimSwapEvent(s);
+  for (int i1 = 0; i1 < s->ne_swap; i1++) {
+    // k is the ID of the component to be updated
+    int k = s->ev_swap[2 * i1 + 0];
+    // v is the new value of this component (ie output)
+    int v = s->ev_swap[2 * i1 + 1];
+    if (s->state[k] == v) {
+      continue;
+    }
+    if (LoopDetectorNotify(&s->loop_detector, k)) {
+      *use_delay_time = true;
+      s->is_looping = true;
+    }
+    s->state[k] = v;
+    int nf = s->nfo[k + 1] - s->nfo[k];
+    int off = s->nfo[k];
+    for (int i = 0; i < nf; i++) {
+      int j = s->fo[off + i];
+      // int prev_vj = s->state[j];
+      // Updates j
+      int i1 = s->graph[2 * j + 0];
+      int i2 = s->graph[2 * j + 1];
+      // cache horror!
+      int v1 = s->state[i1];
+      int v2 = s->state[i2];
+      int next_vj = s->nand_lut[(v1 << 2) + v2];
+      SimQueueEvent(s, j, next_vj);
+    }
+  }
+
+  // Trying to simulate external components
+  if (s->ne == 0) {
+    // Pseudo-code:
+    // int nextInputs[MAX_SLOTS];
+    // int prevInputs[MAX_SLOTS];
+    // int prevOutputs[MAX_SLOTS];
+    // int nextOutputs[MAX_SLOTS];
+    // for (every comp in s->comps) {
+    //   CollectInputs(s, comp, nextInputs);
+    //   GetPrevInput(comp, prevInputs);
+    //   // Comp can be dirty from "outside" events
+    //   if (prevInput != nextInput || GetDirtyFlag(comp)) {
+    //     // comp contains its state
+    //     UpdateComponent(comp, prevInputs, nextInputs, nextOutput);
+    //     UpdatePrevInput(comp, nextInputs);
+    //     ResetDirtyFlag(comp);
+    //     CollectOutput(s, comp, prevOutput);
+    //     for (ibit in len(prevOutput)) {
+    //       int wire = GetOutputWire(comp, ibit);
+    //       if (nextOutput[i] != prevOutput[i]) {
+    //         EnqueueWireEvent(s, wire, nextOutput[i]); <-- Note that during
+    //         component update a wire can't change more than once!
+    //       }
+    //     }
+    //   }
+    // }
+    int next_inputs[MAX_SLOTS];
+    for (int iec = 0; iec < s->necomps; iec++) {
+      int* next_outputs = &s->ecomp_outputs[iec * MAX_SLOTS];
+      int* prev_inputs = &s->ecomp_inputs[iec * MAX_SLOTS];
+      ExtComp* comp = &s->ecomps[iec];
+      bool need_simu = comp->dirty;
+      for (int i = 0; i < comp->ni; i++) {
+        int ix = comp->wires_in_x[i];
+        int iy = comp->wires_in_y[i];
+        next_inputs[i] = SimGetWireValue(s, ix, iy);
+        if (next_inputs[i] != prev_inputs[i]) {
+          need_simu = true;
+        }
+      }
+      if (need_simu) {
+        if (s->update_cb) {
+          s->update_cb(s->update_ctx, iec, prev_inputs, next_inputs,
+                       next_outputs);
+        }
+        // Updates previous inputs
+        for (int i = 0; i < comp->ni; i++) {
+          prev_inputs[i] = next_inputs[i];
+        }
+        comp->dirty = false;
+        for (int i = 0; i < comp->no; i++) {
+          int ox = comp->wires_out_x[i];
+          int oy = comp->wires_out_y[i];
+          int w = SimGetWireAtPixel(s, ox, oy);
+          int prev_output = s->state[w];
+          if (prev_output != next_outputs[i] && w != 0) {
+            SimQueueEvent(s, w, next_outputs[i]);
+          }
+        }
+      }
+    }
+  }
+  // stops when event queue is empty
+  if (s->ne == 0) {
+    LoopDetectorReset(&s->loop_detector);
+    s->total_updates = s->num_updates_last_simulate + s->total_updates;
+    s->num_updates_last_simulate = 0;
+  }
+}
+
+void SimUpdate(Sim* s, float time_budget, float* time_used,
+               bool* use_delay_time) {
   // No change in circuit if there was parsing errors
+  *time_used = 0;
   if (s->ok_creation == false) {
     return;
   }
-  double start = GetTime();
 
-  // int n1 = 0;
-  // int n2 = 0;
-  // int* e1 = s->e1;
-  // int* e2 = s->e2;
-  // // Initialize the event queue.
-  // for (int i = 0; i < s->ne; i++) {
-  //   int k = s->events[2 * i + 0];
-  //   int v = s->events[2 * i + 1];
-  //   e1[2 * n1 + 0] = k;
-  //   e1[2 * n1 + 1] = v;
-  //   n1++;
-  // }
-  // e1 --> queued for processing now.
-  // e2 --> next processing
-
-  int num_updated = 0;
-  // Resets events
-  s->num_updates_last_simulate = 0;
-  // int num_comp_updates = 0;
   while (true) {
-    SimSwapEvent(s);
-    for (int i1 = 0; i1 < s->ne_swap; i1++) {
-      // k is the ID of the component to be updated
-      int k = s->ev_swap[2 * i1 + 0];
-      // v is the new value of this component (ie output)
-      int v = s->ev_swap[2 * i1 + 1];
-      if (s->state[k] == v) {
-        continue;
-      }
-      if (LoopDetectorNotify(&s->loop_detector, k)) {
-        SimCrashSimulation(s);
-        s->status = SIMU_STATUS_LOOP;
-        s->crash_reason = CRASH_REASON_TOO_MANY_UPDATES;
-        return;
-      }
-      s->state[k] = v;
-      int nf = s->nfo[k + 1] - s->nfo[k];
-      int off = s->nfo[k];
-      for (int i = 0; i < nf; i++) {
-        int j = s->fo[off + i];
-        // int prev_vj = s->state[j];
-        // Updates j
-        int i1 = s->graph[2 * j + 0];
-        int i2 = s->graph[2 * j + 1];
-        // cache horror!
-        int v1 = s->state[i1];
-        int v2 = s->state[i2];
-        int next_vj = s->nand_lut[(v1 << 2) + v2];
-        SimQueueEvent(s, j, next_vj);
-      }
+    // First checks if needs any update.
+    bool dirty = s->ne > 0;
+    for (int iec = 0; iec < s->necomps; iec++) {
+      ExtComp* comp = &s->ecomps[iec];
+      dirty = dirty || comp->dirty;
     }
-
-    // Trying to simulate external components
-    if (s->ne == 0) {
-      // Pseudo-code:
-      // int nextInputs[MAX_SLOTS];
-      // int prevInputs[MAX_SLOTS];
-      // int prevOutputs[MAX_SLOTS];
-      // int nextOutputs[MAX_SLOTS];
-      // for (every comp in s->comps) {
-      //   CollectInputs(s, comp, nextInputs);
-      //   GetPrevInput(comp, prevInputs);
-      //   // Comp can be dirty from "outside" events
-      //   if (prevInput != nextInput || GetDirtyFlag(comp)) {
-      //     // comp contains its state
-      //     UpdateComponent(comp, prevInputs, nextInputs, nextOutput);
-      //     UpdatePrevInput(comp, nextInputs);
-      //     ResetDirtyFlag(comp);
-      //     CollectOutput(s, comp, prevOutput);
-      //     for (ibit in len(prevOutput)) {
-      //       int wire = GetOutputWire(comp, ibit);
-      //       if (nextOutput[i] != prevOutput[i]) {
-      //         EnqueueWireEvent(s, wire, nextOutput[i]); <-- Note that during
-      //         component update a wire can't change more than once!
-      //       }
-      //     }
-      //   }
-      // }
-      int next_inputs[MAX_SLOTS];
-      for (int iec = 0; iec < s->necomps; iec++) {
-        int* next_outputs = &s->ecomp_outputs[iec * MAX_SLOTS];
-        int* prev_inputs = &s->ecomp_inputs[iec * MAX_SLOTS];
-        ExtComp* comp = &s->ecomps[iec];
-        bool need_simu = comp->dirty;
-        for (int i = 0; i < comp->ni; i++) {
-          int ix = comp->wires_in_x[i];
-          int iy = comp->wires_in_y[i];
-          next_inputs[i] = SimGetWireValue(s, ix, iy);
-          if (next_inputs[i] != prev_inputs[i]) {
-            need_simu = true;
-          }
-        }
-        if (need_simu) {
-          if (s->update_cb) {
-            s->update_cb(s->update_ctx, iec, prev_inputs, next_inputs,
-                         next_outputs);
-          }
-          // Updates previous inputs
-          for (int i = 0; i < comp->ni; i++) {
-            prev_inputs[i] = next_inputs[i];
-          }
-          comp->dirty = false;
-          for (int i = 0; i < comp->no; i++) {
-            int ox = comp->wires_out_x[i];
-            int oy = comp->wires_out_y[i];
-            int w = SimGetWireAtPixel(s, ox, oy);
-            int prev_output = s->state[w];
-            if (prev_output != next_outputs[i] && w != 0) {
-              SimQueueEvent(s, w, next_outputs[i]);
-            }
-          }
-        }
-      }
-    }
-    // stops when event queue is empty
-    if (s->ne == 0) {
+    bool needs_update = dirty;
+    if (s->next_update_delay > time_budget) {
+      s->next_update_delay -= time_budget;
+      *time_used += time_budget;
       break;
+    } else {
+      // Takes into account budget used.
+      time_budget -= s->next_update_delay;
+      *time_used += s->next_update_delay;
+      s->next_update_delay = 0;
+
+      // If it doesnt need update, stops right away.
+      if (!needs_update) {
+        break;
+      }
+
+      // Else, Calls the update and then resets the next_update_delay.
+      SimStep(s, use_delay_time);
+      s->needs_update_state_texture = true;
+      if (*use_delay_time) {
+        s->next_update_delay = s->nand_activation_delay;
+      } else {
+        s->next_update_delay = 0;
+      }
     }
   }
-  LoopDetectorReset(&s->loop_detector);
-  s->total_updates = s->num_updates_last_simulate + s->total_updates;
 }
 
 void SimUnload(Sim* s) {
@@ -913,8 +913,9 @@ void SimUnload(Sim* s) {
       UnloadTexture(s->t_comp_y);
     }
   }
-  if (s->t_state.width > 0) {
-    UnloadTexture(s->t_state);
+  if (s->t_state[0].width > 0) {
+    UnloadTexture(s->t_state[0]);
+    UnloadTexture(s->t_state[1]);
   }
   if (s->state_buffer) {
     free(s->state_buffer);
@@ -1042,7 +1043,8 @@ void SimInitCompVisu(Sim* s) {
                      .height = s->state_h,
                      .width = s->state_w,
                      .format = PIXELFORMAT_UNCOMPRESSED_R32};
-  s->t_state = LoadTextureFromImage(img_state);
+  s->t_state[0] = LoadTextureFromImage(img_state);
+  s->t_state[1] = LoadTextureFromImage(img_state);
 
   int w = s->pi.original_image.width;
   int h = s->pi.original_image.height;
@@ -1120,6 +1122,10 @@ void UpdateStateTexture(Sim* s) {
   // if (!s->ok_creation) {
   //   return;
   // }
+  if (!s->needs_update_state_texture) {
+    return;
+  }
+  s->needs_update_state_texture = false;
   float lut[5];
   lut[BIT_0] = 0.3;
   lut[BIT_1] = 0.4;
@@ -1146,5 +1152,15 @@ void UpdateStateTexture(Sim* s) {
     }
   }
 
-  UpdateTexture(s->t_state, s->state_buffer);
+  s->istate = (s->istate + 1) % 2;
+  UpdateTexture(s->t_state[s->istate], s->state_buffer);
+}
+
+bool SimIsBusy(Sim* s) {
+  bool dirty = false;
+  for (int iec = 0; iec < s->necomps; iec++) {
+    ExtComp* comp = &s->ecomps[iec];
+    dirty = dirty || comp->dirty;
+  }
+  return s->next_update_delay > 0 || s->ne > 0 || dirty;
 }
