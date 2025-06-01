@@ -24,10 +24,8 @@ static void HistClearBufer(Hist* h) {
     UnloadRenderTexture(h->t_buffer);
   }
   if (h->selbuffer.width) {
-    for (int i = 0; i < HIST_PYR_LVLS; i++) {
-      UnloadImage(h->selbuffer);
-      h->selbuffer = (Image){0};
-    }
+    UnloadImage(h->selbuffer);
+    h->selbuffer = (Image){0};
     UnloadRenderTexture(h->t_selbuffer);
   }
 }

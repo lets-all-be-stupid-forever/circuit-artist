@@ -27,6 +27,10 @@ void InitShaders() {
   SHADER_LOC(project, img_size);
   SHADER_LOC(project, tpl);
 
+  SHADER_LOAD(thumbnail);
+  SHADER_LOC(thumbnail, sp);
+  SHADER_LOC(thumbnail, img_size);
+
   SHADER_LOAD(update);
   SHADER_LOC(update, img_size);
   SHADER_LOC(update, sel_size);

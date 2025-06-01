@@ -49,6 +49,10 @@ typedef struct {
   int project_loc_img_size;
   int project_loc_tpl;
 
+  Shader thumbnail_shader;
+  int thumbnail_loc_sp;
+  int thumbnail_loc_img_size;
+
   Shader update_shader;
   int update_loc_img_size;
   int update_loc_sel_size;

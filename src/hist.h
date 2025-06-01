@@ -3,8 +3,6 @@
 #include "defs.h"
 #include "img.h"
 
-#define HIST_PYR_LVLS 3
-
 // Active paint tool.
 typedef enum {
   TOOL_BRUSH,

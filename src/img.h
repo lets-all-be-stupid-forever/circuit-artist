@@ -153,6 +153,8 @@ void draw_main_img(draw_params* p);
 void draw_rect(float x, float y, float w, int h, Color c);
 void DrawSelRect(float x, float y, float w, int h, double t);
 
+RenderTexture2D MakeThumbnail(Image img, int tx, int ty);
+
 #if defined(__cplusplus)
 }
 #endif

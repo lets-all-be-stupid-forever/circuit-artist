@@ -27,6 +27,11 @@
 
 #define MSG_DURATION 2
 
+typedef struct {
+  Image img;
+  RenderTexture2D tex;
+} Blueprint;
+
 static struct {
   bool inited;
   // Image Drawing target, has same size as the original image
@@ -74,6 +79,10 @@ static struct {
   Btn btn_simu_over;
   Btn btn_line_sep;
   Btn btn_line_sep_r;
+
+  Rectangle btn_blueprint[10];
+
+  Blueprint blueprints[10];
 
   // Right side buttons
   Btn btn_challenge;
@@ -357,6 +366,29 @@ void MainUpdateHud(Ui* ui) {
       }
     }
   }
+
+  // TODO:  check if its in edition mode
+  if (C.ca.mode == MODE_EDIT) {
+    for (int i = 0; i < 10; i++) {
+      if (RectHover(C.btn_blueprint[i], pos) && ui->hit_count == 0) {
+        ui->hit_count++;
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+          bool has_blueprint = C.blueprints[i].img.width > 0;
+          if (has_blueprint) {
+            PaintPasteImage(&C.ca, C.blueprints[i].img);
+          } else {
+            if (PaintGetHasSelection(&C.ca)) {
+              Image new_blueprint = CloneImage(PaintGetSelBuffer(&C.ca));
+              C.blueprints[i].img = new_blueprint;
+              int tw = new_blueprint.width;
+              int th = new_blueprint.height;
+              C.blueprints[i].tex = MakeThumbnail(new_blueprint, 68, 68);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 void draw_resize_handle(Ui* ui) {
@@ -461,6 +493,57 @@ void MainDraw(Ui* ui) {
   for (int i = 0; i < C.num_colors; i++) {
     BtnDrawColor(ui, C.color_btn[i], C.palette[i],
                  COLOR_EQ(C.palette[i], PaintGetColor(&C.ca)), color_disabled);
+  }
+
+  for (int i = 0; i < 10; i++) {
+    bool color_disabled = PaintGetMode(&C.ca) != MODE_EDIT;
+    bool has_blueprint = C.blueprints[i].img.width > 0;
+    // BtnDrawColor(ui, C.btn_blueprint[i], has_blueprint ? BLUE : BLACK, false,
+    //              color_disabled);
+    Rectangle r = C.btn_blueprint[i];
+    Rectangle r2 = {
+        r.x - 2,
+        r.y - 2,
+        r.width + 4,
+        r.height + 4,
+    };
+    DrawRectangleRec(r2, WHITE);
+    if (has_blueprint) {
+      DrawRectangleRec(r, BLACK);
+    } else {
+      DrawRectangleRec(r, GRAY);
+    }
+
+    if (has_blueprint) {
+      // Rectangle source = {
+      //     0,
+      //     0,
+      //     C.blueprints[i].img.width,
+      //     -C.blueprints[i].img.height,
+      // };
+      // Rectangle dest = C.btn_blueprint[i];
+      // DrawTexturePro(C.blueprints[i].tex.texture, source, dest, (Vector2){0,
+      // 0},
+      //                0,
+      //                WHITE);  // Draw a part of a texture defined by a
+      //                rectangle
+      Rectangle source = {
+          0,
+          0,
+          C.blueprints[i].tex.texture.width,
+          C.blueprints[i].tex.texture.height,
+      };
+      // Rectangle dest = C.btn_blueprint[i];
+      Rectangle dest = {
+          C.btn_blueprint[i].x,
+          C.btn_blueprint[i].y,
+          C.blueprints[i].tex.texture.width,
+          C.blueprints[i].tex.texture.height,
+      };
+      DrawTexturePro(C.blueprints[i].tex.texture, source, dest, (Vector2){0, 0},
+                     0,
+                     WHITE);  // Draw a part of a texture defined by a rectangle
+    }
   }
 
   BtnDrawIcon(&C.btn_line, bscale, ui->sprites, rect_line);
@@ -677,6 +760,30 @@ void MainUpdateLayout(Ui* ui) {
           .y = cy + (by) * (17 * s),
           .width = 1 * 17 * s,
           .height = 1 * 17 * s,
+      };
+    }
+
+    cx = cx + (2 + 10) * 17 * s;
+
+#if 0
+    for (int i = 0; i < 10; i++) {
+      int bx = i / 2;
+      int by = i % 2;
+      C.btn_blueprint[i] = (Rectangle){
+          .x = cx + bx * 17 * s,
+          .y = cy + by * 17 * s,
+          .width = 1 * 17 * s,
+          .height = 1 * 17 * s,
+      };
+    }
+#endif
+    for (int i = 0; i < 10; i++) {
+      int bx = i;
+      C.btn_blueprint[i] = (Rectangle){
+          .x = cx + bx * 34 * s,
+          .y = cy,
+          .width = 2 * 17 * s,
+          .height = 2 * 17 * s,
       };
     }
 

@@ -1011,3 +1011,61 @@ void DrawSelRect(float x, float y, float w, int h, double t) {
   DrawSelRectLine(r_left, t);
   DrawSelRectLine(r_right, t);
 }
+
+RenderTexture2D MakeThumbnail(Image img, int tx, int ty) {
+  RenderTexture2D tex = CloneTextureFromImage(img);
+  RenderTexture2D out = LoadRenderTexture(tx, ty);
+
+  int tw = tex.texture.width;
+  int th = tex.texture.height;
+  float cs1 = ((float)tx) / tw;
+  float cs2 = ((float)ty) / th;
+
+  float cs = 1.0;
+  if (cs1 < cs2) {
+    cs = cs1;
+  } else {
+    cs = cs2;
+  }
+
+#if 0
+  if (cs > 4.0) {
+    cs = 4.0;
+  } else if (cs > 2.0) {
+    cs = 2.0;
+  } else if (cs > 1.0) {
+    cs = 1.0;
+  } else if (cs > 0.5) {
+    cs = 0.5;
+  } else if (cs > 0.25) {
+    cs = 0.25;
+  } else {
+    cs = 0.125;
+  }
+#endif
+
+  float sp[2] = {cs, cs};
+  int img_size[2] = {tw, th};
+
+  BeginTextureMode(out);
+  ClearBackground(BLANK);
+  begin_shader(thumbnail);
+  SetTextureFilter(tex.texture, TEXTURE_FILTER_POINT);
+  set_shader_vec2(thumbnail, sp, &sp);
+  set_shader_ivec2(thumbnail, img_size, &img_size);
+
+  // Rectangle source = (Rectangle){0, (ty - (0 + img_size[1])), (float)mw,
+  // (float)-mh};
+  Rectangle source = (Rectangle){0, 0, (float)tw, (float)th};
+  float mw = tw * cs;
+  float mh = th * cs;
+  float cx = (tx - mw) / 2;
+  float cy = (ty - mh) / 2;
+  Rectangle target = (Rectangle){cx, cy, mw, mh};
+  DrawTexturePro(tex.texture, source, target, (Vector2){0, 0}, 0, WHITE);
+  end_shader();
+  EndTextureMode();
+  UnloadRenderTexture(tex);
+  return out;
+}
+
