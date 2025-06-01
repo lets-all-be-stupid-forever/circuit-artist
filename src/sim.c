@@ -554,6 +554,7 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
   if (pi.num_nands > 0) {
     s->nand_error_status = malloc(pi.num_nands * sizeof(int));
   }
+  s->needs_update_state_texture = true;
   s->max_events = s->nc;
   s->ne = 0;
   s->ne_swap = 0;
