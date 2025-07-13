@@ -278,10 +278,6 @@ bool PaintGetKeyLineWidthHasJustChanged(Paint* ca);
 // Returns current paint mode. (edition/compiling/simulation)
 PaintMode PaintGetMode(Paint* ca);
 
-// Gets status of simulation.
-// Allows to see if there was some error during parsing/simulation.
-int PaintGetSimuStatus(Paint* ca);
-
 // Returns true if the mouse is over a selection.
 // Used for changing the mouse to a "move" cursor when the user has a mouse
 // over a selection.

@@ -152,25 +152,13 @@ void MainInit(Ui* ui) {
   MainUpdateWidgets();
 }
 
-static const char* GetCrashReason(int status) {
-  switch (status) {
-    case SIMU_STATUS_NAND_MISSING_INPUT:
-      return TXT_CRASH_REASON_MISSING_INPUTS;
-    case SIMU_STATUS_NAND_MISSING_OUTPUT:
-      return TXT_CRASH_REASON_MISSING_OUTPUT;
-    case SIMU_STATUS_WIRE:
-      return TXT_CRASH_REASON_MULTIPLE_GATE_CIRCUIT;
-  }
-  return NULL;
-}
-
 void MainUpdate(Ui* ui) {
   MainUpdateViewport(ui);
   MainCheckFileDrop();
   MsgUpdate();
   C.mouse_on_target = false;
   MainUpdateControls(ui);
-  if (C.ca.mode == MODE_SIMU && C.ca.s.status == SIMU_STATUS_OK) {
+  if (C.ca.mode == MODE_SIMU) {
     float delta = GetFrameTime();
     PaintUpdateSimu(&C.ca, delta);
   }
@@ -179,10 +167,11 @@ void MainUpdate(Ui* ui) {
   BeginTextureMode(C.level_overlay_tex);
   ClearBackground(BLANK);
   EndTextureMode();
-  if (C.ca.mode == MODE_EDIT || C.ca.s.status == SIMU_STATUS_OK) {
-    ApiOnLevelDraw(C.level_overlay_tex, C.ca.camera_x, C.ca.camera_y,
-                   C.ca.camera_s);
-  }
+  // TODO: Review this part.
+  // if (C.ca.mode == MODE_EDIT) {
+  ApiOnLevelDraw(C.level_overlay_tex, C.ca.camera_x, C.ca.camera_y,
+                 C.ca.camera_s);
+  //}
 }
 
 void MainUpdateControls(Ui* ui) {
@@ -491,11 +480,6 @@ void MainDraw(Ui* ui) {
   MsgDraw(ui);
 
   if (C.ca.mode == MODE_SIMU) {
-    if (C.ca.s.status != SIMU_STATUS_OK) {
-      char txt[500];
-      sprintf(txt, "ERROR: %s", GetCrashReason(C.ca.s.status));
-      MainDrawErrorMessage(ui, txt);
-    }
     if (C.ca.s.is_looping) {
       MainDrawErrorMessage(ui, TXT_SIMU_LOOPING);
     }
@@ -798,22 +782,17 @@ void MainDrawStatusBar(Ui* ui) {
     FontDrawTextureOutlined(txt, xc, yc3, tc, bg);
   }
   if (C.ca.mode == MODE_SIMU) {
-    if (C.ca.s.status == SIMU_STATUS_OK) {
-      int num_nands = PaintGetNumNands(&C.ca);
-      sprintf(txt, "NANDS: %d", num_nands);
-      FontDrawTextureOutlined(txt, xc, yc4, tc, bg);
+    int num_nands = PaintGetNumNands(&C.ca);
+    sprintf(txt, "NANDS: %d", num_nands);
+    FontDrawTextureOutlined(txt, xc, yc4, tc, bg);
 
-      int clock_count = C.ca.clock_count;
-      sprintf(txt, "CLK: %d", clock_count);
-      FontDrawTextureOutlined(txt, xc, yc5, tc, bg);
+    int clock_count = C.ca.clock_count;
+    sprintf(txt, "CLK: %d", clock_count);
+    FontDrawTextureOutlined(txt, xc, yc5, tc, bg);
 
-      int updates = C.ca.s.total_updates;
-      sprintf(txt, "NAND Updates: %d", updates);
-      FontDrawTextureOutlined(txt, xc, yc6, tc, bg);
-    } else {
-      sprintf(txt, "ERROR: %s", GetCrashReason(C.ca.s.status));
-      FontDrawTextureOutlined(txt, xc, yc4, tc, bg);
-    }
+    int updates = C.ca.s.total_updates;
+    sprintf(txt, "NAND Updates: %d", updates);
+    FontDrawTextureOutlined(txt, xc, yc6, tc, bg);
   }
 
   const char* fname = GetFileName(MainGetFilename());

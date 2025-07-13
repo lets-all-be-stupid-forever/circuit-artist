@@ -21,10 +21,18 @@ void SimInitCompVisu(Sim* s);
 void UpdateStateTexture(Sim* s);
 
 static inline void SimQueueEvent(Sim* s, int j, int vj) {
+  // Can't change the wire 0. It's a special always-0 wire.
+  if (j == 0) {
+    return;
+  }
   if (s->queued_at[j] != -1) {
     // Here, we avoid queueing twice and only update the active queued
     // place.
     int kk = s->queued_at[j];
+    int prev = s->ev[2 * kk + 1];
+    if (prev != vj) {
+      vj = 2;  //
+    }
     s->ev[2 * kk + 0] = j;
     s->ev[2 * kk + 1] = vj;
   } else {
@@ -419,11 +427,6 @@ void UnloadParsedImage(ParsedImage pi) {
 
 void SimFindNearestPixelToToggle(Sim* s, int tol, float fx, float fy, int* px,
                                  int* py) {
-  if (!s->ok_creation) {
-    *px = -1;
-    *py = -1;
-    return;
-  }
   assert(tol >= 0);
   int w = s->pi.width;
   int h = s->pi.height;
@@ -492,16 +495,17 @@ void SimTogglePixel(Sim* s, int x, int y) {
   int idx = y * w + x;
   int c = s->pi.comp[idx];
   // Don't want to simulate background component
-  if (c != 0 && s->ok_creation) {
+  if (c != 0) {
     SimQueueEvent(s, c, !s->state[c]);
     s->next_update_delay = 0;
   }
 }
 
-static void SimCalcFanout(int nc, const int* topology, int* nfo, int* fo) {
+static void SimCalcFanout(int nc, int nn, const int* graph, int* nfo, int* fo) {
   // maybe 2 passes?
   // 1st counting, 2nd filling values
 
+  // counter for each wire
   int* tc = malloc(nc * sizeof(int));
 
   nfo[0] = 0;
@@ -510,26 +514,38 @@ static void SimCalcFanout(int nc, const int* topology, int* nfo, int* fo) {
     tc[ic] = 0;
   }
 
-  for (int k = 0; k < nc; k++) {
-    int k1 = topology[2 * k + 0];
-    int k2 = topology[2 * k + 1];
+  // first pass: Sees the fanout count on each wire.
+  for (int k = 0; k < nn; k++) {
+    int k1 = graph[3 * k + 0];
+    int k2 = graph[3 * k + 1];
     nfo[k1 + 1]++;
-    nfo[k2 + 1]++;
+    if (k1 != k2) {
+      nfo[k2 + 1]++;
+    }
   }
 
+  // second pass: accumulates the fanout counts to get the offsets
   for (int k = 0; k < nc; k++) {
     nfo[k + 1] = nfo[k + 1] + nfo[k];
   }
 
-  for (int k = 0; k < nc; k++) {
-    int k1 = topology[2 * k + 0];
-    int k2 = topology[2 * k + 1];
+  // third pass: very similar to the 1st pass, but now uses offset to actually
+  // fill the fanout array.
+  for (int k = 0; k < nn; k++) {
+    int k1 = graph[3 * k + 0];
+    int k2 = graph[3 * k + 1];
+    int k3 = graph[3 * k + 2];
     // k1->k
     // k2->k
-    int off1 = nfo[k1];
-    int off2 = nfo[k2];
-    fo[off1 + tc[k1]++] = k;
-    fo[off2 + tc[k2]++] = k;
+    if (k1 != k2) {
+      int off1 = nfo[k1];
+      int off2 = nfo[k2];
+      fo[off1 + tc[k1]++] = k;
+      fo[off2 + tc[k2]++] = k;
+    } else {
+      int off1 = nfo[k1];
+      fo[off1 + tc[k1]++] = k;
+    }
     // component 0 is special: it connects to all inputs
     // It also connects to itsel
   }
@@ -546,25 +562,20 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
   s->next_update_delay = 0;
   s->pi = pi;
   s->nc = s->pi.nc;
+  s->nn = s->pi.num_nands;
   s->state = malloc(s->nc * sizeof(int));
   s->last_render_state = malloc(s->nc * sizeof(int));
-  s->graph = malloc(2 * s->nc * sizeof(int));
-  s->bugged_flag = malloc(s->nc * sizeof(int));
-  s->nand_error_status = NULL;
-  if (pi.num_nands > 0) {
-    s->nand_error_status = malloc(pi.num_nands * sizeof(int));
-  }
+  s->graph = malloc(3 * s->nn * sizeof(int));
   s->needs_update_state_texture = true;
   s->max_events = s->nc;
   s->ne = 0;
   s->ne_swap = 0;
   s->ev = malloc(2 * s->nc * sizeof(int));
   s->ev_swap = malloc(2 * s->nc * sizeof(int));
-  s->ok_creation = true;
+  s->ev_changed = malloc(s->nc * sizeof(int));
   s->nfo = malloc((s->nc + 1) * sizeof(int));
-  s->fo = malloc((2 * s->nc) * sizeof(int));
+  s->fo = malloc((2 * s->nn) * sizeof(int));
   s->queued_at = malloc(s->nc * sizeof(int));
-  s->status = SIMU_STATUS_OK;
   s->necomps = necomps;
   if (s->necomps > 0) {
     s->ecomps = ecomps;
@@ -579,10 +590,10 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
   MakeNandLut(s->nand_lut);
 
   // Makes all components connect to 0 (ie, all inputs by default)
-  for (int i = 0; i < s->nc; i++) {
-    s->graph[2 * i + 0] = 0;
-    s->graph[2 * i + 1] = 0;
-    s->bugged_flag[i] = 0;
+  for (int i = 0; i < s->nn; i++) {
+    s->graph[3 * i + 0] = 0;
+    s->graph[3 * i + 1] = 0;
+    s->graph[3 * i + 2] = 0;
   }
 
   // initializes the graph.
@@ -597,79 +608,24 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
     int cb = pi.comp[pb];
     int cc = pi.comp[pc];
 
-    // If it's not connected anywhere, ignore it.
-    if (cc == 0) {
-      s->nand_error_status[i] = NAND_STATUS_MISSING_OUTPUT;
-      s->status = SIMU_STATUS_NAND_MISSING_OUTPUT;
-      s->ok_creation = false;
-      continue;
-    }
-    if (ca == 0 || cb == 0) {
-      s->nand_error_status[i] = NAND_STATUS_MISSING_INPUT;
-      s->status = SIMU_STATUS_NAND_MISSING_INPUT;
-      s->ok_creation = false;
-      continue;
-    }
-
+    // These are wire components
     assert(ca < s->nc);
     assert(cb < s->nc);
     assert(cc < s->nc);
     assert(ca >= 0);
     assert(cb >= 0);
-    assert(cc > 0);
-    // The circuits where the output are connected to
-    int prev_a = s->graph[2 * cc + 0];
-    int prev_b = s->graph[2 * cc + 1];
-
-    if ((prev_a != 0) || (prev_b != 0)) {
-      // here, we have a connection that already exists!
-      // This means that the output wire is buggy!
-      s->ok_creation = false;
-      s->status = SIMU_STATUS_WIRE;
-      s->bugged_flag[cc]++;
-    } else {
-      s->graph[2 * cc + 0] = ca;
-      s->graph[2 * cc + 1] = cb;
-    }
-    s->nand_error_status[i] = NAND_STATUS_OK;
+    assert(cc >= 0);
+    s->graph[3 * i + 0] = ca;
+    s->graph[3 * i + 1] = cb;
+    s->graph[3 * i + 2] = cc;
   }
 
   // If there are bugged circuits, no need for fanout calculation
-  if (s->ok_creation) {
-    SimCalcFanout(s->nc, s->graph, s->nfo, s->fo);
-  }
-
-  // Here I check if we don't have same wire with multiple component outputs
-  for (int iec = 0; iec < s->necomps; iec++) {
-    ExtComp* comp = &s->ecomps[iec];
-
-    for (int i = 0; i < comp->no; i++) {
-      int ox = comp->wires_out_x[i];
-      int oy = comp->wires_out_y[i];
-      int cc = SimGetWireAtPixel(s, ox, oy);
-      // non-output: I dont care
-      if (cc == 0) {
-        continue;
-      }
-      int prev_a = s->graph[2 * cc + 0];
-      int prev_b = s->graph[2 * cc + 1];
-      if ((prev_a != 0) || (prev_b != 0)) {
-        s->ok_creation = false;
-        s->status = SIMU_STATUS_WIRE;
-        s->bugged_flag[cc]++;
-      }
-      s->graph[2 * cc + 0] = -iec - 1;
-      s->graph[2 * cc + 1] = -i - 1;
-    }
-  }
+  SimCalcFanout(s->nc, s->nn, s->graph, s->nfo, s->fo);
 
   // Initializes all states as undefined.
   for (int i = 0; i < s->nc; i++) {
-    if (s->bugged_flag[i]) {
-      s->state[i] = BIT_BUGGED;
-    } else {
-      s->state[i] = BIT_UNDEFINED;
-    }
+    s->state[i] = BIT_UNDEFINED;
     s->last_render_state[i] = -1;
   }
 
@@ -684,23 +640,26 @@ void SimLoad(Sim* s, ParsedImage pi, int necomps, ExtComp* ecomps,
     s->queued_at[i] = -1;  // -1 == not queued.
   }
   s->time_parsing = s->pi.time_parsing;
-  if (s->ok_creation) {
-    SimQueueInitialInputEvents(s);
-  }
+  SimQueueInitialInputEvents(s);
   LoadLoopDetector(&s->loop_detector, s->nc);
 }
 
 void SimQueueInitialInputEvents(Sim* s) {
   // step1: find all inputs.
   // step2: queue all values 0 for them.
-  // the component 0 is special, we dont send event to it
+  // flags whether a wire is a "root" wire, ie it has no nand gates pointing to
+  // it.
+  bool* nonroot = calloc(s->nc, sizeof(bool));
+  for (int i = 0; i < s->nn; i++) {
+    int cc = s->graph[3 * i + 2];
+    nonroot[cc] = true;
+  }
   for (int i = 1; i < s->nc; i++) {
-    int ca = s->graph[2 * i + 0];
-    int cb = s->graph[2 * i + 1];
-    if (ca == 0 && cb == 0) {
+    if (!nonroot[i]) {
       SimQueueEvent(s, i, 0);
     }
   }
+  free(nonroot);
 }
 
 static void MakeNandLut(int* nand_lut) {
@@ -733,16 +692,6 @@ static void MakeNandLut(int* nand_lut) {
   nand_lut[bx + ax] = ax;
 }
 
-static void SimCrashSimulation(Sim* s) {
-  s->ok_creation = false;
-  for (int i = 0; i < s->nc; i++) {
-    s->state[i] = BIT_UNDEFINED;
-    if (LoopDetectorIsWireLooping(&s->loop_detector, i)) {
-      s->state[i] = BIT_BUGGED;
-    }
-  }
-}
-
 static void SimSwapEvent(Sim* s) {
   // Resets queue flags
   for (int i2 = 0; i2 < s->ne; i2++) {
@@ -756,99 +705,125 @@ static void SimSwapEvent(Sim* s) {
   s->ev_swap = tmp;
 }
 
+static void SimUpdateExternalComponents(Sim* s) {
+  // Pseudo-code:
+  // int nextInputs[MAX_SLOTS];
+  // int prevInputs[MAX_SLOTS];
+  // int prevOutputs[MAX_SLOTS];
+  // int nextOutputs[MAX_SLOTS];
+  // for (every comp in s->comps) {
+  //   CollectInputs(s, comp, nextInputs);
+  //   GetPrevInput(comp, prevInputs);
+  //   // Comp can be dirty from "outside" events
+  //   if (prevInput != nextInput || GetDirtyFlag(comp)) {
+  //     // comp contains its state
+  //     UpdateComponent(comp, prevInputs, nextInputs, nextOutput);
+  //     UpdatePrevInput(comp, nextInputs);
+  //     ResetDirtyFlag(comp);
+  //     CollectOutput(s, comp, prevOutput);
+  //     for (ibit in len(prevOutput)) {
+  //       int wire = GetOutputWire(comp, ibit);
+  //       if (nextOutput[i] != prevOutput[i]) {
+  //         EnqueueWireEvent(s, wire, nextOutput[i]); <-- Note that during
+  //         component update a wire can't change more than once!
+  //       }
+  //     }
+  //   }
+  // }
+  int next_inputs[MAX_SLOTS];
+  for (int iec = 0; iec < s->necomps; iec++) {
+    int* next_outputs = &s->ecomp_outputs[iec * MAX_SLOTS];
+    int* prev_inputs = &s->ecomp_inputs[iec * MAX_SLOTS];
+    ExtComp* comp = &s->ecomps[iec];
+    bool need_simu = comp->dirty;
+    for (int i = 0; i < comp->ni; i++) {
+      int ix = comp->wires_in_x[i];
+      int iy = comp->wires_in_y[i];
+      next_inputs[i] = SimGetWireValue(s, ix, iy);
+      if (next_inputs[i] != prev_inputs[i]) {
+        need_simu = true;
+      }
+    }
+    if (need_simu) {
+      if (s->update_cb) {
+        s->update_cb(s->update_ctx, iec, prev_inputs, next_inputs,
+                     next_outputs);
+      }
+      // Updates previous inputs
+      for (int i = 0; i < comp->ni; i++) {
+        prev_inputs[i] = next_inputs[i];
+      }
+      comp->dirty = false;
+      for (int i = 0; i < comp->no; i++) {
+        int ox = comp->wires_out_x[i];
+        int oy = comp->wires_out_y[i];
+        int w = SimGetWireAtPixel(s, ox, oy);
+        int prev_output = s->state[w];
+        if (prev_output != next_outputs[i] && w != 0) {
+          SimQueueEvent(s, w, next_outputs[i]);
+        }
+      }
+    }
+  }
+}
+
 static void SimStep(Sim* s, bool* use_delay_time) {
   SimSwapEvent(s);
+  // For each wire that has an update queued:
+  // First pass, updates the wire values
   for (int i1 = 0; i1 < s->ne_swap; i1++) {
     // k is the ID of the component to be updated
     int k = s->ev_swap[2 * i1 + 0];
     // v is the new value of this component (ie output)
     int v = s->ev_swap[2 * i1 + 1];
+    // printf("k=%d v=%d", k, v);
     if (s->state[k] == v) {
+      // printf(" <UNCHANGED>\n");
+      s->ev_changed[i1] = false;
       continue;
     }
+    s->ev_changed[i1] = true;
     if (LoopDetectorNotify(&s->loop_detector, k)) {
       *use_delay_time = true;
       s->is_looping = true;
     }
     s->state[k] = v;
+    // printf(" <CHANGED>\n");
+  }
+
+  // Second pass, for each wire that has actually changed of value, updates
+  // its fanout accordingly.
+  for (int e = 0; e < s->ne_swap; e++) {
+    // If it hasnt changed the state value, does nothing.
+    if (!s->ev_changed[e]) {
+      continue;
+    }
+    // this algo is wrong/inneficient...
+    // I should first update the wires and only then go through the fanouts...
+    int k = s->ev_swap[2 * e + 0];
     int nf = s->nfo[k + 1] - s->nfo[k];
     int off = s->nfo[k];
+    // printf("[fanout] k=%d nfo=%d\n", k, nf);
     for (int i = 0; i < nf; i++) {
+      // fanout of the wire: This is the j-th nand gate
       int j = s->fo[off + i];
-      // int prev_vj = s->state[j];
       // Updates j
-      int i1 = s->graph[2 * j + 0];
-      int i2 = s->graph[2 * j + 1];
+      int i1 = s->graph[3 * j + 0];
+      int i2 = s->graph[3 * j + 1];
+      int i3 = s->graph[3 * j + 2];  // output wire of the nand gate
       // cache horror!
       int v1 = s->state[i1];
       int v2 = s->state[i2];
-      int next_vj = s->nand_lut[(v1 << 2) + v2];
-      SimQueueEvent(s, j, next_vj);
+      int next_i3 = s->nand_lut[(v1 << 2) + v2];
+      SimQueueEvent(s, i3, next_i3);
     }
   }
 
   // Trying to simulate external components
   if (s->ne == 0) {
-    // Pseudo-code:
-    // int nextInputs[MAX_SLOTS];
-    // int prevInputs[MAX_SLOTS];
-    // int prevOutputs[MAX_SLOTS];
-    // int nextOutputs[MAX_SLOTS];
-    // for (every comp in s->comps) {
-    //   CollectInputs(s, comp, nextInputs);
-    //   GetPrevInput(comp, prevInputs);
-    //   // Comp can be dirty from "outside" events
-    //   if (prevInput != nextInput || GetDirtyFlag(comp)) {
-    //     // comp contains its state
-    //     UpdateComponent(comp, prevInputs, nextInputs, nextOutput);
-    //     UpdatePrevInput(comp, nextInputs);
-    //     ResetDirtyFlag(comp);
-    //     CollectOutput(s, comp, prevOutput);
-    //     for (ibit in len(prevOutput)) {
-    //       int wire = GetOutputWire(comp, ibit);
-    //       if (nextOutput[i] != prevOutput[i]) {
-    //         EnqueueWireEvent(s, wire, nextOutput[i]); <-- Note that during
-    //         component update a wire can't change more than once!
-    //       }
-    //     }
-    //   }
-    // }
-    int next_inputs[MAX_SLOTS];
-    for (int iec = 0; iec < s->necomps; iec++) {
-      int* next_outputs = &s->ecomp_outputs[iec * MAX_SLOTS];
-      int* prev_inputs = &s->ecomp_inputs[iec * MAX_SLOTS];
-      ExtComp* comp = &s->ecomps[iec];
-      bool need_simu = comp->dirty;
-      for (int i = 0; i < comp->ni; i++) {
-        int ix = comp->wires_in_x[i];
-        int iy = comp->wires_in_y[i];
-        next_inputs[i] = SimGetWireValue(s, ix, iy);
-        if (next_inputs[i] != prev_inputs[i]) {
-          need_simu = true;
-        }
-      }
-      if (need_simu) {
-        if (s->update_cb) {
-          s->update_cb(s->update_ctx, iec, prev_inputs, next_inputs,
-                       next_outputs);
-        }
-        // Updates previous inputs
-        for (int i = 0; i < comp->ni; i++) {
-          prev_inputs[i] = next_inputs[i];
-        }
-        comp->dirty = false;
-        for (int i = 0; i < comp->no; i++) {
-          int ox = comp->wires_out_x[i];
-          int oy = comp->wires_out_y[i];
-          int w = SimGetWireAtPixel(s, ox, oy);
-          int prev_output = s->state[w];
-          if (prev_output != next_outputs[i] && w != 0) {
-            SimQueueEvent(s, w, next_outputs[i]);
-          }
-        }
-      }
-    }
+    SimUpdateExternalComponents(s);
   }
+
   // stops when event queue is empty
   if (s->ne == 0) {
     LoopDetectorReset(&s->loop_detector);
@@ -861,10 +836,6 @@ void SimUpdate(Sim* s, float time_budget, float* time_used,
                bool* use_delay_time) {
   // No change in circuit if there was parsing errors
   *time_used = 0;
-  if (s->ok_creation == false) {
-    return;
-  }
-
   while (true) {
     // First checks if needs any update.
     bool dirty = s->ne > 0;
@@ -921,12 +892,8 @@ void SimUnload(Sim* s) {
   if (s->state_buffer) {
     free(s->state_buffer);
   }
-  if (s->nand_error_status) {
-    free(s->nand_error_status);
-  }
   UnloadLoopDetector(&s->loop_detector);
   free(s->nfo);
-  free(s->bugged_flag);
   free(s->fo);
   free(s->graph);
   free(s->state);
@@ -1022,18 +989,11 @@ void SimDispatchComponent(Sim* s, int icomp) {
     int prev_output = s->state[w];
     if (prev_output != next_outputs[i] && w != 0) {
       SimQueueEvent(s, w, next_outputs[i]);
-      // s->ev[2 * s->ne + 0] = w;
-      // s->ev[2 * s->ne + 1] = next_outputs[i];
-      // s->ne++;
     }
   }
 }
 
 void SimInitCompVisu(Sim* s) {
-  // if (!s->ok_creation) {
-  //   return;
-  // }
-
   s->state_w = 1024;
   int state_size = s->nc + s->pi.num_nands;
   s->state_h = (state_size / 1024) + 2;
@@ -1069,7 +1029,6 @@ void SimInitCompVisu(Sim* s) {
     }
   }
 
-  // TODO: set components of nands.
   for (int i = 0; i < s->pi.num_nand_pixels; i++) {
     // int iz = s->pi.nand_pixels[3 * i + 2];
     // if (iz != l) continue;
@@ -1082,25 +1041,6 @@ void SimInitCompVisu(Sim* s) {
     int c = nand_idx + s->nc;
     tmp_x[idx] = (c % sw) / ((float)(sw - 1));
     tmp_y[idx] = (c / sw) / ((float)(sh - 1));
-    // TODO: Render nands separately
-    // if (s->ok_creation) {
-    //   tmp_x[idx] = 0.91;
-    //   tmp_y[idx] = 0.91;
-    // } else {
-    //   switch (status) {
-    //     case NAND_STATUS_OK:
-    //       // pixels[idx] = undefined;
-    //       tmp_x[idx] = 0.92;
-    //       tmp_y[idx] = 0.92;
-    //       break;
-    //     case NAND_STATUS_MISSING_INPUT:
-    //     case NAND_STATUS_MISSING_OUTPUT:
-    //       // pixels[idx] = bugged;
-    //       tmp_x[idx] = 0.93;
-    //       tmp_y[idx] = 0.93;
-    //       break;
-    //   }
-    // }
   }
 
   Image img_x = {.data = tmp_x,
@@ -1139,18 +1079,8 @@ void UpdateStateTexture(Sim* s) {
   }
 
   for (int i = 0; i < s->pi.num_nands; i++) {
-    NandStatusEnum status = s->nand_error_status[i];
     int idx = i + s->nc;
-    switch (status) {
-      case NAND_STATUS_OK: {
-        s->state_buffer[idx] = 0.5;
-        break;
-      }
-      case NAND_STATUS_MISSING_INPUT:
-      case NAND_STATUS_MISSING_OUTPUT:
-        s->state_buffer[idx] = lut[BIT_BUGGED];
-        break;
-    }
+    s->state_buffer[idx] = 0.5;
   }
 
   s->istate = (s->istate + 1) % 2;

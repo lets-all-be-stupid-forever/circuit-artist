@@ -757,9 +757,9 @@ void CopyTexture(RenderTexture2D src, RectangleInt r, RenderTexture2D* dst,
                  Vector2Int offset) {
   assert(r.x >= 0 && r.y >= 0 && r.x + r.width <= src.texture.width &&
          r.y + r.height <= src.texture.height);
-  assert(offset.x >= 0 && offset.y >= 0 &&
-         offset.x + r.width <= dst->texture.width &&
-         offset.y + r.height <= dst->texture.height);
+  // assert(offset.x >= 0 && offset.y >= 0 &&
+  //        offset.x + r.width <= dst->texture.width &&
+  //        offset.y + r.height <= dst->texture.height);
   BeginTextureMode(*dst);
   Rectangle source = {
       .x = (float)r.x,

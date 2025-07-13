@@ -29,7 +29,7 @@ void UiLoad(Ui* ui, bool demo) {
   bool steam_enabled = SteamEnabled();
   if (steam_enabled) {
 #ifdef WITH_STEAM
-    SteamInit();
+    // SteamInit();
 #endif
   }
 

@@ -8,34 +8,41 @@ require 'api'
 
 initTutorial()
 
--- Loads each level
-require 'levels.sandbox'
+-- Legacy levels
+require 'legacy_levels.wires'
+require 'legacy_levels.nand'
+require 'legacy_levels.not'
+require 'legacy_levels.and'
+require 'legacy_levels.or'
+require 'legacy_levels.xor'
+require 'legacy_levels.mux'
 require 'levels.bus'
+require 'legacy_levels.decoder'
+require 'legacy_levels.demux'
 require 'levels.seven_seg'
+
+require 'levels.sandbox'
+
+require 'legacy_levels.shifter'
 require 'levels.mof3'
-require 'levels.simple_ram'
+
+require 'legacy_levels.adder'
+require 'legacy_levels.subtractor'
+require 'legacy_levels.comparator'
+
+-- These need memory
 require 'levels.collatz'
 require 'levels.gcd'
+
+-- Loads each level
+require 'levels.simple_ram'
 require 'levels.riscv_alu'
 require 'levels.hanoi'
+
 require 'levels.custom_components'
 -- require 'levels.primes'
 
 
--- Legacy levels
--- require 'levels.legacy_levels.wires'
--- require 'levels.legacy_levels.nand'
--- require 'levels.legacy_levels.not'
--- require 'levels.legacy_levels.and'
--- require 'levels.legacy_levels.or'
--- require 'levels.legacy_levels.xor'
--- require 'levels.legacy_levels.mux'
--- require 'levels.legacy_levels.decoder'
--- require 'levels.legacy_levels.demux'
--- require 'levels.legacy_levels.adder'
--- require 'levels.legacy_levels.subtractor'
--- require 'levels.legacy_levels.comparator'
--- require 'levels.legacy_levels.shifter'
 
 loadProgress()
 

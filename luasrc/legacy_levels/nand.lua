@@ -50,10 +50,6 @@ The NAND gates can be drawn in any orientation (facing up, down, left or right):
 
 !img:imgs/tutorial/nand3.png
 
-Every NAND should have its 2 inputs present, as well as the output, otherwise it will trigger an error when the simulation is launched.
-
-!img:imgs/tutorial/nand4.png
-
 Every non-black pixel in the image that is not part of a NAND gate is considered a wire, and has some state associated to it, as described below.
 
 

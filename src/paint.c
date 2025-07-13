@@ -301,11 +301,9 @@ void PaintStartSimu(Paint* ca) {
   SimLoad(&ca->s, ca->pi, cd->num_components, cd->extcomps,
           ApiUpdateLevelComponent, NULL);
   ProfilerTacSingle("SimLoad");
-  if (ca->s.status == SIMU_STATUS_OK) {
-    ApiStartLevelSimulation();
-    float time_used = 0;
-    SimUpdate(&ca->s, 0, &time_used, &ca->use_delay_time);
-  }
+  ApiStartLevelSimulation();
+  float time_used = 0;
+  SimUpdate(&ca->s, 0, &time_used, &ca->use_delay_time);
   ca->simu_time = 0;
   SimGenImage(&ca->s);
   ca->mode = MODE_SIMU;
@@ -352,7 +350,7 @@ void PaintUpdateSimu(Paint* ca, float delta) {
   ca->s.nand_activation_delay = ca->clock_speed;
   // Simulation Ticks
   LuaUpdate(ca, 0);
-  while (ca->simu_time > clock_time && ca->s.status == SIMU_STATUS_OK) {
+  while (ca->simu_time > clock_time) {
     if (SimIsBusy(&ca->s)) {
       float sim_time_used = 0;
       SimUpdate(&ca->s, ca->simu_time, &sim_time_used, &ca->use_delay_time);
@@ -952,7 +950,7 @@ void PaintHandleMouse(Paint* ca, bool is_target) {
       ca->tool_pressed = false;
       ca->resize_pressed = false;
     }
-  } else if (ca->mode == MODE_SIMU && ca->s.status == SIMU_STATUS_OK) {
+  } else if (ca->mode == MODE_SIMU) {
     if (is_target && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       PaintPokeSimulationPixel(ca);
     }
@@ -996,14 +994,6 @@ int PaintGetNumNands(Paint* ca) {
 }
 
 PaintMode PaintGetMode(Paint* ca) { return ca->mode; }
-
-int PaintGetSimuStatus(Paint* ca) {
-  if (ca->mode == MODE_SIMU) {
-    return ca->s.status;
-  } else {
-    return -1;
-  }
-}
 
 Color PaintGetColor(Paint* ca) { return ca->fg_color; }
 
@@ -1427,8 +1417,6 @@ void PaintRenderTextureSimu(Paint* ca, RenderTexture2D target) {
     unchanged_alpha = 0.5;
   }
 
-  int simu_state = ca->s.status == SIMU_STATUS_OK ? 0 : 1;
-
   draw_params p = {.mode = 1,
                    .wire_tpl = ca->t_tpl,
                    .img = ca->h.t_buffer,
@@ -1438,7 +1426,7 @@ void PaintRenderTextureSimu(Paint* ca, RenderTexture2D target) {
                    .prev_ts = prev_ts,
                    .fprev = fprev,
                    .unchanged_alpha = unchanged_alpha,
-                   .simu_state = simu_state,
+                   .simu_state = 0,
                    .sel = (RenderTexture2D){0},
                    .sel_off_x = 0,
                    .sel_off_y = 0,

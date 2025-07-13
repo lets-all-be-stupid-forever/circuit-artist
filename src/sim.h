@@ -6,33 +6,6 @@
 // Maximum number of wires per simulation external component (or chip).
 #define MAX_SLOTS 128
 
-// Status flag for simulation.
-typedef enum {
-  // Everything went well in simulation
-  SIMU_STATUS_OK,
-  // During compilation it found a wire with two nands pointing to it, which is
-  // not allowed.
-  SIMU_STATUS_WIRE,
-  // During compilation it found at least one NAND that doesn't have 2 inputs,
-  // which is not allowed.
-  SIMU_STATUS_NAND_MISSING_INPUT,
-  // During compilation it found at least one NAND that doesn't have 2 inputs,
-  // which is not allowed.
-  SIMU_STATUS_NAND_MISSING_OUTPUT,
-} SimuStatus;
-
-// Status flag for simulation.
-typedef enum {
-  // Nand is OK
-  NAND_STATUS_OK,
-  // Nand is missing an input. Either a wire missing or 2 wires missing.
-  NAND_STATUS_MISSING_INPUT,
-  // Nand is not connected to an output. Indeed simulation can work with
-  // unconnected nands, but being stricted makes it easier to find bugs in the
-  // circuit.
-  NAND_STATUS_MISSING_OUTPUT,
-} NandStatusEnum;
-
 // The 4 possible values for a wire by default
 typedef enum {
   BIT_0,
@@ -177,35 +150,21 @@ typedef struct {
   // accessing original pixel values during the rendering of the simulated
   // images.
   ParsedImage pi;
-  // Simulator creation flag.
-  // If the flag is not off, we don't actually simulate anything.
-  bool ok_creation;
   // Total number of wires.
   int nc;
-  // Error status for each nand. Processed during the creation of the graph.
-  // Used for identifying NANDs missing inputs or outputs.
-  // Possible values:
-  //   NAND_STATUS_OK
-  //   NAND_STATUS_MISSING_OUTPUT
-  //   NAND_STATUS_MISSING_INPUT
-  int* nand_error_status;
+  // Total number of nands.
+  int nn;
   // NAND graph of the circuit.
-  // Has size `2*nc`, and for each wire contains the two input wires to its
-  // source NAND. Each wire can have at most 1 NAND connected to it. To make it
-  // easier to manage, we assume EVERY wire is the result of a NAND among two
-  // other wires (possibly the same). For the wires that don't have a NAND
-  // associated to it, we assume that the special wire 0 is its source wire.
-  // Since the wire 0 is special and never changes state, these wires are never
-  // automatically updated during simulation. So, the update formula of the
-  // system is something like:
+  // Each nand has 2 inputs and 1 output.
+  // Has size `3*n_nand`, 2 inputs and 1 output for each NAND.
+  // Each wire can have more than 1 NAND connected to it, even though it might
+  // lead to buggy solutions.
+  // The update formula of the system is:
   //
-  //    WireState[i] := NAND(WireState[graph[2*i+0]], WireState[graph[2*i+1]])
+  // For each updated NAND:
+  //    WireState[graph[3*i+2]] := NAND(WireState[graph[3*i+0]],
+  //    WireState[graph[3*i+1]])
   //
-  // ie, we use it to identify how to update a given wire. For example, when a
-  // wire changes, we want to update the wire it is connected to (ie, belongs
-  // to its fanout), but then when we try to update this new wire , we can't
-  // do with the new value alone, we also need to fetch the value of the other
-  // wire this new wire is connected to. This is done using this graph data.
   int* graph;
   // Wire state of each wire.
   // The wire 0 is special, it doesnt actually map to a pixel on the image and
@@ -234,12 +193,6 @@ typedef struct {
   // Has size `2*max_events`.
   int* ev;
   int* ev_swap;
-  // A flag array containing for each wire wheter the wire is the source of a
-  // "bug" (for example being the output of more than one NAND). It's used
-  // during rendering so the user can see which wire is causing issues. 0 means
-  // the wire is ok, 1 means it is bugged.
-  // Has size `nc`.
-  int* bugged_flag;
   // Fanout offset list.
   // ie, the fanout of the wire `i` is represented by the wires
   // fo[nfo[i]], fo[nfo[i]+1], ..., fo[nfo[i+1]], where `fo` is the fanout
@@ -260,8 +213,6 @@ typedef struct {
   // of the same wire more than once per simulation step.
   // Has size `nc`.
   int* queued_at;
-  // Status of the simulation.
-  SimuStatus status;
   // Rendered simulated image at different resolutions (pyramid).
   // These images are updated at each call to SimGenImage().
   Image simulated[3];
@@ -324,6 +275,8 @@ typedef struct {
 
   // If true, it means a loop has been detected during simulation.
   bool is_looping;
+  // Flag to see if the wire has changed during an event update
+  bool* ev_changed;
 } Sim;
 
 // Parses a raw image into an intermediate data structure to be fed into the
