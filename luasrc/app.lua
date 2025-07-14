@@ -23,6 +23,7 @@ require 'levels.seven_seg'
 
 require 'levels.sandbox'
 require 'levels.door'
+require 'levels.antenna'
 require 'levels.camera'
 
 require 'legacy_levels.shifter'
@@ -49,7 +50,7 @@ require 'levels.custom_components'
 loadProgress()
 
 -- setInitialLevelByName('Sandbox')
-setInitialLevelByName('Door Lock')
+setInitialLevelByName('Antenna Repeater')
 
 if utils.isModuleAvailable('scripts') then
   require('scripts')
