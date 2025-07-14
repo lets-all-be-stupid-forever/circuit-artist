@@ -22,6 +22,8 @@ require 'legacy_levels.demux'
 require 'levels.seven_seg'
 
 require 'levels.sandbox'
+require 'levels.door'
+require 'levels.camera'
 
 require 'legacy_levels.shifter'
 require 'levels.mof3'
@@ -46,7 +48,8 @@ require 'levels.custom_components'
 
 loadProgress()
 
-setInitialLevelByName('Sandbox')
+-- setInitialLevelByName('Sandbox')
+setInitialLevelByName('Door Lock')
 
 if utils.isModuleAvailable('scripts') then
   require('scripts')
