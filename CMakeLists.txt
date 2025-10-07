@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(ca C CXX)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 OPTION(OPENMP "Use OpenMP for thread detection")
@@ -17,6 +18,8 @@ SET(BUILD_SHARED_LIBS ON CACHE BOOL "Build raylib shared library")
 
 add_subdirectory(third_party/raylib)
 add_subdirectory(third_party/nativefiledialog-extended)
+add_compile_options(-fsanitize=address)
+add_link_options(-fsanitize=address)
 
 # there's also a "rolling" tag but that jams up any sha256 effort
 SET(LUAJIT_VERSION 2.1.0-beta3)
