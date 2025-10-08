@@ -10,6 +10,8 @@ typedef struct {
   int height;  // Rectangle height
 } RectangleInt;
 
+typedef RectangleInt RecInt;
+
 // Checks if the rectangle is empty. (ie area == 0)
 bool IsRecIntEmpty(RectangleInt r);
 

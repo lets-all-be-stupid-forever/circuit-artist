@@ -60,6 +60,37 @@ void PaintPerformToolAction(Paint* ca) {
         Image img = {0};
         Vector2Int off = {0};
         PaintMakeToolSubImage(ca, &img, &off);
+        // Ensures here we don't have pieces of buffer outside the main buffer.
+        RectangleInt buffer_rect = HistGetBufferRect(&ca->h);
+        RectangleInt img_rect = {
+            .x = off.x,
+            .y = off.y,
+            .width = img.width,
+            .height = img.height,
+        };
+        RectangleInt cropped_rect = GetCollisionRecInt(img_rect, buffer_rect);
+
+        // If intersection is empty, we don't do anything
+        if (cropped_rect.width == 0) {
+          UnloadImage(img);
+          return;
+        }
+
+        // If sizes don't match, crops the buffer image.
+        if (cropped_rect.width != img.width ||
+            cropped_rect.height != img.height) {
+          RectangleInt crop_img = {
+              .x = cropped_rect.x - off.x,
+              .y = cropped_rect.y - off.y,
+              .width = cropped_rect.width,
+              .height = cropped_rect.height,
+          };
+          off.x = cropped_rect.x;
+          off.y = cropped_rect.y;
+          Image tmp = CropImage(img, crop_img);
+          UnloadImage(img);
+          img = tmp;
+        }
         HistActBuffer(&ca->h, img, off);
       }
       break;
@@ -101,9 +132,9 @@ RectangleInt PaintCropRectInBuffer(Paint* ca, RectangleInt r) {
   int x1 = r.x + r.width;
   int y0 = r.y;
   int y1 = r.y + r.height;
-  Image buffer = HistGetBuffer(&ca->h);
-  int w = buffer.width;
-  int h = buffer.height;
+  RectangleInt buffer_rect = HistGetBufferRect(&ca->h);
+  int w = buffer_rect.width;
+  int h = buffer_rect.height;
   if (x0 < 0) x0 = 0;
   if (y0 < 0) y0 = 0;
   if (x1 > w) x1 = w;
@@ -169,14 +200,14 @@ static RectangleInt PaintMakeToolRect(Paint* ca) {
 }
 
 void PaintEnsureCameraWithinBounds(Paint* ca) {
-  Image buffer = HistGetBuffer(&ca->h);
+  RectangleInt brect = HistGetBufferRect(&ca->h);
   int extrax = ca->extrax;
   int extray = ca->extray;
   float eiw = (extrax)*ca->camera_s;
   float eih = (extray)*ca->camera_s;
   // Total image size in scaled pixels
-  float iw = (buffer.width + extrax) * ca->camera_s;
-  float ih = (buffer.height + extray) * ca->camera_s;
+  float iw = (brect.width + extrax) * ca->camera_s;
+  float ih = (brect.height + extray) * ca->camera_s;
   // Physical size in pixels
   // struct region r = ui_get_target_region(C.ui);
   RectangleInt r = ca->viewport;  // ui_get_target_region(C.ui);
@@ -197,18 +228,18 @@ void PaintEnsureCameraWithinBounds(Paint* ca) {
 }
 
 void PaintCenterCamera(Paint* ca) {
-  Image buffer = HistGetBuffer(&ca->h);
+  RectangleInt brect = HistGetBufferRect(&ca->h);
   int ci = 1;
   RectangleInt r = ca->viewport;
-  while ((zoom_lut[ci + 1] * buffer.width < r.width) &&
-         (zoom_lut[ci + 1] * buffer.height < r.height) &&
+  while ((zoom_lut[ci + 1] * brect.width < r.width) &&
+         (zoom_lut[ci + 1] * brect.height < r.height) &&
          (zoom_lut[ci + 1] != -1)) {
     ci++;
   }
   ca->camera_i = ci;
   ca->camera_s = zoom_lut[ci];
-  float iw = buffer.width * ca->camera_s;
-  float ih = buffer.height * ca->camera_s;
+  float iw = brect.width * ca->camera_s;
+  float ih = brect.height * ca->camera_s;
   int sw = r.width;
   int sh = r.height;
   float x_max = sw - fmin(iw, sw / 2);
@@ -271,7 +302,7 @@ void PaintSetViewport(Paint* ca, int x, int y, int w, int h) {
     need_centering = true;
   }
   ca->viewport = (RectangleInt){x, y, w, h};
-  if (HistGetBuffer(&ca->h).width > 0) {
+  if (HistGetBufferRect(&ca->h).width > 0) {
     if (need_centering) {
       PaintCenterCamera(ca);
     }
@@ -395,7 +426,7 @@ bool PaintGetIsToolSelMoving(Paint* ca) {
 
 static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off) {
   Color c = ca->tool_btn == LEFT_BTN ? ca->fg_color : BLACK;
-  Image buffer = HistGetBuffer(&ca->h);
+  RecInt brect = HistGetBufferRect(&ca->h);
   if (HistGetTool(&ca->h) == TOOL_LINE) {
     Vector2Int start = {
         .x = ca->tool_start_x,
@@ -404,8 +435,8 @@ static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off) {
     RectangleInt img_rect = {
         .x = 0,
         .y = 0,
-        .width = buffer.width,
-        .height = buffer.height,
+        .width = brect.width,
+        .height = brect.height,
     };
     int ls = ca->line_tool_size == 0 ? 1 : ca->line_tool_size;
     int sep = ca->line_tool_sep <= 0 ? 1 : ca->line_tool_sep;
@@ -414,7 +445,7 @@ static void PaintMakeToolSubImage(Paint* ca, Image* img, Vector2Int* off) {
     DrawImageLineTool(start, PaintMakeToolRect(ca), img_rect, ls, sep, corner,
                       end_corner, c, img, off);
   } else if (HistGetTool(&ca->h) == TOOL_BRUSH) {
-    BrushMakeImage(&ca->brush, c, buffer.width, buffer.height, img, off);
+    BrushMakeImage(&ca->brush, c, brect.width, brect.height, img, off);
   } else {
     *img = (Image){0};
     *off = (Vector2Int){0};
@@ -821,9 +852,9 @@ void PaintHandleKeys(Paint* ca) {
 }
 
 static void PaintPokeSimulationPixel(Paint* ca) {
-  Image buffer = HistGetBuffer(&ca->h);
-  if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < buffer.width &&
-      ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < buffer.height) {
+  RecInt brect = HistGetBufferRect(&ca->h);
+  if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < brect.width &&
+      ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < brect.height) {
     int search_radius = 5;
     SimFindNearestPixelToToggle(&ca->s, search_radius, ca->f_pixel_cursor_x,
                                 ca->f_pixel_cursor_y, &ca->queued_toggled_x,
@@ -854,10 +885,10 @@ void PaintHandleMouse(Paint* ca, bool is_target) {
     bool left_released = IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
     bool right_released = IsMouseButtonReleased(MOUSE_BUTTON_RIGHT);
     Vector2 pixel_pos = {.x = ca->pixel_cursor_x, ca->pixel_cursor_y};
-    Image buffer = HistGetBuffer(&ca->h);
+    RecInt brect = HistGetBufferRect(&ca->h);
     Rectangle resize_rect = {
-        .x = buffer.width,
-        .y = buffer.height,
+        .x = brect.width,
+        .y = brect.height,
         .width = RESIZE_HANDLE_SIZE / ca->camera_s,
         .height = RESIZE_HANDLE_SIZE / ca->camera_s,
     };
@@ -927,8 +958,8 @@ void PaintHandleMouse(Paint* ca, bool is_target) {
           new_y = new_y > max_size ? max_size : new_y;
         }
 
-        int deltax = new_x - buffer.width;
-        int deltay = new_y - buffer.height;
+        int deltax = new_x - brect.width;
+        int deltay = new_y - brect.height;
         HistActChangeImageSize(&ca->h, deltax, deltay);
       }
       ca->tool_pressed = false;
@@ -990,9 +1021,9 @@ int PaintGetSimuStatus(Paint* ca) {
 Color PaintGetColor(Paint* ca) { return ca->fg_color; }
 
 void PaintGetSimuPixelToggleState(Paint* ca, int* cur_state) {
-  Image buffer = HistGetBuffer(&ca->h);
-  if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < buffer.width &&
-      ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < buffer.height) {
+  RecInt brect = HistGetBufferRect(&ca->h);
+  if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < brect.width &&
+      ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < brect.height) {
     int search_radius = 5;
     int qx;
     int qy;
@@ -1261,9 +1292,9 @@ void PaintRenderTextureEdit(Paint* ca, RenderTexture2D target) {
   if ((tool == TOOL_SEL || tool == TOOL_BUCKET || tool == TOOL_PICKER) &&
       !ca->tool_pressed && IsCursorOnScreen() && !PaintGetMouseOverSel(ca) &&
       ca->mouse_on_target) {
-    Image buffer = HistGetBuffer(&ca->h);
-    if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < buffer.width &&
-        ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < buffer.height) {
+    RecInt brect = HistGetBufferRect(&ca->h);
+    if (ca->pixel_cursor_x >= 0 && ca->pixel_cursor_x < brect.width &&
+        ca->pixel_cursor_y >= 0 && ca->pixel_cursor_y < brect.height) {
       int x0 = ca->pixel_cursor_x;
       int y0 = ca->pixel_cursor_y;
       int x1 = ca->pixel_cursor_x + 1;
@@ -1282,10 +1313,10 @@ void PaintRenderTextureEdit(Paint* ca, RenderTexture2D target) {
   // ------------------------------------------------------------------------------------
   // Resize stuff
   {
-    Image buffer = HistGetBuffer(&ca->h);
+    RecInt brect = HistGetBufferRect(&ca->h);
     Rectangle resize_rect = {
-        .x = buffer.width,
-        .y = buffer.height,
+        .x = brect.width,
+        .y = brect.height,
         .width = RESIZE_HANDLE_SIZE / ca->camera_s,
         .height = RESIZE_HANDLE_SIZE / ca->camera_s,
     };

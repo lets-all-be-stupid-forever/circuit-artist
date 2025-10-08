@@ -138,6 +138,7 @@ void HistActSelFlip(Hist* h, CmdActionType act);
 void HistActPasteImage(Hist* h, Vector2Int offset, Image img);
 
 // Dispatches an action to apply a buffer.
+// The buffer must intersect the target.
 // Often used with tools like line/brush/text/bucket.
 void HistActBuffer(Hist* h, Image img, Vector2Int off);
 
@@ -191,5 +192,9 @@ bool HistGetCanUndo(Hist* h);
 
 // Returns whether it's possible to perform and redo.
 bool HistGetCanRedo(Hist* h);
+
+// Returns the rectangle associated with the drawing buffer.
+// Used to get the height/width of the image.
+RectangleInt HistGetBufferRect(Hist* h);
 
 #endif

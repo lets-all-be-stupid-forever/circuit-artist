@@ -684,3 +684,5 @@ void CmdUnload(Cmd* c) {
   }
   free(c);
 }
+
+RectangleInt HistGetBufferRect(Hist* h) { return GetImageRect(h->buffer); }
