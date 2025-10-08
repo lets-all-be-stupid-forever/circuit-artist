@@ -49,9 +49,12 @@ IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/LuaJIT/src/lua.h)
     message(FATAL_ERROR "The LuaJIT unpack did not shake out, lua.h is missing")
 ENDIF()
 
+# I'm doing a bit of a hack to force generation of libluajit.so in MAC and UNIX.
+# In windows it's more complicated we need to compile by hand.
+SET(LUAJIT_SO ${CMAKE_SOURCE_DIR}/LuaJIT/src/libluajit.so)
 add_custom_command(
   # in my tarball, it always generates .so but we'll need to double check what happens on (WIN32)
-  OUTPUT ${CMAKE_SOURCE_DIR}/LuaJIT/src/libluajit.so
+  OUTPUT ${LUAJIT_SO}
   # that nonsense is because it does actually build the .so
   # but barfs linking luajit binary due to dwarf symbols
   COMMAND make --ignore-errors
@@ -138,6 +141,8 @@ IF(WIN32)
   SET(luajit_lib lua51)
 ELSE ()
   SET(luajit_lib luajit)
+  add_custom_target(build_luajit DEPENDS ${LUAJIT_SO})
+  add_dependencies(calib build_luajit)
 ENDIF()
 IF (OPENMP)
   SET(openmp_lib OpenMP::OpenMP_C OpenMP::OpenMP_CXX)
