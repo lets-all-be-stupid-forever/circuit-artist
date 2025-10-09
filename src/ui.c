@@ -39,6 +39,7 @@ void UiLoad(Ui* ui, bool demo) {
   int screen_width = 640 * 2;
   int screen_height = 320 * 2;
   // SetTraceLogLevel(LOG_NONE);
+
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
   InitWindow(screen_width, screen_height, "Circuit Artist");
   ui->icon = LoadImage("../assets/icon32.png");

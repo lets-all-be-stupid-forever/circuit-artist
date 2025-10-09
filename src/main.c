@@ -16,6 +16,8 @@ static Ui _ui = {0};
 
 int main() {
   int demo = 0;
+  // Change to the application directory so relative paths work correctly
+  ChangeDirectory(GetApplicationDirectory());
 #ifdef DEMO_VERSION
   demo = 1;
 #endif
