@@ -22,17 +22,15 @@ jobs:
           # thankfully, windows-2019 ships with cmake in %ProgramFiles%
           # language=PowerShell
           build: |
-            mkdir objdir
-            cd    objdir
-            cmake ..
-            echo "Working around a custom_command silly ..."
-            make -C ../LuaJIT
+            cd LuaJIT/src
+            cmd /c msvcbuild.bat
+            cd ../..
             echo "Listing LuaJIT build output:"
-            gci -Path ../LuaJIT/src -Filter "*.lib","*.dll","*.a" -Verbose -Force
-            echo "let CI pass for the time being, showing it compiles"
-            $ErrorActionPreference = 'Continue'
+            gci -Path LuaJIT/src -Include *.lib,*.dll -Name
+            mkdir objdir
+            cd objdir
+            cmake ..
             cmake --build .
-            gci -Verbose -Force
 
     runs-on: ${{ matrix.kinds.machine }}
     steps:
