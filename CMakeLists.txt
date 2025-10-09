@@ -18,8 +18,11 @@ SET(BUILD_SHARED_LIBS ON CACHE BOOL "Build raylib shared library")
 
 add_subdirectory(third_party/raylib)
 add_subdirectory(third_party/nativefiledialog-extended)
-add_compile_options(-fsanitize=address)
-add_link_options(-fsanitize=address)
+
+if(APPLE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_compile_options(-fsanitize=address)
+  add_link_options(-fsanitize=address)
+endif()
 
 # there's also a "rolling" tag but that jams up any sha256 effort
 SET(LUAJIT_VERSION 2.1.0-beta3)
@@ -61,10 +64,10 @@ add_custom_command(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/LuaJIT
   VERBATIM
 )
-link_directories(LuaJIT/src)
+link_directories(${CMAKE_SOURCE_DIR}/LuaJIT/src)
 
 IF (STEAM)
-    link_directories(third_party/redistributable_bin/win64/)
+    link_directories(${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/)
     SET(steam_libs steam_api64)
     add_compile_definitions(WITH_STEAM=1)
 ENDIF()
