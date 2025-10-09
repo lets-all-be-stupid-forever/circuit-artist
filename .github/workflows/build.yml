@@ -14,8 +14,9 @@ jobs:
             make -C LuaJIT clean || true
             mkdir build
             cd    build
-            cmake -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release ..
-            make -C ../LuaJIT
+            cmake -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 ..
+            # Build LuaJIT with deployment target set
+            MACOSX_DEPLOYMENT_TARGET=11.0 make -C ../LuaJIT
             cmake --build .
             cd ..
             mkdir -p dist/bin
