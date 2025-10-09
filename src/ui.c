@@ -42,6 +42,8 @@ void UiLoad(Ui* ui, bool demo) {
 
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
   InitWindow(screen_width, screen_height, "Circuit Artist");
+  // Change to the application directory so relative paths work correctly
+  ChangeDirectory(GetApplicationDirectory());
   ui->icon = LoadImage("../assets/icon32.png");
   SetWindowIcon(ui->icon);
   BeginDrawing();

@@ -118,7 +118,15 @@ CA_API void CaDrawTextBox(const char* txt, int x, int y, int w, Color c) {
 
 static void RunOrCrash(int status) {
   if (status != LUA_OK) {
-    fprintf(stderr, "Error in Lua:\n%s\n", lua_tostring(_L, -1));
+    const char* error_msg = lua_tostring(_L, -1);
+    fprintf(stderr, "Error in Lua:\n%s\n", error_msg);
+    TraceLog(LOG_ERROR, "Lua Error: %s", error_msg);
+    // Write to a crash log file
+    FILE* f = fopen("crash.log", "w");
+    if (f) {
+      fprintf(f, "Lua Error:\n%s\n", error_msg);
+      fclose(f);
+    }
     exit(1);
   }
 }
