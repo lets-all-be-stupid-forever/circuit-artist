@@ -64,10 +64,10 @@ add_custom_command(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/LuaJIT
   VERBATIM
 )
-link_directories(LuaJIT/src)
+link_directories(${CMAKE_SOURCE_DIR}/LuaJIT/src)
 
 IF (STEAM)
-    link_directories(third_party/redistributable_bin/win64/)
+    link_directories(${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/)
     SET(steam_libs steam_api64)
     add_compile_definitions(WITH_STEAM=1)
 ENDIF()
