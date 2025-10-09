@@ -27,6 +27,8 @@ jobs:
             cmake ..
             echo "Working around a custom_command silly ..."
             make -C ../LuaJIT
+            echo "Listing LuaJIT build output:"
+            gci -Path ../LuaJIT/src -Filter "*.lib","*.dll","*.a" -Verbose -Force
             echo "let CI pass for the time being, showing it compiles"
             $ErrorActionPreference = 'Continue'
             cmake --build .

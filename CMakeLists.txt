@@ -141,7 +141,8 @@ target_include_directories(calib PRIVATE
 IF(WIN32)
   SET(shlwapi_lib shlwapi)
   # mingw32-make cooks lua51.dll for some reason :-(
-  SET(luajit_lib lua51)
+  # Use the full path to the library
+  SET(luajit_lib ${CMAKE_SOURCE_DIR}/LuaJIT/src/lua51.lib)
 ELSE ()
   SET(luajit_lib luajit)
   add_custom_target(build_luajit DEPENDS ${LUAJIT_SO})
