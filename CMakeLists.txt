@@ -155,6 +155,14 @@ target_link_libraries(calib raylib ${shlwapi_lib} nfd ${openmp_lib} ${luajit_lib
 add_executable(ca src/main.c)
 target_link_libraries(ca calib)
 
+IF (APPLE)
+  # Set rpath so the executable can find dylibs in the same directory
+  set_target_properties(ca PROPERTIES
+    BUILD_RPATH "@executable_path"
+    INSTALL_RPATH "@executable_path"
+  )
+ENDIF()
+
 IF (UNIX AND NOT APPLE)
   # Need this command so luajit can access the C API from ffi
   SET_PROPERTY(TARGET ca PROPERTY ENABLE_EXPORTS ON)

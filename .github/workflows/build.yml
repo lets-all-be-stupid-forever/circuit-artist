@@ -18,10 +18,12 @@ jobs:
             cd ..
             mkdir -p dist/bin
             cp build/ca dist/bin/
-            cp build/*.dylib dist/bin/ 2>/dev/null || true
-            cp LuaJIT/src/*.dylib dist/bin/ 2>/dev/null || true
+            # Copy all dylib files (including versioned ones)
+            find build -name "*.dylib" -exec cp {} dist/bin/ \;
+            find LuaJIT/src -name "*.dylib" -exec cp {} dist/bin/ \; 2>/dev/null || true
             cp -r luasrc dist/
             cp -r assets dist/
+            echo "Contents of dist/bin:"
             ls -la dist/bin/
         - machine: windows-2025
           # thankfully, windows-2019 ships with cmake in %ProgramFiles%
