@@ -35,6 +35,12 @@ typedef struct {
   int comb_loc_src_off;
   int comb_loc_dst_off;
 
+  Shader selrect_shader;
+  int selrect_loc_rsize;
+  int selrect_loc_rect_pos;
+  int selrect_loc_pattern_shift;
+  int selrect_loc_pattern_width;
+
   Shader fill_shader;
 
   Shader rotate_shader;

@@ -970,3 +970,44 @@ void draw_main_img(int mode, Texture2D wire_tpl, RenderTexture2D img,
   end_shader();
   EndTextureMode();
 }
+
+static void DrawSelRectLine(Rectangle r, double t, Color c) {
+  begin_shader(selrect);
+  float size[2] = {r.width, r.height};
+  float pos[2] = {r.x, r.y};
+  int width = 8;
+  int shift = 2 * width - ((int)(20 * t)) % (2 * width);
+  set_shader_vec2(selrect, rsize, size);
+  set_shader_vec2(selrect, rect_pos, pos);
+  set_shader_int(selrect, pattern_shift, &shift);
+  set_shader_int(selrect, pattern_width, &width);
+  Vector2 topLeft = {r.x, r.y};
+  Vector2 bottomLeft = {r.x, r.y + r.height};
+  Vector2 topRight = {r.x + r.width, r.y};
+  Vector2 bottomRight = {r.x + r.width, r.y + r.height};
+  rlBegin(RL_QUADS);
+  rlNormal3f(0.0f, 0.0f, 1.0f);
+  rlColor4ub(c.r, c.g, c.b, c.a);
+  rlTexCoord2f(0, 0);
+  rlVertex2f(topLeft.x, topLeft.y);
+  rlTexCoord2f(0, 1);
+  rlVertex2f(bottomLeft.x, bottomLeft.y);
+  rlTexCoord2f(1, 1);
+  rlVertex2f(bottomRight.x, bottomRight.y);
+  rlTexCoord2f(1, 0);
+  rlVertex2f(topRight.x, topRight.y);
+  rlEnd();
+  end_shader();
+}
+
+void DrawSelectionRect(float x, float y, float w, int h, double t, Color c) {
+  int s = 2;
+  Rectangle r_top = {x - s, y - s, w + 2 * s, s};
+  Rectangle r_bot = {x - s, y + h, w + 2 * s, s};
+  Rectangle r_left = {x - s, y - s, s, h + 2 * s};
+  Rectangle r_right = {x + w, y - s, s, h + 2 * s};
+  DrawSelRectLine(r_top, t, c);
+  DrawSelRectLine(r_bot, t, c);
+  DrawSelRectLine(r_left, t, c);
+  DrawSelRectLine(r_right, t, c);
+}

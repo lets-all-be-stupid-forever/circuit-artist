@@ -132,6 +132,8 @@ void draw_main_img(int mode, Texture2D wire_tpl, RenderTexture2D img,
                    RenderTexture2D* target);
 void draw_rect(float x, float y, float w, int h, Color c);
 
+void DrawSelectionRect(float x, float y, float w, int h, double t, Color c);
+
 #if defined(__cplusplus)
 }
 #endif

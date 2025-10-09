@@ -1,12 +1,48 @@
 
 #include "shaders.h"
 
+#include "assert.h"
 #include "stdio.h"
 #define SHADER_LOC(a, b) _s.a##_loc_##b = GetShaderLocation(_s.a##_shader, #b);
-#define SHADER_LOAD(name) \
-  _s.name##_shader = LoadShader(0, "../assets/shaders/" #name "_shader.glsl");
+#define SHADER_LOAD(name)                                         \
+  {                                                               \
+    _s.name##_shader =                                            \
+        LoadShader(0, "../assets/shaders/" #name "_shader.glsl"); \
+    assert(IsShaderReady(_s.name##_shader));                      \
+  }
+
+#define SHADER_LOAD_CODE(name)                               \
+  {                                                          \
+    printf("Loading shader %s\n", #name);                    \
+    _s.name##_shader = LoadShaderFromMemory(0, name##_code); \
+    assert(IsShaderReady(_s.name##_shader));                 \
+  }
 
 static Shaders _s = {0};
+
+static const char selrect_code[] =
+    "#version 330                                           \n "
+    "in vec2 fragTexCoord;                                  \n "
+    "in vec4 fragColor;                                     \n "
+    "uniform vec4 colDiffuse;                               \n "
+    "uniform vec2 rsize;                                    \n "
+    "uniform vec2 rect_pos;                                 \n "
+    "uniform int pattern_shift;                             \n "
+    "uniform int pattern_width;                             \n "
+    " out vec4 finalColor;                                  \n "
+    "void main() {                                          \n "
+    "  int fx = int(round(fragTexCoord.x * rsize.x - 0.5)); \n "
+    "  int fy = int(round(fragTexCoord.y * rsize.y - 0.5)); \n "
+    "  int ix = int(round(rect_pos.x));                     \n "
+    "  int iy = int(round(rect_pos.y));                     \n "
+    "  int p = ix + fx + iy + fy + pattern_shift;           \n "
+    "  p = p % (2 * pattern_width);                         \n "
+    "  if (p < pattern_width) {                             \n "
+    "    finalColor = fragColor * vec4(1.0, 1.0, 1.0, 1.0); \n "
+    "  } else {                                             \n "
+    "    finalColor = fragColor * vec4(0.0, 0.0, 0.0, 1.0); \n "
+    "  }                                                    \n "
+    "}                                                      \n ";
 
 void InitShaders() {
   SHADER_LOAD(fill);
@@ -21,6 +57,12 @@ void InitShaders() {
   SHADER_LOC(comb, roi_size);
   SHADER_LOC(comb, src_off);
   SHADER_LOC(comb, dst_off);
+
+  SHADER_LOAD_CODE(selrect);
+  SHADER_LOC(selrect, rsize);
+  SHADER_LOC(selrect, rect_pos);
+  SHADER_LOC(selrect, pattern_shift);
+  SHADER_LOC(selrect, pattern_width);
 
   SHADER_LOAD(project);
   SHADER_LOC(project, sp);
