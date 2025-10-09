@@ -20,7 +20,8 @@ jobs:
             cp build/ca dist/bin/
             # Copy all dylib files (including versioned ones)
             find build -name "*.dylib" -exec cp {} dist/bin/ \;
-            find LuaJIT/src -name "*.dylib" -exec cp {} dist/bin/ \; 2>/dev/null || true
+            # Copy LuaJIT library and create symlink with expected name
+            cp LuaJIT/src/libluajit.so dist/bin/libluajit-5.1.2.dylib
             cp -r luasrc dist/
             cp -r assets dist/
             echo "Contents of dist/bin:"
