@@ -6,18 +6,23 @@ jobs:
     strategy:
       matrix:
         kinds:
-#        - machine: macos-13
-#          # language=sh
-#          build: |
-#            set -euo pipefail
-#            mkdir objdir
-#            cd    objdir
-#            cmake -G 'Unix Makefiles' -DCMAKE_VERBOSE_MAKEFILE=ON ..
-#            echo 'Working around a custom_command silly ...' >&2
-#            make -C ../LuaJIT || true
-#            ls -la ../LuaJIT/src/*.so
-#            cmake --build .
-#            ls -la
+        - machine: macos-13
+          # language=sh
+          build: |
+            set -euo pipefail
+            mkdir build
+            cd    build
+            cmake -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release ..
+            make -C ../LuaJIT || true
+            cmake --build .
+            cd ..
+            mkdir -p dist/bin
+            cp build/ca dist/bin/
+            cp build/*.dylib dist/bin/ 2>/dev/null || true
+            cp LuaJIT/src/*.dylib dist/bin/ 2>/dev/null || true
+            cp -r luasrc dist/
+            cp -r assets dist/
+            ls -la dist/bin/
         - machine: windows-2025
           # thankfully, windows-2019 ships with cmake in %ProgramFiles%
           # language=PowerShell
@@ -25,12 +30,18 @@ jobs:
             cd LuaJIT/src
             cmd /c msvcbuild.bat
             cd ../..
-            echo "Listing LuaJIT build output:"
-            gci -Path LuaJIT/src -Include *.lib,*.dll -Name
-            mkdir objdir
-            cd objdir
-            cmake ..
-            cmake --build .
+            mkdir build
+            cd build
+            cmake -DCMAKE_BUILD_TYPE=Release ..
+            cmake --build . --config Release
+            cd ..
+            mkdir -p dist/bin
+            cp build/Release/ca.exe dist/bin/
+            cp build/Release/*.dll dist/bin/ -ErrorAction SilentlyContinue
+            cp LuaJIT/src/*.dll dist/bin/ -ErrorAction SilentlyContinue
+            cp -r luasrc dist/
+            cp -r assets dist/
+            gci -Path dist/bin -Recurse
 
     runs-on: ${{ matrix.kinds.machine }}
     steps:
@@ -50,14 +61,6 @@ jobs:
     - name: capture built artifact
       uses: actions/upload-artifact@v4
       with:
-        name: built circuit-artifact executable
-        # this in lieu of messing with CPack
-        path: |
-          objdir/ca*
-          objdir/*.dll
-          objdir/*.dylib
-          objdir/*.so
-          LuaJIT/src/*.dll
-          LuaJIT/src/*.dylib
-          LuaJIT/src/*.so
-        retention-days: 7  # shrug
+        name: circuit-artist-${{ matrix.kinds.machine }}
+        path: dist/*
+        retention-days: 7
