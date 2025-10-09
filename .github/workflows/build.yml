@@ -6,7 +6,7 @@ jobs:
     strategy:
       matrix:
         kinds:
-        - machine: macos-13
+        - machine: macos-14
           # language=sh
           build: |
             set -euo pipefail
