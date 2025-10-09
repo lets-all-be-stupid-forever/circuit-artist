@@ -6,31 +6,31 @@ jobs:
     strategy:
       matrix:
         kinds:
-        - machine: macos-13
-          # language=sh
-          build: |
-            set -euo pipefail
-            mkdir objdir
-            cd    objdir
-            cmake -G 'Unix Makefiles' -DCMAKE_VERBOSE_MAKEFILE=ON ..
-            echo 'Working around a custom_command silly ...' >&2
-            make -C ../LuaJIT || true
-            ls -la ../LuaJIT/src/*.so
-            cmake --build .
-            ls -la
-#        - machine: windows-2019
-#          # thankfully, windows-2019 ships with cmake in %ProgramFiles%
-#          # language=PowerShell
+#        - machine: macos-13
+#          # language=sh
 #          build: |
+#            set -euo pipefail
 #            mkdir objdir
 #            cd    objdir
-#            cmake ..
-#            echo "Working around a custom_command silly ..."
-#            make -C ../LuaJIT
-#            echo "let CI pass for the time being, showing it compiles"
-#            $ErrorActionPreference = 'Continue'
+#            cmake -G 'Unix Makefiles' -DCMAKE_VERBOSE_MAKEFILE=ON ..
+#            echo 'Working around a custom_command silly ...' >&2
+#            make -C ../LuaJIT || true
+#            ls -la ../LuaJIT/src/*.so
 #            cmake --build .
-#            gci -Verbose -Force
+#            ls -la
+        - machine: windows-2025
+          # thankfully, windows-2019 ships with cmake in %ProgramFiles%
+          # language=PowerShell
+          build: |
+            mkdir objdir
+            cd    objdir
+            cmake ..
+            echo "Working around a custom_command silly ..."
+            make -C ../LuaJIT
+            echo "let CI pass for the time being, showing it compiles"
+            $ErrorActionPreference = 'Continue'
+            cmake --build .
+            gci -Verbose -Force
 
     runs-on: ${{ matrix.kinds.machine }}
     steps:
