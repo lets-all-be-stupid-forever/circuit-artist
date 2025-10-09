@@ -20,12 +20,16 @@ jobs:
             cp build/ca dist/bin/
             # Copy all dylib files (including versioned ones)
             find build -name "*.dylib" -exec cp {} dist/bin/ \;
-            # Copy LuaJIT library and create symlink with expected name
+            # Copy LuaJIT library with expected name
             cp LuaJIT/src/libluajit.so dist/bin/libluajit-5.1.2.dylib
+            # Fix the hardcoded library paths in the executable
+            install_name_tool -change /usr/local/lib/libluajit-5.1.2.dylib @executable_path/libluajit-5.1.2.dylib dist/bin/ca
             cp -r luasrc dist/
             cp -r assets dist/
             echo "Contents of dist/bin:"
             ls -la dist/bin/
+            echo "Checking library paths in executable:"
+            otool -L dist/bin/ca
         - machine: windows-2025
           # thankfully, windows-2019 ships with cmake in %ProgramFiles%
           # language=PowerShell
