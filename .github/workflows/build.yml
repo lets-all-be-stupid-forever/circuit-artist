@@ -37,6 +37,8 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
     - name: cache luajit download
       uses: actions/cache@v4
       with:
