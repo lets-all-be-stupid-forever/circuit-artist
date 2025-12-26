@@ -7,3 +7,7 @@
 [submodule "third_party/json-c"]
 	path = third_party/json-c
 	url = https://github.com/json-c/json-c.git
+[submodule "third_party/msgpack-c"]
+	path = third_party/msgpack-c
+	url = https://github.com/msgpack/msgpack-c.git
+	branch = c_master
