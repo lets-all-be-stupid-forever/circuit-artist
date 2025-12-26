@@ -4,3 +4,6 @@
 [submodule "third_party/nativefiledialog-extended"]
 	path = third_party/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "third_party/json-c"]
+	path = third_party/json-c
+	url = https://github.com/json-c/json-c.git
