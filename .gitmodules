@@ -4,6 +4,3 @@
 [submodule "third_party/nativefiledialog-extended"]
 	path = third_party/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended.git
-[submodule "third_party/raylib"]
-	path = third_party/raylib
-	url = https://github.com/raysan5/raylib.git
