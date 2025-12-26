@@ -1,0 +1,8 @@
+Connect the 4-bit wire `A_in` to `A_out`.
+
+Note that `A` connections now have each 4 wires/bits.
+
+For multi-bit connections, the lowest bit is the upper one both in the input and ouput, so they should be connected in the same order.
+
+You can use the "line tool" to make the task easier (check the tool tooltip for instructions).
+

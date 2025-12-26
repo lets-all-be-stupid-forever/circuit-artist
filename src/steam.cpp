@@ -29,8 +29,14 @@ void SteamInit() {
     C.stats = SteamAPI_ISteamUserStats_RequestCurrentStats(C.user_stats);
     uint32 num_achievements =
         SteamAPI_ISteamUserStats_GetNumAchievements(C.user_stats);
+    printf("----------------------\n");
     printf("STEAM loaded=%d stats=%d num_achievements=%d\n", C.loaded, C.stats,
            num_achievements);
+    printf("----------------------\n");
+  } else {
+    printf("----------------------\n");
+    printf("COULDN'T LOAD STEAM :(\n");
+    printf("----------------------\n");
   }
 }
 

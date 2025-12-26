@@ -1,21 +1,28 @@
-#ifndef LISTBOX_H
-#define LISTBOX_H
-#include "img.h"
-#include "sprite.h"
-#include "ui.h"
+#ifndef WIDGETS_H
+#define WIDGETS_H
+#include "common.h"
 
 // Scroll widget.
 typedef struct {
   Rectangle content;
   Rectangle rect;
   Rectangle scroll_rect;
-  int value;
-  int value0;
-  int mouse0;
+  int value;  /* Actual scroll value */
+  int value0; /* Value of scroll when user has pressed down the button*/
+  int mouse0; /* mouse y position when user pressed down button */
   bool down;
   bool hit;
   bool hidden;
 } Scroll;
+
+// Scroll Functions
+void scroll_init(Scroll* s);
+void scroll_set_content_box(Scroll* s, Rectangle box, int w);
+void scroll_update(Scroll* s, float h, v2 mouse);
+void scroll_scroll_to_bottom(Scroll* s, float h);
+void scroll_draw(Scroll* s);
+void scroll_reset_value(Scroll* s);
+int scroll_get_value(Scroll* s);
 
 // Listbox row widget, used internally in the Listbox widget.
 typedef struct {
@@ -23,6 +30,7 @@ typedef struct {
   Rectangle hitbox_r;  // relative hitbox
   Rectangle hitbox_g;
   int text_y;
+  sprite_t sprite;
 } ListboxRow;
 
 // Listbox widget.
@@ -31,19 +39,42 @@ typedef struct {
   Rectangle hitbox;
   int height;
   int row_hit;
+  int row_pad;
   Scroll scroll;
 } Listbox;
+
+// Listbox
+void listbox_init(Listbox* l);
+void listbox_destroy(Listbox* l);
+void listbox_set_box(Listbox* l, Rectangle r);
+void listbox_add_row(Listbox* l, const char* content);
+void listbox_add_row_icon(Listbox* l, const char* content, sprite_t sprite);
+void listbox_clear(Listbox* l);
+void listbox_update(Listbox* l);
+void listbox_draw(Listbox* l, int sel);
 
 // Textbox widget. Renders text using the DrawTextBoxAdvanced routine.
 typedef struct {
   Rectangle box;
   char* text;
-  Sprite* sprites;
+  sprite_t* sprites;
   int text_w;
   int text_x;
   int height;
+  Color bg;
   Scroll scroll;
 } Textbox;
+
+// Text Box widget functions
+void textbox_init(Textbox* t);
+void textbox_destroy(Textbox* t);
+void textbox_set_bg(Textbox* t, Color bg);
+void textbox_set_content(Textbox* t, const char* txt, sprite_t* sprites);
+void textbox_set_box(Textbox* t, Rectangle box);
+void textbox_update(Textbox* t);
+void textbox_draw(Textbox* t);
+void textbox_scroll_to_bottom(Textbox* t);
+void textbox_calc_height(Textbox* t);
 
 // Button widget.
 // The caller has to setup its properties manually at creation.
@@ -57,56 +88,50 @@ typedef struct {
   Rectangle hitbox;
 } Btn;
 
-// Listbox
-void ListboxLoad(Listbox* l);
-void ListboxUnload(Listbox* l);
-void ListboxSetBox(Listbox* l, Rectangle r);
-void ListboxAddRow(Listbox* l, const char* content);
-void ListboxUpdate(Listbox* l);
-void ListboxDraw(Listbox* l, Ui* ui, int sel);
+// Button
+bool btn_update(Btn* b);
+void btn_draw_text(Btn* b, int ui_scale, const char* text);
+void btn_draw_legend(Btn* b, int ui_scale, const char* text);
+void btn_draw_icon(Btn* b, int ui_scale, Texture2D tex, Rectangle r);
+void btn_draw_color(Rectangle r, Color c, bool selected, bool disabled);
+bool btn_hover(Btn* b);
 
-// Scroll Functions
-void ScrollLoad(Scroll* s);
-void ScrollSetContentBox(Scroll* s, Rectangle box, int w);
-void ScrollUpdate(Scroll* s, float h, Vector2 mouse);
-void ScrollDraw(Scroll* s);
-void ScrollResetValue(Scroll* s);
-int ScrollGetValue(Scroll* s);
+typedef struct {
+  int maxValue;
+  int minValue;
+  int value;
+  int cursorValue;
+  bool pressed;
+  bool released;
+  Rectangle hitbox;
+} Slider;
 
-// Text Box widget functions
-void TextboxLoad(Textbox* t);
-void TextboxUnload(Textbox* t);
-void TextboxSetContent(Textbox* t, const char* txt, Sprite* sprites);
-void TextboxSetBox(Textbox* t, Rectangle box);
-void TextboxUpdate(Textbox* t, Ui* ui);
-void TextboxDraw(Textbox* t, Ui* ui);
+bool slider_update(Slider* slider);
+void slider_draw(Slider* slider);
 
-// Updates button state. Returns true if button was clicked.
-bool BtnUpdate(Btn* b, Ui* ui);
+void draw_widget_frame(Rectangle inner_content);
+void draw_widget_frame_inv(Rectangle r);
 
-// Text button (close button for example).
-void BtnDrawText(Btn* b, int ui_scale, const char* text);
+typedef struct {
+  Rectangle hitbox;
+  char txt[256];
+  int tlen;
+  int cursor_pos;  // Cursor position in text
+  bool active;
+  float alive;
+} Editbox;
 
-// Draws the legend of the button. Needs to be called separately from the button
-// itself.
-void BtnDrawLegend(Btn* b, int ui_scale, const char* text);
+void editbox_init(Editbox* b);
+bool editbox_update(Editbox* b);
+void editbox_draw(Editbox* b);
+bool rect_hover(Rectangle hitbox, Vector2 pos);
 
-// Icon button: tool buttons and challenge button.
-void BtnDrawIcon(Btn* b, int ui_scale, Texture2D tex, Rectangle r);
+typedef struct {
+  Rectangle hitbox;
+  char txt[256];
+} Label;
 
-// Colorbox button (displayed in the bottom of the UI.
-void BtnDrawColor(Ui* ui, Rectangle r, Color c, bool selected, bool disabled);
-
-// Checks if button is being hovered
-bool BtnHover(Btn* b);
-
-// Draws a basic frame of size 2px.
-void DrawWidgetFrame(Ui* ui, Rectangle inner_content);
-
-// Frame for windows.
-void DrawWidgetFrameInv(Ui* ui, Rectangle r);
-
-// Title for framed windows
-void DrawTitle(Ui* ui, Rectangle modal, const char* title);
+void label_set_text(Label* l, const char* txt);
+void label_draw(Label* l);
 
 #endif

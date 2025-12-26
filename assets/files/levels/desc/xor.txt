@@ -1,0 +1,4 @@
+
+!img:levels/icons/xor.png
+
+Objective: Compute the XOR operation of the input pins `a` and `b` and write it to `xor_a_b` output pin.

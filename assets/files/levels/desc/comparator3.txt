@@ -1,0 +1,8 @@
+
+Objective: Compare two `SIGNED` 4-bit numbers `a` and `b` and tell if `a` is bigger, equal or smaller than `b`.
+
+Example:
+- a=0010 b=0010 ==> a_equals_b=1
+- a=1110 b=0010 ==> a_less_than_b=1
+
+`Attention`: The comparison for positive numbers won't work out of the box because highest bit on negative numbes is 1.

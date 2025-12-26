@@ -1,0 +1,3 @@
+
+Objective: Given two `1`-bit inputs `a` and `b`, return 1 if they're equal (ie all bits are equal), or 0 if they're different.
+

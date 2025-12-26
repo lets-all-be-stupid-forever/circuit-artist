@@ -1,0 +1,14 @@
+
+`XOR GATE`
+
+The XOR gate returns 1 if exactly one of the inputs is 1; otherwise, it returns 0. (It's like a bit sum without carry.)
+
+Example:
+a=0 b=0 --> XOR=0
+a=0 b=1 --> XOR=1
+a=1 b=0 --> XOR=1
+a=1 b=1 --> XOR=0
+!img:wiki/imgs/xor2.png
+A XOR gate can be created using 4 NAND gates.
+
+

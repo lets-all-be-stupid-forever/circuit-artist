@@ -1,0 +1,5 @@
+
+Implement a 1:2 decoder with enable.
+
+The enable input is an additional control signal: when `enable=1` (ON), the decoder operates normally, but when `enable=0` (OFF), all outputs are zero.
+

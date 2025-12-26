@@ -1,0 +1,3 @@
+
+Objective: Given two `32-bit` inputs `a` and `b`, return 1 if they're equal, or 0 if they're different.
+

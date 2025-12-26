@@ -15,3 +15,7 @@ src/raylib.h
 src/rlgl.h
 src/stb_ds.h
 .DS_Store
+save_*.json
+blueprints_*.json
+_old
+blueprints/*

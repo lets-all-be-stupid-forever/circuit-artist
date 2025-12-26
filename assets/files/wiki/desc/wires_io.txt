@@ -1,0 +1,7 @@
+
+`WIRE INPUT AND OUTPUT`
+
+`Each wire can have only 1 or 0 inputs`. If you connect a wire to more than 1 input, an error message will be displayed and the simulation will not start. 
+
+If a wire has no input, it will be automatically initialized with a 0 value at the beginning of the simulation.
+

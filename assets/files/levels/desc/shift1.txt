@@ -1,0 +1,15 @@
+
+`Objective`: Build a circuit that shifts a 4-bit input `a` one position to the right, discarding the rightmost bit and filling the leftmost position with 0.
+
+`Operation`:
+- All bits move one position to the right
+- The rightmost bit (bit 0) is discarded and lost
+- The leftmost position (bit 3) is filled with 0
+
+Example:
+- 0 >> 1 = 0 (0000 -> 0000)
+- 1 >> 1 = 0 (0001 -> 0000)
+- 2 >> 1 = 1 (0010 -> 0001)
+- 8 >> 1 = 4 (1000 -> 0100)
+
+`Note`: This is equivalent to integer division by 2 (with truncation) for unsigned numbers.

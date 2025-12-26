@@ -1,0 +1,1 @@
+Connect wire `A_in` to wire `A_out`.

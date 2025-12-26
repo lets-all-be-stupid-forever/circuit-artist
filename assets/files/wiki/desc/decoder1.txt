@@ -1,0 +1,14 @@
+
+`DECODER`
+
+!img:wiki/imgs/decoder_tut1.png
+
+A decoder takes a binary input and outputs a signal where exactly one bit is high, indicating which input value was received.
+Example:
+A=0 --> D=01 (bit 0 active)
+A=1 --> D=10 (bit 1 active)
+
+!img:wiki/imgs/decoder_tut2.png
+
+A 1-bit input decoder can be implemented as in the example above.
+

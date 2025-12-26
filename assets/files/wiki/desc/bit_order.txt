@@ -1,0 +1,8 @@
+
+`BIT ORDER`
+
+Multi-wire "connections" can be used to represent numbers. In that case, for input/output connections, the game uses the `top-most wire as least significant bit`.
+
+In your chip, you can use your own conventions for the least significant bit in vertical and horizontal multi-bit wires. However, the line tool corner (shift/control keys) mode works best if you keep the top-most/left-most as the least significant bit convention.
+
+!img:wiki/imgs/bit_order.png

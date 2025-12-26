@@ -1,0 +1,6 @@
+
+!img:levels/or/or.png
+
+Objective: Compute the OR operation of the input pins `a` and `b` and write it to `or_a_b` output pin.
+
+

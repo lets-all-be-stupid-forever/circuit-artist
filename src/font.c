@@ -63,10 +63,10 @@ static const char first_char = '!';
 static const int NUM_CHARS = 94;
 static ArtFont _font = {0};
 
-static void ParseFont(ArtFont* f) {
+static void parse_font(ArtFont* f) {
   int w = f->atlas.width;
   int h = f->atlas.height;
-  Color* colors = GetPixels(f->atlas);
+  Color* colors = get_pixels(f->atlas);
   f->line_height = h;
   f->offset[0] = 0;
   int ichar = 1;
@@ -120,16 +120,17 @@ static void ParseFont(ArtFont* f) {
   assert(ichar == NUM_CHARS + 1);
 }
 
-static ArtFont CreateFontFromFile(const char* font_filename) {
+static ArtFont create_font_from_file(const char* font_filename) {
   ArtFont fnt = {0};
   fnt.atlas = LoadImage(font_filename);
   fnt.offset = calloc(257, sizeof(int));
-  ParseFont(&fnt);
+  parse_font(&fnt);
   fnt.tex = LoadTextureFromImage(fnt.atlas);
   return fnt;
 }
 
-Vector2 GetRenderedTextSize(const char* txt) {
+// Computes the x and y size of a rendered text line.
+Vector2 get_rendered_text_size(const char* txt) {
   int len = strlen(txt);
   const char last_char = first_char + NUM_CHARS;
   int tot_len = 0;
@@ -147,7 +148,7 @@ Vector2 GetRenderedTextSize(const char* txt) {
   return (Vector2){tot_len, _font.line_height};
 }
 
-static Vector2 GetRenderedTextSize2(const char* txt, int len) {
+static Vector2 get_rendered_text_size2(const char* txt, int len) {
   const char last_char = first_char + NUM_CHARS;
   // No support for newline for now!
   int tot_len = 0;
@@ -167,7 +168,9 @@ static Vector2 GetRenderedTextSize2(const char* txt, int len) {
   return (Vector2){tot_len, _font.line_height};
 }
 
-Image RenderText(const char* txt, Color color) {
+// Renders a text line into an image. The caller should take ownership of the
+// image.
+Image render_text(const char* txt, Color color) {
   int len = strlen(txt);
   const char last_char = first_char + NUM_CHARS;
 
@@ -186,8 +189,8 @@ Image RenderText(const char* txt, Color color) {
   }
 
   Image out = GenImageColor(tot_len, _font.line_height, BLANK);
-  Color* ac = GetPixels(_font.atlas);
-  Color* dc = GetPixels(out);
+  Color* ac = get_pixels(_font.atlas);
+  Color* dc = get_pixels(out);
   int xx = 0;
   for (int i = 0; i < len; i++) {
     int c = txt[i];
@@ -212,8 +215,9 @@ Image RenderText(const char* txt, Color color) {
   return out;
 }
 
-void FontDraw(Image* dst, const char* txt, int x, int y, Color c) {
-  Image img = RenderText(txt, WHITE);
+// Simple text drawing in an image.
+void font_draw(Image* dst, const char* txt, int x, int y, Color c) {
+  Image img = render_text(txt, WHITE);
   Rectangle src_rec = {
       .x = 0,
       .y = 0,
@@ -230,7 +234,7 @@ void FontDraw(Image* dst, const char* txt, int x, int y, Color c) {
   UnloadImage(img);
 }
 
-void UnloadArtFont() {
+void unload_art_font() {
   if (_font.atlas.width > 0) {
     UnloadTexture(_font.tex);
     UnloadImage(_font.atlas);
@@ -239,7 +243,8 @@ void UnloadArtFont() {
   _font = (ArtFont){0};
 }
 
-void FontDrawTexture(const char* txt, int x, int y, Color color) {
+// Draws a text line directly in the main screen.
+void font_draw_texture(const char* txt, int x, int y, Color color) {
   int len = strlen(txt);
   const char last_char = first_char + NUM_CHARS;
   int xx = 0;
@@ -271,12 +276,17 @@ void FontDrawTexture(const char* txt, int x, int y, Color color) {
   }
 }
 
-void LoadArtFont(const char* filepath) { _font = CreateFontFromFile(filepath); }
+// Loads font from a dedicated file.
+// It's not stable, the font format needs to move towards what raylib is using.
+void load_art_font(const char* filepath) {
+  _font = create_font_from_file(filepath);
+}
 
-int GetFontLineHeight() { return _font.line_height; }
+// Returns the font line height in pixels.
+int get_font_line_height() { return _font.line_height; }
 
-static void FontDrawTexture2(const char* txt, int len, int x, int y,
-                             Color* color, Color normal, Color special) {
+static void font_draw_texture2(const char* txt, int len, int x, int y,
+                               Color* color, Color normal, Color special) {
   const char last_char = first_char + NUM_CHARS;
   int xx = 0;
   for (int i = 0; i < len; i++) {
@@ -297,7 +307,7 @@ static void FontDrawTexture2(const char* txt, int len, int x, int y,
     }
     if (c == '`') {
       if (COLOR_EQ(*color, normal)) {
-        Color c1 = GetLutColor(COLOR_BG0);
+        Color c1 = get_lut_color(COLOR_BG0);
         *color = c1;
       } else {
         *color = normal;
@@ -327,9 +337,12 @@ static void FontDrawTexture2(const char* txt, int len, int x, int y,
   }
 }
 
-void DrawTextBox(const char* text, Rectangle rect, Color first_color,
-                 int* height) {
-  int lh = GetFontLineHeight() + 2;
+// Draws a text box.
+// If a height pointer is passed, instead of drawing it computes the height of
+// the rendered text.
+void draw_text_box(const char* text, Rectangle rect, Color first_color,
+                   int* height) {
+  int lh = get_font_line_height() + 2;
   int n = strlen(text);
   // space size
   int sx = 5;
@@ -366,15 +379,15 @@ void DrawTextBox(const char* text, Rectangle rect, Color first_color,
       offx = 0;
     } else {
       int nc = ki - k0;
-      int w = GetRenderedTextSize2(text + k0, nc).x;
+      int w = get_rendered_text_size2(text + k0, nc).x;
       if (w + offx > linew) {
         offy += lh + 1;
         offx = 0;
       }
       // renders
       if (height == NULL) {
-        FontDrawTexture2(text + k0, nc, x + offx, y + offy, &c, first_color,
-                         YELLOW);
+        font_draw_texture2(text + k0, nc, x + offx, y + offy, &c, first_color,
+                           YELLOW);
       }
       offx = offx + w + sx;
     }
@@ -398,7 +411,7 @@ typedef struct {
   int isprite;
 } ParsedTokenType;
 
-static bool StartsWithUnsafe(const char* a, const char* b) {
+static bool starts_with_unsafe(const char* a, const char* b) {
   int n = strlen(b);
   for (int i = 0; i < n; i++) {
     if (a[i] != b[i]) return false;
@@ -406,23 +419,22 @@ static bool StartsWithUnsafe(const char* a, const char* b) {
   return true;
 }
 
-static ParsedTokenType ParseToken(const char* t, int len) {
+static ParsedTokenType parse_token(const char* t, int len) {
   ParsedTokenType r = {0};
   r.type = TKN_TEXT;
   if (len >= 6) {
-    if (StartsWithUnsafe(t, "!img:")) {
+    if (starts_with_unsafe(t, "!img:")) {
       char tt[2];
       tt[1] = '\0';
       tt[0] = t[5];
       int n;
       sscanf(&t[5], "%d", &n);
       r.type = TKN_IMG;
-      r.isprite = n;
       return r;
     }
   }
   if (len == 3) {
-    if (StartsWithUnsafe(t, "!hl")) {
+    if (starts_with_unsafe(t, "!hl")) {
       r.type = TKN_HLINE;
       return r;
     }
@@ -430,9 +442,14 @@ static ParsedTokenType ParseToken(const char* t, int len) {
   return r;
 }
 
-void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color,
-                         Sprite* sprites, int* height) {
-  int lh = GetFontLineHeight() + 2;
+// Advanced text box rendering.
+// It can render:
+// - Highlighted text via `blabla`
+// - Images via !img:<number> --> uses the number-th sprite passed as input in
+// `sprites`. It is used for both tutorial and level description rendering.
+void draw_text_box_advanced(const char* text, Rectangle rect, Color first_color,
+                            sprite_t* sprites, int* height) {
+  int lh = get_font_line_height() + 2;
   int n = strlen(text);
   // space size
   int sx = 5;
@@ -445,7 +462,7 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color,
   int offx = 0;
   int offy = 0;
   Color c = first_color;
-
+  int kcount = 0;
   while (true) {
     // Part1: finding the next token
     // A token can be:
@@ -469,7 +486,7 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color,
       offx = 0;
     } else {
       int nc = ki - k0;
-      ParsedTokenType ptkn = ParseToken(text + k0, nc);
+      ParsedTokenType ptkn = parse_token(text + k0, nc);
       switch (ptkn.type) {
         case TKN_HLINE: {
           if (offx != 0) {
@@ -484,7 +501,7 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color,
           break;
         }
         case TKN_IMG: {
-          int k = ptkn.isprite;
+          int k = kcount++;
           int iw = sprites[k].region.width;
           int ih = sprites[k].region.height;
           if (offx != 0) {
@@ -503,15 +520,15 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color,
           break;
         }
         case TKN_TEXT: {
-          int w = GetRenderedTextSize2(text + k0, nc).x;
+          int w = get_rendered_text_size2(text + k0, nc).x;
           if (w + offx > linew) {
             offy += lh + 1;
             offx = 0;
           }
           // renders
           if (height == NULL) {
-            FontDrawTexture2(text + k0, nc, x + offx, y + offy, &c, first_color,
-                             YELLOW);
+            font_draw_texture2(text + k0, nc, x + offx, y + offy, &c,
+                               first_color, YELLOW);
           }
           offx = offx + w + sx;
           break;
@@ -527,8 +544,9 @@ void DrawTextBoxAdvanced(const char* text, Rectangle rect, Color first_color,
   }
 }
 
-void GetDrawTextBoxSize(const char* text, int lw, int* h, int* w) {
-  int lh = GetFontLineHeight() + 2;
+// Computes the height of a rendered textbox.
+void get_draw_text_box_size(const char* text, int lw, int* h, int* w) {
+  int lh = get_font_line_height() + 2;
   int n = strlen(text);
   // space size
   int sx = 5;
@@ -563,7 +581,7 @@ void GetDrawTextBoxSize(const char* text, int lw, int* h, int* w) {
       offx = 0;
     } else {
       int nc = ki - k0;
-      int w = GetRenderedTextSize2(text + k0, nc).x;
+      int w = get_rendered_text_size2(text + k0, nc).x;
       if (w + offx > linew) {
         offy += lh + 1;
         offx = 0;
@@ -580,13 +598,15 @@ void GetDrawTextBoxSize(const char* text, int lw, int* h, int* w) {
   *w = maxoffx;
 }
 
-void FontDrawTextureOutlined(const char* txt, int x, int y, Color c, Color bg) {
+// Draws an outlined text line in main screen.
+void font_draw_texture_outlined(const char* txt, int x, int y, Color c,
+                                Color bg) {
   for (int dx = -1; dx <= 1; dx++) {
     for (int dy = -1; dy <= 1; dy++) {
       if (dx == 0 && dy == 0) continue;
-      FontDrawTexture(txt, x + dx, y + dy, bg);
+      font_draw_texture(txt, x + dx, y + dy, bg);
     }
   }
 
-  FontDrawTexture(txt, x, y, c);
+  font_draw_texture(txt, x, y, c);
 }

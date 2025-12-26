@@ -1,0 +1,22 @@
+
+# Circuitopedia topics
+circ.topic.name.basics        : Basics
+circ.topic.name.gates         : Gates
+circ.topic.name.math1         : Math
+
+# Circuitopedia item
+circ.item.name.wires_basic    : Wires Basics
+circ.item.name.wires_crossing : Wires Crossing
+circ.item.name.wires_io       : Wires I/O
+circ.item.name.bit_order      : Bit Order
+
+circ.item.name.nand           : NAND Gate
+circ.item.name.not            : NOT Gate
+circ.item.name.and            : AND Gate
+circ.item.name.or             : OR Gate
+circ.item.name.xor            : XOR Gate
+
+circ.item.name.halfadder      : Half Adder
+circ.item.name.fulladder      : Full Adder
+circ.item.name.rcadder        : Multi-Bit Adder
+

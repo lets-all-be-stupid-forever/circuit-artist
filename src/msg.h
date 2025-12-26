@@ -1,18 +1,10 @@
-#ifndef MSG_H
-#define MSG_H
-#include "ui.h"
+#ifndef CA_MSG_H
+#define CA_MSG_H
 
-// -----------------------------------------
-// Little messaging system for the main page.
-// -----------------------------------------
-
-// Adds a message that will expire within `duration` seconds.
-void MsgAdd(const char* msg_txt, float duration);
-
-// Draws messages on screen.
-void MsgDraw(Ui* ui);
-
-// Updates lifetime of messages.
-void MsgUpdate();
+void msg_init();
+void msg_add(const char* msg_txt, float msg_duration);
+void msg_clear_permanent();
+void msg_draw();
+void msg_update();
 
 #endif

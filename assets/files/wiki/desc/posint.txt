@@ -1,0 +1,45 @@
+
+`NUMBERS IN BINARY`
+
+In everyday life, we count using the decimal system (base-10), which uses ten different digits: 0, 1, 2, 3, 4, 5, 6, 7, 8, and 9.
+
+In computers and digital circuits, we use the binary system (base-2), which uses only TWO digits: 0 and 1.
+
+How Binary Numbers Work:
+
+Just like in decimal where each position represents a power of 10 (ones, tens, hundreds, thousands...), in binary each position represents a power of 2.
+
+Reading from RIGHT to LEFT:
+- The rightmost bit (bit 0) represents 2^0 = 1
+- The next bit (bit 1) represents 2^1 = 2
+- The next bit (bit 2) represents 2^2 = 4
+- The next bit (bit 3) represents 2^3 = 8
+- And so on: 16, 32, 64, 128, 256...
+
+To find the decimal value of a binary number, add up the powers of 2 for each position that has a 1.
+
+Examples:
+
+Binary: 101
+= 1×4 + 0×2 + 1×1
+= 4 + 0 + 1
+= 5 in decimal
+
+Binary: 1010
+= 1×8 + 0×4 + 1×2 + 0×1
+= 8 + 0 + 2 + 0
+= 10 in decimal
+
+Binary: 11111
+= 1×16 + 1×8 + 1×4 + 1×2 + 1×1
+= 16 + 8 + 4 + 2 + 1
+= 31 in decimal
+
+Binary: 00000 = 0 in decimal
+Binary: 00001 = 1 in decimal
+Binary: 00010 = 2 in decimal
+Binary: 00011 = 3 in decimal
+Binary: 00100 = 4 in decimal
+Binary: 00101 = 5 in decimal
+
+This is how digital circuits represent numbers using only electrical signals that are either ON (1) or OFF (0).

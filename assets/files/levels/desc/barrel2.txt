@@ -1,0 +1,12 @@
+
+Objective: Shift the bits of a 4-bit input (`a`) to the right by a given ammount (`n`) with `wrapping`, without loss of bits.
+
+Example:
+- 0000 >> 0 = 0000
+- 0001 >> 0 = 0001
+- 0001 >> 1 = 1000
+- 0010 >> 1 = 0001
+- 0110 >> 2 = 1001
+- 1111 >> 2 = 1111
+- 1110 >> 3 = 1101
+- 0110 >> 3 = 1100

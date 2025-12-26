@@ -1,0 +1,5 @@
+
+A `MUX` is a like a data `selector`: Given 2 inputs `a` and `b`, and a selection input `s`, if `s` is 0, `MUX` returns the value of `a`, and if `s` is 1, `MUX` returns the value of `b`.
+
+Muxes work like selectors (or a "switch"). They're useful for example when you have multiple calculations and want to select only one of the results. It's like an "if" statement in programming: IF S=0, RETURN A; ELSE IF S=1 RETURN B;.
+

@@ -1,6 +1,7 @@
 #include "colors.h"
 
-Color GetLutColor(ColorLut c) {
+// Returns the raylib color for a given color name.
+Color get_lut_color(ColorLut c) {
   switch (c) {
     case COLOR_BTN0:
       return GetColor(0x6C6C53FF);  // darker

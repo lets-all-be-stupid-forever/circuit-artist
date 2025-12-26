@@ -1,0 +1,67 @@
+
+What is a Multiplexer (MUX)?
+
+A multiplexer, often called a "MUX", is a digital circuit that acts as a SELECTOR or SWITCH. It chooses one input from multiple input options and passes it to the output.
+
+Think of it like a railway switch that can direct a train down one of several tracks - except instead of trains, we're directing electrical signals (bits).
+
+How a 2:1 MUX Works:
+
+The simplest multiplexer is a 2:1 MUX (pronounced "two-to-one mux"):
+- It has TWO data inputs: typically called 'a' and 'b'
+- It has ONE selector input: typically called 's' (or 'sel')
+- It has ONE output
+
+The selector bit 's' controls which input gets passed to the output:
+- When s = 0: output = a (select input 'a')
+- When s = 1: output = b (select input 'b')
+
+Truth Table for 2:1 MUX:
+
+| s | a | b | output |
+|---|---|---|--------|
+| 0 | 0 | X | 0      |
+| 0 | 1 | X | 1      |
+| 1 | X | 0 | 0      |
+| 1 | X | 1 | 1      |
+
+(X means "don't care" - the value doesn't matter)
+
+Real-World Analogy:
+
+Imagine you have two music sources (a radio and a phone) and one speaker. A physical switch lets you choose which source plays through the speaker. A MUX works the same way, but with digital signals!
+
+Programming Equivalent:
+
+In programming, a MUX is like an IF statement:
+
+if (s == 0):
+    output = a
+else:
+    output = b
+
+or more compactly: output = (s == 0) ? a : b
+
+Why Are MUXes Useful?
+
+1. Data Selection: Choose between different data sources
+2. Conditional Logic: Implement IF-THEN logic in hardware
+3. Data Routing: Send data down different paths
+4. Building Complex Circuits: Combine multiple MUXes to create larger selectors
+
+Larger Multiplexers:
+
+You can build bigger multiplexers by combining smaller ones:
+- 4:1 MUX: 4 inputs, 2 selector bits, 1 output
+- 8:1 MUX: 8 inputs, 3 selector bits, 1 output
+- 16:1 MUX: 16 inputs, 4 selector bits, 1 output
+
+The pattern: for N inputs, you need log2(N) selector bits.
+
+For example, a 4:1 MUX:
+- 4 data inputs: a, b, c, d
+- 2 selector bits: s1, s0
+- When s1s0 = 00: output = a
+- When s1s0 = 01: output = b
+- When s1s0 = 10: output = c
+- When s1s0 = 11: output = d

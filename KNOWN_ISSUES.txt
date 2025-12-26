@@ -1,5 +1,0 @@
-Mac:
-- Mouse doesnt appear when window opens (it does appear after it leaves and re-enters window)
-- Screen size is inconsistent (resizing fixes it)
-- Mouse disappears after resizing.
-- Application Icon is not appearing.

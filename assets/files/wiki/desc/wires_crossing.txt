@@ -1,0 +1,10 @@
+
+`CROSSING WIRES`
+
+The width or shape of a wire is not important, nor its color, as long as the pixels are connected.
+!img:wiki/imgs/wires3.png
+`Wires are allowed to cross`. Wires only connect at T or L connections.
+!img:wiki/imgs/wire_cross.png
+Wires are only connected via up/down/left/right pixel neighbours. Diagonal pixels are not considered connected. In the example below, in the first case you have 4 different wires, while in the second example you have a single wire.
+!img:wiki/imgs/wire_diagonal.png
+

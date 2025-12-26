@@ -3,34 +3,39 @@
 #include <assert.h>
 #include <stdlib.h>
 
-void BrushLoad(Brush* b) {
-  *b = (Brush){0};
+#include "img.h"
+
+void brush_init(brush_t* b) {
+  *b = (brush_t){0};
   b->max_path_size = 1000;
   b->path_cnt = 0;
   b->path_pixels = calloc(b->max_path_size, sizeof(int));
 }
 
-void BrushAppendPoint(Brush* b, int px, int py) {
+// Adds a new point to the brush path.
+bool brush_append_point(brush_t* b, int px, int py) {
   // If have reached maximum size for brush, dont add more points.
   // (otherwise we might have issues in drawing as well)
   if (2 * b->path_cnt == b->max_path_size) {
-    return;
+    return false;
   }
   // Won't add point to brush if it's the same as last one.
   int c = b->path_cnt - 1;
   if (c >= 0 && b->path_pixels[2 * c + 0] == px &&
       b->path_pixels[2 * c + 1] == py) {
-    return;
+    return false;
   }
 
   b->path_pixels[2 * b->path_cnt + 0] = px;
   b->path_pixels[2 * b->path_cnt + 1] = py;
   b->path_cnt++;
+  return true;
 }
 
-void BrushReset(Brush* b) { b->path_cnt = 0; }
+// Resets the brush path.
+void brush_reset(brush_t* b) { b->path_cnt = 0; }
 
-static void BrushMakePixels(Brush* b, int w, int h, int* npts, int** pts) {
+static void brush_make_pixels(brush_t* b, int w, int h, int* npts, int** pts) {
   int size = 10000;
   int n = 0;
   int xmin = 0;
@@ -117,11 +122,23 @@ static void BrushMakePixels(Brush* b, int w, int h, int* npts, int** pts) {
   }
 }
 
-void BrushMakeImage(Brush* b, Color c, int wtgt, int htgt, Image* out,
-                    Vector2Int* off) {
+// Transforms the path into a Image, using a slightly modified version of
+// bresenham line algorithm, where we make sure that the path is connected via
+// 4-neighbour connectivity (so that it belongs to the same wire).
+//
+// It takes as argument the color of the brush (`c`), the total size of the
+// original image (`w` and `h`), a pointer to an image that is created and a
+// pointer to the offset of the created image.
+// The created image is actually a sub-image containing the path, it's not a
+// image of the size of the original image. This sub-image has an offset
+// returned via the `off` parameter.
+//
+// The caller should take ownership of the created `out` image.
+void brush_make_image(brush_t* b, Color c, int wtgt, int htgt, Image* out,
+                      Vector2Int* off) {
   int* pts;
   int n;
-  BrushMakePixels(b, wtgt, htgt, &n, &pts);
+  brush_make_pixels(b, wtgt, htgt, &n, &pts);
   if (n == 0) {
     *out = (Image){0};
     *off = (Vector2Int){0};
@@ -146,9 +163,9 @@ void BrushMakeImage(Brush* b, Color c, int wtgt, int htgt, Image* out,
 
   off->x = xmin;
   off->y = ymin;
-  Image img = GenImageFilled(w, h, BLANK);
+  Image img = gen_image_filled(w, h, BLANK);
   *out = img;
-  Color* colors = GetPixels(img);
+  Color* colors = get_pixels(img);
   for (int i = 0; i < n; i++) {
     int x = pts[2 * i + 0] - xmin;
     int y = pts[2 * i + 1] - ymin;
@@ -159,4 +176,4 @@ void BrushMakeImage(Brush* b, Color c, int wtgt, int htgt, Image* out,
   free(pts);
 }
 
-void BrushUnload(Brush* b) { free(b->path_pixels); }
+void brush_destroy(brush_t* b) { free(b->path_pixels); }

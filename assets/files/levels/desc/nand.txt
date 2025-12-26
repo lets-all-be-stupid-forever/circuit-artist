@@ -1,0 +1,5 @@
+
+!img:levels/nand/nand.png
+
+Objective: Compute the NAND operation of the input pins `a` and `b`.
+

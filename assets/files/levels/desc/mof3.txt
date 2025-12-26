@@ -1,0 +1,15 @@
+
+!img:levels/mof3/img1.png
+
+Check if a number is a multiple of 3.
+
+You're given as input an 8-bit unsigned positive number `n` and should return a 1-bit result `mof3` with 1 if `n` is a multiple of 3, and 0 otherwise.
+
+Examples:
+
+n=0 --> mof3=1
+n=1 --> mof3=0
+n=2 --> mof3=0
+n=44 --> mof3=0
+n=111 --> mof3=1
+

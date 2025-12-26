@@ -1,114 +1,104 @@
 cmake_minimum_required(VERSION 3.5)
 project(ca C CXX)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 17)
-OPTION(OPENMP "Use OpenMP for thread detection")
 OPTION(STEAM "Steam support")
 
-IF (OPENMP)
-  find_package(OpenMP REQUIRED)
-  add_compile_definitions(WITH_OPENMP=1)
-ENDIF()
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
-SET(BUILD_SHARED_LIBS ON CACHE BOOL "Build raylib shared library")
-
-add_subdirectory(third_party/raylib)
-add_subdirectory(third_party/nativefiledialog-extended)
-
-if(APPLE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-  add_compile_options(-fsanitize=address)
-  add_link_options(-fsanitize=address)
+# Configure raylib to use OpenGL and include GLAD
+# Enable OpenGL 4.3 for compute shader support
+if(MSVC)
+  add_compile_options(/wd5105)
+  # add_compile_definitions(GRAPHICS_API_OPENGL_43)
+  # add_compile_options(/bigobj)
+  # Disable annoying warnings such as conversion from 'double' to 'float', possible loss of
+  add_compile_options(/wd4244)
 endif()
 
-# there's also a "rolling" tag but that jams up any sha256 effort
-SET(LUAJIT_VERSION 2.1.0-beta3)
-SET(LUAJIT_SHA256 409f7fe570d3c16558e594421c47bdd130238323c9d6fd6c83dedd2aaeb082a8)
-IF (NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/LuaJIT/src)
-    FILE(DOWNLOAD
-            https://github.com/LuaJIT/LuaJIT/archive/v${LUAJIT_VERSION}.tar.gz
-            ${CMAKE_SOURCE_DIR}/third_party/LuaJIT-${LUAJIT_VERSION}.tar.gz
-            STATUS luajit_fetch
-            EXPECTED_HASH SHA256=${LUAJIT_SHA256}
-    )
-    LIST(GET luajit_fetch 0 luajit_fetch_status)
-    IF (NOT ${luajit_fetch_status} EQUAL 0)
-        message(FATAL_ERROR "LuaJIT fetch did not shake out := ${luajit_fetch}")
-    ENDIF()
-    FILE(ARCHIVE_EXTRACT
-            INPUT ${CMAKE_SOURCE_DIR}/third_party/LuaJIT-${LUAJIT_VERSION}.tar.gz
-            DESTINATION ${CMAKE_SOURCE_DIR}/third_party/.luajit
-    )
-    FILE(RENAME
-            ${CMAKE_SOURCE_DIR}/third_party/.luajit/LuaJIT-${LUAJIT_VERSION}
-            ${CMAKE_SOURCE_DIR}/LuaJIT
-    )
-    FILE(REMOVE_RECURSE ${CMAKE_SOURCE_DIR}/third_party/.luajit)
-ENDIF()
-IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/LuaJIT/src/lua.h)
-    message(FATAL_ERROR "The LuaJIT unpack did not shake out, lua.h is missing")
-ENDIF()
-
-# I'm doing a bit of a hack to force generation of libluajit.so in MAC and UNIX.
-# In windows it's more complicated we need to compile by hand.
-SET(LUAJIT_SO ${CMAKE_SOURCE_DIR}/LuaJIT/src/libluajit.so)
-add_custom_command(
-  # in my tarball, it always generates .so but we'll need to double check what happens on (WIN32)
-  OUTPUT ${LUAJIT_SO}
-  # that nonsense is because it does actually build the .so
-  # but barfs linking luajit binary due to dwarf symbols
-  COMMAND make --ignore-errors
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/LuaJIT
-  VERBATIM
-)
-link_directories(${CMAKE_SOURCE_DIR}/LuaJIT/src)
-
 IF (STEAM)
-    link_directories(${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/)
-    SET(steam_libs steam_api64)
-    add_compile_definitions(WITH_STEAM=1)
+  link_directories(${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/)
+  include_directories(${CMAKE_SOURCE_DIR}/third_party/steam/)
+  SET(steam_libs steam_api64)
+  add_compile_definitions(WITH_STEAM=1)
 ENDIF()
 
-
+# add_compile_definitions(GRAPHICS_API_OPENGL_43)
+add_subdirectory(third_party/raylib)
+add_subdirectory(third_party/nativefiledialog-extended)
+add_subdirectory(third_party/lua)
+add_subdirectory(third_party/json-c)
+add_subdirectory(third_party/msgpack-c)
 add_compile_definitions(CLIP_ENABLE_IMAGE=1)
+
+IF(APPLE)
+add_compile_options(-fsanitize=address)
+add_link_options(-fsanitize=address)
+ENDIF()
+
+set(CMAKE_C_STANDARD 11)
 
 SET(ca_src
   src/brush.c
-  src/paint.c
-  src/filedialog.c
+  src/buffer.c
+  src/clipapi.cpp
   src/colors.c
-  src/loop_detector.c
-  src/tiling.c
-  src/msg.c
-  src/api.c
+  src/connected_components.c
+  src/dist_graph.c
+  src/elmore.c
+  src/event_queue.c
   src/font.c
-  src/rect_int.c
-  src/rendering.c
-  src/widgets.c
-  src/sim.c
-  src/utils.c
-  src/img.c
+  src/fs.cpp
+  src/game_registry.c
+  src/graph.c
   src/hist.c
-  src/ui.c
-  src/w_about.c
-  src/w_main.c
-  src/w_number.c
-  src/w_levels.c
-  src/w_text.c
-  src/w_tutorial.c
-  src/w_dialog.c
+  src/hsim.c
+  src/img.c
+  src/level.c
+  src/log.c
+  src/modal.c
+  src/msg.c
+  src/nand_detection.c
+  src/nand_renderer.c
+  src/paged_cstack.c
+  src/paged_stack.c
+  src/paint.c
+  src/pin_spec.c
+  src/pixel_error_renderer.c
+  src/pixel_graph.c
+  src/plot.c
+  src/pq.c
   src/profiler.c
+  src/rectint.c
+  src/series.c
   src/shaders.c
-  src/clip_api.cpp
+  src/sim.c
   src/steam.cpp
-
-  # Stuff for copy-paste
-  third_party/clip/image.cpp
+  src/tex.c
+  src/tutorial.c
+  src/ui.c
+  src/uigraph.c
+  src/utils.c
+  src/wabout.c
+  src/wdialog.c
+  src/widgets.c
+  src/win_blueprint.c
+  src/win_campaign.c
+  src/win_level.c
+  src/win_msg.c
+  src/win_stamp.c
+  src/wire_graph.c
+  src/wire_rendering.c
+  src/wmain.c
+  src/wnumber.c
+  src/wtext.c
   third_party/clip/clip.cpp
+  third_party/clip/image.cpp
+  third_party/raylib/src/external/glad.h
   )
+
 IF (WIN32)
   SET(ca_src ${ca_src}
     third_party/clip/clip_win.cpp
@@ -133,50 +123,40 @@ target_include_directories(calib PRIVATE
   src
   third_party
   third_party/clip
+  third_party/lua
   third_party/nativefiledialog-extended/src/include
-  LuaJIT/src
+  third_party/msgpack-c/include
+  third_party/raylib/src
+  third_party/raylib/src/external
   )
 
 # shlwapi is only for win32
 IF(WIN32)
   SET(shlwapi_lib shlwapi)
-  # mingw32-make cooks lua51.dll for some reason :-(
-  SET(luajit_lib lua51)
-ELSE ()
-  SET(luajit_lib luajit)
-  add_custom_target(build_luajit DEPENDS ${LUAJIT_SO})
-  add_dependencies(calib build_luajit)
+    SET(opengl_lib opengl32)
 ENDIF()
-IF (OPENMP)
-  SET(openmp_lib OpenMP::OpenMP_C OpenMP::OpenMP_CXX)
-ENDIF ()
-target_link_libraries(calib raylib ${shlwapi_lib} nfd ${openmp_lib} ${luajit_lib} ${clip_libs} ${steam_libs})
+
+target_link_libraries(calib
+  raylib
+  ${opengl_lib}
+  ${shlwapi_lib}
+  nfd
+  ${clip_libs}
+  ${steam_libs}
+  lualib
+  msgpack-c
+  json-c)
 
 add_executable(ca src/main.c)
 target_link_libraries(ca calib)
 
-IF (UNIX AND NOT APPLE)
-  # Need this command so luajit can access the C API from ffi
-  SET_PROPERTY(TARGET ca PROPERTY ENABLE_EXPORTS ON)
+# Copy Steam DLL and app ID file to build directory for runtime
+IF (STEAM AND WIN32)
+  add_custom_command(TARGET ca POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/steam_api64.dll"
+      "$<TARGET_FILE_DIR:ca>"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_SOURCE_DIR}/steam_appid.txt"
+      "$<TARGET_FILE_DIR:ca>")
 ENDIF()
-
-# In Windows I create 2 executables: one without the console window (ca.exe)
-# and one with the console window (ca_console.exe).
-# The idea is that one would use ca_console.exe on windows to develop lua
-# scripts to see logs and error messages, while the default version is used as
-# main entrypoint of steam.
-IF (WIN32)
-  add_executable(ca_console src/main.c)
-  target_link_libraries(ca_console calib)
-  target_compile_definitions(ca_console PRIVATE CA_SHOW_CONSOLE=1)
-
-  # Demo version
-  add_executable(ca_demo src/main.c)
-  target_link_libraries(ca_demo calib)
-  target_compile_definitions(ca_demo PRIVATE DEMO_VERSION=1)
-
-  add_custom_target(ca_all DEPENDS ca ca_console ca_demo)
-ENDIF()
-
-add_executable(tmp src/tmp.c)
-target_link_libraries(tmp raylib)

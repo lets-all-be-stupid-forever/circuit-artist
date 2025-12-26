@@ -1,0 +1,13 @@
+
+
+!img:levels/sevenseg/img1.png
+
+Display a digit in a seven-segment display.
+
+The input is a 4-bit number `n` between 0 and 9.
+
+You have 7 output bits, each corresponding to a segment in a 7-segment display. Your task is to activate the segments such that the display match the image above.
+
+For validation, each number between 0 and 9 will be tested.
+
+

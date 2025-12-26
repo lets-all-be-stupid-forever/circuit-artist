@@ -1,0 +1,27 @@
+
+`BARREL SHIFTER`
+
+A `barrel shifter` can perform any shift amount in a single operation using a crossbar network of multiplexers. For a 4-bit right shifter C = A >> B, the circuit works as follows:
+
+!img:wiki/imgs/shift2.png
+
+`Structure`:
+- Create a grid where each output bit can be connected to any input bit
+- Use multiplexers at each output position to select the correct input based on the shift amount B
+- The shift amount B acts as the select signal for all multiplexers
+
+!img:wiki/imgs/shift3.png
+
+`How it works`:
+- Each output bit position has a multiplexer that can choose from multiple input sources
+- For a right shift by B positions, output[i] gets input[i+B] (with appropriate bounds checking)
+- Positions that would receive bits from outside the input range are filled with zeros
+
+`Key advantage`: Unlike simple shifters that shift one position per clock cycle, a barrel shifter can shift by any amount (0 to 3 positions for a 4-bit shifter) in one operation.
+
+`Implementation`: The "crossbar" structure allows any input to route to any output through a network of multiplexers controlled by the shift amount.
+
+!img:wiki/imgs/shift4.png
+
+`LOGARITHMIC SHIFTER`
+

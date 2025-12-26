@@ -1,0 +1,4 @@
+
+Add two 1-bit inputs and produce two outputs: a sum bit and a carry bit. The carry bit is set when the sum exceeds 1 (i.e., when both inputs are 1).
+
+!img:levels/halfadder/img1.png

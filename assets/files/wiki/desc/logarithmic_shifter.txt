@@ -1,0 +1,40 @@
+
+`LOGARITHMIC SHIFTER`
+
+A `logarithmic shifter` is a clever way to shift bits by any amount using less components than a barrel shifter. The key idea is to break down the shift into smaller steps.
+
+Think about it this way: instead of having one big circuit that can shift by 0, 1, 2, or 3 positions all at once, we use two smaller steps connected together. Each step makes a simple choice: "shift a bit, or don't shift".
+
+For a 4-bit shifter C = A >> B (where B tells us how many positions to shift), the circuit works like this:
+
+`Step-by-step process`:
+
+Step 1: Look at B[0] (the first bit of B)
+- If B[0] = 1: shift the bits right by 1 position
+- If B[0] = 0: don't shift, keep bits as they are
+
+Step 2: Take the result from Step 1, and look at B[1] (the second bit of B)
+- If B[1] = 1: shift the bits right by 2 positions
+- If B[1] = 0: don't shift, keep bits as they are
+
+The final result is the output C!
+
+!img:wiki/imgs/log_shift.png
+
+`Example`: Let's say we want to shift right by 3 positions (B = 11 in binary):
+- Step 1: B[0] = 1, so we shift by 1 position
+- Step 2: B[1] = 1, so we shift by 2 more positions
+- Total: We shifted by 1 + 2 = 3 positions!
+
+`Another example`: To shift by 2 positions (B = 10 in binary):
+- Step 1: B[0] = 0, so we don't shift
+- Step 2: B[1] = 1, so we shift by 2 positions
+- Total: We shifted by 0 + 2 = 2 positions!
+
+`Why is this smart?`
+
+Each step is very simple - it just decides between two options (shift or don't shift). By connecting these simple steps together, we can create any shift amount from 0 to 3.
+
+For bigger numbers, you just add more steps: a step for "shift by 4", a step for "shift by 8", and so on. Each new step doubles the shift amount.
+
+This is much simpler to build than a barrel shifter because each step only needs to make one simple choice, rather than choosing between many different options all at once!

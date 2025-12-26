@@ -1,0 +1,13 @@
+
+Objective: Shift the bits of a 4-bit input (`a`) to the `right` by a given ammount (`n`). This operation can be represented by `a >> n`.
+
+Example:
+- `a`=0000 `n`=0 => `a >> n`=0000
+- `a`=0001 `n`=0 => `a >> n`=0001
+- `a`=0001 `n`=1 => `a >> n`=0000
+- `a`=0010 `n`=1 => `a >> n`=0001
+- `a`=0110 `n`=2 => `a >> n`=0001
+- `a`=1111 `n`=2 => `a >> n`=0011
+- `a`=1110 `n`=3 => `a >> n`=0001
+- `a`=0110 `n`=3 => `a >> n`=0000
+

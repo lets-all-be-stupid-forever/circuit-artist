@@ -1,0 +1,9 @@
+
+Given 2 1-bit numbers `a` and `b`, find if a < b, a==b or a > b.
+
+Example:
+- a=0 b=0 --> (`a<b`)=0 (`a==b`)=1 (`a>b`)=0
+- a=0 b=1 --> (`a<b`)=1 (`a==b`)=0 (`a>b`)=0
+- a=1 b=0 --> (`a<b`)=0 (`a==b`)=0 (`a>b`)=1
+- a=1 b=1 --> (`a<b`)=0 (`a==b`)=1 (`a>b`)=0
+

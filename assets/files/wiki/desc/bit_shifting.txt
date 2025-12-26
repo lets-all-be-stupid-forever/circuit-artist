@@ -1,0 +1,12 @@
+
+`BIT SHIFTING`
+
+In this section we will explore how to shift bits in a number. 
+
+Shift operations basically "slide" the positions of the bits, either to the left or to the right. They are useful for many applications, including easy multiplication and division by a power of two: shifting a number one position to the left is roughtly equivalent to multiplying a number by two, shifting by two bits multiplying it by 4 and so on.
+
+Shifting operations are typically represented by the "<<" or ">>" symbol: "A << n" represents shifting a number A n positions to the left, and "A >> n" n positions to the right.
+
+For example, if `A`=00100 and `n`=1, shifting 1 bit to the right gives us: A >> n = 00010. Shifting 1 bit to left gives us: A << n = 01000.
+
+Although shifting by a constant number can be done directly by wiring, shifting by "arbitrary" amounts can be more complex, and there are different ways to implement it. We describe two in more details in the sections `Barrel Shifter` and `Logarithmic shifter`.

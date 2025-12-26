@@ -1,0 +1,2 @@
+
+Add two 4-bit numbers a and b to produce a 4-bit sum.

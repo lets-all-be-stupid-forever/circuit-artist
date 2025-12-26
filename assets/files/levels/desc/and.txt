@@ -1,0 +1,5 @@
+
+!img:levels/imgs/and.png
+
+Objective: Compute the AND operation of the input pins `a` and `b` and write it to `and_a_b` output pin.
+

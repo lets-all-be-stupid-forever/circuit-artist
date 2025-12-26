@@ -1,0 +1,9 @@
+
+`HALF ADDER`
+
+This circuit is called a HALF ADDER. It can be implemented using just two logic gates:
+- An XOR gate produces the sum output
+- An AND gate produces the carry output (which is 1 only when both inputs are 1)
+!img:wiki/imgs/addition1.png
+!img:wiki/imgs/addition2.png
+

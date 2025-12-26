@@ -1,0 +1,34 @@
+
+!img:levels/ram/mem64.png
+
+
+Write a memory for bytes (8-bit) with 64 addresses. (ie, total storage of 64x8 = 512 bits).
+
+The input bit flag `write_enable` defines if the operation should be a write (`write_enable`=1) or a read (`write_enable`=0).
+
+In `read` operations (`write_enable`=0) , we just return the value of the byte at address `address` in `read_data`.
+
+In `write` operations (`write_enable`=1) we assign the value `write_data` to the address `address`.
+
+In other words:
+
+- `write_enable`=0 (read) --> `read_data` = MEM[`address`]
+- `write_enable`=1 (write) --> MEM[`address`] = `write_data`
+
+Inputs:
+- `write_enable` (1 bit): write enabled
+- `address` (6 bits): data address
+- `write_data` (8 bits): write data
+
+Output:
+- `read_data` (8 bits): read data
+
+The initial state of the memory is not important.
+
+`!! Attention !!`: The memory change should take place during the rising edge of the clock, ie, exactly when the clock value is passing from 0 to 1.
+
+For the tests, we will fill each memory address with random values, and then on a second time we will try to access each address to see if the values match.
+
+ Then, we will randomly assign and query again for a few times before end.
+
+

@@ -1,0 +1,2 @@
+- Connect wire `A_in` to `A_out` 
+- Connect wire `B_in` to `B_out` 

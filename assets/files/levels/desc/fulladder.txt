@@ -1,0 +1,3 @@
+
+Add three 1-bit inputs: two data bits (A and B) plus a carry-in bit from a previous addition stage. Produce a sum bit and a carry-out bit.
+

@@ -1,0 +1,42 @@
+
+mv ./bit_order/bit_order.png       ./imgs/
+mv ./bit_order/bit_order.txt       ./desc/
+mv ./bit_order/icon_bit_order.png  ./icons/bit_order.png
+
+mv ./fulladder/addition3.png    ./imgs/
+mv ./fulladder/fulladder.txt    ./desc/
+mv ./fulladder/icon_fulladder.png   ./icons/fulladder.png
+
+mv ./halfadder/addition1.png   ./imgs/
+mv ./halfadder/addition2.png   ./imgs/
+mv ./halfadder/halfadder.txt    ./desc/
+mv ./halfadder/icon_halfadder.png  ./icons/halfadder.png
+mv ./nand/icon_nand.png   ./icons/nand.png
+mv ./nand/nand.txt    ./desc/
+mv ./nand/nand0.png ./imgs/
+mv ./nand/nand2.png ./imgs/
+mv ./nand/nand3.png ./imgs/
+mv ./not/icon_not.png ./icons/not.png
+mv ./not/not.txt   ./desc/
+mv ./not/not2.png ./imgs/
+mv ./or/icon_or.png   ./icons/or.png
+mv ./or/or.txt   ./desc/
+mv ./or/or2.png  ./imgs/
+mv ./rcadder/icon_rcadder.png  ./icons/rcadder.png
+mv ./rcadder/rcadder.txt  ./desc/
+mv ./rcadder/rc_adder.png   ./imgs/
+mv ./wires1/icon_wires1.png   ./icons/wires1.png
+mv ./wires1/wires1.png ./imgs/
+mv ./wires1/wires1.txt ./desc/
+mv ./wires1/wires2.png ./imgs/
+mv ./wires1/wires_pins_example.png  ./imgs/
+mv ./wires_crossing/icon_wires_crossing.png  ./icons/wires_crossing.png
+mv ./wires_crossing/wires3.png  ./imgs
+mv ./wires_crossing/wires_crossing.txt  ./desc
+mv ./wires_crossing/wire_cross.png ./imgs/
+mv ./wires_crossing/wire_diagonal.png ./imgs/
+mv ./wires_io/icon_wires_io.png ./icons/wires_io.png
+mv ./wires_io/wires_io.txt ./desc/
+mv ./xor/icon_xor.png ./icons/xor.png
+mv ./xor/xor.txt ./desc/
+mv ./xor/xor2.png ./imgs/

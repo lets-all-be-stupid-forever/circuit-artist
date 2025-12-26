@@ -1,0 +1,8 @@
+
+`MULTI-BIT ADDER`
+
+You can create a multi-bit number adder combining multiple full-adders in series, combining the "carry output" from the previous digit to the "cary input" of the next digit.  This is also called a `Ripple-carry adder`.
+
+!img:wiki/imgs/rc_adder.png
+
+There are also other ways to create multi-bit adders, some more efficient. For instance, propagating the carries one by one can introduce a lot of delay when adding numbers with a lot of bits.

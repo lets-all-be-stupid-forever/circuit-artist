@@ -1,6 +1,9 @@
-#ifndef UI_H
-#define UI_H
-#include <raylib.h>
+#ifndef CA_UI_H
+#define CA_UI_H
+#include <lua.h>
+
+#include "raylib.h"
+#include "stdbool.h"
 
 typedef enum {
   MOUSE_ARROW,
@@ -8,9 +11,11 @@ typedef enum {
   MOUSE_BUCKET,
   MOUSE_PICKER,
   MOUSE_SELECTION,
+  MOUSE_SWITCH,
   MOUSE_MOVE,
   MOUSE_RESIZE,
   MOUSE_POINTER,
+  MOUSE_CLOCK,
 } MouseCursorType;
 
 // Available windows/screens
@@ -19,38 +24,34 @@ typedef enum {
   WINDOW_ABOUT,
   WINDOW_TEXT,
   WINDOW_NUMBER,
-  WINDOW_TUTORIAL,
-  WINDOW_LEVELS,
+  WINDOW_MSG,
   WINDOW_DIALOG,
+  WINDOW_TUTORIAL,
+  WINDOW_STAMP,
+  WINDOW_LOG,
+  WINDOW_LEVEL,
+  WINDOW_CAMPAIGN,
+  WINDOW_BLUEPRINT,
 } WindowEnum;
 
-// Shared ui state.
-typedef struct {
-  // Global UI pixel scaling.
-  int scale;
-  // Global UI sprites loaded from ../assets/sprite4.png
-  Texture2D sprites;
-  // Active window/screen.
-  WindowEnum window;
-  // Application's icon.
-  Image icon;
-  // Current mouse cursor type.
-  MouseCursorType cursor;
-  // If true, will try to close the game.
-  bool close_requested;
-  // If True, app will close next frame.
-  bool should_close;
-  // UI hitbox counter to see which widget is on foreground and which ones are
-  // in background (increased with every hit each frame).
-  int hit_count;
-  // Debug flag, for profiling and others.
-  bool debug;
-  // Wether it's demo version.
-  bool demo;
-} Ui;
-
-void UiLoad(Ui* ui, bool demo);
-void UiUpdateFrame(Ui* ui);
-void UiUnload(Ui* ui);
+void ui_init();
+void ui_update_frame();
+void ui_destroy();
+bool ui_get_should_close();
+int ui_get_scale();
+void ui_winpush(WindowEnum newWindow);
+void ui_winpop();
+WindowEnum ui_wintop();
+WindowEnum ui_get_window();
+Texture2D ui_get_sprites();
+Image ui_get_sprites_img();
+void ui_inc_hit_count();
+int ui_get_hit_count();
+void ui_set_cursor(MouseCursorType cursor);
+void ui_set_close_requested();
+void ui_run();
+void ui_crash(const char* err);
+double ui_get_frame_time();
+void ui_handle_lua_error(lua_State* L);
 
 #endif

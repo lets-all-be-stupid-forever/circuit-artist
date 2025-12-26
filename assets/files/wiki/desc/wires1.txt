@@ -1,0 +1,13 @@
+
+`BASIC WIRES`
+
+!img:wiki/imgs/wires_pins_example.png
+
+Wires are formed by connected non-black pixels. Wires can have 3 states as displayed below:
+- `ON` (lighter color)
+- `OFF` (darker color)
+- `UNDEFINED` (magenta color)
+!img:wiki/imgs/wires1.png
+The `ON` state represents the logic `1`, and the `OFF` state represents the logic `0`. Wires state can be toggled (1->0 or 0->1) by clicking on it during simulation mode.
+!img:wiki/imgs/wires2.png
+The `UNDEFINED` state means that we don't know the state of the wire. Most wires start simulation in this state.

@@ -1,0 +1,13 @@
+
+`Objective`: Build a circuit that shifts a 4-bit input one position to the right, with the rightmost bit wrapping around to become the leftmost bit.
+
+`Operation`:
+- All bits move one position to the right
+- The rightmost bit (bit 0) wraps around to become the leftmost bit (bit 3)
+- No bits are lost in the process
+
+Example: 
+- 0 >> 1 = 0 (0000 -> 0000)
+- 1 >> 1 = 8 (0001 -> 1000)
+- 2 >> 1 = 1 (0010 -> 0001)
+- 8 >> 1 = 4 (1000 -> 0100)

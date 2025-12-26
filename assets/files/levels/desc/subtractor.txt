@@ -1,0 +1,26 @@
+
+Subtract two signed 4-bit numbers using two's complement representation to compute a - b.
+
+!hl
+
+`TUTORIAL`: TWO'S COMPLEMENT REPRESENTATION
+
+Signed integers use two's complement format, where negative numbers are represented using the formula: -N = NOT(N) + 1
+
+Example: To find -3 in 4-bit two's complement:
+- Start with +3: 0011
+- Invert all bits: 1100
+- Add 1: 1100 + 1 = 1101
+- Therefore -3 = 1101
+
+!img:levels/subtractor/numbers2.png
+
+Subtraction Method:
+
+Since A - B = A + (-B), we can perform subtraction by:
+- Converting B to -B using two's complement: NOT(B) + 1
+- Adding: A - B = A + NOT(B) + 1
+
+
+!img:levels/imgs/img_sub2.png
+

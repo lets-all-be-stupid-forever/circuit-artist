@@ -1,19 +1,19 @@
-#ifndef PROFILER_H
-#define PROFILER_H
+#ifndef CA_PROFILER_H
+#define CA_PROFILER_H
+#include "stdbool.h"
 
-// Resets stats. Needs to be called begin of each frame.
-void ProfilerReset();
+void profiler_init();
+void profiler_destroy();
+void profiler_reset();
+void profiler_tic(const char* name);
+void profiler_tic_single(const char* name);
+void profiler_tac();
+void profiler_tac_single(const char* name);
+void profiler_draw();
 
-// Profiling functions that are called every frame.
-// The statistics is the running average.
-void ProfilerTic(const char* name);
-void ProfilerTac();
-
-// Profiling single-call functions, that are not called every frame.
-void ProfilerTicSingle(const char* name);
-void ProfilerTacSingle(const char* name);
-
-// Draws profiling stats on screen.
-void ProfilerDraw();
+void miniprof_reset();
+void miniprof_time();
+void miniprof_nxt();
+void miniprof_print(const char* name);
 
 #endif

@@ -1,0 +1,5 @@
+
+!img:levels/not/not.png
+
+Objective: Compute the NOT operation of the input pin `a` and write it to `not_a` output pin.
+
