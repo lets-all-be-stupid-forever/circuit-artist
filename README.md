@@ -2,26 +2,25 @@
 
 Circuit Artist is a digital logic circuit drawing game.
 
-Features:
+## Changes in 1.1
 
-- Layers (up to 3 layers).
-- Propagation visualization.
-- Simulation rewind / time control
-- Distance-based propagation.
-- Inventory-like blueprints
-- Campaign / Levels `(Campaign still in construction)`
-- Circuit activity has audio feedback
+I've reworked the simulation engine to use a variable-delay event-driven simulation taking into account the topology of the wires to create a distance / propagation delay map based on elmore delay calculation for trees. It also takes into account fanout nands, so you have things like the higher the fanout the higher the delay, trees propagating differently then "lines" etc, to a have a more "accurate" simulation so players can play/develop intuition for real circuit design (sort of).
 
-## The Simulation Engine
+There's also a simplified energy calculation formula/metric to explore circuit energy efficiency vs speed (even though its still not fully developed yet in the game).
 
-- Variable-delay event-driven simulation.
-- Uses an elmore-distance approximation of circuit delay and nand activation. High fanout? Slower delay. Long Wires? Squared delay penalty. Event
-- NAND only allowed on bottom layer.
-- Top layers "propagate" faster.
-- Reversible: Can pause time and rewind/forward simulation.
-- Realtime visualization of wire states and propagation.
-- Realtime interaction with any wires
-- "Energy" calculation (although not fully exposed/explored in the UI yet)
+Now clocked components won't work for free, need to make them efficient, adding an extra challenge/fun dimension to the game.
+
+The distances are mapped to pixels so players can visualize the wires "propagating" with glow, which I find cool and helps understand how things work. Rendering is done in real time with some shaders.
+
+I've also added a delta-based design on the simulation to allow simulation to be paused and controlled back and forth so players can interact with it. Particularly useful for debugging "cyclic" circuits.
+
+Players can also add layers as in photoshop, (up to 3 layers), and layer wires can connect with neighboor layers, although NANDs are only allowed on the bottom layer. Wires on upper layers have a higher "propagation" speed.
+
+Also added a lower-pace campaign system so new users can solve problems little by little and learn concepts gradually, testing/refining solutions and tracking progress. It's still on early days, plan to put more stuff later.
+
+Lately I've added an inventory-like UI for placing blueprints so players can build it's library and re-use it, which also adds a new progression dimension to the game.
+
+The simulation also is no longer "immediate", players can build their own clocks on sandbox mode by just exploring the delay mechanism.
 
 ## Links
 
