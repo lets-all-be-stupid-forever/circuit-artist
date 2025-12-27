@@ -2,6 +2,8 @@
 
 Circuit Artist is a digital logic circuit drawing game.
 
+![Image](https://github.com/user-attachments/assets/0bb1a7d2-9ee1-4059-b794-561d2809948f)
+
 ## Changes in 1.1 :muscle:
 
 - :wrench: I've reworked the simulation engine to use a variable-delay event-driven simulation taking into account the topology of the wires to create a distance / propagation delay map based on elmore delay calculation for trees. It also takes into account fanout nands, so you have things like the higher the fanout the higher the delay, trees propagating differently then "lines" etc, to a have a more "accurate" simulation so players can play/develop intuition for real circuit design (sort of).
@@ -36,7 +38,6 @@ Circuit Artist is a digital logic circuit drawing game.
 
 ![Image](https://github.com/user-attachments/assets/361a9a42-3f4a-4043-bb19-6f13ae5758ab)
 
-![Image](https://github.com/user-attachments/assets/0bb1a7d2-9ee1-4059-b794-561d2809948f)
 
 ![Image](https://github.com/user-attachments/assets/ca215187-4ad6-4618-9700-dfa31cf6481c)
 
