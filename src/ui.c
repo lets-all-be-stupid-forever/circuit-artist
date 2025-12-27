@@ -66,6 +66,14 @@ int ui_get_scale() { return C.scale; }
 
 void ui_crash(const char* error) { C.lua_error = clone_string(error); }
 
+bool ui_is_demo() {
+#ifdef DEMO_VERSION
+  return true;
+#else
+  return false;
+#endif
+}
+
 void ui_init() {
   C.demo = false;
   C.debug = false;

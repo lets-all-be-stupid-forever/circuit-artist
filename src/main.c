@@ -1,10 +1,11 @@
-#include "ui.h"
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+
+#include "ui.h"
 
 #ifdef WIN32
-#define NOGDI  // Prevent GDI definitions that conflict with raylib
-#define NOUSER // Prevent USER definitions we don't need
+#define NOGDI   // Prevent GDI definitions that conflict with raylib
+#define NOUSER  // Prevent USER definitions we don't need
 #include <windows.h>
 #undef NOGDI
 #undef NOUSER
@@ -12,8 +13,7 @@
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 #endif
 
-int main(int argc, char **argv) {
-  int demo = 0;
+int main(int argc, char** argv) {
   int show_console = 0;
 
   // Parse command-line arguments

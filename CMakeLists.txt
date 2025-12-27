@@ -150,6 +150,37 @@ target_link_libraries(calib
 add_executable(ca src/main.c)
 target_link_libraries(ca calib)
 
+# Create demo library with DEMO_VERSION enabled
+add_library(calib_demo STATIC ${ca_src})
+
+target_include_directories(calib_demo PRIVATE
+  src
+  third_party
+  third_party/clip
+  third_party/lua
+  third_party/nativefiledialog-extended/src/include
+  third_party/msgpack-c/include
+  third_party/raylib/src
+  third_party/raylib/src/external
+  )
+
+target_compile_definitions(calib_demo PRIVATE DEMO_VERSION=1)
+
+target_link_libraries(calib_demo
+  raylib
+  ${opengl_lib}
+  ${shlwapi_lib}
+  nfd
+  ${clip_libs}
+  ${steam_libs}
+  lualib
+  msgpack-c
+  json-c)
+
+# Demo executable
+add_executable(ca_demo src/main.c)
+target_link_libraries(ca_demo calib_demo)
+
 # Copy Steam DLL and app ID file to build directory for runtime
 IF (STEAM AND WIN32)
   add_custom_command(TARGET ca POST_BUILD
@@ -159,4 +190,11 @@ IF (STEAM AND WIN32)
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       "${CMAKE_SOURCE_DIR}/steam_appid.txt"
       "$<TARGET_FILE_DIR:ca>")
+  add_custom_command(TARGET ca_demo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/steam_api64.dll"
+      "$<TARGET_FILE_DIR:ca_demo>"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_SOURCE_DIR}/steam_appid.txt"
+      "$<TARGET_FILE_DIR:ca_demo>")
 ENDIF()

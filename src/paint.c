@@ -38,15 +38,15 @@ static const float ZOOM_LUT[] = {
     0.5,   /*   */
     1.0,   /* 1:1 ratio  */
     2.0,   /*   */
-    // 3.0,   /* 1pix image = 3 screen pix */
-    4.0,  /*   */
-          //    5.0,   /*   */
-          //    6.0,   /*   */
-    8.0,  /*   */
-    12.0, /*   */
-    16.0, /*   */
-    //    24.0,  /*   */
-    //     32.0, /*   */
+    3.0,   /* 1pix image = 3 screen pix */
+    4.0,   /*   */
+    5.0,   /*   */
+    6.0,   /*   */
+    8.0,   /*   */
+    12.0,  /*   */
+    16.0,  /*   */
+    24.0,  /*   */
+    32.0,  /*   */
     //    48.0,  /*   */
     // 64.0, /* 1pix image = 64 screen pix*/
     -1, /*  border  */
@@ -542,9 +542,9 @@ void paint_center_camera(Paint* ca) {
 void paint_init(Paint* ca) {
   *ca = (Paint){0};
   ca->xmode = true;
-  bool demo = false;
-  if (demo) {
-    ca->max_img_size = 256;
+
+  if (ui_is_demo()) {
+    ca->max_img_size = 64;
   } else {
     // Maximum image size is 8k.
     // For images bigger than that, a dedicated exporter/reader is necessary
@@ -2266,7 +2266,11 @@ void paint_render_texture(Paint* ca, Texture2D sidepanel,
 
 // Creates a new empty drawing buffer. (and throws away old one).
 void paint_new_buffer(Paint* ca) {
-  hist_new_buffer(&ca->h, 256, 256);
+  int sz = 256;
+  if (ui_is_demo()) {
+    sz = 64;
+  }
+  hist_new_buffer(&ca->h, sz, sz);
   paint_reset_camera(ca);
   ca->prev_layer = 0;
 }

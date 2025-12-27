@@ -826,6 +826,7 @@ function add_wiki(topic, id, name)
 end
 
 
+add_wiki("basic", "tldr", "TLDR")
 add_wiki("basic", "wires1", "Basic wires")
 add_wiki("basic", "wires_crossing", "Crossing Wires")
 add_wiki("basic", "wires_io", "Wires IO")

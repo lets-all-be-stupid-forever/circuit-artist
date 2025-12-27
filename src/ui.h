@@ -53,5 +53,6 @@ void ui_run();
 void ui_crash(const char* err);
 double ui_get_frame_time();
 void ui_handle_lua_error(lua_State* L);
+bool ui_is_demo();
 
 #endif

@@ -81,7 +81,6 @@ static struct {
   Btn btn_flipv;
   Btn btn_sel_open;
   Btn btn_sel_save;
-  Btn btn_help;
   Btn btn_blueprint_add;
   Btn btn_line_sep;
   Btn btn_line_sep_r;
@@ -496,6 +495,26 @@ void main_update() {
   texcleanup();
 }
 
+static void draw_resize_demo_message() {
+  if (C.ca.resizeHovered || C.ca.resizePressed) {
+    rlPushMatrix();
+    Vector2 mouse = GetMousePosition();
+    rlTranslatef(mouse.x, mouse.y - 20, 0);
+    rlScalef(2, 2, 1);
+    if (ui_is_demo()) {
+      const char msg1[] = "Max image size in demo version is 64x64";
+      const char msg2[] = "Full version available on Steam.";
+      rlTranslatef(0, -14, 0);
+      font_draw_texture(msg2, 2, 2, BLACK);
+      font_draw_texture(msg2, 0, 0, RED);
+      rlTranslatef(0, -14, 0);
+      font_draw_texture(msg1, 2, 2, BLACK);
+      font_draw_texture(msg1, 0, 0, RED);
+    }
+  }
+  rlPopMatrix();
+}
+
 static void main_update_paint_cursor_type() {
   if (C.mode == MODE_EDIT) {
     tool_t tool = paint_get_display_tool(&C.ca);
@@ -786,7 +805,6 @@ void main_save_selection() {
     return;
   }
 }
-static void paste_help() { main_paste_file("../assets/help.png", 0); }
 
 static void toggle_simu_pause() { C.paused = !C.paused; }
 static void toggle_sound() { C.mute = !C.mute; }
@@ -816,7 +834,6 @@ void main_update_hud() {
   if (btn_update(&C.btn_sel_open)) main_open_selection();
   if (btn_update(&C.btn_sel_save)) main_save_selection();
   if (btn_update(&C.btn_blueprint_add)) add_blueprint();
-  if (btn_update(&C.btn_help)) paste_help();
 
   if (btn_update(&C.btn_line)) paint_set_tool(ca, TOOL_LINE);
   if (btn_update(&C.btn_brush)) paint_set_tool(ca, TOOL_BRUSH);
@@ -969,7 +986,6 @@ void main_draw() {
   }
   btn_draw_icon(&C.btn_line, bscale, sprites, rect_line);
   btn_draw_icon(&C.btn_stamp, bscale, sprites, rect_blueprint);
-  btn_draw_icon(&C.btn_help, bscale, sprites, rect_help);
   btn_draw_icon(&C.btn_brush, bscale, sprites, rect_brush);
   btn_draw_icon(&C.btn_picker, bscale, sprites, rect_picker);
   btn_draw_icon(&C.btn_bucket, bscale, sprites, rect_bucket);
@@ -997,7 +1013,6 @@ void main_draw() {
     btn_draw_legend(&C.btn_about, bscale, "About Circuit Artist");
     btn_draw_legend(&C.btn_exit, bscale, "Exit");
 
-    btn_draw_legend(&C.btn_help, bscale, "Help / quick reference");
     btn_draw_legend(&C.btn_layer_push, bscale, "Add Top Layer (max 3)");
     btn_draw_legend(&C.btn_layer_pop, bscale, "Remove Top Layer");
 
@@ -1090,6 +1105,9 @@ void main_draw() {
 
   if (ui_get_window() == WINDOW_MAIN) {
     main_draw_mouse_extra();
+    if (ui_is_demo()) {
+      draw_resize_demo_message();
+    }
   }
 }
 
@@ -1118,8 +1136,7 @@ void main_update_layout() {
     int x2 = x1 + 18 * s;
     int x3 = x2 + 18 * s;
     int x4 = x3 + 18 * s;
-    int x4b = x4 + 18 * s;
-    int x5 = x4b + 18 * s;
+    int x5 = x4 + 18 * s;
     int x6 = x5 + 18 * s;
     int x7 = x6 + 18 * s;
     int x8 = x7 + 18 * s;
@@ -1136,7 +1153,6 @@ void main_update_layout() {
     C.btn_save.hitbox = (Rectangle){x2, y0, bw, bh};
     C.btn_saveas.hitbox = (Rectangle){x3, y0, bw, bh};
     C.btn_about.hitbox = (Rectangle){x4, y0, bw, bh};
-    C.btn_help.hitbox = (Rectangle){x4b, y0, bw, bh};
     C.btn_exit.hitbox = (Rectangle){x5, y0, bw, bh};
     C.btn_sound.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
     x7 += C.btn_sound.hitbox.width + 4 * s;
@@ -1492,7 +1508,6 @@ void main_update_widgets() {
   C.btn_sel_open.disabled = ned;
   C.btn_sel_save.disabled = !has_sel || ned;
   C.btn_blueprint_add.disabled = !has_sel || ned;
-  C.btn_help.disabled = ned;
   C.btn_rotate.hidden = (tool != TOOL_SEL) || ned;
   C.btn_flipv.hidden = (tool != TOOL_SEL) || ned;
   C.btn_fliph.hidden = (tool != TOOL_SEL) || ned;
