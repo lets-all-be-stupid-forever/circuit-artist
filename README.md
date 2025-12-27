@@ -2,25 +2,25 @@
 
 Circuit Artist is a digital logic circuit drawing game.
 
-## Changes in 1.1
+## Changes in 1.1 :muscle:
 
-I've reworked the simulation engine to use a variable-delay event-driven simulation taking into account the topology of the wires to create a distance / propagation delay map based on elmore delay calculation for trees. It also takes into account fanout nands, so you have things like the higher the fanout the higher the delay, trees propagating differently then "lines" etc, to a have a more "accurate" simulation so players can play/develop intuition for real circuit design (sort of).
+- :wrench: I've reworked the simulation engine to use a variable-delay event-driven simulation taking into account the topology of the wires to create a distance / propagation delay map based on elmore delay calculation for trees. It also takes into account fanout nands, so you have things like the higher the fanout the higher the delay, trees propagating differently then "lines" etc, to a have a more "accurate" simulation so players can play/develop intuition for real circuit design (sort of).
 
-There's also a simplified energy calculation formula/metric to explore circuit energy efficiency vs speed (even though its still not fully developed yet in the game).
+- :mag: The distances are mapped to pixels so players can visualize the wires "propagating" with glow, which I find cool and helps understand how things work. Rendering is done in real time with some shaders.
 
-Now clocked components won't work for free, need to make them efficient, adding an extra challenge/fun dimension to the game.
+- :clock930: I've also added a delta-based design on the simulation to allow simulation to be paused and controlled back and forth so players can interact with it. Particularly useful for debugging "cyclic" circuits.
 
-The distances are mapped to pixels so players can visualize the wires "propagating" with glow, which I find cool and helps understand how things work. Rendering is done in real time with some shaders.
+- :cake: Players can also add layers as in photoshop, (up to 3 layers), and layer wires can connect with neighboor layers, although NANDs are only allowed on the bottom layer. Wires on upper layers have a higher "propagation" speed.
 
-I've also added a delta-based design on the simulation to allow simulation to be paused and controlled back and forth so players can interact with it. Particularly useful for debugging "cyclic" circuits.
+- :trophy: Added a lower-pace campaign system so new users can solve problems little by little and learn concepts gradually, testing/refining solutions and tracking progress. It's still on early days, plan to put more stuff later.
 
-Players can also add layers as in photoshop, (up to 3 layers), and layer wires can connect with neighboor layers, although NANDs are only allowed on the bottom layer. Wires on upper layers have a higher "propagation" speed.
+- :handbag: I've added an inventory-like UI for placing blueprints so players can build it's library and re-use it, which also adds a new progression dimension to the game.
 
-Also added a lower-pace campaign system so new users can solve problems little by little and learn concepts gradually, testing/refining solutions and tracking progress. It's still on early days, plan to put more stuff later.
+- :sound: Added a bit of sound to circuits, so when they simulate they will "beep" in function of the circuit activity. 
 
-Lately I've added an inventory-like UI for placing blueprints so players can build it's library and re-use it, which also adds a new progression dimension to the game.
+- :godmode: The simulation also is no longer "immediate", players can build their own clocks on sandbox mode by just exploring the delay mechanism. Clocked/Synchronous components won't work for free, need to make them efficient, adding an extra challenge/fun dimension to the game.
 
-The simulation also is no longer "immediate", players can build their own clocks on sandbox mode by just exploring the delay mechanism.
+- :construction: There's also a simplified energy calculation formula/metric to explore circuit energy efficiency vs speed (even though its still not fully developed yet in the game).
 
 ## Links
 
@@ -28,7 +28,7 @@ The simulation also is no longer "immediate", players can build their own clocks
 - [Discord](https://discord.gg/McpSTEW5jU) (Please share your feedback!)
 - [Blog](https://circuitartistgame.com/)
 
-## Gifs
+## Gifs :eyes:
 
 ![Image](https://github.com/user-attachments/assets/b5a1b21d-5920-4d14-b2af-e8450a96fb24)
 
