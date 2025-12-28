@@ -730,6 +730,7 @@ RenderTexture2D clone_texture(RenderTexture2D img) {
   RenderTexture2D out =
       LoadRenderTexture(img.texture.width, img.texture.height);
   BeginTextureMode(out);
+  ClearBackground(BLANK);
   float tw = (float)img.texture.width;
   float th = (float)img.texture.height;
   Rectangle source = {0, 0, tw, -th};
@@ -746,6 +747,7 @@ RenderTexture2D crop_texture(RenderTexture2D img, RectangleInt region) {
   int h = region.height;
   RenderTexture2D out = LoadRenderTexture(w, h);
   BeginTextureMode(out);
+  ClearBackground(BLANK);
   int th = img.texture.height;
   Rectangle source = {
       .x = (float)region.x,

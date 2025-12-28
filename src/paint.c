@@ -2303,6 +2303,9 @@ void paint_destroy(Paint* ca) {
   if (ca->tSidePanel.width > 0) {
     UnloadTexture(ca->tSidePanel);
   }
+  if (ca->rtPixelTool.id > 0) {
+    UnloadRenderTexture(ca->rtPixelTool);
+  }
 }
 
 static Vector2 project_point_into_rect(Vector2 p, Rectangle r) {
