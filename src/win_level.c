@@ -77,6 +77,7 @@ static void update_layout() {
   int bw = C.buttons.width;
   int bh = 17 * 2;
   C.camp_panel = roff(off, WIN_LEVEL_CAMP_PANEL);
+
   C.btn_msg[0].hitbox = roff(off, WIN_LEVEL_msg1);
   C.btn_msg[1].hitbox = roff(off, WIN_LEVEL_msg2);
   C.btn_msg[2].hitbox = roff(off, WIN_LEVEL_msg3);
@@ -137,8 +138,11 @@ static void update_layout() {
     };
   }
 
+  Rectangle rcamp = roff(off, WIN_LEVEL_camp_text);
+  rcamp.height += 46;
+  rcamp.y -= 6;
   textbox_set_box(&C.tb, roff(off, WIN_LEVEL_level_text));
-  textbox_set_box(&C.tb_grp, roff(off, WIN_LEVEL_camp_text));
+  textbox_set_box(&C.tb_grp, rcamp);
 }
 
 void win_level_set_sel(LevelDef* ldef) {
@@ -170,8 +174,9 @@ static void select_first_available_level() {
   LevelGroup* lg = C.selected_group;
   int nl = arrlen(lg->levels);
   for (int i = 0; i < nl; i++) {
-    int j = nl - i - 1;
-    if (lg->levels[j]->can_choose) {
+    // int j = nl - i - 1;
+    int j = i;
+    if (lg->levels[j]->can_choose && !lg->levels[j]->complete) {
       win_level_set_sel(lg->levels[j]);
       return;
     }
@@ -405,6 +410,12 @@ void win_level_draw() {
         btn_draw_legend(&C.btn_msg[i], bscale,
                         TextFormat("Wiki: %s", wiki_item->name));
       }
+    }
+
+    int nc = arrlen(r->group_order);
+    for (int i = 0; i < nc; i++) {
+      btn_draw_legend(&C.btn_campaign[i], bscale,
+                      TextFormat("Campaign: %s", r->group_order[i]->name));
     }
   }
   label_draw(&C.level_title);

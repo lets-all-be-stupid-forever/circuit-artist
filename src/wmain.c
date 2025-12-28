@@ -285,7 +285,14 @@ void main_init() {
     Image img = LoadImage("../solutions/slow_af.png");
     paint_load_image(&C.ca, img);
   } else {
-    paint_new_buffer(&C.ca);
+    if (ui_is_demo()) {
+      Image img = LoadImage("../assets/help_small2.png");
+      paint_load_image(&C.ca, img);
+    } else {
+      Image img = LoadImage("../assets/help.png");
+      paint_load_image(&C.ca, img);
+    }
+    // paint_new_buffer(&C.ca);
   }
   C.sidepanel_img = gen_image_simple(200, 800);
   C.sidepanel_tex = LoadTextureFromImage(C.sidepanel_img);
@@ -972,8 +979,8 @@ void main_draw() {
 
   btn_draw_text(&C.btn_wiki, bscale, "Wiki");
   if (getlevel()) {
-    btn_draw_text(&C.btn_level, bscale,
-                  TextFormat("Level: %s", getlevel()->ldef->name));
+    btn_draw_text_primary(&C.btn_level, bscale,
+                          TextFormat("Level: %s", getlevel()->ldef->name));
   }
 
   bool color_disabled = mode != MODE_EDIT;
@@ -1006,7 +1013,14 @@ void main_draw() {
   // We only draw the legends if this window is the active window.
   if (ui_get_window() == WINDOW_MAIN) {
     btn_draw_legend(&C.btn_new, bscale, "New Image");
-    btn_draw_legend(&C.btn_open, bscale, "Load Image");
+
+    if (ui_is_demo()) {
+      btn_draw_legend(&C.btn_open, bscale,
+                      "Load Image \n`(Not Available in Demo)`");
+    } else {
+      btn_draw_legend(&C.btn_open, bscale, "Load Image");
+    }
+
     btn_draw_legend(&C.btn_stamp, bscale,
                     "Open Blueprints Window (Q)\nOpens even if selection tool "
                     "is not active.");
@@ -1036,13 +1050,11 @@ void main_draw() {
         "propagate even faster here.\nUse (TAB) to quickly alternate "
         "between previously used layer.");
 
-    btn_draw_legend(&C.btn_level, bscale, "Under construction...");
+    btn_draw_legend(&C.btn_level, bscale, "Select Level/Campaign.");
     btn_draw_legend(&C.btn_wiki, bscale, "Wiki");
     btn_draw_legend(&C.btn_sound, bscale, "Toggle simulation sound");
     btn_draw_legend(&C.btn_sound_paint, bscale, "Toggle paint sound");
     btn_draw_legend(&C.btn_sel_open, bscale, "Load Selection from Image");
-    btn_draw_legend(&C.btn_save, bscale, "Save Image (C-S)");
-    btn_draw_legend(&C.btn_saveas, bscale, "Save Image As...");
     btn_draw_legend(&C.btn_sel_save, bscale, "Save Selection as Image");
     btn_draw_legend(&C.btn_blueprint_add, bscale, "Create blueprint (U)");
 
@@ -1154,13 +1166,15 @@ void main_update_layout() {
     C.btn_saveas.hitbox = (Rectangle){x3, y0, bw, bh};
     C.btn_about.hitbox = (Rectangle){x4, y0, bw, bh};
     C.btn_exit.hitbox = (Rectangle){x5, y0, bw, bh};
+
+    C.btn_level.hitbox = (Rectangle){x7, y0, 9 * bw, bh};
+    x7 += C.btn_level.hitbox.width + (17 * s) + 4 * s;
+    C.btn_wiki.hitbox = (Rectangle){x7, y0, 4 * bw, bh};
+    x7 += C.btn_wiki.hitbox.width + 4 * s;
     C.btn_sound.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
     x7 += C.btn_sound.hitbox.width + 4 * s;
     C.btn_sound_paint.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
     x7 += C.btn_sound_paint.hitbox.width + 4 * s;
-    C.btn_wiki.hitbox = (Rectangle){x7, y0, 4 * bw, bh};
-    x7 += C.btn_wiki.hitbox.width + 4 * s;
-    C.btn_level.hitbox = (Rectangle){x7, y0, 9 * bw, bh};
   }
 
   int sh = GetScreenHeight() / s;
@@ -1469,9 +1483,10 @@ void main_check_file_drop() {
 void main_update_widgets() {
   bool ned = C.mode != MODE_EDIT;
   int tool = paint_get_tool(&C.ca);
+  bool demo = ui_is_demo();
 
   C.btn_new.disabled = ned;
-  C.btn_open.disabled = ned;
+  C.btn_open.disabled = ned || demo;
 
   C.btn_brush.disabled = ned;
   C.btn_line.disabled = ned;

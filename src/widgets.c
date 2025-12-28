@@ -418,6 +418,59 @@ void btn_draw_text(Btn* b, int ui_scale, const char* text) {
   }
 }
 
+void btn_draw_text_primary(Btn* b, int ui_scale, const char* text) {
+  if (b->hidden) return;
+  Vector2 size = get_rendered_text_size(text);
+  int fx = (b->hitbox.x + b->hitbox.width / 2) / ui_scale - size.x / 2;
+  int fy = (b->hitbox.y + b->hitbox.height / 2) / ui_scale - size.y / 2 + 1;
+  if (b->pressed) fy += 1;
+
+  int x = b->hitbox.x;
+  int y = b->hitbox.y;
+  int w = b->hitbox.width;
+  int h = b->hitbox.height;
+  int s = ui_scale;
+  //  0x802601FF Da
+  Color darker = GetColor(0x802601FF);
+  Color bg1 = GetColor(0Xe88038FF);  // GetColor(0XFC6700FF);
+  Color fg = GetColor(0xFDD900FF);
+
+  Color c0 = darker;  // GetColor(0x6C6C53FF);
+  Color c1 = bg1;     // GetColor(0x6C6C53FF);
+  Color c2 = fg;      // GetColor(0x6C6C53FF);
+  Color cbg = get_lut_color(COLOR_BTN_BG);
+  DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
+  DrawRectangle(x, y, w, h, c1);
+  if ((b->pressed || b->toggled) && (!b->disabled)) {
+    DrawRectangle(x, y, w, s, c0);  // TOP
+    DrawRectangle(x, y, s, h, c0);  // LEFT
+  } else {
+    DrawRectangle(x, y, w - s, s, c2);
+    DrawRectangle(x, y, s, h - s, c2);
+  }
+  DrawRectangle(x + s, y + h - s, w - s, s, c0);
+  DrawRectangle(x + w - s, y + s, s, h - s, c0);
+
+  rlPushMatrix();
+  rlScalef(ui_scale, ui_scale, 1);
+
+  if (!b->disabled) {
+    font_draw_texture(text, fx, fy, BLACK);
+  } else {
+    font_draw_texture(text, fx + 1, fy, c2);
+    font_draw_texture(text, fx, fy + 1, c2);
+    font_draw_texture(text, fx + 1, fy + 1, c2);
+    font_draw_texture(text, fx, fy, c0);
+  }
+
+  rlPopMatrix();
+  if ((b->pressed || b->toggled) && (!b->disabled)) {
+    Color bl = BLACK;
+    bl.a = 100;
+    DrawRectangle(x, y, w, h, bl);
+  }
+}
+
 // Icon button: tool buttons and challenge button.
 void btn_draw_icon(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
   if (b->hidden) return;

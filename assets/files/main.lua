@@ -64,7 +64,7 @@ end
 
 ----------------------------------------------------
 add_group({
-  name="Unsorted",
+  name="Unsorted / Sandbox",
   id="custom",
   icon='sandbox.png',
   desc=[[
@@ -95,11 +95,15 @@ The `power_on_reset` input allows you to initialize memory when applicable. It s
 
 ----------------------------------------------------
 add_group({
-  name="Basics",
+  name="Tutorial I - Wires and Gates",
   id='basics1',
   icon='basics.png',
   desc=[[
-  Basic Mechanics and Logic Gates
+Learn the fundamentals of digital circuits.
+
+Start by connecting wires, then build your first logic gates from NAND - the universal building block.
+
+By the end, you'll understand how all Boolean logic can be constructed from a single gate type.
   ]]})
 
 easy_add_level({
@@ -319,11 +323,13 @@ Given two `32`-bit inputs `a` and `b`, return 1 if they're equal, or 0 if they'r
  -- Second campaign: 7 seg
  ------------------------------------------------------------
  add_group({
-   name="7 Segment Display",
+   name="Tutorial II - 7 Segment Display",
    id="sevseg",
    icon='sevenseg.png',
    desc=[[
-   Create a 7-segment display circuit.
+Apply your logic gate knowledge to build a practical circuit.
+
+Learn about decoders and how to convert binary numbers into visual output - the same principle used in calculators and digital clocks.
  ]]})
 
 easy_add_level({
@@ -513,11 +519,13 @@ Given a 4-bit input `n`, display it in a 7-segment display as in the image below
     })
 
 add_group({
-   name="Routing",
+   name="Tutorial III - Routing Bits",
    id='muxes',
    icon='routing.png',
 desc=[[
-Routing Bits
+Master data flow control with multiplexers and demultiplexers.
+
+These components let you select, route, and broadcast signals - essential building blocks for CPUs, memory systems, and communication buses.
 ]]})
 
 

@@ -581,6 +581,11 @@ void paint_load_image(Paint* ca, Image img) {
   if (nl == 1) {
     tmp[0] = ensure_size_multiple_of(tmp[0], 8);
   }
+  if (ui_is_demo()) {
+    for (int i = 0; i < nl; i++) {
+      image_ensure_max_size(&tmp[i], 64);
+    }
+  }
   hist_set_buffer(&ca->h, nl, tmp);
   paint_reset_camera(ca);
   paint_ensure_camera_within_bounds(ca);
@@ -640,9 +645,9 @@ void paint_paste_image(Paint* ca, Image img, int r) {
 // Used for changing the mouse to a "move" cursor when the user has a mouse
 // over a selection.
 bool paint_get_mouse_over_sel(Paint* ca) {
-  // Checking if the tool is pressed to avoid scenario where a selection exists
-  // and you're creating a new selection and the mouse goes over the existing
-  // selection.
+  // Checking if the tool is pressed to avoid scenario where a selection
+  // exists and you're creating a new selection and the mouse goes over the
+  // existing selection.
   if (!paint_get_has_selection(ca) || ca->tool_pressed) {
     return false;
   }
