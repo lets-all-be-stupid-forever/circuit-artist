@@ -701,7 +701,7 @@ Rectangle roff(Vector2 off, Rectangle r) {
 }
 
 void load_text_sprites(const char* txt, sprite_t** out_sprites) {
-  char* nxt = txt;
+  const char* nxt = txt;
   sprite_t* sprites = NULL;
   while ((nxt = strstr(nxt, "!img:"))) {
     int i = 5;

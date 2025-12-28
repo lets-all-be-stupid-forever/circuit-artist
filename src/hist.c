@@ -615,7 +615,7 @@ void hist_init(Hist* h) {
 #else /* constant layers */
   h->llsp[1] = 0;
   h->llsp[2] = 0;
-  h->llsp[3] = 0;
+  // h->llsp[3] = 0;
 #endif
 }
 

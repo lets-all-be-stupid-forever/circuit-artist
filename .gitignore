@@ -19,3 +19,5 @@ save_*.json
 blueprints_*.json
 _old
 blueprints/*
+compile_commands.json
+.cache

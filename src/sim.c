@@ -385,8 +385,8 @@ void init_spec(DistSpec* d) {
   double vdd = 5.0 * 0.001;
   d->plen_lut[0] = 1.0;
   d->plen_lut[1] = 0.5;
-  d->plen_lut[2] = 0.3333;
-  d->plen_lut[3] = 0.2;
+  d->plen_lut[2] = 0.25;
+  // d->plen_lut[3] = 0.2;
   d->c_per_w = cw;
   d->r_per_w = rw;
   d->fixed_gate_delay = 2;
@@ -666,7 +666,7 @@ Tex* sim_render(Sim* sim, int tw, int th, Texture* tex, Cam2D cam,
   texdel(smoothed);
   texdel(cproj);
   texdel(lproj);
-  profiler_tac("rest");
+  profiler_tac();
   return combined;
 }
 

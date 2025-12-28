@@ -91,6 +91,7 @@ typedef struct {
 // Button
 bool btn_update(Btn* b);
 void btn_draw_text(Btn* b, int ui_scale, const char* text);
+void btn_draw_text_primary(Btn* b, int ui_scale, const char* text);
 void btn_draw_legend(Btn* b, int ui_scale, const char* text);
 void btn_draw_icon(Btn* b, int ui_scale, Texture2D tex, Rectangle r);
 void btn_draw_color(Rectangle r, Color c, bool selected, bool disabled);
