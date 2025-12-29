@@ -48,9 +48,9 @@ add_subdirectory(third_party/json-c)
 add_subdirectory(third_party/msgpack-c)
 add_compile_definitions(CLIP_ENABLE_IMAGE=1)
 
-IF(APPLE)
-add_compile_options(-fsanitize=address)
-add_link_options(-fsanitize=address)
+IF(APPLE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_compile_options(-fsanitize=address)
+  add_link_options(-fsanitize=address)
 ENDIF()
 
 set(CMAKE_C_STANDARD 11)
