@@ -19,10 +19,25 @@ if(MSVC)
 endif()
 
 IF (STEAM)
-  link_directories(${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/)
   include_directories(${CMAKE_SOURCE_DIR}/third_party/steam/)
-  SET(steam_libs steam_api64)
   add_compile_definitions(WITH_STEAM=1)
+
+  IF (WIN32)
+    link_directories(${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/)
+    SET(steam_libs steam_api64)
+  ELSEIF (APPLE)
+    link_directories(${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/osx/)
+    SET(steam_libs steam_api)
+  ELSEIF (UNIX AND NOT APPLE)
+    IF (CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+      link_directories(${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/linuxarm64/)
+    ELSEIF (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+      link_directories(${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/linux64/)
+    ELSE()
+      link_directories(${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/linux32/)
+    ENDIF()
+    SET(steam_libs steam_api)
+  ENDIF()
 ENDIF()
 
 # add_compile_definitions(GRAPHICS_API_OPENGL_43)
@@ -181,18 +196,32 @@ target_link_libraries(calib_demo
 add_executable(ca_demo src/main.c)
 target_link_libraries(ca_demo calib_demo)
 
-# Copy Steam DLL and app ID file to build directory for runtime
-IF (STEAM AND WIN32)
+# Copy Steam library and app ID file to build directory for runtime
+IF (STEAM)
+  IF (WIN32)
+    SET(steam_binary "${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/steam_api64.dll")
+  ELSEIF (APPLE)
+    SET(steam_binary "${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/osx/libsteam_api.dylib")
+  ELSEIF (UNIX AND NOT APPLE)
+    IF (CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+      SET(steam_binary "${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/linuxarm64/libsteam_api.so")
+    ELSEIF (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+      SET(steam_binary "${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/linux64/libsteam_api.so")
+    ELSE()
+      SET(steam_binary "${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/linux32/libsteam_api.so")
+    ENDIF()
+  ENDIF()
+
   add_custom_command(TARGET ca POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/steam_api64.dll"
+      "${steam_binary}"
       "$<TARGET_FILE_DIR:ca>"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       "${CMAKE_SOURCE_DIR}/steam_appid.txt"
       "$<TARGET_FILE_DIR:ca>")
   add_custom_command(TARGET ca_demo POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${CMAKE_SOURCE_DIR}/third_party/redistributable_bin/win64/steam_api64.dll"
+      "${steam_binary}"
       "$<TARGET_FILE_DIR:ca_demo>"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       "${CMAKE_SOURCE_DIR}/steam_appid.txt"

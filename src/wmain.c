@@ -979,8 +979,8 @@ void main_draw() {
 
   btn_draw_text(&C.btn_wiki, bscale, "Wiki");
   if (getlevel()) {
-    btn_draw_text_primary(&C.btn_level, bscale,
-                          TextFormat("Level: %s", getlevel()->ldef->name));
+    btn_draw_text(&C.btn_level, bscale,
+                  TextFormat("Level: %s", getlevel()->ldef->name));
   }
 
   bool color_disabled = mode != MODE_EDIT;

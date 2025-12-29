@@ -18,6 +18,7 @@
 #include "shaders.h"
 #include "stb_ds.h"
 #include "stdio.h"
+#include "steam.h"
 #include "tutorial.h"
 #include "ui.h"
 #include "utils.h"

@@ -26,7 +26,8 @@ void SteamInit() {
   C.loaded = SteamAPI_Init();
   if (C.loaded) {
     C.user_stats = SteamAPI_SteamUserStats();
-    C.stats = SteamAPI_ISteamUserStats_RequestCurrentStats(C.user_stats);
+    // RequestCurrentStats is no longer needed - Steam client manages synchronization
+    C.stats = C.loaded;
     uint32 num_achievements =
         SteamAPI_ISteamUserStats_GetNumAchievements(C.user_stats);
     printf("----------------------\n");
