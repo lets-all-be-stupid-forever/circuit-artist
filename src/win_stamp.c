@@ -273,7 +273,16 @@ static void update_layout() {
   int pad = 0;
 }
 
-void win_stamp_init() { stamp_load(); }
+static void ensure_blueprints_folder_exists() {
+  if (!DirectoryExists("../blueprints")) {
+    MakeDirectory("../blueprints");
+  }
+}
+
+void win_stamp_init() {
+  ensure_blueprints_folder_exists();
+  stamp_load();
+}
 
 void win_stamp_open() {
   ui_winpush(WINDOW_STAMP);
