@@ -220,8 +220,12 @@ void stamp_load() {
         // image_remove_blacks(&img);
         // s->thumbnail = LoadTextureFromImage(img);
         // UnloadImage(img);
-        s->thumbnail = LoadTexture(stamp_fname_thumbnail(s));
-        C.stamps[i] = s;
+        if (FileExists(stamp_fname_thumbnail(s))) {
+          s->thumbnail = LoadTexture(stamp_fname_thumbnail(s));
+          C.stamps[i] = s;
+        } else {
+          free(s);
+        }
       }
     }
   }
