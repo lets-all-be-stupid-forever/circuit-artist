@@ -32,12 +32,13 @@ Circuit Artist is a digital logic circuit drawing game.
 
 ## Gifs :eyes:
 
+![Image](https://github.com/user-attachments/assets/c85ed8f2-d367-43b9-ae3d-49100df4d740)
+
 ![Image](https://github.com/user-attachments/assets/b5a1b21d-5920-4d14-b2af-e8450a96fb24)
 
 ![Image](https://github.com/user-attachments/assets/5b655739-0cfd-4bb1-b73f-0f7315160bc0)
 
 ![Image](https://github.com/user-attachments/assets/361a9a42-3f4a-4043-bb19-6f13ae5758ab)
-
 
 ![Image](https://github.com/user-attachments/assets/ca215187-4ad6-4618-9700-dfa31cf6481c)
 
