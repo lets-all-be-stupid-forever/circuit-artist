@@ -1642,7 +1642,6 @@ static void on_dialog_close(int r) {
   }
   if (r == 0) {  // save
     if (main_on_save_click(false)) {
-      ui_winpop();
       return;  // Cancelled during save
     }
   }
