@@ -1,7 +1,7 @@
 #include "graph.h"
 
 static inline void edge_group_add_direct_edge(EdgeGroup* eg, int s, int t,
-                                              int w) {
+                                              float w) {
   eg->ne++;
   int e = eg->ecount[s]++;
   int off = s * eg->max_edges;
@@ -11,7 +11,7 @@ static inline void edge_group_add_direct_edge(EdgeGroup* eg, int s, int t,
   };
 }
 
-static inline void edge_group_add_edge(EdgeGroup* eg, int s, int t, int w) {
+static inline void edge_group_add_edge(EdgeGroup* eg, int s, int t, float w) {
   edge_group_add_direct_edge(eg, s, t, w);
   edge_group_add_direct_edge(eg, t, s, w);
 }
@@ -108,3 +108,27 @@ void djikstra_free(struct Djikstra* dji) {
   arrfree(dji->dist);
   free(dji);
 }
+
+void graph_print_weights(Graph* g) {
+  int se = 0;
+  for (int i = 0; i < g->n; i++) {
+    printf("Node %d: \n", i);
+    int ne = g->ecount[i];
+    int me = g->max_edges;
+    for (int e = 0; e < ne; e++) {
+      int j = g->edges[me * i + e].e;
+      float w = g->edges[me * i + e].w;
+      printf("%d->%d : %f\n", i, j, w);
+    }
+  }
+  printf("num_nodes=%d num_edges=%d\n", g->n, se);
+}
+
+void graph_print_stats(Graph* g) {
+  int se = 0;
+  for (int i = 0; i < g->n; i++) {
+    se += g->ecount[i];
+  }
+  printf("num_nodes=%d num_edges=%d\n", g->n, se);
+}
+

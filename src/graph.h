@@ -29,7 +29,7 @@ typedef struct {
   struct {
     int key;
     int value;
-  } * inv;
+  }* inv;
   int* nodes;
   GraphEdge* edges;
   int* ecount;
@@ -77,6 +77,7 @@ static inline void graph_add_direct_edge(Graph* g, int s, int t, float w) {
 }
 
 static inline void graph_add_edge(Graph* g, int s, int t, float w) {
+  assert(s != t);
   graph_add_direct_edge(g, s, t, w);
   graph_add_direct_edge(g, t, s, w);
 }
@@ -134,12 +135,7 @@ static void graph_destroy(Graph* g) {
   hmfree(g->inv);
 }
 
-static void graph_print_stats(Graph* g) {
-  int se = 0;
-  for (int i = 0; i < g->n; i++) {
-    se += g->ecount[i];
-  }
-  printf("num_nodes=%d num_edges=%d\n", g->n, se);
-}
+void graph_print_stats(Graph* g);
+void graph_print_weights(Graph* g);
 
 #endif

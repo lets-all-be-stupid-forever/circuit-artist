@@ -59,7 +59,7 @@ static void dist_build_subgraph(Graph* g,    /* Original graph (input) */
     for (int ek = 0; ek < ne; ek++) {
       int k1;
       int i2_e = p_edges[ek].e;
-      int i2_w = p_edges[ek].w;
+      float i2_w = p_edges[ek].w;
       graph_node_inv(subg, i2_e, &k1);
       // if (k1 < k) { /* Avoids adding directed edges twice*/
       graph_add_direct_edge(subg, k, k1, i2_w);
@@ -141,11 +141,15 @@ static void setup_dist_map(
     float dd0 = node_dist[i];
     int idx0 = g->nodes[i];
     find_idx(s, w0, idx0, &l0, &yy0, &xx0);
-    int pl = spec.plen_lut[l0];
     // int w = l0 == 0 ? w0 : w1;
     int w = w0;
     float* map = distmap[l0];
     u8* l_ori = ori[l0];
+    // Case (i): single pixel with no edges
+    if (ne == 0) {
+      WireSegment ws = (WireSegment){ic, yy0 * w + xx0, yy0 * w + xx0};
+      arrput((seglist[l0]), ws);
+    }
     for (int ie = 0; ie < ne; ie++) {
       int e = g->edges[off + ie].e;
       float ew = g->edges[off + ie].w;
@@ -158,6 +162,13 @@ static void setup_dist_map(
       int y0 = yy0;
       find_idx(s, w0, idx1, &l1, &y1, &x1);
       if (l0 != l1) {
+        // Case (ii): edge connects different layers - add 1-pixel seg at each
+        // layer
+        WireSegment ws0 = (WireSegment){ic, y0 * w + x0, y0 * w + x0};
+        arrput((seglist[l0]), ws0);
+        int w1 = w0;  // assuming same width for all layers
+        WireSegment ws1 = (WireSegment){ic, y1 * w1 + x1, y1 * w1 + x1};
+        arrput((seglist[l1]), ws1);
         continue;
       }
       /* positive indexes are from hseg
@@ -218,12 +229,12 @@ static Image int2img(int w, int h, int* p) {
   return out;
 }
 
-static Image float2img(int w, int h, float* p) {
+static Image float2img(int w, int h, float f, float* p) {
   Image out = GenImageColor(w, h, BLACK);
   Color* pix = out.data;
   for (int i = 0; i < (w * h); i++) {
     float v = p[i];
-    pix[i] = (Color){v, v, v, 255};
+    pix[i] = (Color){f * v, f * v, f * v, 255};
   }
   return out;
 }
@@ -232,7 +243,7 @@ static void dist_graph_debug(DistGraph* dg, int nl, int w, int h) {
   for (int l = 0; l < nl; l++) {
     char fname[50];
     snprintf(fname, sizeof(fname), "d%d.png", l);
-    ExportImage(float2img(w, h, dg->distmap[l]), fname);
+    ExportImage(float2img(w, h, 100, dg->distmap[l]), fname);
     printf("Saved %s\n", fname);
   }
 }
@@ -359,7 +370,23 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
         assert(edge_group_is_tree(eg));
         _ecount = eg->ecount;
         _edges = eg->edges;
-        /* TODO: Adjust edges to account for loss of capacitance */
+#if 0
+        printf("after prune:\n");
+        {
+          int se = 0;
+          int me = eg->max_edges;
+          for (int i = 0; i < eg->n; i++) {
+            printf("Node %d: \n", i);
+            int ne = eg->ecount[i];
+            for (int e = 0; e < ne; e++) {
+              int j = eg->edges[me * i + e].e;
+              float w = g->edges[me * i + e].w;
+              printf("%d->%d : %f\n", i, j, w);
+            }
+          }
+          printf("num_nodes=%d num_edges=%d\n", eg->n, eg->ne);
+        }
+#endif
       }
       elmore_calculator_run(ec, gg.n, gg.max_edges, _ecount, _edges, root,
                             node_distance);
@@ -420,16 +447,22 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
     }
     dg->t_elmore += GetTime() - t0;
     t0 = GetTime();
-
+#if 0
+    if (gg.n > 1) {
+      for (int i = 0; i < gg.n; i++) {
+        printf("dist[%d]=%f\n", i, node_distance[i]);
+      }
+    }
+#endif
     /* From graph to 2D distance map And wire segments */
     setup_dist_map(spec, lone, w0, h0, &gg, node_distance, dg->distmap, c,
                    dg->seglist, ori, &dg->wprop[c].max_delay);
     dg->t_setup += GetTime() - t0;
     t0 = GetTime();
   }
-  printf("dist_build  = %.1f ms\n", (dg->t_build * 1000));
-  printf("dist_elmore = %.1f ms\n", (dg->t_elmore * 1000));
-  printf("dist_setup  = %.1f ms\n", (dg->t_setup * 1000));
+  printf("time_build  = %.1f ms\n", (dg->t_build * 1000));
+  printf("time_elmore = %.1f ms\n", (dg->t_elmore * 1000));
+  printf("time_setup  = %.1f ms\n", (dg->t_setup * 1000));
   /*
    * Big img debug mode (no layer) :
   t_build  = 367.7 ms

@@ -162,7 +162,7 @@ typedef struct {
   struct {
     char* key;
     int value;
-  } * locs;
+  }* locs;
 } ShaderDef;
 
 static struct {
@@ -170,7 +170,7 @@ static struct {
   struct {
     char* key;
     ShaderDef value;
-  } * registry;
+  }* registry;
 } C = {0};
 
 Shaders* get_shaders() { return &_s; }
@@ -199,7 +199,7 @@ int shader_loc(const char* name) {
     fprintf(stderr, "Couldn't find loc: [%s] %s.\n", C.registry[C.active].key,
             name);
   }
-  printf("act=%d name=%s loc=%d\n", C.active, name, loc);
+  // printf("act=%d name=%s loc=%d\n", C.active, name, loc);
   // assert(loc != -1);
   shputi(C.registry[C.active].value.locs, name, loc);
   return loc;

@@ -104,6 +104,7 @@ void gen_wire_map(int l, int w, int h, Graph* g, int* comp, int* wmap) {
     int idx0 = g->nodes[i];
     find_idx(s, ww, idx0, &l0, &y0, &x0);
     int ci = comp[i];
+    wmap[y0 * ww + x0] = ci;
     for (int j = 0; j < g->ecount[i]; j++) {
       int i1 = g->edges[i * se + j].e;
       int idx1 = g->nodes[i1];

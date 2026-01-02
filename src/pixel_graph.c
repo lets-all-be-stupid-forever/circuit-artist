@@ -124,6 +124,10 @@ static Graph build_graph_from_code(int nl, int w, int h, float* plen_lut,
     /* UPDATED: Using 0 as distance across hseg/vseg vias so we dont punish
      * diagonals */
     float d_via = 0;
+
+    /* Moving between layers cost 1 pixel of the layer below
+     * Layer vias are flagged on the bottom layer.
+     * */
     float d_layer = 1 * pl;
 
     u8* code = img_code[l];
@@ -132,7 +136,7 @@ static Graph build_graph_from_code(int nl, int w, int h, float* plen_lut,
       pv[x] = (NodeTrack){-1, -1};
     }
 
-#define V_EDGE graph_add_edge(g, pv[x].n, nv, pl*(-(iv - pv[x].i) / w))
+#define V_EDGE graph_add_edge(g, pv[x].n, nv, pl * (-(iv - pv[x].i) / w))
 #define H_EDGE graph_add_edge(g, ph.n, nh, pl*(ih - ph.i))
 
     for (int y = 0; y < h; y++) {
@@ -188,7 +192,7 @@ static Graph build_graph_from_code(int nl, int w, int h, float* plen_lut,
           assert(pv[x].n == -1);
           assert(ph.n == -1);
           nh = graph_add_node(g, ih);
-          graph_add_edge(g, nh, nh, 0); /* d=0 */
+          // graph_add_edge(g, nh, nh, 0); /* d=0 */
         }
 
         /* nh!=-1, nv=1 implies a T or a corner.
@@ -527,6 +531,8 @@ void pixel_graph_init(PixelGraph* pg, DistSpec spec, int nl, Image* imgs,
   // save_img_u8(w, h, pg->ori[0], "../ori.png");
   miniprof_nxt();
   miniprof_print("pixel_graph");
+  // printf("Pixel Graph:\n");
+  // graph_print_weights(&pg->g);
 }
 
 void pixel_graph_destroy(PixelGraph* pg) {
