@@ -1,0 +1,18 @@
+
+`D FLIP FLOP`
+
+!img:wiki/mem8.png
+Sometimes you want the memory to be updated only once when the clock (`CLK`) goes from 0 to 1.
+
+Then, you can perform your calculations however you want, have the `D` bit modified with the new (next) value of the storage without interfering the current storage/calculation. Then, the storage is only updated again whenever CLK goes to 0 and then back again to 1! (ie, in the next `CYCLE`, creating a proper sequential mechanism)
+
+!img:wiki/mem9.png
+
+This can be achieved with a `D flip flop`, that can be created using two D latches.
+
+!img:wiki/mem10.png
+
+We call this behaviour a `rising edge-triggered` memory, in contrast with the previous `level-triggered` memory of `D Latches`. Below a comparison between the two storage modes:
+
+!img:wiki/mem13.png
+

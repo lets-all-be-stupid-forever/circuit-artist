@@ -1,0 +1,51 @@
+comb_level[[
+conn out 1 CLK
+conn out 4 Data
+conn out 1 E
+conn out 1 RST
+conn in 4 Q
+test 1 0000 1 1 2222
+test 0 1010 1 1 2222
+test 1 1010 1 1 0000 E=1 RST=1
+test 0 1001 1 0 0000
+test 1 1001 1 0 1001 E=1 RST=0
+test 0 1100 0 0 1001
+test 1 1100 0 0 1001 E=0 RST=0
+test 0 0011 0 1 1001
+test 1 0011 0 1 0000 E=0 RST=1
+test 0 0110 1 0 0000
+test 1 0110 1 0 0110
+test 0 1111 1 0 0110
+test 1 1111 1 0 1111
+test 0 0000 1 0 1111
+test 1 0000 1 0 0000
+test 0 0001 1 0 0000
+test 1 0001 1 0 0001
+test 0 0010 1 0 0001
+test 1 0010 1 0 0010
+test 0 0100 1 0 0010
+test 1 0100 1 0 0100
+test 0 1000 1 0 0100
+test 1 1000 1 0 1000
+test 0 0000 0 1 1000
+test 1 0000 0 1 0000 Reset
+test 0 0001 0 1 0000
+test 1 0001 1 1 0000 Reset
+test 0 0010 1 1 0000
+test 1 0010 1 1 0000 Reset
+test 0 0100 1 1 0000
+test 1 0100 1 1 0000 Reset
+test 0 1000 1 1 0000
+test 1 1000 1 1 0000 Reset
+test 0 0101 0 1 0000
+test 1 0101 0 1 0000 Reset
+test 0 1001 1 0 0000
+test 1 1001 1 0 1001
+test 0 1111 0 1 1001
+test 1 1111 1 1 0000 Reset
+test 0 0110 1 0 0000
+test 1 0110 1 0 0110
+test 0 0000 0 1 0110
+test 1 0000 0 1 0000 Reset
+test 0 0000 0 0 0000
+]]

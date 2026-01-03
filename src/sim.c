@@ -91,7 +91,6 @@ static void print_bits(int64_t num) {
 PinComm sim_port_read(Sim* sim, int iport) {
   int nw = arrlen(sim->ping[iport].pins);
   assert(nw <= 64);
-  assert(isskt(sim->ping[iport].type));
   i64 b = 0;
   i64 f = 0;
   int iskt = sim->pg.pgoff[iport];

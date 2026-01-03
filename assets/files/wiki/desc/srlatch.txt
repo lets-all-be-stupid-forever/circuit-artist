@@ -1,0 +1,13 @@
+
+`SR Latch`
+
+This section will show one way to store 1 bit of memory.
+
+It's generally not possible to store memory without using cycles, ie, wires that have outputs interlinked with some inputs somehow. We generally want to avoid arbitrarily using cycles in circuits because they can make the circuit complicated and can introduce oscillation errors, but bit storage is an exception.
+
+The `SR latch` is a simple interlinked configuration of gates that is stable and can "remember" its previous configuration. You can change its values using the right inputs:
+!img:wiki/mem1.png
+The `S` and `R` inputs stand for `set` and `reset`: you can see that when S=1 and R=0, we have the value of `Q` updated to 1, and when R=1 and S=0, the value of `Q` is reset to 0. When inputs are 0,0 the latch doesn't do anything, it just maintains the previous set result, thus working as a 1-bit storage memory. The S=1 and R=1 case is a bit tricky: it produces an invalid state because we want the `Q` and `Q'` values to always be opposite, so in practice we avoid this case.
+
+Mind that in the schema picture, we use `S'` and `R'` as inputs, they are the inverted values of `S` and `R` respectively.
+

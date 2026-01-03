@@ -1,0 +1,9 @@
+
+`MEMORY INITIALIZATION:` 
+
+Flip flops don't have an initial state: the latches start at an undefined state, so everytime you have a synchronous circuit, before doing any calculation you need to initialize your memory somehow.
+
+That's why we often introduce an extra auxiliar bit called `POWER-ON-RESET` that is 1 for a few initial clock cycles, then become zero.
+
+!img:wiki/sync6.png
+!img:wiki/sync8.png

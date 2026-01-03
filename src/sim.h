@@ -50,7 +50,7 @@ typedef struct {
 
 typedef struct {
   i64 b;
-  i64 f;
+  i64 f; /* flag for undefined*/
 } PinComm;
 
 typedef struct {

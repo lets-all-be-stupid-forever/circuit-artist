@@ -26,7 +26,8 @@ void SteamInit() {
   C.loaded = SteamAPI_Init();
   if (C.loaded) {
     C.user_stats = SteamAPI_SteamUserStats();
-    // RequestCurrentStats is no longer needed - Steam client manages synchronization
+    // RequestCurrentStats is no longer needed - Steam client manages
+    // synchronization
     C.stats = C.loaded;
     uint32 num_achievements =
         SteamAPI_ISteamUserStats_GetNumAchievements(C.user_stats);
@@ -85,4 +86,24 @@ void SteamRefreshAchievement() {
     }
   }
 }
+
+int steam_get_stats(const char* name) {
+  int r = 0;
+  bool ok = SteamAPI_ISteamUserStats_GetStatInt32(C.user_stats, name, &r);
+  if (!ok) printf("Error getting stat for %s\n", name);
+  return r;
+}
+
+void steam_set_stats(const char* name, int v) {
+  bool ok = SteamAPI_ISteamUserStats_SetStatInt32(C.user_stats, name, v);
+  if (!ok) printf("Error getting setting stat for %s\n", name);
+}
+
+void steam_store_stats() {
+  bool s = SteamAPI_ISteamUserStats_StoreStats(C.user_stats);
+  if (!s) {
+    printf("Couldn't store stats!\n");
+  }
+}
+
 #endif

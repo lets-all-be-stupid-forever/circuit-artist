@@ -55,9 +55,11 @@ function CombinatorialTest:update()
     end
   end
   -- Now dispatches result of next case
+  -- print('------------------')
   for iport=1,#self.ports do
     local port = self.ports[iport]
     if not port.input then
+      -- print(port.name, iport-1, self.cases[icase+1][port.name])
       pset(iport-1, self.cases[icase+1][port.name])
     end
   end
@@ -65,6 +67,14 @@ function CombinatorialTest:update()
   return
 end
 
+function CombinatorialTest:case()
+  local icase = self.v_icase()
+  if icase > 0 then
+    return self.cases[icase]
+  else
+    return nil
+  end
+end
 
 -- Draws on the screen
 function CombinatorialTest:draw()
@@ -93,7 +103,7 @@ function CombinatorialTest:draw()
   if not done and icase > 0 then
     local numCases = #self.cases
     table.insert(msgs, {text='Test ' .. icase .. '/' .. numCases})
-    table.insert(msgs, {text=self.cases[icase].name})
+    table.insert(msgs, {text=self.cases[icase].name, box_w=300})
   end
 
   rl_push_matrix();
@@ -113,8 +123,17 @@ function CombinatorialTest:draw()
       draw_rectangle_pro(0, y - pady, w + 6, bh,
       0,0 ,0,
       0,0,0,200)
-      draw_font(txt, off + 1, y+1 , bg[1], bg[2], bg[3], bg[4])
-      draw_font(txt, off + 0, y, color[1], color[2], color[3], color[4])
+
+      local box_w = msgs[i].box_w
+      if box_w ~= nil then
+        draw_box(txt, off + 1, y+1, box_w, bg[1], bg[2], bg[3], bg[4])
+        draw_box(txt, off + 0, y, box_w, color[1], color[2], color[3], color[4])
+      else
+        draw_font(txt, off + 1, y+1, bg[1], bg[2], bg[3], bg[4])
+        draw_font(txt, off + 0, y, color[1], color[2], color[3], color[4])
+      end
+
+
       -- caPrint(txt, 0, y, 1)
     end
   end

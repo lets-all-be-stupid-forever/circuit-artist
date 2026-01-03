@@ -249,9 +249,23 @@ static int lua_draw_texture_pro(lua_State* L) {
   return 0;
 }
 
+#define getnwire(s) (s->wg.nwire)
+#define isskt(s) (s == PIN_IMG2LUA)
+#define isdrv(s) (s == PIN_LUA2IMG)
+
 static int lua_pget(lua_State* L) {
   i64 iport = luaL_checkinteger(L, 1);
   Sim* sim = lua_getsim(L);
+  int npin = arrlen(sim->ping);
+  if (iport >= npin) {
+    return luaL_error(
+        L, TextFormat("Invalid Pin Number: %d (max %d)", iport, npin - 1));
+  }
+  if (!isskt(sim->ping[iport].type)) {
+    return luaL_error(
+        L, "Trying to read pin (%d) that is not a socket: can't read", iport);
+  }
+
   PinComm pc = sim_port_read(sim, iport);
   i64 r = pc.b;
   lua_pushinteger(L, pc.b);
@@ -359,6 +373,34 @@ int lua_measure_text_size(lua_State* L) {
   int x = get_rendered_text_size(text).x;
   lua_pushinteger(L, x);
   return 1;
+}
+
+int lua_draw_box(lua_State* L) {
+  int nargs = lua_gettop(L);  // Get number of arguments
+
+  // First argument (required): text
+  if (nargs < 1) {
+    return luaL_error(L, "print requires at least 1 argument (text)");
+  }
+  const char* text = luaL_checkstring(L, 1);
+  int i = 2;
+  int x = (float)luaL_checknumber(L, i++);
+  int y = (float)luaL_checknumber(L, i++);
+  int w = (float)luaL_checknumber(L, i++);
+  int r = (float)luaL_checknumber(L, i++);
+  int g = (float)luaL_checknumber(L, i++);
+  int b = (float)luaL_checknumber(L, i++);
+  int a = (float)luaL_checknumber(L, i++);
+  // font_draw_texture(text, x, y, (Color){r, g, b, a});
+  Rectangle rect = {
+      x,
+      y,
+      w,
+      0,
+  };
+  Color c = (Color){r, g, b, a};
+  draw_text_box_advanced(text, rect, c, NULL, NULL);
+  return 0;
 }
 
 int lua_draw_font(lua_State* L) {
@@ -470,6 +512,7 @@ bool level_init(Level* lvl, LevelDef* ldef) {
   luaL_openlibs(L);
   lua_register(L, "caPrint", l_print);
   lua_register(L, "draw_font", lua_draw_font);
+  lua_register(L, "draw_box", lua_draw_box);
   WRAP(rl_scalef);
   WRAP(rl_translatef);
   WRAP(rl_push_matrix);

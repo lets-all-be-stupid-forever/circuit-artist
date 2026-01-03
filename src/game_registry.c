@@ -9,6 +9,7 @@
 #include "json.h"
 #include "stb_ds.h"
 #include "stdlib.h"
+#include "steam.h"
 #include "ui.h"
 #include "utils.h"
 #include "wmain.h"
@@ -322,7 +323,6 @@ void init_mod(GameRegistry* r, const char* mod_path) {
   free(path);
   _load_ctx.mod_root = NULL;
   _load_ctx.registry = NULL;
-  update_levels_completion(r);
 }
 
 LevelDef* get_level_by_id(GameRegistry* r, const char* level_id) {
@@ -386,6 +386,35 @@ LevelGroup* get_group_by_id(GameRegistry* r, const char* group_id) {
   return shget(r->groups, group_id);
 }
 
+#ifdef WITH_STEAM
+void steam_stat_sync(GameRegistry* r) {
+  int ng = arrlen(r->group_order);
+  bool dirty = false;
+  for (int ig = 0; ig < ng; ig++) {
+    LevelGroup* g = r->group_order[ig];
+    int nl = arrlen(g->levels);
+    int comp_here = 0;
+    for (int il = 0; il < nl; il++) {
+      if (g->levels[il]->complete) {
+        comp_here++;
+      }
+    }
+    const char* name = TextFormat("%s_progress", g->id);
+    int comp_there = steam_get_stats(name);
+    if (comp_there != comp_here) {
+      steam_set_stats(name, comp_here);
+      printf("update_steam_stat: %s  %d --> %d \n", name, comp_there,
+             comp_here);
+      dirty = true;
+    }
+  }
+
+  if (dirty) {
+    steam_store_stats();
+  }
+}
+#endif
+
 void update_levels_completion(GameRegistry* r) {
   int ng = arrlen(r->group_order);
   for (int ig = 0; ig < ng; ig++) {
@@ -420,6 +449,9 @@ void update_levels_completion(GameRegistry* r) {
       }
     }
   }
+#ifdef WITH_STEAM
+  steam_stat_sync(r);
+#endif
 }
 
 void dispatch_level_complete(LevelDef* ldef) {
