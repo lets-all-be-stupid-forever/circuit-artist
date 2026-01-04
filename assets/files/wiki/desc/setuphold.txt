@@ -3,14 +3,14 @@
 
 These are two critical timing requirements for flip-flops:
 
-**Setup Time:**
+`Setup Time:`
 The data input must be stable for a certain amount of time BEFORE the clock rising edge arrives. This is called the `setup time`. If the data changes too close to the clock edge, the flip-flop might capture an incorrect or unstable value.
 
 Consider the button press example: if you create a clock from `button_A OR button_B` and feed `button_A` as data, both signals change at the exact same moment when a button is pressed. The clock edge arrives at the same time as the data - violating the setup time requirement. The flip-flop doesn't have time to "see" which button was pressed before it tries to capture the value.
 
 The solution is to delay the clock signal (using NOT-NOT chains) so that by the time the clock edge arrives, the data (`button_A`) has already settled to its new value and remained stable long enough.
 
-**Hold Time:**
+`Hold Time:`
 The data input must remain stable for a certain amount of time AFTER the clock rising edge. This is called the `hold time`. If the data changes too quickly after the clock edge, the flip-flop might not capture it correctly.
 
 In most simple circuits, hold time is less of a concern than setup time, but it becomes important in complex designs where signals propagate at different speeds through different paths.

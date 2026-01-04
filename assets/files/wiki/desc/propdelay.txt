@@ -3,12 +3,12 @@
 
 Both NAND gates and wires have propagation delay. When you chain components together, delays add up.
 
-**When to AVOID clock delay:**
+`When to AVOID clock delay:`
 You should generally avoid adding gates between the clock signal and flip-flop inputs. If some flip-flops receive the clock later than others, your memory will no longer be synchronous and you might have bugs.
 
 !img:imgs/tutorial/sync5.png
 
-**When to USE clock delay:**
+`When to USE clock delay:`
 However, there are cases where you WANT to delay the clock:
 
 1. When you derive the clock from your data (like detecting button presses), the clock must arrive AFTER the data is stable. Use NOT-NOT chains to delay the clock.

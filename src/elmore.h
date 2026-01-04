@@ -1,5 +1,6 @@
 #ifndef CA_ELMORE_H
 #define CA_ELMORE_H
+#include "common.h"
 #include "graph.h"
 
 typedef struct {
@@ -17,8 +18,7 @@ typedef struct {
  * node. (e->delay array)
  */
 typedef struct {
-  float c_per_w;      /* Capacitance per segment length */
-  float r_per_w;      /* Resistance per segment length */
+  DistSpec phys;
   int cap;            /* capacity (in nodes) of buffers */
   float* cdown;       /* temporary buffer for downstream capacitance */
   int* sorted;        /* Temporary buffer for topologically sorted nodes */
@@ -29,6 +29,7 @@ typedef struct {
 ElmoreCalculator* elmore_calculator_create();
 void elmore_calculator_free(ElmoreCalculator* e);
 void elmore_calculator_run(ElmoreCalculator* e, int n, int me, int* ecount,
-                           GraphEdge* edges, int root, float* node_distance);
+                           int* layer, GraphEdge* edges, int root,
+                           float* node_distance);
 
 #endif

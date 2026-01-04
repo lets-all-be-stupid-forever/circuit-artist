@@ -381,7 +381,7 @@ void init_spec(DistSpec* d) {
    * intrinsic fixed delay time of nand (fixed_gate_delay)) */
   float ld = 40;
 
-  double vdd = 0.5;
+  double vdd = 5.0 * 0.001;
   // d->plen_lut[0] = 1.0;
   // d->plen_lut[1] = 0.5;
   // d->plen_lut[2] = 0.25;
@@ -556,7 +556,7 @@ Tex* sim_render(Sim* sim, int tw, int th, Texture* tex, Cam2D cam,
   // sim->pulse_tex.width, sim->pulse_tex.height);
   UpdateTexture(sim->pulse_tex, sim->state.pulses);
   profiler_tac();
-  // assert(slack_steps >= 0);
+  assert(slack_steps >= 0);
   // time is radians
   double rtime = GetTime();
   float utime = sin(2 * rtime * M_PI);
@@ -820,7 +820,7 @@ void patch_builder_update_nrj(PatchBuilder* builder, SimState* state) {
   series_make_push_patch(&state->power_tick_series, power,
                          &builder->power_tick_series_patch);
   double acc_nrj = power + state->acc_nrj;
-  double new_total_energy = state->total_energy + power;
+  double new_total_energy = state->total_energy + acc_nrj;
   builder->total_energy_patch =
       double_xor(state->total_energy, new_total_energy);
 
@@ -1301,7 +1301,7 @@ static void add_energy(PatchBuilder* builder, double e, int T) {
   double a = (g1 - T) / s;
   /* E = C_{total} * V^2*/
   assert(i0 >= 1 && i1 < NRJ_BINS);
-  //  printf("Added Enregy: %f over %d\n", e, T);
+  printf("Added Enregy: %f over %d\n", e, T);
   // builder->nrj_patch[0] += 10.f;
   builder->nrj_patch[i1 - 1] += (1.0 - a) * e;
   builder->nrj_patch[i0 - 1] += a * e;

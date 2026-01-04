@@ -61,7 +61,8 @@ struct Djikstra* djikstra_create() {
 }
 
 void djikstra_spanning_tree(struct Djikstra* dj, Graph* g, int root,
-                            EdgeGroup* eg, float* sum_edges) {
+                            EdgeGroup* eg, int* layer, float* c_per_w,
+                            float* sum_edges) {
   assert(root >= 0);
   edge_group_alloc(eg, g->n);
   arrsetlen(dj->dist, 0);
@@ -83,14 +84,16 @@ void djikstra_spanning_tree(struct Djikstra* dj, Graph* g, int root,
     dj->done[u] = true;
     int ne = g->ecount[u];
     int off = g->max_edges * u;
+    float cw = c_per_w[layer[u]];
     for (int ie = 0; ie < ne; ie++) {
       int v = g->edges[off + ie].e;
       float w = g->edges[off + ie].w;
-      sum += w;
+      float ew = cw * w;
+      sum += ew;
       if (v == prev) {
         edge_group_add_edge(eg, prev, u, w);
       } else {
-        float alt = dj->dist[u] + w;
+        float alt = dj->dist[u] + ew;
         if ((alt < dj->dist[v]) || (dj->dist[v] < 0)) {
           dj->dist[v] = alt;
           pq_push(p, u, v, -alt);

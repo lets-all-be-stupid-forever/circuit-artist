@@ -401,7 +401,8 @@ void steam_stat_sync(GameRegistry* r) {
     }
     const char* name = TextFormat("%s_progress", g->id);
     int comp_there = steam_get_stats(name);
-    if (comp_there != comp_here) {
+    /* Don't update if the local progress is inferior. */
+    if (comp_there < comp_here) {
       steam_set_stats(name, comp_here);
       printf("update_steam_stat: %s  %d --> %d \n", name, comp_there,
              comp_here);

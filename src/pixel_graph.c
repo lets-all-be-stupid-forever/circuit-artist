@@ -98,8 +98,7 @@ static void sim_parse_code(int w, int h, u8* code, u8* code_up) {
  *
  * Layer edge connects to both H and V nodes (but on top is either H or V).
  * */
-static Graph build_graph_from_code(int nl, int w, int h, float* plen_lut,
-                                   u8** img_code) {
+static Graph build_graph_from_code(int nl, int w, int h, u8** img_code) {
   Graph _g = {0};
   Graph* g = &_g;
   graph_init(g, 20);
@@ -118,7 +117,6 @@ static Graph build_graph_from_code(int nl, int w, int h, float* plen_lut,
   for (int l = nl - 1; l >= 0; l--) {
     int wu = w;
     int hu = h;
-    float pl = plen_lut[l];
 
     /* int d_via = 5 * pl;  */
     /* UPDATED: Using 0 as distance across hseg/vseg vias so we dont punish
@@ -128,7 +126,7 @@ static Graph build_graph_from_code(int nl, int w, int h, float* plen_lut,
     /* Moving between layers cost 1 pixel of the layer below
      * Layer vias are flagged on the bottom layer.
      * */
-    float d_layer = 1 * pl;
+    float d_layer = 1;
 
     u8* code = img_code[l];
     NodeTrack ph = {-1, -1};
@@ -136,8 +134,8 @@ static Graph build_graph_from_code(int nl, int w, int h, float* plen_lut,
       pv[x] = (NodeTrack){-1, -1};
     }
 
-#define V_EDGE graph_add_edge(g, pv[x].n, nv, pl * (-(iv - pv[x].i) / w))
-#define H_EDGE graph_add_edge(g, ph.n, nh, pl*(ih - ph.i))
+#define V_EDGE graph_add_edge(g, pv[x].n, nv, (-(iv - pv[x].i) / w))
+#define H_EDGE graph_add_edge(g, ph.n, nh, (ih - ph.i))
 
     for (int y = 0; y < h; y++) {
       for (int x = 0; x < w; x++) {
@@ -513,7 +511,7 @@ void pixel_graph_init(PixelGraph* pg, DistSpec spec, int nl, Image* imgs,
   }
   miniprof_time();  // T2 ends
   /* This is the slowest part */
-  pg->g = build_graph_from_code(nl, w, h, spec.plen_lut, img_code);
+  pg->g = build_graph_from_code(nl, w, h, img_code);
   miniprof_time();  // T3 ends
   if (debug) {
     debug_imgcode(nl, w, h, img_code);

@@ -29,7 +29,7 @@ typedef struct {
   struct {
     int key;
     int value;
-  }* inv;
+  } * inv;
   int* nodes;
   GraphEdge* edges;
   int* ecount;
@@ -43,7 +43,8 @@ struct Djikstra;
 
 struct Djikstra* djikstra_create();
 void djikstra_spanning_tree(struct Djikstra* dji, Graph* g, int root,
-                            EdgeGroup* eg, float* sum_edges);
+                            EdgeGroup* eg, int* layer, float* c_per_w,
+                            float* sum_edges);
 void djikstra_free(struct Djikstra* dji);
 
 // void djikstra_spanning_tree(Graph* g, int* stack, float* nd, PQ* p, int root,

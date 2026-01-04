@@ -62,7 +62,7 @@ typedef struct {
   Series power_tick_series;       /* List of spent energy per tick (power) */
   Series energy_per_cycle_series; /* List of spent energy per cycle */
   Series ticks_per_cycle_series;  /* List of ticks per cycle */
-  float power_t[NRJ_BINS];        /* Power for each time horizon T=2^k */
+  float energy_t[NRJ_BINS];       /* Energy for each time horizon T=2^k */
   double power;                   /* Total power at this timestep */
   double acc_nrj;
   double total_energy; /* Total used energy */

@@ -1409,7 +1409,7 @@ void main_draw_status_bar() {
   }
   if (main_get_simu_mode() == MODE_SIMU) {
     // int energy = C.sim.state.total_energy;
-    int energy = C.sim.state.total_energy * 100;
+    int energy = C.sim.state.total_energy;
     snprintf(txt, sizeof(txt), "E: %.1lf", C.sim.state.total_energy);
     font_draw_texture_outlined(txt, xc, yc5, tc, bg);
 

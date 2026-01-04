@@ -195,9 +195,8 @@ static inline void find_idx(int s, int w, int idx, int* l, int* y, int* x) {
 }
 
 typedef struct {
-  float plen_lut[MAX_LAYERS]; /* Lenght of each pixel per layer */
-  float r_per_w;
-  float c_per_w;
+  float r_per_w[MAX_LAYERS];
+  float c_per_w[MAX_LAYERS];
   float fixed_gate_delay;
   float l_socket; /* Equivalent wire length for nand gate capacitance input */
   double c_gate;

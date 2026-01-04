@@ -132,9 +132,7 @@ static void setup_dist_map(
   // int w1 = w0;  // / 2;
   // int h1 = h0;  // / 2;
   float max_dist = 0;
-  float R = spec.r_per_w;
-  float C = spec.c_per_w;
-  float rc_factor = 0.5 * R * C;
+  // TODO: Fix it
   for (int i = 0; i < g->n; i++) {
     int ne = g->ecount[i];
     int off = g->max_edges * i;
@@ -150,10 +148,11 @@ static void setup_dist_map(
       WireSegment ws = (WireSegment){ic, yy0 * w + xx0, yy0 * w + xx0};
       arrput((seglist[l0]), ws);
     }
+    float rc = spec.r_per_w[l0] * spec.c_per_w[l0];
     for (int ie = 0; ie < ne; ie++) {
       int e = g->edges[off + ie].e;
       float ew = g->edges[off + ie].w;
-      float rc_seg = ew * ew * rc_factor;
+      float rc_seg = 0.5 * ew * ew * rc;
       int idx1 = g->nodes[e];
       float dd1 = node_dist[e];
       float d0 = dd0;
@@ -264,6 +263,25 @@ static inline int find_node_from_idx(Graph* g, Graph* gg, int idx) {
   return ret;
 }
 
+static inline int find_layer(int s, int idx) {
+  if (idx < 0) idx = -idx - 1;
+  if (idx < 1 * s) return 0;
+  if (idx < 2 * s) return 1;
+  if (idx < 3 * s) return 2;
+  return -1;
+}
+
+static inline int find_gate_delay(DistSpec* spec, float ctotal) {
+  float fixed_gate_delay = spec->fixed_gate_delay;
+  float R_gate = spec->r_gate;
+  double c_gate = spec->c_gate;
+  return (int)ceilf(R_gate * (ctotal + 0.5 * c_gate) + fixed_gate_delay);
+}
+
+static inline float find_pulse_energy(DistSpec* spec, float ctotal) {
+  return 0.5 * ctotal * spec->vdd * spec->vdd;
+}
+
 /*
  * Computes the distance-to-driver for each wire.
  * This distance is then used to compute wire delay and for wire propagation
@@ -303,8 +321,7 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
   int h0 = h;
   EdgeGroup* eg = edge_group_create(g->max_edges);
   ElmoreCalculator* ec = elmore_calculator_create();
-  ec->c_per_w = spec.c_per_w;
-  ec->r_per_w = spec.r_per_w;
+  ec->phys = spec;
   struct Djikstra* dj = djikstra_create();
 
   dg->t_setup = 0;
@@ -312,19 +329,21 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
   dg->t_elmore = 0;
 
   double vdd = spec.vdd;
-  double c_gate = spec.c_gate;
-  double c_w = spec.c_per_w;
+  //   double c_w = spec.c_per_w;
+  int* layer = calloc(g->n, sizeof(int));
 
   /* Resistance of the gate, used for calculation of gate activation delay */
-  float fixed_gate_delay = spec.fixed_gate_delay;
-  float R_gate = spec.r_gate;
   double t0; /* used for profiling */
+  int img_size = w * h;
   for (int c = 0; c < nc; c++) {
     t0 = GetTime();
     /* Creates a subgraph so we have better cache performance. */
     int nk = noff[c + 1] - noff[c];
     int* subnodes = &n2[noff[c]];
     dist_build_subgraph(g, &gg, nk, subnodes);
+    for (int ik = 0; ik < nk; ik++) {
+      layer[ik] = find_layer(img_size, g->nodes[subnodes[ik]]);
+    }
 
     /*printf("subg:\n ");*/
     /*print_graph(&gg);*/
@@ -349,7 +368,8 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
       int node = find_node_from_idx(g, &gg, skt_idx);
       assert(node >= 0);
       int r = graph_add_node(&gg, s_off + skt);
-      float w = spec.l_socket;
+      layer[r] = 0;            /* Nands are always at the layer 0 */
+      float w = spec.l_socket; /* Wire length associated to a nand input */
       graph_add_edge(&gg, node, r, w);
     }
 
@@ -365,8 +385,9 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
       float c_cyclic_total = -1;
       if (!graph_is_tree(&gg)) {
         float sum_edges = 0;
-        djikstra_spanning_tree(dj, &gg, root, eg, &sum_edges);
-        c_cyclic_total = c_w * sum_edges;
+        djikstra_spanning_tree(dj, &gg, root, eg, layer, spec.c_per_w,
+                               &sum_edges);
+        c_cyclic_total = sum_edges;
         assert(edge_group_is_tree(eg));
         _ecount = eg->ecount;
         _edges = eg->edges;
@@ -388,8 +409,8 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
         }
 #endif
       }
-      elmore_calculator_run(ec, gg.n, gg.max_edges, _ecount, _edges, root,
-                            node_distance);
+      elmore_calculator_run(ec, gg.n, gg.max_edges, _ecount, layer, _edges,
+                            root, node_distance);
       /* The ctotal is used for the NAND activation time, ie, before the change
        * actual starts. */
       float ctotal = ec->ctotal;
@@ -406,12 +427,16 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
        * c_down(B) = cGRAPH_down(B) + 0.5 * c_gate.
        * T_D(B) = r_gate * c_down(B)
        */
-      dg->gate_delay[c] =
-          (int)ceilf(R_gate * (ctotal + 0.5 * c_gate) + fixed_gate_delay);
+      /* Gate delay depends only on total capacitance.
+       * Gate delay is the time for the NAND gate to activate (before
+       * propagation)
+       * */
+      dg->gate_delay[c] = find_gate_delay(&spec, ctotal);
 
-      /* Pulse energy is separated from gate/driver energy */
       assert(ctotal >= 0);
-      dg->wprop[c].pulse_energy = 0.5 * ctotal * vdd * vdd;
+      /* Pulse energy is separated from gate/driver energy */
+      // printf("nk %d ctotal %f\n", nk, ctotal);
+      dg->wprop[c].pulse_energy = find_pulse_energy(&spec, ctotal);
 
       if (f > 1.f) {
         for (int k = 0; k < gg.n; k++) {
@@ -495,6 +520,7 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
   free(stack);
   free(n2);
   free(noff);
+  free(layer);
   profiler_tac_single("dist_graph");
   // save_img_f32(w, h, dg->distmap[0], -40, 40, "../dmap.png");
 }

@@ -181,6 +181,8 @@ static void select_first_available_level() {
       return;
     }
   }
+  /* Selects last level if none is available */
+  win_level_set_sel(lg->levels[nl - 1]);
 }
 
 void win_level_open() {

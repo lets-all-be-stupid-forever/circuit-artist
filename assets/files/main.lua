@@ -766,7 +766,7 @@ Then, when `origin=3` and `destination= 1`, we want to have:
 })
 
 add_group({
-   name="Tutorial IV - Memory and State",
+   name="Tutorial IV - Memory",
    id='memory1',
    icon='campaign_memory1.png',
 desc=[[
