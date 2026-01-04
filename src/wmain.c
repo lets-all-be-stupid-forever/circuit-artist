@@ -60,6 +60,7 @@ static struct {
 
   Btn btn_sound;
   Btn btn_sound_paint;
+  Btn btn_always_on_top;
   Btn btn_wiki;
   Btn btn_pause;
   Btn btn_rewind;
@@ -112,6 +113,7 @@ static struct {
   Sound sound_oops;
   Sound sound2;
   float base_volume;
+  bool always_on_top;
 
   bool mute;
   bool muted_paint;
@@ -816,6 +818,14 @@ void main_save_selection() {
 static void toggle_simu_pause() { C.paused = !C.paused; }
 static void toggle_sound() { C.mute = !C.mute; }
 static void toggle_sound_paint() { C.muted_paint = !C.muted_paint; }
+static void toggle_always_on_top() {
+  C.always_on_top = !C.always_on_top;
+  if (C.always_on_top) {
+    SetWindowState(FLAG_WINDOW_TOPMOST);
+  } else {
+    ClearWindowState(FLAG_WINDOW_TOPMOST);
+  }
+}
 
 void main_update_hud() {
   Paint* ca = &C.ca;
@@ -828,6 +838,7 @@ void main_update_hud() {
   if (btn_update(&C.btn_exit)) ui_set_close_requested();
   if (btn_update(&C.btn_sound)) toggle_sound();
   if (btn_update(&C.btn_sound_paint)) toggle_sound_paint();
+  if (btn_update(&C.btn_always_on_top)) toggle_always_on_top();
 
   if (btn_update(&C.btn_layer_pop)) paint_layer_pop(&C.ca);
   if (btn_update(&C.btn_layer_push)) paint_layer_push(&C.ca);
@@ -962,6 +973,7 @@ void main_draw() {
                 TextFormat("Circuit Sound %s", C.mute ? "Off" : "On"));
   btn_draw_text(&C.btn_sound_paint, bscale,
                 TextFormat("Paint Sound %s", C.muted_paint ? "Off" : "On"));
+  btn_draw_text(&C.btn_always_on_top, bscale, "Always on Top");
 
   btn_draw_icon(&C.btn_clockopt[0], bscale, sprites, rect_hz0);
   btn_draw_icon(&C.btn_clockopt[1], bscale, sprites, rect_hz1);
@@ -1054,6 +1066,7 @@ void main_draw() {
     btn_draw_legend(&C.btn_wiki, bscale, "Wiki");
     btn_draw_legend(&C.btn_sound, bscale, "Toggle simulation sound");
     btn_draw_legend(&C.btn_sound_paint, bscale, "Toggle paint sound");
+    btn_draw_legend(&C.btn_always_on_top, bscale, "Toggle Always On Top");
     btn_draw_legend(&C.btn_sel_open, bscale, "Load Selection from Image");
     btn_draw_legend(&C.btn_sel_save, bscale, "Save Selection as Image");
     btn_draw_legend(&C.btn_blueprint_add, bscale, "Create blueprint (U)");
@@ -1175,6 +1188,8 @@ void main_update_layout() {
     x7 += C.btn_sound.hitbox.width + 4 * s;
     C.btn_sound_paint.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
     x7 += C.btn_sound_paint.hitbox.width + 4 * s;
+    C.btn_always_on_top.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
+    x7 += C.btn_always_on_top.hitbox.width + 4 * s;
   }
 
   int sh = GetScreenHeight() / s;
@@ -1497,6 +1512,7 @@ void main_update_widgets() {
 
   C.btn_sound.toggled = !C.mute;
   C.btn_sound_paint.toggled = !C.muted_paint;
+  C.btn_always_on_top.toggled = C.always_on_top;
   C.btn_pause.toggled = C.paused;
   C.btn_rewind.toggled = C.rewind_pressed;
   C.btn_forward.toggled = C.forward_pressed;
