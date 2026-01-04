@@ -213,6 +213,7 @@ bool sim_state_has_work(SimState* state);
 void sim_state_step_patch(SimState* state, Buffer patch);
 bool sim_state_has_work(SimState* state);
 int sim_state_get_max_tick(SimState* state);
+float sim_get_pixel_dist(Sim* sim, int pix);
 
 /* These are the 3 most important functions of state management. */
 void patch_builder_update_nandstate(Sim* sim, PatchBuilder* builder,

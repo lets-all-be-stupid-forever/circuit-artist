@@ -727,6 +727,17 @@ void sim_find_nearest_pixel(Sim* sim, int tol, v2 fpix, int* pix) {
   }
 }
 
+float sim_get_pixel_dist(Sim* sim, int pix) {
+  int w = sim->w;
+  int h = sim->h;
+  int s = w * h;
+  int l = pix / s;
+  int idx = pix - l * s;
+  float* dist_img = sim->dg.distmap[l];
+  float v = dist_img[idx];
+  return v < 0 ? -v : v;
+}
+
 void sim_toggle_pixel(Sim* sim, int pix) {
   int w = sim->w;
   int h = sim->h;

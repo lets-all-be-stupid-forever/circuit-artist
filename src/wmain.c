@@ -93,6 +93,7 @@ static struct {
 
   // speed buttons
   Btn btn_clockopt[6];
+  Btn btn_sim_show_t;
 
   Sim sim;
   HSim hsim;
@@ -121,9 +122,12 @@ static struct {
 
   bool time_open;
   double time_ref;
-  char mouse_msg[100];
+  char mouse_msg[200];
+  int mouse_msg_type;
+  bool sim_show_t;
 
   Rectangle* bot_layout;
+  double hover_wire_distance;
   v2 time_c;
   v2 time_pos_ref;
   // lua_State* L; /* Lua context used for configuration */
@@ -653,6 +657,7 @@ void main_update_controls() {
   bool mouseOnTarget = C.ca.mouseOnTarget;
   C.mouseIsPen = false;
   C.mouse_msg[0] = '\0';
+  C.mouse_msg_type = -1;
   bool paint_hit = mouseOnTarget && ui_get_hit_count() == 0;
   if (mouseOnTarget) {
     paint_handle_wheel_zoom(pnt);
@@ -704,10 +709,17 @@ void main_update_controls() {
         int pix_toggle;
         sim_find_nearest_pixel(&C.sim, searchRadius, pnt->fPixelCursor,
                                &pix_toggle);
+        C.hover_wire_distance = -1;
         if (pix_toggle != -1) {
           bool error_mode = sim_has_errors(&C.sim);
           ui_set_cursor(MOUSE_POINTER);
           if (!error_mode) {
+            C.hover_wire_distance = sim_get_pixel_dist(&C.sim, pix_toggle);
+            if (C.sim_show_t) {
+              C.mouse_msg_type = 0;
+              strcpy(C.mouse_msg, TextFormat("T=%.2f", C.hover_wire_distance));
+            }
+
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
               C.pix_toggle = pix_toggle;
               C.paused = false;
@@ -715,9 +727,11 @@ void main_update_controls() {
           } else {
             int status = sim_get_pixel_error_status(&C.sim, pix_toggle);
             if (status == STATUS_TOOSLOW) {
+              C.mouse_msg_type = 1;
               strcpy(C.mouse_msg, "Wire too slow.");
             }
             if (status == STATUS_CONFLICT) {
+              C.mouse_msg_type = 1;
               strcpy(C.mouse_msg, "More than one nand connected to the wire.");
             }
           }
@@ -827,6 +841,8 @@ static void toggle_always_on_top() {
   }
 }
 
+static void toggle_sim_show_t() { C.sim_show_t = !C.sim_show_t; }
+
 void main_update_hud() {
   Paint* ca = &C.ca;
   if (btn_update(&C.btn_new)) main_ask_for_save_and_proceed(main_new_file);
@@ -885,6 +901,7 @@ void main_update_hud() {
   if (btn_update(&C.btn_clockopt[3])) C.clock_speed = 3;
   if (btn_update(&C.btn_clockopt[4])) C.clock_speed = 4;
   if (btn_update(&C.btn_clockopt[5])) C.clock_speed = 5;
+  if (btn_update(&C.btn_sim_show_t)) toggle_sim_show_t();
 
   Vector2 pos = GetMousePosition();
   if (rect_hover(C.fg_color_rect, pos)) {
@@ -981,6 +998,7 @@ void main_draw() {
   btn_draw_icon(&C.btn_clockopt[3], bscale, sprites, rect_hz16);
   btn_draw_icon(&C.btn_clockopt[4], bscale, sprites, rect_hz64);
   btn_draw_icon(&C.btn_clockopt[5], bscale, sprites, rect_hz1k);
+  btn_draw_icon(&C.btn_sim_show_t, bscale, sprites, rect_inspect_wire);
 
   int mode = main_get_simu_mode();
   bool simu_on = mode == MODE_SIMU || mode == MODE_ERROR;
@@ -1077,6 +1095,9 @@ void main_draw() {
     btn_draw_legend(&C.btn_clockopt[3], bscale, "Speed 4");
     btn_draw_legend(&C.btn_clockopt[4], bscale, "Speed 5");
     btn_draw_legend(&C.btn_clockopt[5], bscale, "Speed 6");
+    btn_draw_legend(
+        &C.btn_sim_show_t, bscale,
+        "Show stats on cursor\n`T` = Time it takes to propagate to pixel");
 
     btn_draw_legend(
         &C.btn_simu, bscale,
@@ -1243,6 +1264,9 @@ void main_update_layout() {
     C.btn_clockopt[3].hitbox = (Rectangle){bx1, by4, bw, bh};
     C.btn_clockopt[4].hitbox = (Rectangle){bx0, by5, bw, bh};
     C.btn_clockopt[5].hitbox = (Rectangle){bx1, by5, bw, bh};
+    int yy = by5 + C.btn_clockopt[5].hitbox.height;
+    yy += 4 * s;
+    C.btn_sim_show_t.hitbox = (Rectangle){bx0, yy, bw, bh};
 
     int cy = (sh - 2 * 18 - 2) * s;
     int cx = 4 * s + 35 * s + 4 * s;
@@ -1475,7 +1499,10 @@ void main_draw_mouse_extra() {
     rlPushMatrix();
     rlTranslatef(pos.x + 8 * s, pos.y + 8 * s, 0);
     rlScalef(s, s, 1);
-    font_draw_texture_outlined(C.mouse_msg, 0, 0, RED, BLACK);
+    Color msg_color = BLANK;
+    if (C.mouse_msg_type == 0) msg_color = WHITE;
+    if (C.mouse_msg_type == 1) msg_color = RED;
+    font_draw_texture_outlined(C.mouse_msg, 0, 0, msg_color, BLACK);
     rlPopMatrix();
   }
 }
@@ -1559,6 +1586,8 @@ void main_update_widgets() {
     C.btn_clockopt[i].hidden = C.mode != MODE_SIMU;
     C.btn_clockopt[i].toggled = C.clock_speed == i;
   }
+  C.btn_sim_show_t.toggled = C.sim_show_t;
+  C.btn_sim_show_t.hidden = C.mode != MODE_SIMU;
 
   int nl = paint_get_num_layers(&C.ca);
   C.btn_layer_pop.disabled = ned || (nl == 1);
