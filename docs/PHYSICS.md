@@ -128,11 +128,11 @@ The pixel graph is transformed into an RC (resistance-capacitance) network for t
 
 Different metal layers have different electrical properties. Upper layers typically have lower resistance (thicker wires) but higher capacitance (larger area):
 
-| Layer      | $R_{per\_pixel}$ | $C_{per\_pixel}$ | Relative Speed |
-| ---------- | ---------------- | ---------------- | -------------- |
-| 0 (bottom) | 1.0x             | 1.0x             | Slowest        |
-| 1 (middle) | 0.5x             | 1.5x             | Medium         |
-| 2 (top)    | 0.25x            | 2.0x             | Fastest        |
+| Layer      | $RC_{per\_pixel}$ | $C_{per\_pixel}$ | Relative Speed |
+| ---------- | ----------------- | ---------------- | -------------- |
+| 0 (bottom) | 1.0x              | 1.0x             | Slowest        |
+| 1 (middle) | 0.5x              | 1.5x             | Medium         |
+| 2 (top)    | 0.25x             | 2.0x             | Fastest        |
 
 The effective RC product determines the delay, so upper layers propagate signals faster despite higher capacitance.
 
@@ -332,15 +332,35 @@ Each wire transition consumes energy proportional to its total capacitance:
 
 $$E_{pulse} = \frac{1}{2} C_{total} V_{dd}^2$$
 
-Where $V_{dd}$ is the supply voltage.
+Where $V_{dd}$ is the supply voltage. NAND activations also consume energy, with same formula but using only the gate capacitance:
 
-### Power Visualization
+$$E_{gate} = \frac{1}{2} C_{gate} V_{dd}^2$$
 
-Power is displayed using exponential moving averages across multiple time horizons. Energy deposited at time $t$ decays as:
+$$E_{total} = E_{gate}  + E_{pulse} $$ 
 
-$$P(t + \Delta t) = P(t) \cdot e^{-\Delta t / \tau}$$
+### Energy 
 
-Multiple decay bins with $\tau = 2^k$ for $k = 1, 2, ..., 32$ capture both instantaneous spikes and sustained power draw.
+We've seen how much energy an event is supposed to consume, but we don't display them instantaneously, instead we spread it through time using an exponential decay approximation as follows.
+
+Potential energy at time $t$ decays as:
+
+$$E_k[t + 1] = (1- \gamma_k) E_k[t] $$
+
+$$P_k[t] = \gamma_k E_k[t] $$
+
+$$E[t]  = \sum_k E_k[t]$$
+
+$$P[t]  = \sum_k P_k[t]$$
+
+Where $P[t]$ is the power at time $t$. The "energy" shown to the user is the sum of the "deposited" power over time, while $E$ is the "potential" energy. 
+
+The key idea is that when an event happens, we don't deposit the energy directly, we include them into some "potential energy bins" $E$, which are released with a decay factor, so it is spread through time. Different bins decay with different rates, and the way we spread the energy through bins will depend on the "delay time" of the event, then we just need to track each bin instead of tracking every single event.
+
+The decay $\gamma_k$ is chosen so that after $T_k$ steps, only 1% of the initial energy is left. This is supposed to approximate a "decay in T steps".
+
+$$ \gamma_k^{T_k} = 0.01 $$
+
+Then we choose $T_k = 2^k$ as time bins, and when an event happens with time $T$ we spread its energy accross the two closest bins $ T_i < T < T_{i+1} $.
 
 ---
 

@@ -18,11 +18,13 @@ Circuit Artist is a digital logic circuit drawing game.
 
 - :handbag: I've added an inventory-like UI for placing blueprints so players can build it's library and re-use it, which also adds a new progression dimension to the game.
 
-- :sound: Added a bit of sound to circuits, so when they simulate they will "beep" in function of the circuit activity. 
+- :sound: Added a bit of sound to circuits, so when they simulate they will "beep" in function of the circuit activity.
 
 - :godmode: The simulation also is no longer "immediate", players can build their own clocks on sandbox mode by just exploring the delay mechanism. Clocked/Synchronous components won't work for free, need to make them efficient, adding an extra challenge/fun dimension to the game.
 
 - :construction: There's also a simplified energy calculation formula/metric to explore circuit energy efficiency vs speed (even though its still not fully developed yet in the game).
+
+[Check the physics doc for more info (work in progress) ](docs/PHYSICS.md)
 
 ## Links
 
