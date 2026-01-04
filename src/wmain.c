@@ -165,6 +165,17 @@ static bool main_is_simulation_on() {
   return main_get_simu_mode() == MODE_SIMU;
 }
 
+static void on_modal_before_open() {
+  if (C.always_on_top) {
+    ClearWindowState(FLAG_WINDOW_TOPMOST);
+  }
+}
+static void on_modal_after_open() {
+  if (C.always_on_top) {
+    SetWindowState(FLAG_WINDOW_TOPMOST);
+  }
+}
+
 void main_open() {
   ui_winpush(WINDOW_MAIN);
   easy_blinking_open();
@@ -793,7 +804,9 @@ void main_update_controls() {
 }
 
 void main_open_selection() {
+  on_modal_before_open();
   ModalResult mr = modal_open_file(NULL);
+  on_modal_after_open();
   if (mr.ok) {
     main_paste_file(mr.fPath, 0);
     free(mr.fPath);
@@ -806,7 +819,9 @@ void main_open_selection() {
 }
 
 void main_save_selection() {
+  on_modal_before_open();
   ModalResult mr = modal_save_file(NULL, NULL);
+  on_modal_after_open();
   if (mr.cancel) {
     return;
   } else if (!mr.ok) {
@@ -832,6 +847,7 @@ void main_save_selection() {
 static void toggle_simu_pause() { C.paused = !C.paused; }
 static void toggle_sound() { C.mute = !C.mute; }
 static void toggle_sound_paint() { C.muted_paint = !C.muted_paint; }
+
 static void toggle_always_on_top() {
   C.always_on_top = !C.always_on_top;
   if (C.always_on_top) {
@@ -1635,7 +1651,9 @@ void main_load_image_from_path(const char* path) {
 }
 
 void main_open_file_modal() {
+  on_modal_before_open();
   ModalResult mr = modal_open_file(NULL);
+  on_modal_after_open();
   if (mr.ok) {
     main_load_image_from_path(mr.fPath);
     free(mr.fPath);
@@ -1649,7 +1667,9 @@ void main_open_file_modal() {
 
 int main_on_save_click(bool saveas) {
   if (C.fname == NULL || saveas) {
+    on_modal_before_open();
     ModalResult mr = modal_save_file(NULL, NULL);
+    on_modal_after_open();
     if (mr.ok) {
       if (C.fname) {
         free(C.fname);
