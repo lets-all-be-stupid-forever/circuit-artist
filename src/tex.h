@@ -72,4 +72,7 @@ void texdrawboard(Tex* t, Cam2D cam, int cw, int ch, Color c);
  * The mouse coordinates are relative to the center of the texture */
 void texclock(Tex* t, float mx, float my);
 
+void texmapcircuitlight_v2(Texture2D circuit, Tex* pmap, int error_mode,
+                           Times times, int tickmod, int tickgap, float f_ema,
+                           Tex** circ, Tex** light);
 #endif

@@ -210,6 +210,62 @@ void texclear(Tex* t, Color c) {
   EndTextureMode();
 }
 
+void texmapcircuitlight_v2(Texture2D circuit, Tex* pmap, int error_mode,
+                           Times times, int tickmod, int tickgap, float f_ema,
+                           Tex** circ, Tex** light) {
+  Texture main_tex = circuit;
+  int w = circuit.width;
+  int h = circuit.height;
+
+  // Check if we need to create new textures (first frame)
+  Rectangle source = {0, 0, w, h};
+  Rectangle target = {0, 0, w, h};
+
+  Texture tcirc = (*circ)->rt.texture;
+  Texture tlight = (*light)->rt.texture;
+
+  rlSetupMRT((*circ)->rt.id, (*light)->rt.texture.id, 2);
+  BeginTextureMode((*circ)->rt);
+  rlSetBlendMode(BLEND_CUSTOM);
+  rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
+
+  begin_shader(wire_combine3);
+  float ema_factor = f_ema;  //
+  // Adjust this value (0.0 = no history, 1.0 = full history)
+
+  int tick = times.tick % tickmod;
+  set_shader_float(wire_combine3, ema_factor, &ema_factor);
+  set_shader_tex(wire_combine3, pmap, pmap->rt.texture);
+  set_shader_int(wire_combine3, tick, &tick);
+  set_shader_int(wire_combine3, error_mode, &error_mode);
+
+  int tickmod64 = tickmod * 64;
+  int tickgap64 = tickgap * 64;
+  set_shader_int(wire_combine3, tickmod64, &tickmod64);
+  set_shader_int(wire_combine3, tickgap64, &tickgap64);
+  set_shader_float(wire_combine3, slack, &times.slack);
+  set_shader_float(wire_combine3, utime, &times.utime);
+  set_shader_float(wire_combine3, glow_dt, &times.glow_dt);
+  SetTextureFilter(pmap->rt.texture, TEXTURE_FILTER_POINT);
+  SetTextureWrap(pmap->rt.texture, TEXTURE_WRAP_CLAMP);
+  SetTextureFilter(main_tex, TEXTURE_FILTER_POINT);
+  SetTextureWrap(main_tex, TEXTURE_WRAP_CLAMP);
+
+  SetTextureFilter(tcirc, TEXTURE_FILTER_POINT);
+  SetTextureFilter(tlight, TEXTURE_FILTER_POINT);
+  set_shader_tex(wire_combine3, prev_circ, tcirc);
+  set_shader_tex(wire_combine3, prev_light, tlight);
+
+  DrawTexturePro(main_tex, source, target, (Vector2){0, 0}, 0, WHITE);
+  end_shader();
+
+  // Reset blend mode to default
+  rlSetBlendMode(RL_BLEND_ALPHA);
+
+  EndTextureMode();
+  rlResetMRT((*circ)->rt.id);
+}
+
 void texmapcircuitlight(Texture2D circuit, Tex* pmap, Texture dmap,
                         int error_mode, Times times, Tex** circ, Tex** light) {
   Texture main_tex = circuit;

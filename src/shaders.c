@@ -89,6 +89,25 @@ void shaders_init() {
   SHADER_ALOC(wire, pos);
   SHADER_ALOC(wire, wid);
 
+  SHADER_LOAD2(wire2);
+  SHADER_LOC(wire2, slack);
+  SHADER_LOC(wire2, pulses);
+  SHADER_LOC(wire2, w);
+  SHADER_LOC(wire2, h);
+  SHADER_LOC(wire2, hide_mask);
+  SHADER_LOC(wire2, mvp);
+  SHADER_LOC(wire2, pulse_w);
+  SHADER_LOC(wire2, cur_tick);
+  SHADER_LOC(wire2, ref);
+  // SHADER_LOC(wire2, dmap);
+  SHADER_LOC(wire2, utime);
+  SHADER_LOC(wire2, error_mode);
+  SHADER_LOC(wire2, tickmod64);
+  SHADER_ALOC(wire2, vert);
+  SHADER_ALOC(wire2, pos);
+  SHADER_ALOC(wire2, wid);
+  SHADER_ALOC(wire2, dist);
+
   SHADER_LOAD2(nand);
   SHADER_ALOC(nand, c1);
   SHADER_ALOC(nand, c2);
@@ -128,6 +147,20 @@ void shaders_init() {
   SHADER_LOC(wire_combine2, utime);
   SHADER_LOC(wire_combine2, glow_dt);
 
+  SHADER_LOAD(wire_combine3);
+  SHADER_LOC(wire_combine3, segsize);
+  SHADER_LOC(wire_combine3, prev_circ);
+  SHADER_LOC(wire_combine3, prev_light);
+  SHADER_LOC(wire_combine3, pmap);
+  SHADER_LOC(wire_combine3, ema_factor);
+  SHADER_LOC(wire_combine3, tick);
+  SHADER_LOC(wire_combine3, slack);
+  SHADER_LOC(wire_combine3, error_mode);
+  SHADER_LOC(wire_combine3, utime);
+  SHADER_LOC(wire_combine3, glow_dt);
+  SHADER_LOC(wire_combine3, tickmod64);
+  SHADER_LOC(wire_combine3, tickgap64);
+
   SHADER_LOAD(wire_glow);
   SHADER_LOC(wire_glow, dmap);
   SHADER_LOC(wire_glow, segsize);
@@ -155,6 +188,36 @@ void shaders_init() {
   SHADER_LOC(pcomb, off);
   SHADER_LOC(pcomb, img_size);
   SHADER_LOC(pcomb, tgt_size);
+
+  SHADER_LOAD2(nand2);
+  SHADER_ALOC(nand2, pos);
+  SHADER_LOC(nand2, screen_size);
+
+  SHADER_LOAD2(nand4);
+  SHADER_ALOC(nand4, pos);
+  SHADER_ALOC(nand4, vert);
+  SHADER_ALOC(nand4, clr);
+  SHADER_LOC(nand4, w);
+  SHADER_LOC(nand4, h);
+  SHADER_LOC(nand4, mode);
+
+  SHADER_LOAD2(nandact4);
+  SHADER_ALOC(nandact4, cnand1);
+  SHADER_ALOC(nandact4, cnand2);
+  SHADER_ALOC(nandact4, cnand3);
+  SHADER_ALOC(nandact4, phase);
+  SHADER_ALOC(nandact4, pos);
+  SHADER_ALOC(nandact4, vert);
+  SHADER_LOC(nandact4, w);
+  SHADER_LOC(nandact4, h);
+
+  SHADER_LOAD2(nandact4err);
+  SHADER_ALOC(nandact4err, pos);
+  SHADER_ALOC(nandact4err, rot);
+  SHADER_ALOC(nandact4err, vert);
+  SHADER_LOC(nandact4err, w);
+  SHADER_LOC(nandact4err, h);
+  SHADER_LOC(nandact4err, utime);
 }
 
 typedef struct {
@@ -162,7 +225,7 @@ typedef struct {
   struct {
     char* key;
     int value;
-  }* locs;
+  } * locs;
 } ShaderDef;
 
 static struct {
@@ -170,7 +233,7 @@ static struct {
   struct {
     char* key;
     ShaderDef value;
-  }* registry;
+  } * registry;
 } C = {0};
 
 Shaders* get_shaders() { return &_s; }

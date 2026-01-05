@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "graph.h"
+#include "renderv2.h"
 #include "wire_graph.h"
 
 typedef struct {
@@ -37,7 +38,7 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
                      int nc,                  /* number of components/wires */
                      int* comp,               /* WireId of each (graph) node */
                      u8** ori,                /* Orientation of each pixel */
-                     bool debug);
+                     RenderV2* rv2, bool debug);
 void dist_graph_destroy(DistGraph* dg);
 
 #endif

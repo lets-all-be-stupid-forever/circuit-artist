@@ -743,7 +743,9 @@ RLAPI void rlSetVertexAttributeDivisor(unsigned int index, int divisor); // Set 
 RLAPI void rlSetVertexAttributeDefault(int locIndex, const void *value, int attribType, int count); // Set vertex attribute default value, when attribute to provided
 RLAPI void rlDrawVertexArray(int offset, int count);    // Draw vertex array (currently active vao)
 RLAPI void rlDrawVertexArrayElements(int offset, int count, const void *buffer); // Draw vertex array elements
+RLAPI void rlBlendColor(float r, float g, float b, float a);
 RLAPI void rlDrawVertexArrayInstanced(int offset, int count, int instances); // Draw vertex array (currently active vao) with instancing
+RLAPI void rlDrawLineArrayInstanced(int offset, int count, int instances); // Draw vertex array (currently active vao) with instancing
 RLAPI void rlDrawVertexArrayElementsInstanced(int offset, int count, const void *buffer, int instances); // Draw vertex array elements with instancing
 
 // Textures management
@@ -3966,6 +3968,22 @@ void rlDrawVertexArrayInstanced(int offset, int count, int instances)
 {
 #if defined(GRAPHICS_API_OPENGL_33) || defined(GRAPHICS_API_OPENGL_ES2)
     glDrawArraysInstanced(GL_TRIANGLES, 0, count, instances);
+#endif
+}
+
+void rlBlendColor(float r, float g, float b, float a)
+{
+#if defined(GRAPHICS_API_OPENGL_33) || defined(GRAPHICS_API_OPENGL_ES2)
+    glBlendColor(r, g, b, a);
+#endif
+}
+
+
+// Draw vertex array instanced
+void rlDrawLineArrayInstanced(int offset, int count, int instances)
+{
+#if defined(GRAPHICS_API_OPENGL_33) || defined(GRAPHICS_API_OPENGL_ES2)
+    glDrawArraysInstanced(GL_LINES, 0, count, instances);
 #endif
 }
 

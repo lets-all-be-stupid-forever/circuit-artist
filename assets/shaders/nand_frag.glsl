@@ -26,7 +26,7 @@ void main()
   float x = roi.z*(txy.x) + roi.x;
   float y = roi.w*(txy.y) + roi.y;
 
-  //  float tw = 1024.0;
+  // float tw = 1024.0;
   // float th = 512.0;;
 
   // float x = (5.0 * txy.x)/tw + 0.0;

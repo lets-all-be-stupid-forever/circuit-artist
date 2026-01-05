@@ -66,6 +66,7 @@ SET(ca_src
   src/event_queue.c
   src/font.c
   src/fs.cpp
+  src/renderv2.c
   src/game_registry.c
   src/graph.c
   src/hist.c
@@ -76,12 +77,10 @@ SET(ca_src
   src/modal.c
   src/msg.c
   src/nand_detection.c
-  src/nand_renderer.c
   src/paged_cstack.c
   src/paged_stack.c
   src/paint.c
   src/pin_spec.c
-  src/pixel_error_renderer.c
   src/pixel_graph.c
   src/plot.c
   src/pq.c
@@ -105,7 +104,6 @@ SET(ca_src
   src/win_msg.c
   src/win_stamp.c
   src/wire_graph.c
-  src/wire_rendering.c
   src/wmain.c
   src/wnumber.c
   src/wtext.c

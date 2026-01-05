@@ -79,7 +79,9 @@ void ui_init() {
   C.demo = false;
   C.debug = false;
 #ifdef WITH_STEAM
-  SteamInit();
+  if (!FileExists("../DONT_LOG_ON_STEAM.txt")) {
+    SteamInit();
+  }
 #endif
 
   //  For now the ui scale only works at scale=2, there are some hard coded

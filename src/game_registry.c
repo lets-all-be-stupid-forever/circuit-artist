@@ -388,6 +388,7 @@ LevelGroup* get_group_by_id(GameRegistry* r, const char* group_id) {
 
 #ifdef WITH_STEAM
 void steam_stat_sync(GameRegistry* r) {
+  if (!is_steam_on()) return;
   int ng = arrlen(r->group_order);
   bool dirty = false;
   for (int ig = 0; ig < ng; ig++) {

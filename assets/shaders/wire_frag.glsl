@@ -20,8 +20,8 @@ void main()
   if ((ori > 0.5 && d <= 0) || (ori < 0.5 && d >= 0)) {
     finalColor = pvalue;
   } else {
-discard;
-}
-    // finalColor = vec4(0);
+    discard;
+  }
+  // finalColor = vec4(0);
   //finalColor = vec4(0,1,1,0.5);
 }

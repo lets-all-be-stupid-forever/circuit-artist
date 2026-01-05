@@ -87,6 +87,25 @@ typedef struct {
   int wire_loc_ref;
   int wire_loc_error_mode;
 
+  Shader wire2_shader;
+  int wire2_aloc_vert;
+  int wire2_aloc_pos;
+  int wire2_aloc_wid;
+  int wire2_aloc_dist;
+  int wire2_loc_hide_mask;
+  int wire2_loc_w;
+  int wire2_loc_slack;
+  int wire2_loc_pulses;
+  int wire2_loc_h;
+  int wire2_loc_mvp;
+  // int wire2_loc_dmap;
+  int wire2_loc_pulse_w;
+  int wire2_loc_cur_tick;
+  int wire2_loc_utime;
+  int wire2_loc_ref;
+  int wire2_loc_error_mode;
+  int wire2_loc_tickmod64;
+
   Shader nand_shader;
   int nand_aloc_vert;
   int nand_aloc_pos;
@@ -126,6 +145,25 @@ typedef struct {
   int wire_combine2_loc_utime;
   int wire_combine2_loc_glow_dt;
 
+  Shader wire_combine3_shader;
+  int wire_combine3_loc_ema_factor;
+  int wire_combine3_loc_prev_circ;
+  int wire_combine3_loc_prev_light;
+  int wire_combine3_loc_pmap;
+  int wire_combine3_loc_segsize;
+  int wire_combine3_loc_tick;
+  int wire_combine3_loc_slack;
+  int wire_combine3_loc_error_mode;
+  int wire_combine3_loc_utime;
+  int wire_combine3_loc_glow_dt;
+
+  int wire_combine3_loc_tickmod64;
+  int wire_combine3_loc_tickgap64;
+
+  Shader nand2_shader;
+  int nand2_aloc_pos;
+  int nand2_loc_screen_size;
+
   Shader wire_glow_shader;
   int wire_glow_loc_pmap;
   int wire_glow_loc_segsize;
@@ -149,11 +187,36 @@ typedef struct {
   int pcomb_loc_layer2;
   int pcomb_loc_layer3;
   int pcomb_loc_layer4;
-
   int pcomb_loc_img_size;
   int pcomb_loc_tgt_size;
   int pcomb_loc_off;
   int pcomb_loc_sp;
+
+  Shader nand4_shader;
+  int nand4_aloc_clr;
+  int nand4_aloc_pos;
+  int nand4_aloc_vert;
+  int nand4_loc_w;
+  int nand4_loc_h;
+  int nand4_loc_mode;
+
+  Shader nandact4_shader;
+  int nandact4_aloc_cnand1;
+  int nandact4_aloc_cnand2;
+  int nandact4_aloc_cnand3;
+  int nandact4_aloc_phase;
+  int nandact4_aloc_pos;
+  int nandact4_aloc_vert;
+  int nandact4_loc_w;
+  int nandact4_loc_h;
+
+  Shader nandact4err_shader;
+  int nandact4err_aloc_pos;
+  int nandact4err_aloc_rot;
+  int nandact4err_aloc_vert;
+  int nandact4err_loc_w;
+  int nandact4err_loc_h;
+  int nandact4err_loc_utime;
 
 } Shaders;
 

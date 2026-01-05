@@ -20,6 +20,7 @@ void SteamRefreshAchievement();
 int steam_get_stats(const char* name);
 void steam_set_stats(const char* name, int v);
 void steam_store_stats();
+bool is_steam_on();
 
 #endif
 

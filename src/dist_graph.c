@@ -5,6 +5,7 @@
 #include "math.h"
 #include "pq.h"
 #include "profiler.h"
+#include "renderv2.h"
 #include "stb_ds.h"
 
 static inline int mini(int a, int b) { return a < b ? a : b; }
@@ -21,21 +22,6 @@ static inline void fswap(float* a, float* b) {
   float t = *a;
   *a = *b;
   *b = t;
-}
-
-/*
- * Approximation of Elmore delay, transforming the simple pixel distance to a
- * L^2-based distance for delay purposes.
- * It's basically a constant times the distance (in segments) square. The
- * parameter is then calibrated "empirically" so it stays fun to play/optimize.
- * The key idea is to have a L^2-based delay instead of L-based so the user
- * will consider buffers, smaller/compact wires (layers), and use upper layers
- * for faster speed.
- */
-static inline int dist2delay(float alpha, int d) {
-  float d2 = ((float)d);
-  d2 = alpha * d2 * d2;
-  return d2 + 1;
 }
 
 /*
@@ -125,7 +111,7 @@ static void setup_dist_map(
     int ic,                           /* Component being treated */
     WireSegment** seglist, /* List of wire segments used in visualization*/
     u8** ori,              /* orientation of each pixel */
-    float* out_maxdist     /* Maximum distance */
+    RenderV2* rv2, float* out_maxdist /* Maximum distance */
 ) {
   int l0, xx0, yy0; /* Layer, x and y index of the node */
   int l1, x1, y1;   /* Layer, x and y index of the node */
@@ -148,6 +134,7 @@ static void setup_dist_map(
     if (ne == 0) {
       WireSegment ws = (WireSegment){ic, yy0 * w + xx0, yy0 * w + xx0};
       arrput((seglist[l0]), ws);
+      renderv2_addhseg(rv2, ic, l0, xx0, xx0, yy0, 1, dd0, dd0);
     }
     float rc = spec.r_per_w[l0] * spec.c_per_w[l0];
     for (int ie = 0; ie < ne; ie++) {
@@ -193,6 +180,7 @@ static void setup_dist_map(
       }
       float t, t0, t1, a;
       if (x1 == x0) {
+        renderv2_addvseg(rv2, ic, l0, x0, y0, y1, rc_seg, d0, d1);
         for (int y = y0; y <= y1; y++) {
           int idx = y * w + x0;
           u8 v = l_ori[idx];
@@ -203,6 +191,7 @@ static void setup_dist_map(
         }
       }
       if (y1 == y0) {
+        renderv2_addhseg(rv2, ic, l0, x0, x1, y0, rc_seg, d0, d1);
         for (int x = x0; x <= x1; x++) {
           int idx = y0 * w + x;
           u8 v = l_ori[idx];
@@ -295,7 +284,7 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
                      Graph* g, /* Pixel graph */
                      int* wire_to_drv, int* p_drv, SocketDesc* wire_to_skt,
                      int* wire_to_skt_off, int* p_skt, int n_skt, int nc,
-                     int* comp, u8** ori, bool debug) {
+                     int* comp, u8** ori, RenderV2* rv2, bool debug) {
   profiler_tic_single("dist_graph");
   /* I need to be able to identify all nodes for each component, then I re-build
    * the graph.*/
@@ -478,7 +467,7 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
 #endif
     /* From graph to 2D distance map And wire segments */
     setup_dist_map(spec, lone, w0, h0, &gg, node_distance, dg->distmap, c,
-                   dg->seglist, ori, &dg->wprop[c].max_delay);
+                   dg->seglist, ori, rv2, &dg->wprop[c].max_delay);
     dg->t_setup += GetTime() - t0;
     t0 = GetTime();
   }

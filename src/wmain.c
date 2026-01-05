@@ -60,6 +60,7 @@ static struct {
 
   Btn btn_sound;
   Btn btn_sound_paint;
+  Btn btn_neon;
   Btn btn_always_on_top;
   Btn btn_wiki;
   Btn btn_pause;
@@ -97,6 +98,7 @@ static struct {
 
   Sim sim;
   HSim hsim;
+  bool use_neon;
   bool rewind_pressed;
   bool forward_pressed;
   bool paused;
@@ -255,6 +257,7 @@ void load_palette(const char* fname) {
 
 void main_init() {
   srand(time(NULL));
+  C.use_neon = true;
   C.sound = LoadSound("../assets/s2.wav");
   C.sound_click = LoadSound("../assets/click.wav");
   C.sound_success = LoadSound("../assets/success.wav");
@@ -299,7 +302,8 @@ void main_init() {
   paint_init(&C.ca);
   paint_set_color(&C.ca, C.palette[3]);
   if (false) {
-    Image img = LoadImage("../solutions/slow_af.png");
+    // Image img = LoadImage("../solutions/big2.png");
+    Image img = LoadImage("../a.png");
     paint_load_image(&C.ca, img);
   } else {
     if (ui_is_demo()) {
@@ -492,10 +496,24 @@ void main_update() {
     float dt = get_simu_dt();
     float frame_steps = dt * 1.0 / 60.0;
     profiler_tic("sim_render");
-    Tex* rendered = sim_render(&C.sim, tw, th, texs, C.ca.cam, frame_steps,
-                               C.sidepanel_tex, slack_steps, 2);
+    int hide_mask = 0;
+    for (int i = 0; i < nl; i++) {
+      if (C.ca.hidden[i]) {
+        hide_mask = hide_mask | (1 << i);
+      }
+    }
+
+    Tex* rendered =
+        sim_render_v2(&C.sim, tw, th, texs, C.ca.cam, frame_steps,
+                      C.sidepanel_tex, slack_steps, 2, hide_mask, C.use_neon);
     profiler_tac();
+
+    BeginTextureMode(C.img_target_tex);
+    ClearBackground(PURPLE);
+    EndTextureMode();
+
     texdraw2(C.img_target_tex, rendered->rt);
+
     texdel(rendered);
   }
 
@@ -597,13 +615,14 @@ void main_start_simu() {
   C.forward_pressed = false;
   paint_pause(&C.ca);
 
-  Texture2D texs[MAX_LAYERS];
+  RenderTexture2D texs[MAX_LAYERS];
   Image imgs[MAX_LAYERS];
   int nl = hist_get_num_layers(&C.ca.h);
   for (int i = 0; i < nl; i++) {
     imgs[i] = C.ca.h.buffer[i];
+    texs[i] = C.ca.h.t_buffer[i];
   }
-  sim_init(&C.sim, nl, imgs, getlevel());
+  sim_init(&C.sim, nl, imgs, getlevel(), &texs[0]);
   C.hsim = wrap_sim(&C.sim);
   C.simu_target_steps = 0;
   C.pix_toggle = -1;
@@ -846,6 +865,7 @@ void main_save_selection() {
 
 static void toggle_simu_pause() { C.paused = !C.paused; }
 static void toggle_sound() { C.mute = !C.mute; }
+static void toggle_neon() { C.use_neon = !C.use_neon; }
 static void toggle_sound_paint() { C.muted_paint = !C.muted_paint; }
 
 static void toggle_always_on_top() {
@@ -869,6 +889,7 @@ void main_update_hud() {
   if (btn_update(&C.btn_about)) easy_about_open();
   if (btn_update(&C.btn_exit)) ui_set_close_requested();
   if (btn_update(&C.btn_sound)) toggle_sound();
+  if (btn_update(&C.btn_neon)) toggle_neon();
   if (btn_update(&C.btn_sound_paint)) toggle_sound_paint();
   if (btn_update(&C.btn_always_on_top)) toggle_always_on_top();
 
@@ -1004,6 +1025,8 @@ void main_draw() {
 
   btn_draw_text(&C.btn_sound, bscale,
                 TextFormat("Circuit Sound %s", C.mute ? "Off" : "On"));
+  btn_draw_text(&C.btn_neon, bscale,
+                TextFormat("Neon %s", C.use_neon ? "On" : "Off"));
   btn_draw_text(&C.btn_sound_paint, bscale,
                 TextFormat("Paint Sound %s", C.muted_paint ? "Off" : "On"));
   btn_draw_text(&C.btn_always_on_top, bscale, "Always on Top");
@@ -1099,6 +1122,8 @@ void main_draw() {
     btn_draw_legend(&C.btn_level, bscale, "Select Level/Campaign.");
     btn_draw_legend(&C.btn_wiki, bscale, "Wiki");
     btn_draw_legend(&C.btn_sound, bscale, "Toggle simulation sound");
+    btn_draw_legend(&C.btn_neon, bscale,
+                    "Toggle neon (glow) during simulation");
     btn_draw_legend(&C.btn_sound_paint, bscale, "Toggle paint sound");
     btn_draw_legend(&C.btn_always_on_top, bscale, "Toggle Always On Top");
     btn_draw_legend(&C.btn_sel_open, bscale, "Load Selection from Image");
@@ -1227,6 +1252,8 @@ void main_update_layout() {
     x7 += C.btn_sound_paint.hitbox.width + 4 * s;
     C.btn_always_on_top.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
     x7 += C.btn_always_on_top.hitbox.width + 4 * s;
+    C.btn_neon.hitbox = (Rectangle){x7, y0, 4 * bw, bh};
+    x7 += C.btn_neon.hitbox.width + 4 * s;
   }
 
   int sh = GetScreenHeight() / s;
@@ -1554,6 +1581,7 @@ void main_update_widgets() {
   C.btn_picker.disabled = ned;
 
   C.btn_sound.toggled = !C.mute;
+  C.btn_neon.toggled = C.use_neon;
   C.btn_sound_paint.toggled = !C.muted_paint;
   C.btn_always_on_top.toggled = C.always_on_top;
   C.btn_pause.toggled = C.paused;
@@ -1595,7 +1623,7 @@ void main_update_widgets() {
 
   for (int i = 0; i < MAX_LAYERS; i++) {
     C.btn_layer[i].disabled = ned;
-    C.btn_layer_v[i].disabled = ned;
+    // C.btn_layer_v[i].disabled = ned;
   }
 
   for (int i = 0; i < 6; i++) {

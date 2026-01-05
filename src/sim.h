@@ -5,22 +5,13 @@
 #include "event_queue.h"
 #include "hsim.h"
 #include "level.h"
-#include "nand_renderer.h"
-#include "paged_stack.h"
-#include "pixel_graph.h"
-#include "series.h"
-#include "wire_graph.h"
-// #include "level.h"
-#include "dist_graph.h"
-#include "level.h"
-#include "nand_renderer.h"
 #include "paged_stack.h"
 #include "pin_spec.h"
-#include "pixel_error_renderer.h"
 #include "pixel_graph.h"
+#include "renderv2.h"
+#include "series.h"
 #include "tex.h"
 #include "wire_graph.h"
-#include "wire_rendering.h"
 
 #define NRJ_BINS 32
 
@@ -29,6 +20,7 @@
  * (see UnpackedPulse)
  */
 typedef int WirePulse;
+struct Sim;
 
 enum {
   S_BIT_ZERO,
@@ -77,6 +69,10 @@ typedef struct {
   float pow_decay[NRJ_BINS];
   Level* level;
   int pulse_size; /* actual size of the pulse array */
+  struct Sim* sim;
+
+  int tick_mod;
+  int tick_slots;
 } SimState;
 
 /* (B0, T0, A0) --> (A0, T1, A1)
@@ -110,6 +106,7 @@ typedef struct {
   PulseDiff* arr_pulse_diff;
   SocketEvent* arr_queue_popped;
   ScheduleItem* arr_schedule_item;
+  int* arr_wire_to_shift;
   Buffer level_patch;
   double power_patch;
   double total_energy_patch;
@@ -175,24 +172,25 @@ typedef struct Sim {
   Tex* circ_ema;
 
   /* Rendering */
-  NandDesc* nidx;        /* index of each nand (used in visu) */
-  NandRenderer nand_rdr; /* Visu of nands */
-  pixel_error_renderer_t pixel_error_rdr; /* Visu of errors*/
-  WireRenderer wrdr[MAX_LAYERS];          /* Visu of wires */
-  Texture pulse_tex;                      /* Pulse GPU data (used in visu)*/
+  NandDesc* nidx;    /* index of each nand (used in visu) */
+  Texture pulse_tex; /* Pulse GPU data (used in visu)*/
 
   Cam2D prv_cam;
   SimUiEvent* ui_events;
   Level* lvl;                       /* Does not own */
   int level_complete_dispatched_at; /* Makes the UI pause when level is complete
                                      */
+  RenderV2* rv2;
+  uint32_t* pulse_dirty_mask;
+  int dirty_mask_size;
 } Sim;
 
-void sim_init(Sim* sim, int nl, Image* img, Level* lvl);
+void sim_init(Sim* sim, int nl, Image* img, Level* lvl,
+              RenderTexture2D* layers);
 void sim_destroy(Sim* sim);
-Tex* sim_render(Sim* sim, int tw, int th, Texture2D* tex, Cam2D cam,
-                float frame_steps, Texture2D sidepanel, float slackSteps,
-                int t0);
+Tex* sim_render_v2(Sim* sim, int tw, int th, Texture2D* tex, Cam2D cam,
+                   float frame_steps, Texture2D sidepanel, float slackSteps,
+                   int t0, int hide_mask, bool use_neon);
 Tex* sim_render_energy(Sim* sim, int tw, int th);
 
 bool sim_is_idle(Sim* sim);

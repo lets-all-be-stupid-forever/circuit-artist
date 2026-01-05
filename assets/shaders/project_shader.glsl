@@ -15,23 +15,26 @@ uniform vec2 sp; // zoom
 uniform ivec2 img_size; // image size in image pixels
 
 vec4 msample(vec2 pos, int r) {
-    float kx = 1.0 / float(img_size.x);
-    float ky = 1.0 / float(img_size.y);
-    vec4 ss = vec4(0.0,0.0,0.0,0.0);
-    float cnt = 0.0;
-    for (int y = -r; y < r; y++) {
-      for (int x = -r; x < r; x++) {
-        vec4 s = texture(texture0, vec2(pos.x + (x+0.5)*kx , pos.y +(y+0.5)*ky));
-        // it averages the pixels even if they are black (ie a=0)
-        // It's ok for drawing mode, but for sim mode it throws away on/off info
-        // if it's done with alphas, so need to use a=1 on simu.
-        ss = ss + s;
-        cnt += 1.0;
+  float kx = 1.0 / float(img_size.x);
+  float ky = 1.0 / float(img_size.y);
+  vec4 ss = vec4(0.0,0.0,0.0,0.0);
+  float cnt = 0.0;
+  for (int y = -r; y < r; y++) {
+    for (int x = -r; x < r; x++) {
+      vec4 s = texture(texture0, vec2(pos.x + (x+0.5)*kx , pos.y +(y+0.5)*ky));
+      // it averages the pixels even if they are black (ie a=0)
+      // It's ok for drawing mode, but for sim mode it throws away on/off info
+      // if it's done with alphas, so need to use a=1 on simu.
+      if (s.a < 0.001) {
+        s = vec4(0,0,0,1);
       }
+      ss = ss + s;
+      cnt += 1.0;
     }
-    vec4 p = ss / cnt;
-    if (p.a > 0.0) p.a = 1.0;
-    return p;
+  }
+  vec4 p = ss / cnt;
+  if (p.a > 0.0) p.a = 1.0;
+  return p;
 }
 
 vec4 togray(vec4 c) {

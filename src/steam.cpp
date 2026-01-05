@@ -106,4 +106,6 @@ void steam_store_stats() {
   }
 }
 
+bool is_steam_on() { return C.loaded; }
+
 #endif

@@ -22,9 +22,9 @@ out vec4 fc3;
 void main()
 {
   if (bugged == 0) {
-  f_bugged = -1.0;
+    f_bugged = -1.0;
   }else {
-  f_bugged = 1.0;
+    f_bugged = 1.0;
   }
   fc1 = c1;
   fc2 = c2;
