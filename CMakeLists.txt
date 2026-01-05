@@ -165,6 +165,14 @@ target_link_libraries(calib
 add_executable(ca src/main.c)
 target_link_libraries(ca calib)
 
+# Set RPATH so Linux executables find shared libraries in their own directory
+if(UNIX AND NOT APPLE)
+    set_target_properties(ca PROPERTIES
+        BUILD_RPATH "\$ORIGIN"
+        INSTALL_RPATH "\$ORIGIN"
+    )
+endif()
+
 # Create demo library with DEMO_VERSION enabled
 add_library(calib_demo STATIC ${ca_src})
 
@@ -195,6 +203,14 @@ target_link_libraries(calib_demo
 # Demo executable
 add_executable(ca_demo src/main.c)
 target_link_libraries(ca_demo calib_demo)
+
+# Set RPATH for demo executable
+if(UNIX AND NOT APPLE)
+    set_target_properties(ca_demo PROPERTIES
+        BUILD_RPATH "\$ORIGIN"
+        INSTALL_RPATH "\$ORIGIN"
+    )
+endif()
 
 # Copy Steam library and app ID file to build directory for runtime
 IF (STEAM)
