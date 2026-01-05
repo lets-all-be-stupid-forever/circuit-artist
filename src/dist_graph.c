@@ -330,7 +330,7 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
 
   double vdd = spec.vdd;
   //   double c_w = spec.c_per_w;
-  int* layer = calloc(g->n, sizeof(int));
+  int* layer = calloc(g->n + 10, sizeof(int));
 
   /* Resistance of the gate, used for calculation of gate activation delay */
   double t0; /* used for profiling */

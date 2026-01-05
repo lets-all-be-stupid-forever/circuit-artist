@@ -176,7 +176,8 @@ static void select_first_available_level() {
   for (int i = 0; i < nl; i++) {
     // int j = nl - i - 1;
     int j = i;
-    if (lg->levels[j]->can_choose && !lg->levels[j]->complete) {
+    // lg->levels[j]->can_choose &&
+    if (!lg->levels[j]->complete) {
       win_level_set_sel(lg->levels[j]);
       return;
     }
@@ -283,7 +284,8 @@ void win_level_update() {
   for (int i = 0; i < NUM_BUTTONS; i++) {
     if (i < nl) {
       LevelDef* ldef = C.selected_group->levels[i];
-      C.btn_option[i].disabled = !ldef->can_choose;
+      /* Disabling until I fix the dependency */
+      C.btn_option[i].disabled = false;  // ! ldef->can_choose;
       C.btn_option[i].toggled = (C.selected_level == ldef);
     }
   }
