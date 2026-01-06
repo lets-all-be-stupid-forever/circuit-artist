@@ -123,7 +123,7 @@ void about_open(const char* title, const char* content, sprite_t* sprites) {
 
 void about_update() {
   about_update_layout();
-  if (btn_update(&C.bClose)) {
+  if (btn_update(&C.bClose) || IsKeyPressed(KEY_ESCAPE)) {
     ui_winpop();
     return;
   }
