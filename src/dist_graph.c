@@ -5,6 +5,7 @@
 #include "math.h"
 #include "pq.h"
 #include "profiler.h"
+#include "stb_ds.h"
 
 static inline int mini(int a, int b) { return a < b ? a : b; }
 static inline int maxi(int a, int b) { return a > b ? a : b; }
@@ -329,27 +330,22 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
   dg->t_elmore = 0;
 
   double vdd = spec.vdd;
-  //   double c_w = spec.c_per_w;
-  int* layer = calloc(g->n + 10, sizeof(int));
+  int* layer = NULL;
 
   /* Resistance of the gate, used for calculation of gate activation delay */
   double t0; /* used for profiling */
   int img_size = w * h;
   for (int c = 0; c < nc; c++) {
     t0 = GetTime();
+    arrsetlen(layer, 0);
     /* Creates a subgraph so we have better cache performance. */
     int nk = noff[c + 1] - noff[c];
     int* subnodes = &n2[noff[c]];
     dist_build_subgraph(g, &gg, nk, subnodes);
     for (int ik = 0; ik < nk; ik++) {
-      layer[ik] = find_layer(img_size, g->nodes[subnodes[ik]]);
+      arrput(layer, find_layer(img_size, g->nodes[subnodes[ik]]));
     }
 
-    /*printf("subg:\n ");*/
-    /*print_graph(&gg);*/
-    /* Extracts index of root of the wire (vertical and horizontal) */
-    // int hdrv = -1;
-    //    int vdrv = -1;
     int root = -1;
     int drv = wire_to_drv[c];
     if (drv != -1) {
@@ -368,7 +364,8 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
       int node = find_node_from_idx(g, &gg, skt_idx);
       assert(node >= 0);
       int r = graph_add_node(&gg, s_off + skt);
-      layer[r] = 0;            /* Nands are always at the layer 0 */
+      assert(r == arrlen(layer));
+      arrput(layer, 0);        /* Nands are always at the layer 0 */
       float w = spec.l_socket; /* Wire length associated to a nand input */
       graph_add_edge(&gg, node, r, w);
     }
@@ -520,7 +517,7 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
   free(stack);
   free(n2);
   free(noff);
-  free(layer);
+  arrfree(layer);
   profiler_tac_single("dist_graph");
   // save_img_f32(w, h, dg->distmap[0], -40, 40, "../dmap.png");
 }
