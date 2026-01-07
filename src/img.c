@@ -1406,7 +1406,7 @@ void gaussian(int dir, Texture2D in, RenderTexture2D out) {
   set_shader_ivec2(gaussian, size, &size);
   set_shader_int(gaussian, size, &size);
   set_shader_int(gaussian, dir, &dir);
-  SetTextureWrap(in, TEXTURE_WRAP_MIRROR_CLAMP);
+  SetTextureWrap(in, TEXTURE_WRAP_CLAMP);
   draw_stretched(in, out, WHITE);
   end_shader();
   EndTextureMode();
