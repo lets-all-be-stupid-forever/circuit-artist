@@ -66,7 +66,7 @@ static void stamp_save() {
       json_object_object_add(stamp, "id", id);
       json_object_object_add(stamp, "name", name);
       json_object_object_add(stamp, "rot", rot);
-      printf("STAMP %d %s\n", i, s->id);
+      // printf("STAMP %d %s\n", i, s->id);
     }
     json_object_array_add(stamps, stamp);
   }

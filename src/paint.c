@@ -2478,6 +2478,20 @@ void paint_movement_keys(Paint* ca) {
   }
 }
 
+static void paint_redo(Paint* ca) {
+  hist_redo(&ca->h);
+  on_click();
+  paint_on_tool_change(ca);
+  paint_ensure_camera_within_bounds(ca);
+}
+
+static void paint_undo(Paint* ca) {
+  hist_undo(&ca->h);
+  on_click();
+  paint_on_tool_change(ca);
+  paint_ensure_camera_within_bounds(ca);
+}
+
 void paint_handle_keys(Paint* ca) {
   if (IsKeyPressed(KEY_X)) {
     ca->xmode = !ca->xmode;
@@ -2493,18 +2507,16 @@ void paint_handle_keys(Paint* ca) {
 
   // Undo
   if (is_control_down() && IsKeyPressed(KEY_Z)) {
-    hist_undo(&ca->h);
-    on_click();
-    paint_on_tool_change(ca);
-    paint_ensure_camera_within_bounds(ca);
+    if (IsKeyDown(KEY_LEFT_SHIFT)) {
+      paint_redo(ca);
+    } else {
+      paint_undo(ca);
+    }
   }
 
   // Redo
   if (is_control_down() && IsKeyPressed(KEY_Y)) {
-    hist_redo(&ca->h);
-    on_click();
-    paint_on_tool_change(ca);
-    paint_ensure_camera_within_bounds(ca);
+    paint_redo(ca);
   }
 
   // Copy

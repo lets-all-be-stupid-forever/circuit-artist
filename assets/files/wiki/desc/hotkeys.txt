@@ -1,0 +1,17 @@
+
+`HOTKEYS`
+
+`Undo`
+Ctrl-Z
+
+`Redo`
+Ctrl-Shift-Z
+Ctrl-Y
+
+`Navigation`
+W = Up 
+A = Left
+S = Down
+D = Right
+= (equal) zoom in
+- (minus) zoom out

@@ -1539,6 +1539,7 @@ end
 
 
 add_wiki("basic", "tldr", "TLDR")
+add_wiki("basic", "hotkeys", "Hotkeys")
 add_wiki("basic", "wires1", "Basic wires")
 add_wiki("basic", "wires_crossing", "Crossing Wires")
 add_wiki("basic", "wires_io", "Wires IO")
