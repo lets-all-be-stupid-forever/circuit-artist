@@ -129,14 +129,21 @@ void find_nands(int w, int h, u8* img, NandLoc** out_nands) {
       int y = idx / w;
       x = x - pd.ox;
       y = y - pd.oy;
-      if (x + xmin < 0 || y + ymin < 0 || x + xmax > w || y + ymax > h) {
-        continue;
-      }
+      // if (x + xmin < 0 || y + ymin < 0 || x + xmax > w || y + ymax > h) {
+      //   continue;
+      // }
       bool ok = true;
       for (int xx = 0; xx < pd.pw; xx++) {
         for (int yy = 0; yy < pd.ph; yy++) {
           int p = pd.data[yy * pd.pw + xx];
-          if (img[(y + yy) * w + (x + xx)] != p && p != -1) {
+          int v = 0;
+          if (((y + yy) < 0) || (y + yy >= h) || (x + xx < 0) ||
+              (x + xx >= w)) {
+            v = 0;
+          } else {
+            v = img[(y + yy) * w + (x + xx)];
+          }
+          if (v != p && p != -1) {
             ok = false;
             break;
           }
