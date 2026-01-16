@@ -47,9 +47,9 @@ static const float ZOOM_LUT[] = {
     16.0,  /*   */
     24.0,  /*   */
     32.0,  /*   */
-    //    48.0,  /*   */
-    // 64.0, /* 1pix image = 64 screen pix*/
-    -1, /*  border  */
+    48.0,  /*   */
+    64.0,  /* 1pix image = 64 screen pix*/
+    -1,    /*  border  */
 };
 
 static void paint_get_sel_moving_offset(Paint* ca, int* dx, int* dy) {
