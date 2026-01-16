@@ -489,6 +489,9 @@ void main_update() {
     int th = C.img_target_tex.texture.height;
     float dt = get_simu_dt();
     float frame_steps = dt * 1.0 / 60.0;
+    if (C.paused) {
+      frame_steps = 0;
+    }
     profiler_tic("sim_render");
     int hide_mask = 0;
     for (int i = 0; i < nl; i++) {
