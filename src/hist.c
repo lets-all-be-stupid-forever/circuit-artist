@@ -249,7 +249,7 @@ static void hist_cmd_do(HistCmd* c, Hist* h) {
         h->buffer[l] = img2;
         UnloadImage(img1);
         RenderTexture2D tex1 = h->t_buffer[l];
-        RenderTexture2D tex2 = LoadRenderTexture(new_w, new_h);
+        RenderTexture2D tex2 = gen_render_texture(new_w, new_h, BLANK);
         Vector2Int offset = {0, 0};
         RectangleInt source = {
             0.f,
@@ -455,7 +455,7 @@ static void hist_cmd_undo(HistCmd* c, Hist* h) {
         UnloadImage(img1);
 
         RenderTexture2D tex1 = h->t_buffer[l];
-        RenderTexture2D tex2 = LoadRenderTexture(new_w, new_h);
+        RenderTexture2D tex2 = gen_render_texture(new_w, new_h, BLANK);
         Vector2Int offset = {0, 0};
         RectangleInt source = {
             0.f,

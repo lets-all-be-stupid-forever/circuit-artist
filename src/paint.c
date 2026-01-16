@@ -567,7 +567,7 @@ void paint_init(Paint* ca) {
   ca->clipboard_offset.y = -100000;
   ca->resizePressed = false;
   ca->resizeHovered = false;
-  ca->rtPixelTool = LoadRenderTexture(1, 1);
+  ca->rtPixelTool = gen_render_texture(1, 1, BLANK);
 }
 
 /*
@@ -735,7 +735,7 @@ static void paint_update_temp_render_texture(Paint* pnt) {
       if (tmp_w > 0) {
         UnloadRenderTexture(pnt->t_tmp[l]);
       }
-      pnt->t_tmp[l] = LoadRenderTexture(tw, th);
+      pnt->t_tmp[l] = gen_render_texture(tw, th, BLANK);
     }
   }
 }

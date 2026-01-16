@@ -40,7 +40,7 @@ void draw_image_bucket_tool(Image img, int x, int y, int sw, int sh, Color c,
 Image image_encode_layers(int nl, Image* layers);
 void image_decode_layers(Image img, int* nl, Image* layers);
 Image ensure_size_multiple_of(Image img, int mof);
-
+RenderTexture2D gen_render_texture(int w, int h, Color bg);
 RenderTexture2D clone_texture(RenderTexture2D img);
 RenderTexture2D clone_texture_from_image(Image img);
 RenderTexture2D crop_texture(RenderTexture2D img, RectangleInt region);

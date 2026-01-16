@@ -1416,8 +1416,8 @@ void main_update_viewport() {
       UnloadRenderTexture(C.img_target_tex);
       UnloadRenderTexture(C.level_overlay_tex);
     }
-    C.img_target_tex = LoadRenderTexture(tgt_size_x, tgt_size_y);
-    C.level_overlay_tex = LoadRenderTexture(tgt_size_x, tgt_size_y);
+    C.img_target_tex = gen_render_texture(tgt_size_x, tgt_size_y, BLANK);
+    C.level_overlay_tex = gen_render_texture(tgt_size_x, tgt_size_y, BLANK);
   }
 }
 

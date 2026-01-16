@@ -728,7 +728,7 @@ void draw_image_rect_simple(Image* img, int x, int y, int w, int h, Color c) {
 
 RenderTexture2D clone_texture(RenderTexture2D img) {
   RenderTexture2D out =
-      LoadRenderTexture(img.texture.width, img.texture.height);
+      gen_render_texture(img.texture.width, img.texture.height, BLANK);
   BeginTextureMode(out);
   ClearBackground(BLANK);
   float tw = (float)img.texture.width;
@@ -745,7 +745,7 @@ RenderTexture2D clone_texture(RenderTexture2D img) {
 RenderTexture2D crop_texture(RenderTexture2D img, RectangleInt region) {
   int w = region.width;
   int h = region.height;
-  RenderTexture2D out = LoadRenderTexture(w, h);
+  RenderTexture2D out = gen_render_texture(w, h, BLANK);
   BeginTextureMode(out);
   ClearBackground(BLANK);
   int th = img.texture.height;
@@ -768,7 +768,7 @@ RenderTexture2D crop_texture(RenderTexture2D img, RectangleInt region) {
 }
 
 RenderTexture2D clone_texture_from_image(Image img) {
-  RenderTexture2D out = LoadRenderTexture(img.width, img.height);
+  RenderTexture2D out = gen_render_texture(img.width, img.height, BLANK);
   BeginTextureMode(out);
   ClearBackground(BLANK);
   Texture2D t = LoadTextureFromImage(img);
@@ -900,7 +900,7 @@ void flip_texture_v_inplace(RenderTexture2D* img) {
 RenderTexture2D rotate_texture(RenderTexture2D img, int ccw) {
   int tw = img.texture.width;
   int th = img.texture.height;
-  RenderTexture2D out = LoadRenderTexture(th, tw);
+  RenderTexture2D out = gen_render_texture(th, tw, BLANK);
   BeginTextureMode(out);
   Rectangle source = {0, 0, (float)tw, (float)-th};
   Rectangle target = {0, 0, (float)th, (float)tw};
@@ -939,7 +939,7 @@ void draw_rt_on_screen(RenderTexture2D rt, Vector2 pos) {
 
 RenderTexture2D make_thumbnail(Image img, int tx, int ty) {
   RenderTexture2D tex = clone_texture_from_image(img);
-  RenderTexture2D out = LoadRenderTexture(tx, ty);
+  RenderTexture2D out = gen_render_texture(tx, ty, BLANK);
 
   int tw = tex.texture.width;
   int th = tex.texture.height;
@@ -1914,4 +1914,12 @@ void save_img_f32(int w, int h, float* data, float vmin, float vmax,
   }
   ExportImage(img, fname);
   UnloadImage(img);
+}
+
+RenderTexture2D gen_render_texture(int w, int h, Color bg) {
+  RenderTexture2D r = LoadRenderTexture(w, h);
+  BeginTextureMode(r);
+  ClearBackground(bg);
+  EndTextureMode();
+  return r;
 }

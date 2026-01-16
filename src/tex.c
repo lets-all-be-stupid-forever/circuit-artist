@@ -36,7 +36,7 @@ Tex* texnew(int w, int h) {
   C.cnt++;
   if (C.cnt == 50) abort();
   item = calloc(1, sizeof(Tex));
-  item->rt = LoadRenderTexture(w, h);
+  item->rt = gen_render_texture(w, h, BLANK);
   item->refc = 1;
   item->w = w;
   item->h = h;
