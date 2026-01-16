@@ -197,12 +197,6 @@ void on_click() {
   if (!C.mute) PlaySound(C.sound_click);
 }
 
-static void main_update_save() {
-  if (is_control_down() && IsKeyPressed(KEY_S)) {
-    main_on_save_click(false);
-  }
-}
-
 static float get_simu_dt() {
   double seconds_to_frame = 60.0;
   double ticks_per_frame = 4;
@@ -677,8 +671,20 @@ static void add_blueprint() {
 
 static void on_paste_text(void* ctx, const char* txt) { main_paste_text(txt); }
 
+static void on_open_click() {
+  main_ask_for_save_and_proceed(main_open_file_modal);
+}
+
+static void on_new_click() { main_ask_for_save_and_proceed(main_new_file); }
+
 void main_update_controls() {
-  main_update_save();
+  if (is_control_down()) {
+    if (IsKeyPressed(KEY_S)) {
+      main_on_save_click(false);
+    }
+    if (IsKeyPressed(KEY_O)) on_open_click();
+    if (IsKeyPressed(KEY_N)) on_new_click();
+  }
   paint_update_pixel_position(&C.ca);
   paint_enforce_mouse_on_image_if_need(&C.ca);
   ui_set_cursor(MOUSE_ARROW);
@@ -881,9 +887,8 @@ static void toggle_sim_show_t() { C.sim_show_t = !C.sim_show_t; }
 
 void main_update_hud() {
   Paint* ca = &C.ca;
-  if (btn_update(&C.btn_new)) main_ask_for_save_and_proceed(main_new_file);
-  if (btn_update(&C.btn_open))
-    main_ask_for_save_and_proceed(main_open_file_modal);
+  if (btn_update(&C.btn_new)) on_new_click();
+  if (btn_update(&C.btn_open)) on_open_click();
   if (btn_update(&C.btn_save)) main_on_save_click(false);
   if (btn_update(&C.btn_saveas)) main_on_save_click(true);
   if (btn_update(&C.btn_about)) easy_about_open();
@@ -1081,14 +1086,17 @@ void main_draw() {
 
   // We only draw the legends if this window is the active window.
   if (ui_get_window() == WINDOW_MAIN) {
-    btn_draw_legend(&C.btn_new, bscale, "New Image");
+    btn_draw_legend(&C.btn_new, bscale, "New Image (CTRL+N)");
 
     if (ui_is_demo()) {
       btn_draw_legend(&C.btn_open, bscale,
                       "Load Image \n`(Not Available in Demo)`");
     } else {
-      btn_draw_legend(&C.btn_open, bscale, "Load Image");
+      btn_draw_legend(&C.btn_open, bscale, "Load Image (CTRL+O)");
     }
+
+    btn_draw_legend(&C.btn_save, bscale, "Save Image (CTRL+S)");
+    btn_draw_legend(&C.btn_saveas, bscale, "Save Image As .. ");
 
     btn_draw_legend(&C.btn_stamp, bscale,
                     "Open Blueprints Window (Q)\nOpens even if selection tool "
