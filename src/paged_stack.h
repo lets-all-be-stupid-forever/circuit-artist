@@ -3,22 +3,22 @@
 #include "buffer.h"
 #include "common.h"
 
-#define PGD_STK_NUM_PAGES 16
-
 typedef struct {
   u32 n_block;
   u32 head;
+  u32 size;
   u8 data[];
 } PagedStackPage;
 
 typedef struct {
-  PagedStackPage* arr_page[PGD_STK_NUM_PAGES];
-  int cur_page;   // current page
-  u32 page_size;  // max page size in bytes
+  int cur_page;           // current page
+  u32 default_page_size;  // max page size in bytes
   int n_block;
+  int num_pages;
+  PagedStackPage* arr_page[];
 } PagedStack;
 
-void paged_stack_init(PagedStack* p, u32 page_size);
+PagedStack* paged_stack_create(int num_pages, u32 page_size);
 void paged_stack_destroy(PagedStack* p);
 int paged_stack_get_size(PagedStack* p);
 void paged_stack_push(PagedStack* p, Buffer block);

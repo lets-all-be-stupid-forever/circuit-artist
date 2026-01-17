@@ -4,13 +4,18 @@
 #include "stdlib.h"
 #include "string.h"
 
+static void alloc_page_mem(PagedStackPage** page, u32 size) {
+  *page = malloc(size + sizeof(PagedStackPage));
+  (*page)->size = size;
+  (*page)->head = 0;
+  (*page)->n_block = 0;
+}
+
 static PagedStackPage* paged_stack_page_forward(PagedStack* p) {
-  p->cur_page = (p->cur_page + 1) % PGD_STK_NUM_PAGES;
+  p->cur_page = (p->cur_page + 1) % p->num_pages;
   int cp = p->cur_page;
   if (!p->arr_page[cp]) {
-    p->arr_page[cp] = malloc(p->page_size + sizeof(PagedStackPage));
-    p->arr_page[cp]->head = 0;
-    p->arr_page[cp]->n_block = 0;
+    alloc_page_mem(&p->arr_page[cp], p->default_page_size);
   } else {
     u32 prevBlocks = p->arr_page[cp]->n_block;
     p->arr_page[cp]->head = 0;
@@ -20,24 +25,29 @@ static PagedStackPage* paged_stack_page_forward(PagedStack* p) {
   return p->arr_page[cp];
 }
 
-void paged_stack_init(PagedStack* p, u32 page_size) {
+PagedStack* paged_stack_create(int num_pages, u32 page_size) {
   assert(page_size > 0);
-  p->page_size = page_size;
+  assert(num_pages > 1);
+  PagedStack* p =
+      calloc(1, sizeof(PagedStack) + num_pages * sizeof(PagedStackPage*));
+  p->num_pages = num_pages;
+  p->default_page_size = page_size;
   p->cur_page = -1;
   p->n_block = 0;
-  for (int i = 0; i < PGD_STK_NUM_PAGES; i++) {
+  for (int i = 0; i < p->num_pages; i++) {
     p->arr_page[i] = NULL;
   }
   paged_stack_page_forward(p);
+  return p;
 }
 
 void paged_stack_destroy(PagedStack* p) {
-  for (int i = 0; i < PGD_STK_NUM_PAGES; i++) {
+  for (int i = 0; i < p->num_pages; i++) {
     if (p->arr_page[i]) {
       free(p->arr_page[i]);
     }
   }
-  *p = (PagedStack){0};
+  free(p);
 }
 
 int paged_stack_get_size(PagedStack* p) { return p->n_block; }
@@ -51,7 +61,7 @@ void paged_stack_push_merged(PagedStack* p, Buffer block1, Buffer block2) {
   u32 chunk_size = ((total_size + 3) >> 2) << 2;
   PagedStackPage* page = p->arr_page[p->cur_page];
   u32 new_head = page->head + chunk_size + 4;
-  if (new_head > p->page_size) {
+  if (new_head > page->size) {
     page = paged_stack_page_forward(p);
     new_head = page->head + chunk_size + 4;
   }
@@ -86,7 +96,7 @@ Buffer paged_stack_pop(PagedStack* p) {
   if (page->n_block == 0) {
     assert(page->head == 0);
     if (p->n_block > 0) {
-      p->cur_page = (p->cur_page + PGD_STK_NUM_PAGES - 1) % PGD_STK_NUM_PAGES;
+      p->cur_page = (p->cur_page + p->num_pages - 1) % p->num_pages;
       assert(p->arr_page[p->cur_page]->n_block > 0);
       assert(p->arr_page[p->cur_page]->n_block <= p->n_block);
       assert(p->arr_page[p->cur_page]->head > 0);
@@ -120,7 +130,7 @@ void paged_stack_push_raw(PagedStack* p, void* data, u32 size) {
 void paged_stack_clear(PagedStack* p) {
   p->n_block = 0;
   p->cur_page = 0;
-  for (int i = 0; i < PGD_STK_NUM_PAGES; i++) {
+  for (int i = 0; i < p->num_pages; i++) {
     if (p->arr_page[i]) {
       p->arr_page[i]->n_block = 0;
       p->arr_page[i]->head = 0;

@@ -122,7 +122,7 @@ void ui_init() {
   tutorial_init(C.registry);
   shaders_init();
   win_level_init(C.registry);
-  main_init();
+  main_init(C.registry);
   main_open();
 }
 

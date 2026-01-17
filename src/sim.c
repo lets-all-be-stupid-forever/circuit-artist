@@ -7,6 +7,7 @@
 #include "font.h"
 #include "graph.h"
 #include "img.h"
+#include "level.h"
 #include "log.h"
 #include "math.h"
 #include "msg.h"
@@ -1558,17 +1559,14 @@ void sim_reset_dirty_mask(Sim* sim) {
   }
 }
 
-Tex* sim_render_v2(Sim* sim, int tw, int th, Texture2D* tex, Cam2D cam,
-                   float frame_steps, Texture2D sidepanel, float slack_steps,
-                   int t0, int hide_mask, bool use_neon) {
+Tex* sim_render_v2(Sim* sim, int tw, int th, Cam2D cam, float frame_steps,
+                   float slack_steps, int hide_mask, bool use_neon) {
   renderv2_update_hidden_mask(sim->rv2, hide_mask);
   UpdateTexture(sim->pulse_tex, sim->state.pulses);
   renderv2_update_pulse(sim->rv2, sim->pulse_tex, sim->pulse_dirty_mask);
   double rtime = GetTime();
   float utime = sin(2 * rtime * M_PI);
-  float gtime = (sim->state.cur_tick + slack_steps) - t0;
-  gtime = 2;
-  gtime = frame_steps * 5;
+  float gtime = frame_steps * 5;
   Times times = {
       .tick = sim->state.cur_tick,
       .slack = slack_steps,
@@ -1584,3 +1582,48 @@ Tex* sim_render_v2(Sim* sim, int tw, int th, Texture2D* tex, Cam2D cam,
   sim_reset_dirty_mask(sim);
   return out;
 }
+
+void sim_dry_run(GameRegistry* r) {
+  Image img = GenImageColor(8, 8, BLANK);
+  Color* clr = img.data;
+
+#define SETPIXEL(x, y) clr[y * 8 + x] = WHITE
+  SETPIXEL(1, 1);
+  SETPIXEL(1, 2);
+  SETPIXEL(1, 3);
+  SETPIXEL(3, 1);
+  SETPIXEL(3, 3);
+  SETPIXEL(4, 2);
+  SETPIXEL(6, 2);
+  RenderTexture2D rt = gen_render_texture(8, 8, BLANK);
+  Texture tex = LoadTextureFromImage(img);
+  BeginTextureMode(rt);
+  draw_tex(tex);
+  EndTextureMode();
+  UnloadTexture(tex);
+  LevelDef* ldef = r->group_order[0]->levels[0];
+  Level lvl = {0};
+  level_init(&lvl, ldef);
+  Sim s;
+  sim_init(&s, 1, &img, &lvl, &rt);
+  assert(!sim_has_errors(&s));
+  HSim hsim = wrap_sim(&s);
+  for (int i = 0; i < 3; i++) {
+    hsim_nxt(&hsim);
+    Cam2D cam = {0};
+    cam.sp = 1;
+    float slack = 2;
+    int hide_mask = 0;
+    bool use_neon = true;
+    float frame_steps = 20;
+    Tex* rendered =
+        sim_render_v2(&s, 50, 50, cam, frame_steps, slack, hide_mask, use_neon);
+  }
+  hsim_destroy(&hsim);
+  sim_destroy(&s);
+  level_destroy(&lvl);
+  UnloadRenderTexture(rt);
+  UnloadImage(img);
+#undef SETPIXEL
+}
+

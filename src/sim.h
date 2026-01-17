@@ -3,6 +3,7 @@
 #include "common.h"
 #include "dist_graph.h"
 #include "event_queue.h"
+#include "game_registry.h"
 #include "hsim.h"
 #include "level.h"
 #include "paged_stack.h"
@@ -188,9 +189,8 @@ typedef struct Sim {
 void sim_init(Sim* sim, int nl, Image* img, Level* lvl,
               RenderTexture2D* layers);
 void sim_destroy(Sim* sim);
-Tex* sim_render_v2(Sim* sim, int tw, int th, Texture2D* tex, Cam2D cam,
-                   float frame_steps, Texture2D sidepanel, float slackSteps,
-                   int t0, int hide_mask, bool use_neon);
+Tex* sim_render_v2(Sim* sim, int tw, int th, Cam2D cam, float frame_steps,
+                   float slackSteps, int hide_mask, bool use_neon);
 Tex* sim_render_energy(Sim* sim, int tw, int th);
 
 bool sim_is_idle(Sim* sim);
@@ -253,5 +253,7 @@ static inline UnpackedPulse pulse_unpack(int p) {
 static inline int pulse_unpack_vafter(int p) { return (p >> 2) & 0b11; }
 static inline int pulse_unpack_vbefore(int p) { return p & 0b11; }
 static inline int pulse_unpack_tick(int p) { return p >> 4; }
+
+void sim_dry_run(GameRegistry* r);
 
 #endif

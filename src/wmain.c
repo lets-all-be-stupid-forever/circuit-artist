@@ -249,7 +249,7 @@ void load_palette(const char* fname) {
   }
 };
 
-void main_init() {
+void main_init(GameRegistry* registry) {
   srand(time(NULL));
   C.use_neon = true;
   C.sound = LoadSound("../assets/s2.wav");
@@ -315,6 +315,7 @@ void main_init() {
   main_update_title();
   main_update_widgets();
   level_load_default();
+  sim_dry_run(registry);
 }
 
 static void simu_play_sounds() {
@@ -500,9 +501,8 @@ void main_update() {
       }
     }
 
-    Tex* rendered =
-        sim_render_v2(&C.sim, tw, th, texs, C.ca.cam, frame_steps,
-                      C.sidepanel_tex, slack_steps, 2, hide_mask, C.use_neon);
+    Tex* rendered = sim_render_v2(&C.sim, tw, th, C.ca.cam, frame_steps,
+                                  slack_steps, hide_mask, C.use_neon);
     profiler_tac();
 
     BeginTextureMode(C.img_target_tex);

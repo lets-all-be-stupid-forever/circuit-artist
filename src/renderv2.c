@@ -774,12 +774,13 @@ static void renderv2_dispatch(RenderV2* r, Shaders* s, int start, int end) {
   if (start == end) {
     return;
   }
+  // printf("tasks=%d\n", end - start + 1);
   assert(end > start);
   int loc_pos = s->wire2_aloc_pos;
   int loc_wids = s->wire2_aloc_wid;
   int loc_dist = s->wire2_aloc_dist;
   int loc_vert = s->wire2_aloc_vert;
-  int nmax = 100000;
+  int nmax = 25000;
   int off = start;
   while (off < end) {
     int ni = (end - off) > nmax ? nmax : (end - off);
@@ -849,7 +850,7 @@ void renderv2_update_pulse(RenderV2* r, Texture pulses, uint32_t* dirty_mask) {
     algo = 0;
     r->full_pmap_update = false;
   }
-
+  // printf("update_pulse algo=%d\n", algo);
   if (algo == 0) {
     renderv2_dispatch(r, s, 0, n);
   }
@@ -895,7 +896,7 @@ void renderv2_update_pulse(RenderV2* r, Texture pulses, uint32_t* dirty_mask) {
       float fnt = actual;
       float fn = n;
       float perc = 100 * (fnt / fn);
-      printf("Drawing %f %% .\n", perc);
+      // printf("Drawing %f %% .\n", perc);
     }
   }
   if (algo == 2) {

@@ -37,11 +37,11 @@
  * to the block.
  */
 typedef struct {
-  PagedStack s;
+  PagedStack* s;
   i32 head; /* head trailing blocks */
 } PagedCStack;
 
-void paged_cstack_init(PagedCStack* c, u32 page_size);
+void paged_cstack_init(PagedCStack* c, int num_pages, u32 page_size);
 void paged_cstack_destroy(PagedCStack* c);
 void paged_cstack_clear(PagedCStack* c);
 int paged_cstack_empty(PagedCStack* c);

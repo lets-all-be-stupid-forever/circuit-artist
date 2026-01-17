@@ -12,6 +12,7 @@ typedef struct {
   /* Compressed Stacks for undo/redos */
   PagedCStack undo_stack; /* Undo patches (data owned by hsim) */
   PagedCStack redo_stack; /* Redo patches (data owned by hsim) */
+  u32 max_patch_size; /* Patches bigger than this will make history collapse. */
 
 } HSim;
 
