@@ -1,5 +1,6 @@
 #ifndef CA_UTILS_H
 #define CA_UTILS_H
+
 #include "common.h"
 #include "lua.h"
 #include "raylib.h"
@@ -90,4 +91,5 @@ void decref(TexItem* v);
 const char* randid();
 
 const char* get_roman_number(int i);
+
 #endif

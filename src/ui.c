@@ -10,7 +10,6 @@
 #include "common.h"
 #include "font.h"
 #include "game_registry.h"
-#include "level.h"
 #include "log.h"
 #include "modal.h"
 #include "msg.h"

@@ -5,12 +5,12 @@
 #include "event_queue.h"
 #include "game_registry.h"
 #include "hsim.h"
-#include "level.h"
 #include "paged_stack.h"
 #include "pin_spec.h"
 #include "pixel_graph.h"
 #include "renderv2.h"
 #include "series.h"
+#include "status.h"
 #include "tex.h"
 #include "wire_graph.h"
 
@@ -47,6 +47,20 @@ typedef struct {
 } PinComm;
 
 typedef struct {
+  void* u;
+  PinGroup* pg;
+  void (*destroy)(void* u);
+  Status (*start)(void* u, struct Sim* sim);
+  Status (*update)(void* u, Buffer* buffer);
+  Status (*fw)(void* u, Buffer buf);
+  Status (*bw)(void* u, Buffer buf);
+  Status (*draw)(void* u);
+} LevelAPI;
+
+void level_api_add_pg(LevelAPI* api, PinGroup pg);
+void level_api_destroy(LevelAPI* api);
+
+typedef struct {
   /* Serialized states */
   int* skt_values;                /* Current value of sockets (size=numSkts); */
   EventQueue ev_queue;            /* Event Queue for Socket updates */
@@ -68,7 +82,6 @@ typedef struct {
   bool done;  /* Simulation is in Done mode */
 
   float pow_decay[NRJ_BINS];
-  Level* level;
   int pulse_size; /* actual size of the pulse array */
   struct Sim* sim;
 
@@ -161,7 +174,6 @@ typedef struct Sim {
   // FanoutGraph fg;     /* Fanout information */
   int* switch_delay;  /* load capacitance per nand */
   int* switch_energy; /* wire length rc delay */
-  PinGroup* ping;     /* Interface with level */
 
   /* Simulation */
   bool poked;      /* Wheter user has toggled any wire */
@@ -171,6 +183,7 @@ typedef struct Sim {
 
   Tex* light_ema;
   Tex* circ_ema;
+  LevelAPI* api;
 
   /* Rendering */
   NandDesc* nidx;    /* index of each nand (used in visu) */
@@ -178,7 +191,6 @@ typedef struct Sim {
 
   Cam2D prv_cam;
   SimUiEvent* ui_events;
-  Level* lvl;                       /* Does not own */
   int level_complete_dispatched_at; /* Makes the UI pause when level is complete
                                      */
   RenderV2* rv2;
@@ -186,8 +198,8 @@ typedef struct Sim {
   int dirty_mask_size;
 } Sim;
 
-void sim_init(Sim* sim, int nl, Image* img, Level* lvl,
-              RenderTexture2D* layers);
+Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,
+                RenderTexture2D* layers);
 void sim_destroy(Sim* sim);
 Tex* sim_render_v2(Sim* sim, int tw, int th, Cam2D cam, float frame_steps,
                    float slackSteps, int hide_mask, bool use_neon);
@@ -202,8 +214,6 @@ HSim wrap_sim(Sim* sim);
 void sim_port_write(Sim* sim, int iport, PinComm pc);
 PinComm sim_port_read(Sim* sim, int iport);
 
-void sim_state_init(SimState* state, Level* lvl, int num_wire, int pulse_size,
-                    int num_drivers, int num_sockets);
 void sim_state_destroy(SimState* state);
 void sim_state_patch_forward(SimState* state, Buffer patch);
 void sim_state_patch_backward(SimState* state, Buffer patch);
@@ -218,7 +228,6 @@ void patch_builder_update_nandstate(Sim* sim, PatchBuilder* builder,
                                     SimState* state);
 void patch_builder_handle_socket_events(PatchBuilder* builder, SimState* state);
 void patch_builder_remove_duplicated_nand(PatchBuilder* builder);
-void patch_unpack(SimState* state, Buffer patch, bool fw);
 
 // Interface for creating a patch
 void patch_builder_reset(PatchBuilder* pb);

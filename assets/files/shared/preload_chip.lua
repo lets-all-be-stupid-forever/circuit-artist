@@ -60,23 +60,6 @@ function resetVariables()
   __ctx.variables = {}
 end
 
-function drawbase()
-  for i=1,#PORTS do
-    local y= PORTS[i].y0
-    local th= 6 + 2*PORTS[i].width
-    local lh = 8
-    y = y + (th - lh)/2+1
-    local name = PORTS[i].name
-    if PORTS[i].input then
-      name = name .. ' <-'
-    else
-      name = name .. ' ->'
-    end
-    local w = caPrint(name, 0, 0, 2)
-    caPrint(name, -w-2, y, 1)
-  end
-end
-
 function commit()
   local out = __ctx.changes
   __ctx.changes = {}
@@ -141,10 +124,6 @@ function _draw()
       __chips[i]:draw()
     end
   end
-end
-
-function _drawboard()
-  drawbase()
 end
 
 print('LOADED PRELOAD')

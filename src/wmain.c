@@ -1,8 +1,5 @@
 #include "wmain.h"
 
-#include <lauxlib.h>
-#include <lua.h>
-#include <lualib.h>
 #include <msgpack.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +11,6 @@
 #include "font.h"
 #include "img.h"
 #include "json.h"
-#include "level.h"
 #include "log.h"
 #include "math.h"
 #include "modal.h"
@@ -38,9 +34,10 @@
 #include "wtext.h"
 
 static struct {
-  int mode;                 // Edit, Simu
-  RTex2D img_target_tex;    /* Image Drawing target image */
-  RTex2D level_overlay_tex; /* Image overlay where the lua stuff can draw to. */
+  int mode;              // Edit, Simu
+  RTex2D img_target_tex; /* Image Drawing target image */
+  RTex2D
+      level_overlay_tex; /* Image overlay where the level stuff can draw to. */
   v2 target_pos;
   Rectangle color_btn[64];
   Rectangle fg_color_rect;
@@ -127,6 +124,10 @@ static struct {
   char mouse_msg[200];
   int mouse_msg_type;
   bool sim_show_t;
+
+  /* If true, it means there was an error in the kernel/lua
+   * side, and the simulation can't start.   */
+  bool kernel_error;
 
   Rectangle* bot_layout;
   double hover_wire_distance;
@@ -249,8 +250,35 @@ void load_palette(const char* fname) {
   }
 };
 
+void main_stop_simu() {
+  // assert(main_get_simu_mode() != MODE_EDIT);
+  assert(main_get_simu_mode() == MODE_SIMU ||
+         main_get_simu_mode() == MODE_ERROR);
+  hsim_destroy(&C.hsim);
+  sim_destroy(&C.sim);
+
+  C.mode = MODE_EDIT;
+  C.time_open = false;
+  C.rewind_pressed = false;
+  C.forward_pressed = false;
+}
+
+static void handle_kernel_error(Status s) {
+  assert(!C.kernel_error);
+  if (main_is_simulation_on()) {
+    main_stop_simu();
+  }
+  C.kernel_error = true;
+  msg_add("Level crashed, please check console for error", 5);
+  printf("------------- LEVEL ERROR -------------\n");
+  printf("%s\n", s.err_msg);
+  printf("-------------------------------------\n");
+  free(s.err_msg);
+}
+
 void main_init(GameRegistry* registry) {
   srand(time(NULL));
+  C.kernel_error = false;
   C.use_neon = true;
   C.sound = LoadSound("../assets/s2.wav");
   C.sound_click = LoadSound("../assets/click.wav");
@@ -314,8 +342,12 @@ void main_init(GameRegistry* registry) {
   main_update_viewport();
   main_update_title();
   main_update_widgets();
-  level_load_default();
   sim_dry_run(registry);
+
+  Status status = level_load_default();
+  if (!status.ok) {
+    handle_kernel_error(status);
+  }
 }
 
 static void simu_play_sounds() {
@@ -335,7 +367,8 @@ static void simu_play_sounds() {
 /*
  * Runs simulation to ensure slack step is always 0 <= slack_step < 1
  */
-static void main_update_simu() {
+static Status main_update_simu() {
+  Status status = status_ok();
   profiler_tic("Simulation");
   Sim* pSim = &C.sim;
   float slack_steps = get_simu_slack_steps();
@@ -349,19 +382,22 @@ static void main_update_simu() {
   }
   slack_steps = get_simu_slack_steps();
 
-  while (slack_steps < 0.f) {
+  while (status.ok && slack_steps < 0.f) {
     /* Can't go backward */
     if (!hsim_has_prv(&C.hsim)) {
       slack_steps = 0.f;
       C.simu_target_steps = C.sim.state.cur_tick;
       break;
     }
-    hsim_prv(&C.hsim);
+    status = hsim_prv(&C.hsim);
     slack_steps += 1.f;
   }
 
-  while (slack_steps >= 1.f) {
-    hsim_nxt(&C.hsim);
+  while (status.ok && slack_steps >= 1.f) {
+    status = hsim_nxt(&C.hsim);
+    if (!status.ok) {
+      break;
+    }
     simu_play_sounds();
     int completed_at = C.sim.level_complete_dispatched_at;
     /* pauses one tick after completion */
@@ -376,6 +412,7 @@ static void main_update_simu() {
 
   profiler_tac();
   // assert(get_simu_slack_steps() >= 0 && get_simu_slack_steps() < 1.f);
+  return status;
 }
 
 float get_clock_delta(v2 c, v2 a, v2 b) {
@@ -435,6 +472,47 @@ static void draw_pin_sockets(RenderTexture target) {
   EndTextureMode();
 }
 
+Status main_draw_level_kernel() {
+  if (!main_is_simulation_on()) return status_ok();
+  LevelAPI* api = getlevel();
+  if (!api->draw) return status_ok();
+  BeginTextureMode(C.level_overlay_tex);
+  rlPushMatrix();
+  Status s = api->draw(api->u);
+  rlPopMatrix();
+  EndTextureMode();
+  return s;
+}
+
+static void my_draw_board() {
+  LevelAPI* lvl = getlevel();
+  PinGroup* pg = lvl->pg;
+  int ng = arrlen(pg);
+  BeginTextureMode(C.level_overlay_tex);
+  ClearBackground(BLANK);
+  rlPushMatrix();
+  rlTranslatef(C.ca.cam.off.x, C.ca.cam.off.y, 0);
+  rlScalef(C.ca.cam.sp, C.ca.cam.sp, 1);
+  for (int ig = 0; ig < ng; ig++) {
+    int np = arrlen(pg[ig].pins);
+    int th = 2 * np;
+    int lh = 8;
+    int y = pg[ig].pins[0].y;
+    y = y + (th - lh) / 2;
+    bool input = pg[ig].type == PIN_LUA2IMG;
+    const char* name;
+    if (input) {
+      name = TextFormat("%s ->", pg[ig].id);
+    } else {
+      name = TextFormat("%s <-", pg[ig].id);
+    }
+    int w = get_rendered_text_size(name).x;
+    font_draw_texture(name, -w - 2, y, WHITE);
+  }
+  rlPopMatrix();
+  EndTextureMode();
+}
+
 void main_update() {
   main_update_viewport();
   C.rewind_pressed = false;
@@ -467,8 +545,10 @@ void main_update() {
         C.simu_target_steps = new_time >= 0 ? new_time : 0;
       }
     }
-
-    main_update_simu();
+    Status s = main_update_simu();
+    if (!s.ok) {
+      handle_kernel_error(s);
+    }
   }
   profiler_tac();
   profiler_tic("Rendering");
@@ -500,37 +580,25 @@ void main_update() {
         hide_mask = hide_mask | (1 << i);
       }
     }
-
     Tex* rendered = sim_render_v2(&C.sim, tw, th, C.ca.cam, frame_steps,
                                   slack_steps, hide_mask, C.use_neon);
     profiler_tac();
-
     BeginTextureMode(C.img_target_tex);
     ClearBackground(PURPLE);
     EndTextureMode();
-
     texdraw2(C.img_target_tex, rendered->rt);
-
     texdel(rendered);
   }
 
-  profiler_tac();
-  BeginTextureMode(C.level_overlay_tex);
-  ClearBackground(BLANK);
-
-  rlPushMatrix();
-  rlTranslatef(C.ca.cam.off.x, C.ca.cam.off.y, 0);
-  rlScalef(C.ca.cam.sp, C.ca.cam.sp, 1);
-  level_draw_board(getlevel()); /* drawboard() is called every frame */
-  rlPopMatrix();
-
-  if (main_is_simulation_on()) { /* only calls draw() when simu is on */
-    rlPushMatrix();
-    level_draw(getlevel());
-    rlPopMatrix();
+  my_draw_board();
+  if (!C.kernel_error) {
+    Status s = status_ok();
+    // if (s.ok) s = main_draw_level_board();
+    if (s.ok) s = main_draw_level_kernel();
+    if (!s.ok) handle_kernel_error(s);
   }
 
-  EndTextureMode();
+  profiler_tac();
   texcleanup();
 }
 
@@ -604,6 +672,7 @@ static void main_update_paint_cursor_type() {
 }
 
 void main_start_simu() {
+  assert(!C.kernel_error);
   assert(main_get_simu_mode() != MODE_SIMU);
   C.time_open = false;
   C.looping = false;
@@ -619,7 +688,8 @@ void main_start_simu() {
     imgs[i] = C.ca.h.buffer[i];
     texs[i] = C.ca.h.t_buffer[i];
   }
-  sim_init(&C.sim, nl, imgs, getlevel(), &texs[0]);
+  LevelAPI* api = getlevel();
+  sim_init(&C.sim, nl, imgs, api, &texs[0]);
   C.hsim = wrap_sim(&C.sim);
   C.simu_target_steps = 0;
   C.pix_toggle = -1;
@@ -631,19 +701,6 @@ void main_start_simu() {
     return;
   }
   C.mode = MODE_SIMU;
-}
-
-void main_stop_simu() {
-  // assert(main_get_simu_mode() != MODE_EDIT);
-  assert(main_get_simu_mode() == MODE_SIMU ||
-         main_get_simu_mode() == MODE_ERROR);
-  hsim_destroy(&C.hsim);
-  sim_destroy(&C.sim);
-
-  C.mode = MODE_EDIT;
-  C.time_open = false;
-  C.rewind_pressed = false;
-  C.forward_pressed = false;
 }
 
 static void main_toggle_simu() {
@@ -778,7 +835,7 @@ void main_update_controls() {
       }
     }
   }
-  if (IsKeyPressed(KEY_SPACE)) {
+  if (IsKeyPressed(KEY_SPACE) && !C.kernel_error) {
     main_toggle_simu();
   }
   int nl = paint_get_num_layers(&C.ca);
@@ -1049,16 +1106,24 @@ void main_draw() {
 
   int mode = main_get_simu_mode();
   bool simu_on = mode == MODE_SIMU || mode == MODE_ERROR;
-  btn_draw_icon(&C.btn_simu, bscale, sprites, simu_on ? rect_stop : rect_start);
+
+  Rectangle rec_simu = {0};
+  if (simu_on) rec_simu = rect_stop;
+  if (!simu_on) rec_simu = rect_start;
+  if (C.kernel_error) rec_simu = rect_warning;
+  btn_draw_icon(&C.btn_simu, bscale, sprites, rec_simu);
   btn_draw_icon(&C.btn_rewind, bscale, sprites, rect_rewind);
   btn_draw_icon(&C.btn_forward, bscale, sprites, rect_forward);
   btn_draw_icon(&C.btn_pause, bscale, sprites, rect_pause);
 
   btn_draw_text(&C.btn_wiki, bscale, "Wiki");
-  if (getlevel()) {
-    btn_draw_text(&C.btn_level, bscale,
-                  TextFormat("Level: %s", getlevel()->ldef->name));
-  }
+  // if (getlevel()) {
+  //  TODO: how to handle this?
+  //  btn_draw_text(&C.btn_level, bscale,
+  //                TextFormat("Level: %s", getlevel()->ldef->name));
+  // btn_draw_text(&C.btn_level, bscale, TextFormat("Level: %s", "xx"));
+  btn_draw_text(&C.btn_level, bscale, "Change Level");
+  //}
 
   bool color_disabled = mode != MODE_EDIT;
   btn_draw_color(C.fg_color_rect, paint_get_color(&C.ca), false,
@@ -1151,9 +1216,16 @@ void main_draw() {
         &C.btn_sim_show_t, bscale,
         "Show stats on cursor\n`T` = Time it takes to propagate to pixel");
 
-    btn_draw_legend(
-        &C.btn_simu, bscale,
-        simu_on ? "Stop Simulation (SPACE)" : "Start Simulation (SPACE)");
+    if (!C.kernel_error) {
+      btn_draw_legend(
+          &C.btn_simu, bscale,
+          simu_on ? "Stop Simulation (SPACE)" : "Start Simulation (SPACE)");
+    } else {
+      btn_draw_legend(&C.btn_simu, bscale,
+                      "Error in level kernel.\nPlease load new level.\n"
+                      "Check console for error message..");
+    }
+
     btn_draw_legend(&C.btn_pause, bscale, "Pause/Unpause Simulation (K).");
     btn_draw_legend(&C.btn_rewind, bscale,
                     "Rewinds simulation (J).\nYou can also press (RIGHT MOUSE "
@@ -1602,6 +1674,8 @@ void main_update_widgets() {
   C.btn_rewind.disabled = !ned;
   C.btn_forward.disabled = !ned || !C.paused;
   C.btn_pause.disabled = !ned;
+
+  C.btn_simu.disabled = C.kernel_error;
 
   C.btn_level.disabled = ned;
   C.btn_stamp.disabled = ned;

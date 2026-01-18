@@ -4,6 +4,7 @@
 #include "font.h"
 #include "game_registry.h"
 #include "layout.h"
+#include "lua_level.h"
 #include "stb_ds.h"
 #include "tutorial.h"
 #include "ui.h"
@@ -16,7 +17,7 @@
 #define NUM_BUTTONS 42
 
 static struct {
-  Level* lvl; /* Active level */
+  LevelAPI api; /* Active level */
   GameRegistry* registry;
   LevelGroup* selected_group;
   LevelDef* selected_level;
@@ -425,20 +426,22 @@ void win_level_draw() {
   label_draw(&C.level_title);
 }
 
-Level* getlevel() { return C.lvl; }
+LevelAPI* getlevel() { return &C.api; }
 
-void level_load(LevelDef* ldef) {
+Status level_load(LevelDef* ldef) {
   /* Doesnt need to do anything if active level is same */
-  if (ldef == C.active_level) return;
+  Status status = status_ok();
+  if (ldef == C.active_level) {
+    return status;
+  }
   C.active_level = ldef;
   int n = arrlen(ldef->kernels);
-  if (C.lvl) level_destroy(C.lvl);
-  C.lvl = calloc(1, sizeof(Level));
-  bool ok = level_init(C.lvl, ldef);
-  C.lvl->ldef = ldef;
+  if (C.api.u) level_api_destroy(&C.api);
+  status = lua_level_create(&C.api, ldef);
+  return status;
 }
 
-void level_load_default() {
+Status level_load_default() {
   LevelDef* ldef = C.registry->group_order[0]->levels[0];
-  level_load(ldef);
+  return level_load(ldef);
 }

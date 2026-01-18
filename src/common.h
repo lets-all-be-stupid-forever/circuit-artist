@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <raylib.h>
 #include <rlgl.h>
+#include <string.h>
 
 #define GL_INT 0x1404
 #define M_PI 3.141592653589793
@@ -119,6 +120,7 @@
 #define rect_stairs ((Rectangle){240, 16 * 0, 13, 13})
 #define rect_book ((Rectangle){448, 16, 13, 13})
 #define rect_msg ((Rectangle){320, 16 * 1, 13, 13})
+#define rect_warning ((Rectangle){320, 16 * 1, 13, 13})
 #define rect_tree ((Rectangle){320, 0 * 0, 13, 13})
 #define rect_valid ((Rectangle){4, 81, 33, 33})
 #define rect_cancel ((Rectangle){416, 112, 33, 33})

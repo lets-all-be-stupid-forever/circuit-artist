@@ -1,7 +1,8 @@
-#include "level.h"
+#include "lua_level.h"
 
 #include <lauxlib.h>
 #include <lua.h>
+#include <lualib.h>
 #include <msgpack.h>
 
 #include "assert.h"
@@ -20,6 +21,36 @@
 #include "widgets.h"
 
 #define NUM_BUTTONS 42
+
+typedef struct {
+  Texture2D tex;
+} LevelAsset;
+
+/*
+ * Each level is defined by a lua script.
+ * The level is self-contained configurations and everything.
+ * The level is re-loaded every time the
+ *
+ * Every path must:
+ *    (i) Be a valid path from the root directory
+ *    In content, paths must be referenced somehow :( (maybe add a key/val
+ * thing?) So, given root and path, the abs path is only valid if it's in the
+ * folder
+ */
+typedef struct {
+  PinGroup* pg;   /* Circuit interface */
+  LevelDef* ldef; /* Paths */
+  bool error;
+  msgpack_sbuffer sbuf;
+  msgpack_packer pk;
+  Sim* sim;
+  LevelAsset* assets;
+  lua_State* L;
+} LuaLevel;
+
+static inline Status status_lua_error(lua_State* L) {
+  return status_error(lua_tostring(L, -1));
+}
 
 // Recursive function to pack Lua objects to MessagePack
 static void lua_to_msgpack(lua_State* L, int index, msgpack_packer* pk) {
@@ -95,13 +126,6 @@ static void lua_to_msgpack(lua_State* L, int index, msgpack_packer* pk) {
   }
 }
 
-static void handle_lua_error(Level* lvl) {
-  lvl->lua_error = true;
-  ui_crash(TextFormat("Lua error: %s", lua_tostring(lvl->L, -1)));
-  // lua_log_text(TextFormat("Lua error: %s", lua_tostring(lvl->L, -1)));
-  // lua_pop(lvl->L, 1);
-}
-
 /*
  * Uses old algorithm for defining pins, with the side image generation.
  * The plan is to replace, in further versions, with a more powerful API where
@@ -115,7 +139,7 @@ static void handle_lua_error(Level* lvl) {
  * }
  *
  */
-void level_init_pins(Level* lvl) {
+static void lua_level_init_pins(LuaLevel* lvl, LevelAPI* api) {
   lua_State* L = lvl->L;
   lua_getglobal(L, "PORTS");
   assert(lua_istable(L, -1));
@@ -126,6 +150,7 @@ void level_init_pins(Level* lvl) {
   }
 #endif
   int nport = lua_rawlen(L, -1);
+  PinGroup* out = NULL;
   for (int i = 0; i < nport; i++) {
     PinGroup pg = {0};
     lua_rawgeti(L, -1, i + 1);
@@ -156,14 +181,14 @@ void level_init_pins(Level* lvl) {
     }
     lua_pop(L, 1);
     lua_pop(L, 1);
-    arrput(lvl->pg, pg);
+    level_api_add_pg(api, pg);
   }
   lua_pop(L, 1);
 }
 
-static Level* lua_getlevel(lua_State* L) {
+static LuaLevel* lua_getlevel(lua_State* L) {
   lua_getfield(L, LUA_REGISTRYINDEX, "level_ptr");
-  Level* lvl = (Level*)lua_touserdata(L, -1);
+  LuaLevel* lvl = (LuaLevel*)lua_touserdata(L, -1);
   lua_pop(L, 1);
   return lvl;
 }
@@ -195,7 +220,7 @@ int read_table_floats(lua_State* L, int idx, int n, float* values) {
 };
 
 static int lua_draw_rectangle_pro(lua_State* L) {
-  Level* lvl = lua_getlevel(L);
+  LuaLevel* lvl = lua_getlevel(L);
   Color c;
   Rectangle rec;
   Vector2 orig;
@@ -217,7 +242,7 @@ static int lua_draw_rectangle_pro(lua_State* L) {
 }
 
 static int lua_draw_texture_pro(lua_State* L) {
-  Level* lvl = lua_getlevel(L);
+  LuaLevel* lvl = lua_getlevel(L);
   int iasset = luaL_checkinteger(L, 1);
   if (iasset < 0 || iasset >= arrlen(lvl->assets)) {
     return luaL_error(L, "invalid asset index %d (num assets: %d)", iasset,
@@ -256,12 +281,12 @@ static int lua_draw_texture_pro(lua_State* L) {
 static int lua_pget(lua_State* L) {
   i64 iport = luaL_checkinteger(L, 1);
   Sim* sim = lua_getsim(L);
-  int npin = arrlen(sim->ping);
+  int npin = arrlen(sim->api->pg);
   if (iport >= npin) {
     return luaL_error(
         L, TextFormat("Invalid Pin Number: %d (max %d)", iport, npin - 1));
   }
-  if (!isskt(sim->ping[iport].type)) {
+  if (!isskt(sim->api->pg[iport].type)) {
     return luaL_error(
         L, "Trying to read pin (%d) that is not a socket: can't read", iport);
   }
@@ -273,8 +298,9 @@ static int lua_pget(lua_State* L) {
 }
 
 static int lua_notify_level_complete(lua_State* L) {
-  Sim* sim = lua_getsim(L);
-  dispatch_level_complete(sim->lvl->ldef);
+  LuaLevel* lvl = lua_getlevel(L);
+  Sim* sim = lvl->sim;
+  dispatch_level_complete(lvl->ldef);
   sim->level_complete_dispatched_at = sim->state.cur_tick;
   return 0;
 }
@@ -302,7 +328,6 @@ int lua_print_redirect(lua_State* L) {
 
     lua_pop(L, 1);
   }
-
   return 0;
 }
 
@@ -423,7 +448,7 @@ int lua_draw_font(lua_State* L) {
 }
 
 Buffer lua_tobuffer(lua_State* L, int idx) {
-  Level* l = lua_getlevel(L);
+  LuaLevel* l = lua_getlevel(L);
   msgpack_sbuffer_clear(&l->sbuf);
   lua_to_msgpack(L, idx, &l->pk);
   return (Buffer){
@@ -499,16 +524,12 @@ int lua_frombuffer(lua_State* L, Buffer buf) {
 
 #define WRAP(f) lua_register(L, #f, lua_##f);
 
-bool level_init(Level* lvl, LevelDef* ldef) {
-  *lvl = (Level){0};
+static Status init_level_lua(LuaLevel* lvl) {
   lua_State* L = luaL_newstate();
   if (!L) {
-    fprintf(stderr, "Failed to create Lua state\n");
-    abort();
-    lua_log_text("Failed to create Lua state\n");
-    return false;
+    return status_error("Failed to create Lua state\n");
   }
-
+  lvl->L = L;
   luaL_openlibs(L);
   lua_register(L, "caPrint", l_print);
   lua_register(L, "draw_font", lua_draw_font);
@@ -518,77 +539,24 @@ bool level_init(Level* lvl, LevelDef* ldef) {
   WRAP(rl_push_matrix);
   WRAP(rl_pop_matrix);
   WRAP(measure_text_size);
-
-  // lua_register(L, "print", lua_print_redirect);
   lua_register(L, "pget", lua_pget);
   lua_register(L, "pset", lua_pset);
   lua_register(L, "draw_texture_pro", lua_draw_texture_pro);
   lua_register(L, "draw_rectangle_pro", lua_draw_rectangle_pro);
   lua_register(L, "notify_level_complete", lua_notify_level_complete);
-
-  msgpack_sbuffer_init(&lvl->sbuf);
-  msgpack_packer_init(&lvl->pk, &lvl->sbuf, msgpack_sbuffer_write);
-
   /* Stores level in lua for easy of access */
   lua_pushlightuserdata(L, lvl);
   lua_setfield(L, LUA_REGISTRYINDEX, "level_ptr");
-
-  // This should perhaps be in the kernel list!
-#if 0
-  if (luaL_dofile(L, "../assets/files/shared/preload.lua") != LUA_OK) {
-    // fprintf(stderr, "Script compilation error: %s\n", lua_tostring(L, -1));
-    printf("Script compilation error: %s\n", lua_tostring(L, -1));
-    lua_log_text(TextFormat("Error: Script compilation error: %s\n",
-                            lua_tostring(L, -1)));
-    lua_close(L);
-    lvl->error = true;
-    return false;
-  }
-#endif
-
-  int nk = arrlen(ldef->kernels);
-  for (int i = 0; i < nk; i++) {
-    printf("Loading %s ...\n", ldef->kernels[i]);
-    if (luaL_dofile(L, ldef->kernels[i]) != LUA_OK) {
-      ui_crash(TextFormat("Script compilation error: %s", lua_tostring(L, -1)));
-      lua_close(L);
-      lvl->error = true;
-      return false;
-    }
-  }
-
-  /* Loading assets*/
-  int na = arrlen(ldef->assets);
-  for (int i = 0; i < na; i++) {
-    printf("Loading Asset %s ...\n", ldef->assets[i]);
-    // TODO: check if ends with ".png", and if the file exists..
-    LevelAsset asset = {0};
-    asset.tex = LoadTexture(ldef->assets[i]);
-    arrput(lvl->assets, asset);
-  }
-
-  lua_getglobal(L, "_setup");
-  if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-    ui_crash(TextFormat("Script SETUP error: %s\n", lua_tostring(L, -1)));
-    lua_close(L);
-    lvl->error = true;
-    return false;
-  }
-
-  lvl->L = L;
-  level_init_pins(lvl);
-  return true;
+  return status_ok();
 }
 
-void level_destroy(Level* lvl) {
+static void lua_level_destroy(void* u) {
+  LuaLevel* lvl = u;
   if (lvl->L) {
     lua_close(lvl->L);
     msgpack_sbuffer_destroy(&lvl->sbuf);
   }
-  int np = arrlen(lvl->pg);
-  for (int i = 0; i < np; i++) {
-    pg_destroy(&lvl->pg[i]);
-  }
+
   int na = arrlen(lvl->assets);
   for (int i = 0; i < na; i++) {
     if (lvl->assets[i].tex.width > 0) {
@@ -596,71 +564,127 @@ void level_destroy(Level* lvl) {
     }
   }
   arrfree(lvl->assets);
-  arrfree(lvl->pg);
   lvl->L = NULL;
+  free(lvl);
 }
 
-void level_draw(Level* lvl) {
+static Status lua_level_start(void* u, Sim* sim) {
+  LuaLevel* lvl = u;
+  lvl->sim = sim;
+  lua_State* L = lvl->L;
+  lua_getglobal(L, "_start");
+  if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
+    return status_lua_error(L);
+  }
+  return status_ok();
+}
+
+static Status lua_level_draw(void* u) {
+  LuaLevel* lvl = u;
   lua_State* L = lvl->L;
   lua_getglobal(L, "_draw");
   if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-    handle_lua_error(lvl);
-    return;
+    return status_lua_error(L);
   }
+  return status_ok();
 }
 
-void level_draw_board(Level* lvl) {
+#if 0
+Status level_draw_board(Level* lvl) {
   lua_State* L = lvl->L;
   assert(L);
   lua_getglobal(L, "_drawboard");
   if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-    handle_lua_error(lvl);
-    return;
+    return status_lua_error(L);
   }
+  return status_ok();
 }
+#endif
 
-void level_lua_start(Level* lvl) {
-  lua_State* L = lvl->L;
-  lua_getglobal(L, "_start");
-  if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-    handle_lua_error(lvl);
-    return;
-  }
-}
-
-// TODO: handle errror properly!
-void level_lua_update(Level* lvl, Buffer* buffer) {
+Status lua_level_update(void* u, Buffer* buffer) {
+  LuaLevel* lvl = u;
   lua_State* L = lvl->L;
   lua_getglobal(L, "_update");
   if (lua_pcall(L, 0, 1, 0) != LUA_OK) {
-    handle_lua_error(lvl);
-    return;
+    return status_lua_error(L);
   }
   *buffer = lua_tobuffer(L, -1);
   lua_pop(L, 1);
+  return status_ok();
 }
 
-void level_lua_fwbw(Level* lvl, bool fw, Buffer buf) {
+static Status lua_level_fw(void* u, Buffer buf) {
+  LuaLevel* lvl = u;
   lua_State* L = lvl->L;
-  if (fw) {
-    lua_getglobal(L, "_forward");
-  } else {
-    lua_getglobal(L, "_backward");
-  }
+  lua_getglobal(L, "_forward");
   int r = lua_frombuffer(L, buf);
   if (r == 0) {
-    return;
+    return status_ok();
   }
-
   assert(r);
   if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-    handle_lua_error(lvl);
-    return;
+    return status_lua_error(L);
   }
+  return status_ok();
 }
 
-#if 0
-  int stack_size = lua_gettop(L);
-  printf("Stack size: %d\n", stack_size);
-#endif
+static Status lua_level_bw(void* u, Buffer buf) {
+  LuaLevel* lvl = u;
+  lua_State* L = lvl->L;
+  lua_getglobal(L, "_backward");
+  int r = lua_frombuffer(L, buf);
+  if (r == 0) {
+    return status_ok();
+  }
+  assert(r);
+  if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
+    return status_lua_error(L);
+  }
+  return status_ok();
+}
+
+Status lua_level_create(LevelAPI* api, LevelDef* ldef) {
+  LuaLevel* lvl = calloc(1, sizeof(LuaLevel));
+  *api = (LevelAPI){0};
+  api->u = lvl;
+  api->start = lua_level_start;
+  api->update = lua_level_update;
+  api->fw = lua_level_fw;
+  api->bw = lua_level_bw;
+  api->draw = lua_level_draw;
+  api->destroy = lua_level_destroy;
+
+  lvl->ldef = ldef;
+  Status status = init_level_lua(lvl);
+  if (!status.ok) return status;
+  msgpack_sbuffer_init(&lvl->sbuf);
+  msgpack_packer_init(&lvl->pk, &lvl->sbuf, msgpack_sbuffer_write);
+  if (ldef) {
+    int nk = arrlen(ldef->kernels);
+    for (int i = 0; i < nk; i++) {
+      printf("Loading %s ...\n", ldef->kernels[i]);
+      if (luaL_dofile(lvl->L, ldef->kernels[i]) != LUA_OK) {
+        return status_lua_error(lvl->L);
+      }
+    }
+    /* Loading assets*/
+    int na = arrlen(ldef->assets);
+    for (int i = 0; i < na; i++) {
+      printf("Loading Asset %s ...\n", ldef->assets[i]);
+      // TODO: check if ends with ".png", and if the file exists..
+      LevelAsset asset = {0};
+      asset.tex = LoadTexture(ldef->assets[i]);
+      arrput(lvl->assets, asset);
+    }
+  }
+
+  lua_getglobal(lvl->L, "_setup");
+  if (lua_pcall(lvl->L, 0, 0, 0) != LUA_OK) {
+    return status_lua_error(lvl->L);
+  }
+  if (lvl->ldef) {
+    lua_level_init_pins(lvl, api);
+  }
+  return status_ok();
+}
 

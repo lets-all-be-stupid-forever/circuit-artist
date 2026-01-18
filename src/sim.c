@@ -7,7 +7,6 @@
 #include "font.h"
 #include "graph.h"
 #include "img.h"
-#include "level.h"
 #include "log.h"
 #include "math.h"
 #include "msg.h"
@@ -91,7 +90,7 @@ static void print_bits(int64_t num) {
 }
 
 PinComm sim_port_read(Sim* sim, int iport) {
-  int nw = arrlen(sim->ping[iport].pins);
+  int nw = arrlen(sim->api->pg[iport].pins);
   assert(nw <= 64);
   i64 b = 0;
   i64 f = 0;
@@ -106,9 +105,9 @@ PinComm sim_port_read(Sim* sim, int iport) {
 }
 
 void sim_port_write(Sim* sim, int iport, PinComm pc) {
-  int nw = arrlen(sim->ping[iport].pins);
+  int nw = arrlen(sim->api->pg[iport].pins);
   assert(nw <= 64);
-  assert(isdrv(sim->ping[iport].type));
+  assert(isdrv(sim->api->pg[iport].type));
   int idrv = sim->pg.pgoff[iport];
   for (int iw = 0; iw < nw; iw++) {
     /* Reading Socket */
@@ -122,13 +121,17 @@ void sim_port_write(Sim* sim, int iport, PinComm pc) {
   }
 }
 
-static void sim_update_level(Sim* sim) {
-  Buffer buffer = {0};
-  level_lua_update(sim->lvl, &buffer);
-  if (!sim->lvl->lua_error) {
-    sim->patch_builder.level_updated = true;
-    sim->patch_builder.level_patch = buffer;
+static Status sim_update_level(Sim* sim) {
+  Status s = status_ok();
+  if (sim->api && sim->api->update) {
+    Buffer buffer = {0};
+    s = sim->api->update(sim->api->u, &buffer);
+    if (s.ok) {
+      sim->patch_builder.level_updated = true;
+      sim->patch_builder.level_patch = buffer;
+    }
   }
+  return s;
 }
 
 void sim_register_nands(Sim* sim, Image img) {
@@ -340,13 +343,87 @@ static void patch_builder_init(PatchBuilder* patch_builder, double vdd,
   make_nand_lut(patch_builder->nand_lut);
 }
 
+static void sim_state_init(SimState* state, int num_wire, int pulse_size,
+                           int num_drivers, int num_sockets) {
+  state->max_pulse_time = 0;
+  state->pulse_size = pulse_size;
+  state->total_energy = 0.0;
+  state->cur_tick = 0;
+  state->max_tick = 1;
+  /* The visualization uses
+   *
+   * 2 bits --> "from state"
+   * 2 bits --> "to state"
+   * 6 bits --> non-integer distance
+   * 22 bits --> actual pulse time
+   *
+   * I'll then use 22 bits for mod.
+   * 22bit = 4M
+   * It means it "goes around" every 4M ticks.
+   *
+   * */
+#if 1
+  state->tick_mod = (1 << 20); /* 1 << 20 = 1M */
+  state->tick_slots = 1 << 5;  /* each slot = 1 << 15 = 32k */
+#else
+  state->tick_mod = (1 << 17); /* 1 << 17 = 128k */
+  state->tick_slots = 1 << 3;  /* each slot = 1 << 14 = 16k */
+#endif
+
+  // state->ld = ldef;
+  series_init(&state->power_tick_series, 600);
+  series_init(&state->energy_per_cycle_series, 100);
+  series_init(&state->ticks_per_cycle_series, 100);
+
+  state->active_count = 0;
+  state->skt_values = malloc(num_sockets * sizeof(int));
+  for (int skt = 0; skt < num_sockets; skt++) {
+    state->skt_values[skt] = S_BIT_UNDEFINED;
+  }
+  state->nand_states = calloc(num_drivers, sizeof(NandState));
+  state->pulses = malloc(state->pulse_size * sizeof(WirePulse));
+  int tmod = state->tick_mod;
+  int tgap = tmod / state->tick_slots;
+  int t0 = (tmod - tgap * 3) % tmod;
+  // Initialize ALL pulse array elements, not just num_wire
+  // pulse_size may be larger than num_wire due to texture alignment
+  for (int i = 0; i < state->pulse_size; i++) {
+    state->pulses[i] = pulse_pack((UnpackedPulse){
+        .before_value = S_BIT_UNDEFINED,
+        .after_value = S_BIT_UNDEFINED,
+        .pulse_tick = t0,
+    });
+  }
+  event_queue_init(&state->ev_queue, SIM_MAX_QUEUE_DELAY);
+
+  /* idea is to have Power = E*exp(- 2 t/T))
+   *
+   * each bin is a time frame: bin[k] = T=2^(k+1)
+   * pow[k] := pow[k] * f_k (timestep of t=1)
+   * and pow_tot = sum_k pow[k]
+   * or E_tot := E_tot + pow_tot
+   * */
+  for (int i = 0; i < NRJ_BINS; i++) {
+    /* I want the energy to almost fade after T ticks
+     * E -> E(1-f)  -> E(1-f)^2
+     * I want to have (1-f)^T = 1%, so it drops to 1% after T ticks.
+     * then,
+     * f = 1-0.01^(1/T)
+     *
+     */
+    double T = pow(2, i + 1);
+    double f = pow(0.01, 1.0 / T);
+    state->pow_decay[i] = 1.0 - f;
+  }
+}
+
 static void sim_init_state(Sim* sim) {
   int nw = getnwire(sim);
   sim->pulse_tex = create_pulse_texture(nw);
   int pulse_size = sim->pulse_tex.width * sim->pulse_tex.height;
   int ndrv = arrlen(sim->pg.drv);
   int nskt = arrlen(sim->pg.skt);
-  sim_state_init(&sim->state, sim->lvl, nw, pulse_size, ndrv, nskt);
+  sim_state_init(&sim->state, nw, pulse_size, ndrv, nskt);
   sim->state.sim = sim;
   if (!sim_has_errors(sim)) {
     patch_builder_init(&sim->patch_builder, sim->dist_spec.vdd,
@@ -356,8 +433,6 @@ static void sim_init_state(Sim* sim) {
     sim->patch_builder.wg = &sim->wg;
     sim->patch_builder.pg = &sim->pg;
     dispatch_lone_wires(sim);
-    level_lua_start(sim->lvl);
-    sim_update_level(sim);
   } else {
     sim_add_errors_to_state(sim);
   }
@@ -446,25 +521,21 @@ static void sim_check_max_delay(Sim* sim, int max_delay) {
 /*
  * The PinGroup is the pin API for external component(s).
  */
-void sim_init(Sim* sim, int nl, Image* img, Level* lvl,
-              RenderTexture2D* layers) {
+Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,
+                RenderTexture2D* layers) {
   *sim = (Sim){0};
   bool debug = false;
-  sim->lvl = lvl;
+  Status status = status_ok();
+  sim->api = api;
   double start = GetTime();
   sim->poked = false;
-
   sim->level_complete_dispatched_at = -1;
-
   init_spec(&sim->dist_spec);
-
-  PinGroup* pg = lvl->pg;
-  sim->ping = pg;
   sim->nl = nl;
-  sim->pinbuf = malloc(arrlen(pg) * sizeof(PinComm));
+  sim->pinbuf = malloc(arrlen(api->pg) * sizeof(PinComm));
   sim->w = img[0].width;
   sim->h = img[0].height;
-  pixel_graph_init(&sim->pg, sim->dist_spec, nl, img, pg, debug);
+  pixel_graph_init(&sim->pg, sim->dist_spec, nl, img, api->pg, debug);
   wire_graph_init(&sim->wg, sim->nl, sim->w, sim->h, &sim->pg, debug);
   sim->num_wire = getnwire(sim);
   sim->rv2 = renderv2_create(sim->w, sim->h, sim->num_wire, sim->nl, layers);
@@ -487,12 +558,22 @@ void sim_init(Sim* sim, int nl, Image* img, Level* lvl,
   //        1000 * acc3);
   sim_register_nands(sim, img[0]);
   profiler_tic_single("init2");
-  if (sim_has_errors(sim)) {
+  bool has_errors = sim_has_errors(sim);
+  if (has_errors) {
     sim->rv2->error_mode = 1;
     collect_bugged_pixels(sim);
   }
-  lvl->sim = sim;
   sim_init_state(sim);
+  if (sim->api && !has_errors) {
+    if (status.ok && sim->api->start) {
+      status = sim->api->start(sim->api->u, sim);
+    }
+    if (status.ok) status = sim_update_level(sim);
+    if (!status.ok) {
+      return status;
+    }
+  }
+
   int tickgap = sim->state.tick_mod / sim->state.tick_slots;
   renderv2_prepare(sim->rv2, sim->state.tick_mod, tickgap);
 
@@ -511,9 +592,9 @@ void sim_init(Sim* sim, int nl, Image* img, Level* lvl,
     }
   }
   profiler_tac_single("init2");
-
   printf("num_nands=%d\n", sim_get_num_nands(sim));
   printf("parsing=%dms\n", (int)((GetTime() - start) * 1000));
+  return status;
 }
 
 void sim_destroy(Sim* sim) {
@@ -752,8 +833,9 @@ static void sim_pulse_adjust(Sim* sim) {
   }
 }
 
-static Buffer sim_diff(void* ctx) {
+static Status sim_diff(void* ctx, Buffer* patch) {
   Sim* sim = ctx;
+  Status s = status_ok();
   sim_reset_ui_events(sim);
   SimState* state = &sim->state;
   PatchBuilder* builder = &sim->patch_builder;
@@ -765,20 +847,226 @@ static Buffer sim_diff(void* ctx) {
   builder->cycle = with_level && !sim->state.done && !sim->state.error;
   /* Only updates/moves cycle forward when level is not complete/stopped. */
   if (builder->cycle) {
-    sim_update_level(sim);
+    s = sim_update_level(sim);
   }
-  patch_builder_update_nrj(builder, state);
-  return patch_builder_commit(&sim->patch_builder, state);
+  if (s.ok) {
+    patch_builder_update_nrj(builder, state);
+    *patch = patch_builder_commit(&sim->patch_builder, state);
+  }
+  return s;
 }
 
-static void sim_fwd(void* ctx, Buffer patch) {
-  Sim* sim = ctx;
-  patch_unpack(&sim->state, patch, true);
+static Status unpack_level(SimState* state, Buffer* patch, bool fw) {
+  int size = buffer_pop_int(patch);
+  Buffer buf = buffer_pop_mem(patch, size);
+  LevelAPI* api = state->sim->api;
+  Status s = status_ok();
+  if (fw && api->fw) s = api->fw(api->u, buf);
+  if (!fw && api->bw) s = api->bw(api->u, buf);
+  return s;
 }
 
-static void sim_bwd(void* ctx, Buffer patch) {
+static void unpack_nrj(SimState* state, Buffer* patch, bool fw) {
+  double power_xor = buffer_pop_double(patch);
+  double acc_nrj_xor = buffer_pop_double(patch);
+  float* arr = buffer_pop_raw(patch, NRJ_BINS * sizeof(float));
+  for (int i = 0; i < NRJ_BINS; i++) {
+    state->energy_t[i] = float_xor(arr[i], state->energy_t[i]);
+  }
+  state->power = double_xor(state->power, power_xor);
+  state->acc_nrj = double_xor(state->acc_nrj, acc_nrj_xor);
+}
+
+static inline int shift_pulse(int p, int delta, int mod) {
+  UnpackedPulse up = pulse_unpack(p);
+  up.pulse_tick = (up.pulse_tick + delta + mod) % mod;
+
+  return pulse_pack(up);
+}
+
+static void unpack_wire_to_shift(SimState* state, Buffer* patch, bool fw) {
+  int len;
+  int* wire_to_shift = buffer_pop_array(patch, sizeof(int), &len);
+  int mod = state->tick_mod;
+  int n = state->tick_slots;
+  int m = mod / n;
+  int delta = m * (n - 2);
+  uint32_t* mask = state->sim->pulse_dirty_mask;
+  if (fw) {
+    int t = (state->cur_tick + 1) % mod;
+    for (int i = 0; i < len; i++) {
+      // I only shift if it hasnt been updated
+      int w = wire_to_shift[i];
+      int tp = pulse_unpack_tick(state->pulses[w]);
+      if (tp != t) {
+        int t0 = pulse_unpack_tick(state->pulses[w]);
+        state->pulses[w] = shift_pulse(state->pulses[w], delta, mod);
+        int t1 = pulse_unpack_tick(state->pulses[w]);
+        // printf("shifted_pulse: w=%d t0=%d t1=%d\n", w, t0, t1);
+        // Mark wire as dirty for texture update
+        int off = w / 32;
+        int r = w & 31;
+        mask[off] = mask[off] | (1u << r);
+      }
+    }
+  } else {
+    int t = (state->cur_tick) % mod;
+    for (int i = 0; i < len; i++) {
+      int w = wire_to_shift[i];
+      int tp = pulse_unpack_tick(state->pulses[w]);
+      if (tp != t) {
+        state->pulses[w] = shift_pulse(state->pulses[w], -delta, mod);
+        // Mark wire as dirty for texture update
+        int off = w / 32;
+        int r = w & 31;
+        mask[off] = mask[off] | (1u << r);
+      }
+    }
+  }
+}
+
+static void unpack_skt(SimState* state, Buffer* patch) {
+  int len;
+  SocketValueDiff* items =
+      buffer_pop_array(patch, sizeof(SocketValueDiff), &len);
+  for (int i = 0; i < len; i++) {
+    int iskt = items[i].skt;
+    int xor_value = items[i].xor_value;
+    state->skt_values[iskt] = state->skt_values[iskt] ^ xor_value;
+  }
+}
+
+static void unpack_event(SimState* state, Buffer* patch, bool fw) {
+  int len;
+  SocketEvent* items = buffer_pop_array(patch, sizeof(SocketEvent), &len);
+  for (int i = 0; i < len; i++) {
+    event_queue_schedule(&state->ev_queue, 0, items[i].socket, items[i].value);
+  }
+}
+
+static void unpack_flags(int flags, SimState* state, bool fw) {
+  if (fw) {
+    if (flags & PATCH_CYCL) state->cycle++;
+    if (flags & PATCH_ERROR) state->error = true;
+    if (flags & PATCH_DONE) state->done = true;
+  } else {
+    if (flags & PATCH_CYCL) state->cycle--;
+    if (flags & PATCH_ERROR) state->error = false;
+    if (flags & PATCH_DONE) state->done = false;
+  }
+}
+
+static inline void axori(int s, int n, void* pa, void* pb, void* pout) {
+  int* a = pa;
+  int* b = pb;
+  int* out = pout;
+  int nn = n * s / sizeof(int);
+  for (int i = 0; i < nn; i++) {
+    out[i] = a[i] ^ b[i];
+  }
+}
+
+static void unpack_nand_state(SimState* state, Buffer* patch) {
+  int n1 = buffer_pop_int(patch);
+  Buffer b = buffer_pop_mem(patch, n1 * sizeof(NandState));
+  NandState* a0 = state->nand_states;
+  NandState* a1 = (NandState*)b.data;
+  axori(sizeof(NandState), n1, a0, a1, a0);
+  int xn = buffer_pop_int(patch);
+  state->active_count ^= xn;
+}
+
+static void unpack_schedule(SimState* state, Buffer* patch, bool fw) {
+  int len;
+  ScheduleItem* items = buffer_pop_array(patch, sizeof(ScheduleItem), &len);
+  for (int i = 0; i < len; i++) {
+    int dt = items[i].dt_ticks;
+    if (fw) {
+      int skt = items[i].ev.socket;
+      int newValue = items[i].ev.value;
+      event_queue_schedule(&state->ev_queue, dt, skt, newValue);
+    } else {
+      event_queue_unschedule(&state->ev_queue, dt);
+    }
+  }
+}
+
+static void unpack_pulse(SimState* state, Buffer* patch, bool fw) {
+  int len;
+  PulseDiff* items = buffer_pop_array(patch, sizeof(PulseDiff), &len);
+  int mod = state->tick_mod;
+  int t = state->cur_tick % mod;
+  uint32_t* mask = state->sim->pulse_dirty_mask;
+  if (fw) {
+    int nxt = (t + 1) % mod;
+    for (int j = 0; j < len; j++) {
+      int i = len - j - 1;
+      int w = items[i].wire;
+      int xor_v = items[i].xor_value;
+      int new_pulse = state->pulses[w] ^ xor_v;
+      int pt = pulse_unpack_tick(new_pulse);
+      if (pt == nxt) {
+        int off = w / 32;
+        int r = w & 31;
+        mask[off] = mask[off] | (1u << r);
+        state->pulses[w] ^= xor_v;
+      }
+    }
+  } else {
+    for (int j = 0; j < len; j++) {
+      int i = len - j - 1;
+      int w = items[i].wire;
+      int xor_v = items[i].xor_value;
+      int new_pulse = state->pulses[w] ^ xor_v;
+      int pt = pulse_unpack_tick(new_pulse);
+      if (pt != t) {
+        int off = w / 32;
+        int r = w & 31;
+        mask[off] = mask[off] | (1u << r);
+        state->pulses[w] ^= xor_v;
+      }
+    }
+  }
+}
+
+static Status patch_unpack(SimState* state, Buffer patch, bool fw) {
+  Status s = status_ok();
+  int flags = buffer_pop_int(&patch);
+  unpack_flags(flags, state, fw);
+  if (flags & PATCH_LEVL) {
+    s = unpack_level(state, &patch, fw);
+    if (!s.ok) return s;
+  }
+  if (!fw) event_queue_step_backward(&state->ev_queue);
+  state->total_energy =
+      double_xor(state->total_energy, buffer_pop_double(&patch));
+  unpack_series(&state->power_tick_series, &patch, fw);
+  if (flags & PATCH_ECLK) {
+    unpack_series(&state->energy_per_cycle_series, &patch, fw);
+    unpack_series(&state->ticks_per_cycle_series, &patch, fw);
+  }
+  if (flags & PATCH_MAXT) state->max_tick ^= buffer_pop_int(&patch);
+  if (flags & PATCH_NAND) unpack_nand_state(state, &patch);
+  if (flags & PATCH_SCHD) unpack_schedule(state, &patch, fw);
+  if (flags & PATCH_WTOSH) unpack_wire_to_shift(state, &patch, fw);
+  if (flags & PATCH_PULS) unpack_pulse(state, &patch, fw);
+  if (flags & PATCH_SKCT) unpack_skt(state, &patch);
+  if (flags & PATCH_QPOP) unpack_event(state, &patch, fw);
+  unpack_nrj(state, &patch, fw);
+  if (flags & PATCH_MAXP) state->max_pulse_time ^= buffer_pop_int(&patch);
+  if (fw) event_queue_step_forward(&state->ev_queue);
+  state->cur_tick += fw ? 1 : -1;
+  return s;
+}
+
+static Status sim_fwd(void* ctx, Buffer patch) {
   Sim* sim = ctx;
-  patch_unpack(&sim->state, patch, false);
+  return patch_unpack(&sim->state, patch, true);
+}
+
+static Status sim_bwd(void* ctx, Buffer patch) {
+  Sim* sim = ctx;
+  return patch_unpack(&sim->state, patch, false);
 }
 
 HSim wrap_sim(Sim* sim) {
@@ -789,81 +1077,6 @@ HSim wrap_sim(Sim* sim) {
   h.fwd = sim_fwd;
   h.bwd = sim_bwd;
   return h;
-}
-
-void sim_state_init(SimState* state, Level* level, int num_wire, int pulse_size,
-                    int num_drivers, int num_sockets) {
-  state->max_pulse_time = 0;
-  state->level = level;
-  state->pulse_size = pulse_size;
-  state->total_energy = 0.0;
-  state->cur_tick = 0;
-  state->max_tick = 1;
-  /* The visualization uses
-   *
-   * 2 bits --> "from state"
-   * 2 bits --> "to state"
-   * 6 bits --> non-integer distance
-   * 22 bits --> actual pulse time
-   *
-   * I'll then use 22 bits for mod.
-   * 22bit = 4M
-   * It means it "goes around" every 4M ticks.
-   *
-   * */
-#if 1
-  state->tick_mod = (1 << 20); /* 1 << 20 = 1M */
-  state->tick_slots = 1 << 5;  /* each slot = 1 << 15 = 32k */
-#else
-  state->tick_mod = (1 << 17); /* 1 << 17 = 128k */
-  state->tick_slots = 1 << 3;  /* each slot = 1 << 14 = 16k */
-#endif
-
-  // state->ld = ldef;
-  series_init(&state->power_tick_series, 600);
-  series_init(&state->energy_per_cycle_series, 100);
-  series_init(&state->ticks_per_cycle_series, 100);
-
-  state->active_count = 0;
-  state->skt_values = malloc(num_sockets * sizeof(int));
-  for (int skt = 0; skt < num_sockets; skt++) {
-    state->skt_values[skt] = S_BIT_UNDEFINED;
-  }
-  state->nand_states = calloc(num_drivers, sizeof(NandState));
-  state->pulses = malloc(state->pulse_size * sizeof(WirePulse));
-  int tmod = state->tick_mod;
-  int tgap = tmod / state->tick_slots;
-  int t0 = (tmod - tgap * 3) % tmod;
-  // Initialize ALL pulse array elements, not just num_wire
-  // pulse_size may be larger than num_wire due to texture alignment
-  for (int i = 0; i < state->pulse_size; i++) {
-    state->pulses[i] = pulse_pack((UnpackedPulse){
-        .before_value = S_BIT_UNDEFINED,
-        .after_value = S_BIT_UNDEFINED,
-        .pulse_tick = t0,
-    });
-  }
-  event_queue_init(&state->ev_queue, SIM_MAX_QUEUE_DELAY);
-
-  /* idea is to have Power = E*exp(- 2 t/T))
-   *
-   * each bin is a time frame: bin[k] = T=2^(k+1)
-   * pow[k] := pow[k] * f_k (timestep of t=1)
-   * and pow_tot = sum_k pow[k]
-   * or E_tot := E_tot + pow_tot
-   * */
-  for (int i = 0; i < NRJ_BINS; i++) {
-    /* I want the energy to almost fade after T ticks
-     * E -> E(1-f)  -> E(1-f)^2
-     * I want to have (1-f)^T = 1%, so it drops to 1% after T ticks.
-     * then,
-     * f = 1-0.01^(1/T)
-     *
-     */
-    double T = pow(2, i + 1);
-    double f = pow(0.01, 1.0 / T);
-    state->pow_decay[i] = 1.0 - f;
-  }
 }
 
 void sim_state_destroy(SimState* state) {
@@ -972,16 +1185,6 @@ bool patch_builder_empty(PatchBuilder* pb) {
     builder->aname = 0;                      \
   }
 
-static void axori(int s, int n, void* pa, void* pb, void* pout) {
-  int* a = pa;
-  int* b = pb;
-  int* out = pout;
-  int nn = n * s / sizeof(int);
-  for (int i = 0; i < nn; i++) {
-    out[i] = a[i] ^ b[i];
-  }
-}
-
 void pack_nand_state(PatchBuilder* pb, SimState* state, Buffer* patch) {
   NandState* a0 = state->nand_states;
   NandState* a1 = pb->arr_nand_state;
@@ -1035,190 +1238,6 @@ Buffer patch_builder_commit(PatchBuilder* pb, SimState* state) {
   Buffer out = pb->out_patch;
   patch_builder_reset(pb);
   return out;
-}
-
-void unpack_nand_state(SimState* state, Buffer* patch) {
-  int n1 = buffer_pop_int(patch);
-  Buffer b = buffer_pop_mem(patch, n1 * sizeof(NandState));
-  NandState* a0 = state->nand_states;
-  NandState* a1 = (NandState*)b.data;
-  axori(sizeof(NandState), n1, a0, a1, a0);
-  int xn = buffer_pop_int(patch);
-  state->active_count ^= xn;
-}
-
-void unpack_schedule(SimState* state, Buffer* patch, bool fw) {
-  int len;
-  ScheduleItem* items = buffer_pop_array(patch, sizeof(ScheduleItem), &len);
-  for (int i = 0; i < len; i++) {
-    int dt = items[i].dt_ticks;
-    if (fw) {
-      int skt = items[i].ev.socket;
-      int newValue = items[i].ev.value;
-      event_queue_schedule(&state->ev_queue, dt, skt, newValue);
-    } else {
-      event_queue_unschedule(&state->ev_queue, dt);
-    }
-  }
-}
-
-void unpack_pulse(SimState* state, Buffer* patch, bool fw) {
-  int len;
-  PulseDiff* items = buffer_pop_array(patch, sizeof(PulseDiff), &len);
-  int mod = state->tick_mod;
-  int t = state->cur_tick % mod;
-  uint32_t* mask = state->sim->pulse_dirty_mask;
-  if (fw) {
-    int nxt = (t + 1) % mod;
-    for (int j = 0; j < len; j++) {
-      int i = len - j - 1;
-      int w = items[i].wire;
-      int xor_v = items[i].xor_value;
-      int new_pulse = state->pulses[w] ^ xor_v;
-      int pt = pulse_unpack_tick(new_pulse);
-      if (pt == nxt) {
-        int off = w / 32;
-        int r = w & 31;
-        mask[off] = mask[off] | (1u << r);
-        state->pulses[w] ^= xor_v;
-      }
-    }
-  } else {
-    for (int j = 0; j < len; j++) {
-      int i = len - j - 1;
-      int w = items[i].wire;
-      int xor_v = items[i].xor_value;
-      int new_pulse = state->pulses[w] ^ xor_v;
-      int pt = pulse_unpack_tick(new_pulse);
-      if (pt != t) {
-        int off = w / 32;
-        int r = w & 31;
-        mask[off] = mask[off] | (1u << r);
-        state->pulses[w] ^= xor_v;
-      }
-    }
-  }
-}
-
-void unpack_skt(SimState* state, Buffer* patch) {
-  int len;
-  SocketValueDiff* items =
-      buffer_pop_array(patch, sizeof(SocketValueDiff), &len);
-  for (int i = 0; i < len; i++) {
-    int iskt = items[i].skt;
-    int xor_value = items[i].xor_value;
-    state->skt_values[iskt] = state->skt_values[iskt] ^ xor_value;
-  }
-}
-
-void unpack_event(SimState* state, Buffer* patch, bool fw) {
-  int len;
-  SocketEvent* items = buffer_pop_array(patch, sizeof(SocketEvent), &len);
-  for (int i = 0; i < len; i++) {
-    event_queue_schedule(&state->ev_queue, 0, items[i].socket, items[i].value);
-  }
-}
-
-void unpack_flags(int flags, SimState* state, bool fw) {
-  if (fw) {
-    if (flags & PATCH_CYCL) state->cycle++;
-    if (flags & PATCH_ERROR) state->error = true;
-    if (flags & PATCH_DONE) state->done = true;
-  } else {
-    if (flags & PATCH_CYCL) state->cycle--;
-    if (flags & PATCH_ERROR) state->error = false;
-    if (flags & PATCH_DONE) state->done = false;
-  }
-}
-
-void unpack_level(SimState* state, Buffer* patch, bool fw) {
-  int size = buffer_pop_int(patch);
-  Buffer buf = buffer_pop_mem(patch, size);
-  level_lua_fwbw(state->level, fw, buf);
-}
-
-void unpack_nrj(SimState* state, Buffer* patch, bool fw) {
-  double power_xor = buffer_pop_double(patch);
-  double acc_nrj_xor = buffer_pop_double(patch);
-  float* arr = buffer_pop_raw(patch, NRJ_BINS * sizeof(float));
-  for (int i = 0; i < NRJ_BINS; i++) {
-    state->energy_t[i] = float_xor(arr[i], state->energy_t[i]);
-  }
-  state->power = double_xor(state->power, power_xor);
-  state->acc_nrj = double_xor(state->acc_nrj, acc_nrj_xor);
-}
-
-static inline int shift_pulse(int p, int delta, int mod) {
-  UnpackedPulse up = pulse_unpack(p);
-  up.pulse_tick = (up.pulse_tick + delta + mod) % mod;
-
-  return pulse_pack(up);
-}
-
-static void unpack_wire_to_shift(SimState* state, Buffer* patch, bool fw) {
-  int len;
-  int* wire_to_shift = buffer_pop_array(patch, sizeof(int), &len);
-  int mod = state->tick_mod;
-  int n = state->tick_slots;
-  int m = mod / n;
-  int delta = m * (n - 2);
-  uint32_t* mask = state->sim->pulse_dirty_mask;
-  if (fw) {
-    int t = (state->cur_tick + 1) % mod;
-    for (int i = 0; i < len; i++) {
-      // I only shift if it hasnt been updated
-      int w = wire_to_shift[i];
-      int tp = pulse_unpack_tick(state->pulses[w]);
-      if (tp != t) {
-        int t0 = pulse_unpack_tick(state->pulses[w]);
-        state->pulses[w] = shift_pulse(state->pulses[w], delta, mod);
-        int t1 = pulse_unpack_tick(state->pulses[w]);
-        // printf("shifted_pulse: w=%d t0=%d t1=%d\n", w, t0, t1);
-        // Mark wire as dirty for texture update
-        int off = w / 32;
-        int r = w & 31;
-        mask[off] = mask[off] | (1u << r);
-      }
-    }
-  } else {
-    int t = (state->cur_tick) % mod;
-    for (int i = 0; i < len; i++) {
-      int w = wire_to_shift[i];
-      int tp = pulse_unpack_tick(state->pulses[w]);
-      if (tp != t) {
-        state->pulses[w] = shift_pulse(state->pulses[w], -delta, mod);
-        // Mark wire as dirty for texture update
-        int off = w / 32;
-        int r = w & 31;
-        mask[off] = mask[off] | (1u << r);
-      }
-    }
-  }
-}
-
-void patch_unpack(SimState* state, Buffer patch, bool fw) {
-  int flags = buffer_pop_int(&patch);
-  unpack_flags(flags, state, fw);
-  if (flags & PATCH_LEVL) unpack_level(state, &patch, fw);
-  if (!fw) event_queue_step_backward(&state->ev_queue);
-  state->total_energy =
-      double_xor(state->total_energy, buffer_pop_double(&patch));
-  unpack_series(&state->power_tick_series, &patch, fw);
-  if (flags & PATCH_ECLK) {
-    unpack_series(&state->energy_per_cycle_series, &patch, fw);
-    unpack_series(&state->ticks_per_cycle_series, &patch, fw);
-  }
-  if (flags & PATCH_MAXT) state->max_tick ^= buffer_pop_int(&patch);
-  if (flags & PATCH_NAND) unpack_nand_state(state, &patch);
-  if (flags & PATCH_SCHD) unpack_schedule(state, &patch, fw);
-  if (flags & PATCH_WTOSH) unpack_wire_to_shift(state, &patch, fw);
-  if (flags & PATCH_PULS) unpack_pulse(state, &patch, fw);
-  if (flags & PATCH_SKCT) unpack_skt(state, &patch);
-  if (flags & PATCH_QPOP) unpack_event(state, &patch, fw);
-  unpack_nrj(state, &patch, fw);
-  if (flags & PATCH_MAXP) state->max_pulse_time ^= buffer_pop_int(&patch);
-  if (fw) event_queue_step_forward(&state->ev_queue);
-  state->cur_tick += fw ? 1 : -1;
 }
 
 static int compare_nandstate(const void* a, const void* b) {
@@ -1601,15 +1620,17 @@ void sim_dry_run(GameRegistry* r) {
   draw_tex(tex);
   EndTextureMode();
   UnloadTexture(tex);
-  LevelDef* ldef = r->group_order[0]->levels[0];
-  Level lvl = {0};
-  level_init(&lvl, ldef);
+  LevelAPI api = {0};
+  Status stat = status_ok();
+  assert(stat.ok);
   Sim s;
-  sim_init(&s, 1, &img, &lvl, &rt);
+  stat = sim_init(&s, 1, &img, &api, &rt);
+  assert(stat.ok);
   assert(!sim_has_errors(&s));
   HSim hsim = wrap_sim(&s);
   for (int i = 0; i < 3; i++) {
-    hsim_nxt(&hsim);
+    stat = hsim_nxt(&hsim);
+    assert(stat.ok);
     Cam2D cam = {0};
     cam.sp = 1;
     float slack = 2;
@@ -1621,9 +1642,21 @@ void sim_dry_run(GameRegistry* r) {
   }
   hsim_destroy(&hsim);
   sim_destroy(&s);
-  level_destroy(&lvl);
   UnloadRenderTexture(rt);
   UnloadImage(img);
 #undef SETPIXEL
 }
 
+void level_api_add_pg(LevelAPI* api, PinGroup pg) { arrput(api->pg, pg); }
+
+void level_api_destroy(LevelAPI* api) {
+  int np = arrlen(api->pg);
+  for (int i = 0; i < np; i++) {
+    pg_destroy(&api->pg[i]);
+  }
+  arrfree(api->pg);
+  if (api->u) {
+    api->destroy(api->u);
+  }
+  *api = (LevelAPI){0};
+}

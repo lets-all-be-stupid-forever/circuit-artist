@@ -16,30 +16,32 @@ static void hsim_panic_reset_history(HSim* h) {
 
 void hsim_clear_forward_history(HSim* h) { paged_cstack_clear(&h->redo_stack); }
 
-void hsim_nxt(HSim* h) {
+Status hsim_nxt(HSim* h) {
   Buffer patch = {0};
+  Status s = status_ok();
   if (paged_cstack_empty(&h->redo_stack)) {
     /* Computes new patch */
-    patch = h->diff(h->ctx);
+    s = h->diff(h->ctx, &patch);
   } else {
     /* Uses stored patch */
     patch = paged_cstack_pop(&h->redo_stack);
   }
-  h->fwd(h->ctx, patch);
-  if (patch.size > h->max_patch_size) {
+  if (s.ok) s = h->fwd(h->ctx, patch);
+  if (s.ok && (patch.size > h->max_patch_size)) {
     hsim_panic_reset_history(h);
   } else {
     paged_cstack_push(&h->undo_stack, patch);
   }
+  return s;
 }
 
 bool hsim_has_prv(HSim* h) { return !paged_cstack_empty(&h->undo_stack); }
 
-void hsim_prv(HSim* h) {
+Status hsim_prv(HSim* h) {
   assert(hsim_has_prv(h));
   Buffer patch = paged_cstack_pop(&h->undo_stack);
   paged_cstack_push(&h->redo_stack, patch);
-  h->bwd(h->ctx, patch);
+  return h->bwd(h->ctx, patch);
 }
 
 void hsim_destroy(HSim* h) {

@@ -72,7 +72,7 @@ SET(ca_src
   src/hist.c
   src/hsim.c
   src/img.c
-  src/level.c
+  src/lua_level.c
   src/log.c
   src/modal.c
   src/msg.c
