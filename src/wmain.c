@@ -12,6 +12,7 @@
 #include "img.h"
 #include "json.h"
 #include "log.h"
+#include "lua_level.h"
 #include "math.h"
 #include "modal.h"
 #include "msg.h"
@@ -136,6 +137,8 @@ static struct {
   // lua_State* L; /* Lua context used for configuration */
   Rectangle energy_rect;
   Callback dialog_callback;
+  LevelDef* ldef;
+  LevelAPI api;
 } C = {0};
 
 static inline int maxint(int a, int b) { return a > b ? a : b; }
@@ -276,6 +279,17 @@ static void handle_kernel_error(Status s) {
   free(s.err_msg);
 }
 
+static void on_select_level(LevelDef* ldef) {
+  if (ldef == C.ldef) return;
+  C.ldef = ldef;
+  int n = arrlen(ldef->kernels);
+  level_api_destroy(&C.api);
+  Status s = lua_level_create(&C.api, ldef);
+  if (!s.ok) {
+    handle_kernel_error(s);
+  }
+}
+
 void main_init(GameRegistry* registry) {
   srand(time(NULL));
   C.kernel_error = false;
@@ -344,10 +358,8 @@ void main_init(GameRegistry* registry) {
   main_update_widgets();
   sim_dry_run(registry);
 
-  Status status = level_load_default();
-  if (!status.ok) {
-    handle_kernel_error(status);
-  }
+  LevelDef* ldef = registry->group_order[0]->levels[0];
+  on_select_level(ldef);
 }
 
 static void simu_play_sounds() {
@@ -431,6 +443,8 @@ float get_clock_delta(v2 c, v2 a, v2 b) {
   // [bx, by, bz]
   // [0, 0, 1]
 }
+
+static LevelAPI* getlevel() { return &C.api; }
 
 static void draw_pin_sockets(RenderTexture target) {
   BeginTextureMode(target);
@@ -993,7 +1007,7 @@ void main_update_hud() {
   if (C.btn_rewind.pressed) C.rewind_pressed = true;
   if (C.btn_forward.pressed) C.forward_pressed = true;
 
-  if (btn_update(&C.btn_level)) win_level_open();
+  if (btn_update(&C.btn_level)) win_level_open(C.ldef, on_select_level);
   if (btn_update(&C.btn_wiki)) tutorial_open();
   if (btn_update(&C.btn_stamp)) win_stamp_open();
 

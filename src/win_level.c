@@ -4,7 +4,6 @@
 #include "font.h"
 #include "game_registry.h"
 #include "layout.h"
-#include "lua_level.h"
 #include "stb_ds.h"
 #include "tutorial.h"
 #include "ui.h"
@@ -21,7 +20,6 @@ static struct {
   GameRegistry* registry;
   LevelGroup* selected_group;
   LevelDef* selected_level;
-  LevelDef* active_level;
   char* mod_root;
   Rectangle modal;
   Rectangle group_panel;
@@ -39,6 +37,7 @@ static struct {
   Label level_title;
   Textbox tb;
   Textbox tb_grp;
+  void (*on_select_level)(LevelDef*);
 } C = {0};
 
 typedef struct {
@@ -163,7 +162,6 @@ void win_level_init(GameRegistry* r) {
   textbox_init(&C.tb);
   textbox_init(&C.tb_grp);
 
-  C.active_level = NULL;   /* -1 means not loaded */
   C.selected_level = NULL; /* -1 means not loaded */
 }
 
@@ -187,15 +185,17 @@ static void select_first_available_level() {
   win_level_set_sel(lg->levels[nl - 1]);
 }
 
-void win_level_open() {
+void win_level_open(LevelDef* active_level,
+                    void (*on_select_level)(LevelDef*)) {
   ui_winpush(WINDOW_LEVEL);
   update_layout();
   /* When window opens, it puts the active level as the selected one */
-  LevelDef* sel = C.active_level;
+  LevelDef* sel = active_level;
   if (!sel) {
     sel = C.registry->group_order[0]->levels[0];
   }
   win_level_set_sel(sel);
+  C.on_select_level = on_select_level;
 }
 
 void win_level_set_campaign(int icampaign) {
@@ -292,7 +292,7 @@ void win_level_update() {
   }
 
   if (btn_update(&C.btn_choose)) {
-    level_load(C.selected_level);
+    C.on_select_level(C.selected_level);
     ui_winpop();
     return;
   }
@@ -424,24 +424,4 @@ void win_level_draw() {
     }
   }
   label_draw(&C.level_title);
-}
-
-LevelAPI* getlevel() { return &C.api; }
-
-Status level_load(LevelDef* ldef) {
-  /* Doesnt need to do anything if active level is same */
-  Status status = status_ok();
-  if (ldef == C.active_level) {
-    return status;
-  }
-  C.active_level = ldef;
-  int n = arrlen(ldef->kernels);
-  if (C.api.u) level_api_destroy(&C.api);
-  status = lua_level_create(&C.api, ldef);
-  return status;
-}
-
-Status level_load_default() {
-  LevelDef* ldef = C.registry->group_order[0]->levels[0];
-  return level_load(ldef);
 }
