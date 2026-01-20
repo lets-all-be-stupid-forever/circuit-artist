@@ -26,6 +26,9 @@ end
 function _Update()
   UpdateReset(cycle)
   UpdateClock(cycle)
+  -- if cycle == 20 then
+  --   Pause();
+  -- end
   cycle = cycle + 1
 end
 

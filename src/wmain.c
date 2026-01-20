@@ -275,17 +275,22 @@ void main_stop_simu() {
   C.forward_pressed = false;
 }
 
+static void show_kernel_error() {
+  about_open("Script Error", C.kernel_error_msg, NULL);
+}
+
 static void handle_kernel_error(Status s) {
   assert(!C.kernel_error);
   if (main_is_simulation_on()) {
     main_stop_simu();
   }
   C.kernel_error = true;
-  msg_add("Level crashed :(", 5);
+  msg_add("Level error :(", 5);
   printf("------------- LEVEL ERROR -------------\n");
   printf("%s\n", s.err_msg);
   printf("-------------------------------------\n");
   C.kernel_error_msg = s.err_msg;
+  show_kernel_error();
 }
 
 static void reset_kernel_error() {
@@ -295,16 +300,24 @@ static void reset_kernel_error() {
 }
 
 static void load_file_level(const char* fname) {
+  char* new_name = clone_string(fname);
   if (C.level_file) free(C.level_file);
   C.level_file = NULL;
   C.ldef = NULL;
-  C.level_file = clone_string(fname);
+  C.level_file = new_name;
   level_api_destroy(&C.api);
   reset_kernel_error();
-  Status s = lua_level_create_custom(&C.api, fname);
+  Status s = lua_level_create_custom(&C.api, C.level_file);
   if (!s.ok) {
     handle_kernel_error(s);
+  } else {
+    msg_add("Custom level loaded", 5);
   }
+}
+
+static void reload_level() {
+  if (!C.level_file) return;
+  load_file_level(C.level_file);
 }
 
 static void on_select_level(LevelDef* ldef) {
@@ -393,7 +406,7 @@ void main_init(GameRegistry* registry) {
   // temporary
   // load_file_level("../examples/script_example1.lua");
   // load_file_level("../examples/simple_clock.lua");
-  load_file_level("../examples/example_multifile.lua");
+  // load_file_level("../examples/example_multifile.lua");
 }
 
 static void simu_play_sounds() {
@@ -845,6 +858,14 @@ void main_update_controls() {
     }
   }
 
+  if (isEdit && IsKeyPressed(KEY_F5)) {
+    reload_level();
+  }
+
+  // if (isEdit && IsKeyPressed(KEY_F6)) {
+  //   win_log_open();
+  // }
+
   if (isEdit && IsKeyPressed(KEY_T)) {
     text_modal_open(on_paste_text, NULL, NULL);
   }
@@ -1266,7 +1287,8 @@ void main_draw() {
         "between previously used layer.");
 
     btn_draw_legend(&C.btn_level_custom, bscale,
-                    "Select custom level from local files");
+                    "Select custom level from local files\nPress (F5) to "
+                    "quickly reload script");
     btn_draw_legend(&C.btn_level_campaign, bscale, "Select campaign level");
     btn_draw_legend(&C.btn_wiki, bscale, "Wiki");
     btn_draw_legend(&C.btn_sound, bscale, "Toggle simulation sound");
@@ -1404,10 +1426,10 @@ void main_update_layout() {
     C.btn_about.hitbox = (Rectangle){x4, y0, bw, bh};
     C.btn_exit.hitbox = (Rectangle){x5, y0, bw, bh};
 
-    C.btn_level_custom.hitbox = (Rectangle){x7, y0, 5 * bw, bh};
-    x7 += C.btn_level_custom.hitbox.width + 1 * s;
     C.btn_level_campaign.hitbox = (Rectangle){x7, y0, 5 * bw, bh};
-    x7 += C.btn_level_campaign.hitbox.width + (17 * s) + 4 * s;
+    x7 += C.btn_level_campaign.hitbox.width + 1 * s;
+    C.btn_level_custom.hitbox = (Rectangle){x7, y0, 5 * bw, bh};
+    x7 += C.btn_level_custom.hitbox.width + (17 * s) + 4 * s;
     C.btn_wiki.hitbox = (Rectangle){x7, y0, 4 * bw, bh};
     x7 += C.btn_wiki.hitbox.width + 4 * s;
     C.btn_sound.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
@@ -1657,17 +1679,26 @@ void main_draw_status_bar() {
     // int energy = C.sim.state.total_energy;
     int energy = C.sim.state.total_energy;
     snprintf(txt, sizeof(txt), "E: %.1lf", C.sim.state.total_energy);
-    font_draw_texture_outlined(txt, xc, yc5, tc, bg);
+    font_draw_texture_outlined(txt, xc, yc4, tc, bg);
 
     snprintf(txt, sizeof(txt), "T: %d", C.sim.state.cur_tick);
-    font_draw_texture_outlined(txt, xc, yc6, tc, bg);
+    font_draw_texture_outlined(txt, xc, yc5, tc, bg);
   }
   const char* fname = GetFileName(main_get_filename());
   snprintf(txt, sizeof(txt), "[img] %s", fname);
-  font_draw_texture_outlined(txt, xc, yc7, tc, bg);
+  font_draw_texture_outlined(txt, xc, yc6, tc, bg);
   v2i buf_size = hist_get_buf_size(&C.ca.h);
   snprintf(txt, sizeof(txt), "[img] w: %d h: %d", buf_size.x, buf_size.y);
-  font_draw_texture_outlined(txt, xc, yc8, tc, bg);
+  font_draw_texture_outlined(txt, xc, yc7, tc, bg);
+
+  const char* line = NULL;
+  if (C.ldef) {
+    line = TextFormat("[level] (campaign) %s", C.ldef->name);
+  } else {
+    line = TextFormat("[level] (custom) %s", GetFileName(C.level_file));
+  }
+  font_draw_texture_outlined(line, xc, yc8, tc, bg);
+
   rlPopMatrix();
 }
 
