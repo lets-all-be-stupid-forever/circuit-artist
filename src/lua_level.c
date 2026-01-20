@@ -326,7 +326,6 @@ static int lua_notify_level_complete(lua_State* L) {
   LuaLevel* lvl = lua_getlevel(L);
   Sim* sim = lvl->sim;
   dispatch_level_complete(lvl->ldef);
-  sim->level_complete_dispatched_at = sim->state.cur_tick;
   return 0;
 }
 
@@ -336,6 +335,12 @@ static int lua_pset(lua_State* L) {
   PinComm pc = {.b = b, .f = 0};
   Sim* sim = lua_getsim(L);
   sim_port_write(sim, iport, pc);
+  return 0;
+}
+
+static int lua_Pause(lua_State* L) {
+  Sim* sim = lua_getsim(L);
+  sim->pause_requested = true;
   return 0;
 }
 
@@ -637,6 +642,7 @@ static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
   lua_register(L, "AddPortOut", lua_add_output_port);
   lua_register(L, "ReadPort", lua_pget);
   lua_register(L, "WritePort", lua_pset);
+  lua_register(L, "Pause", lua_Pause);
 
   /* Drawing */
   lua_register(L, "MeasureText", lua_MeasureText);

@@ -405,7 +405,7 @@ void main_init(GameRegistry* registry) {
   on_select_level(ldef);
   // temporary
   // load_file_level("../examples/script_example1.lua");
-  // load_file_level("../examples/simple_clock.lua");
+  load_file_level("../examples/simple_clock.lua");
   // load_file_level("../examples/example_multifile.lua");
 }
 
@@ -458,9 +458,9 @@ static Status main_update_simu() {
       break;
     }
     simu_play_sounds();
-    int completed_at = C.sim.level_complete_dispatched_at;
-    /* pauses one tick after completion */
-    if (completed_at >= 0 && completed_at == C.sim.state.cur_tick - 1) {
+    /* Simulation has called Pause() */
+    if (C.sim.pause_requested) {
+      C.sim.pause_requested = false;
       C.paused = true;
       C.simu_target_steps = C.sim.state.cur_tick;
       on_click();

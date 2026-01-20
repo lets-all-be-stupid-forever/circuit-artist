@@ -192,11 +192,10 @@ typedef struct Sim {
 
   Cam2D prv_cam;
   SimUiEvent* ui_events;
-  int level_complete_dispatched_at; /* Makes the UI pause when level is complete
-                                     */
   RenderV2* rv2;
   uint32_t* pulse_dirty_mask;
   int dirty_mask_size;
+  bool pause_requested; /* pausing from within simulation */
 } Sim;
 
 Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,

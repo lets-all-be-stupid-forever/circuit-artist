@@ -44,6 +44,8 @@ function CombinatorialTest:update()
               expected=expect,
               output=output,
             })
+          -- Pauses game on error (the first time)
+          Pause()
           return
         end
       end
@@ -51,6 +53,7 @@ function CombinatorialTest:update()
     if icase == #self.cases then
       self.v_done(true)
       notify_level_complete()
+      Pause()
       return
     end
   end

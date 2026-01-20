@@ -529,7 +529,6 @@ Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,
   sim->api = api;
   double start = GetTime();
   sim->poked = false;
-  sim->level_complete_dispatched_at = -1;
   init_spec(&sim->dist_spec);
   sim->nl = nl;
   sim->pinbuf = malloc(arrlen(api->pg) * sizeof(PinComm));
