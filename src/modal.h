@@ -15,6 +15,7 @@ void modal_init();
 void modal_destroy();
 ModalResult modal_save_file(const char* default_path, const char* default_name);
 ModalResult modal_open_file(const char* default_path);
+ModalResult modal_open_file_lua(const char* default_path);
 void modal_destroy_result(ModalResult mr);
 
 #endif

@@ -71,7 +71,7 @@ function commit()
 end
 
 
-function _forward(patch)
+function _Forward(patch)
   if patch == nil then
     return
   end
@@ -83,7 +83,7 @@ function _forward(patch)
   end
 end
 
-function _backward(patch)
+function _Backward(patch)
   if patch == nil then
     return
   end
@@ -95,7 +95,7 @@ function _backward(patch)
   end
 end
 
-function _setup(args)
+function _Setup(args)
   for i=1,#__chips do
     __chips[i]:setup()
     local ports = __chips[i].ports
@@ -111,22 +111,21 @@ function _setup(args)
   end
 end
 
-
-function _start()
+function _Start()
   resetVariables()
   for i=1,#__chips do
     __chips[i]:start()
   end
 end
 
-function _update()
+function _Update()
   for i=1,#__chips do
     __chips[i]:update()
   end
   return commit()
 end
 
-function _draw()
+function _Draw()
   for i=1,#__chips do
     if __chips[i].draw ~= nil then
       __chips[i]:draw()

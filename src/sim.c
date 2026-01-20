@@ -1657,7 +1657,7 @@ void level_api_add_port(LevelAPI* api, int width, const char* id, int type) {
     int wg = arrlen(api->pg[n - 1].pins);
     // position of last pin of previous port
     y = api->pg[n - 1].pins[wg - 1].y;
-    y += 2;
+    y += 4;
   }
   y += 4;
   for (int i = 0; i < width; i++) {

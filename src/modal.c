@@ -58,6 +58,22 @@ ModalResult modal_open_file(const char* default_path) {
   return mr;
 }
 
+ModalResult modal_open_file_lua(const char* default_path) {
+  nfdchar_t* outpath = NULL;
+  nfdu8filteritem_t filter_list[] = {{"Lua Script", "lua"}};
+  const nfdnchar_t* n_default_path = default_path;
+  nfdresult_t result =
+      NFD_OpenDialogU8(&outpath, filter_list, 1, n_default_path);
+  ModalResult mr = {0};
+  mr.ok = result == NFD_OKAY;
+  mr.fPath = outpath;
+  mr.cancel = result == NFD_CANCEL;
+  if (result != NFD_CANCEL && result != NFD_OKAY) {
+    mr.errMsg = NFD_GetError();
+  }
+  return mr;
+}
+
 // Destructor for the moddal result.
 void modal_destroy_result(ModalResult mr) {
   if (mr.fPath) {

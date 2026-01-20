@@ -16,6 +16,7 @@
 #include "stb_ds.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include "string.h"
 #include "ui.h"
 #include "utils.h"
 #include "widgets.h"
@@ -61,6 +62,31 @@ static inline Status status_lua_error(lua_State* L) {
   Status s = status_error(err);
   lua_pop(L, 1);
   return s;
+}
+
+/* Helper to call a Lua global function with error checking */
+static Status lua_call_global(lua_State* L, const char* func_name, int nargs,
+                              int nresults) {
+  lua_getglobal(L, func_name);
+  if (lua_isnil(L, -1)) {
+    lua_pop(L, 1 + nargs);  // Pop nil and any arguments
+    return status_error(TextFormat(
+        "%s() function must be defined in your Lua script", func_name));
+  }
+  if (!lua_isfunction(L, -1)) {
+    lua_pop(L, 1 + nargs);  // Pop non-function and any arguments
+    return status_error(TextFormat("%s must be a function", func_name));
+  }
+  // Insert error handler below function and arguments
+  lua_pushcfunction(L, lua_error_handler);
+  lua_insert(L, -(2 + nargs));  // Move handler below function and args
+  if (lua_pcall(L, nargs, nresults, -(2 + nargs)) != LUA_OK) {
+    Status s = status_lua_error(L);
+    lua_pop(L, 1);  // Pop error handler
+    return s;
+  }
+  lua_remove(L, -(1 + nresults));  // Remove error handler, keep results
+  return status_ok();
 }
 
 // Recursive function to pack Lua objects to MessagePack
@@ -584,13 +610,28 @@ static int lua_add_output_port(lua_State* L) {
   return 1;
 }
 
-static Status init_level_lua(LuaLevel* lvl) {
+static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
   lua_State* L = luaL_newstate();
   if (!L) {
     return status_error("Failed to create Lua state\n");
   }
   lvl->L = L;
   luaL_openlibs(L);
+
+  // Remove io, os, and file loading functions for campaign levels (security)
+  if (!is_custom) {
+    lua_pushnil(L);
+    lua_setglobal(L, "io");
+    lua_pushnil(L);
+    lua_setglobal(L, "os");
+    lua_pushnil(L);
+    lua_setglobal(L, "require");
+    lua_pushnil(L);
+    lua_setglobal(L, "dofile");
+    lua_pushnil(L);
+    lua_setglobal(L, "loadfile");
+  }
+
   /* Basic */
   lua_register(L, "AddPortIn", lua_add_input_port);
   lua_register(L, "AddPortOut", lua_add_output_port);
@@ -641,53 +682,24 @@ static Status lua_level_start(void* u, Sim* sim) {
   LuaLevel* lvl = u;
   lvl->sim = sim;
   lua_State* L = lvl->L;
-  lua_getfield(L, LUA_REGISTRYINDEX, "error_handler");
-  lua_getglobal(L, "_start");
-  if (lua_pcall(L, 0, 0, -2) != LUA_OK) {
-    return status_lua_error(L);
-  }
-  lua_pop(L, 1);  // Pop error handler
-  return status_ok();
+  return lua_call_global(L, "_Start", 0, 0);
 }
 
 static Status lua_level_draw(void* u) {
   LuaLevel* lvl = u;
   lua_State* L = lvl->L;
-  lua_pushcfunction(L, lua_error_handler);
-  lua_getglobal(L, "_draw");
-  if (lua_pcall(L, 0, 0, -2) != LUA_OK) {
-    Status s = status_lua_error(L);
-    lua_pop(L, 1);  // Pop error handler
-    return s;
-  }
-  lua_pop(L, 1);  // Pop error handler
-  return status_ok();
+  return lua_call_global(L, "_Draw", 0, 0);
 }
-
-#if 0
-Status level_draw_board(Level* lvl) {
-  lua_State* L = lvl->L;
-  assert(L);
-  lua_getglobal(L, "_drawboard");
-  if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-    return status_lua_error(L);
-  }
-  return status_ok();
-}
-#endif
 
 Status lua_level_update(void* u, Buffer* buffer) {
   LuaLevel* lvl = u;
   lua_State* L = lvl->L;
-  lua_pushcfunction(L, lua_error_handler);
-  lua_getglobal(L, "_update");
-  if (lua_pcall(L, 0, 1, -2) != LUA_OK) {
-    Status s = status_lua_error(L);
-    lua_pop(L, 1);  // Pop error handler
+  Status s = lua_call_global(L, "_Update", 0, 1);
+  if (!s.ok) {
     return s;
   }
   *buffer = lua_tobuffer(L, -1);
-  lua_pop(L, 2);  // Pop result and error handler
+  lua_pop(L, 1);  // Pop result
   return status_ok();
 }
 
@@ -695,7 +707,7 @@ static Status lua_level_fw(void* u, Buffer buf) {
   LuaLevel* lvl = u;
   lua_State* L = lvl->L;
   lua_pushcfunction(L, lua_error_handler);
-  lua_getglobal(L, "_forward");
+  lua_getglobal(L, "_Forward");
   int r = lua_frombuffer(L, buf);
   if (r == 0) {
     lua_pop(L, 1);  // Pop error handler
@@ -715,7 +727,7 @@ static Status lua_level_bw(void* u, Buffer buf) {
   LuaLevel* lvl = u;
   lua_State* L = lvl->L;
   lua_pushcfunction(L, lua_error_handler);
-  lua_getglobal(L, "_backward");
+  lua_getglobal(L, "_Backward");
   int r = lua_frombuffer(L, buf);
   if (r == 0) {
     lua_pop(L, 1);  // Pop error handler
@@ -744,7 +756,7 @@ Status lua_level_create(LevelAPI* api, LevelDef* ldef) {
 
   lvl->ldef = ldef;
   lvl->api = api;
-  Status status = init_level_lua(lvl);
+  Status status = init_level_lua(lvl, false);  // Campaign level
   if (!status.ok) return status;
   msgpack_sbuffer_init(&lvl->sbuf);
   msgpack_packer_init(&lvl->pk, &lvl->sbuf, msgpack_sbuffer_write);
@@ -775,15 +787,7 @@ Status lua_level_create(LevelAPI* api, LevelDef* ldef) {
     }
   }
 
-  lua_pushcfunction(lvl->L, lua_error_handler);
-  lua_getglobal(lvl->L, "_setup");
-  if (lua_pcall(lvl->L, 0, 0, -2) != LUA_OK) {
-    Status s = status_lua_error(lvl->L);
-    lua_pop(lvl->L, 1);  // Pop error handler
-    return s;
-  }
-  lua_pop(lvl->L, 1);  // Pop error handler
-  return status_ok();
+  return lua_call_global(lvl->L, "_Setup", 0, 0);
 }
 
 Status lua_level_create_custom(LevelAPI* api, const char* kernel_fname) {
@@ -799,8 +803,23 @@ Status lua_level_create_custom(LevelAPI* api, const char* kernel_fname) {
 
   lvl->ldef = NULL;
   lvl->api = api;
-  Status status = init_level_lua(lvl);
+  Status status = init_level_lua(lvl, true);  // Custom level
   if (!status.ok) return status;
+
+  // Set up package.path to allow require() for custom levels
+  // Get the directory of the kernel file
+  const char* script_dir = GetDirectoryPath(kernel_fname);
+
+  lua_getglobal(lvl->L, "package");
+  lua_getfield(lvl->L, -1, "path");
+  const char* cur_path = lua_tostring(lvl->L, -1);
+  lua_pop(lvl->L, 1);
+  // Add script directory and subdirectories to search path
+  lua_pushfstring(lvl->L, "%s;%s/?.lua;%s/libs/?.lua;%s/modules/?.lua",
+                  cur_path, script_dir, script_dir, script_dir);
+  lua_setfield(lvl->L, -2, "path");
+  lua_pop(lvl->L, 1);  // Pop package table
+
   msgpack_sbuffer_init(&lvl->sbuf);
   msgpack_packer_init(&lvl->pk, &lvl->sbuf, msgpack_sbuffer_write);
   if (luaL_loadfile(lvl->L, kernel_fname) != LUA_OK) {
@@ -814,13 +833,5 @@ Status lua_level_create_custom(LevelAPI* api, const char* kernel_fname) {
     return s;
   }
   lua_pop(lvl->L, 1);  // Pop error handler
-  lua_pushcfunction(lvl->L, lua_error_handler);
-  lua_getglobal(lvl->L, "_setup");
-  if (lua_pcall(lvl->L, 0, 0, -2) != LUA_OK) {
-    Status s = status_lua_error(lvl->L);
-    lua_pop(lvl->L, 1);  // Pop error handler
-    return s;
-  }
-  lua_pop(lvl->L, 1);  // Pop error handler
-  return status_ok();
+  return lua_call_global(lvl->L, "_Setup", 0, 0);
 }

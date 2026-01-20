@@ -66,7 +66,8 @@ static struct {
   Btn btn_forward;
 
   // Tools buttons
-  Btn btn_level;
+  Btn btn_level_custom;
+  Btn btn_level_campaign;
   Btn btn_simu;
   Btn btn_brush;
   Btn btn_text;
@@ -139,6 +140,7 @@ static struct {
   Rectangle energy_rect;
   Callback dialog_callback;
   LevelDef* ldef;
+  char* level_file;
   LevelAPI api;
 } C = {0};
 
@@ -293,7 +295,10 @@ static void reset_kernel_error() {
 }
 
 static void load_file_level(const char* fname) {
+  if (C.level_file) free(C.level_file);
+  C.level_file = NULL;
   C.ldef = NULL;
+  C.level_file = clone_string(fname);
   level_api_destroy(&C.api);
   reset_kernel_error();
   Status s = lua_level_create_custom(&C.api, fname);
@@ -304,6 +309,8 @@ static void load_file_level(const char* fname) {
 
 static void on_select_level(LevelDef* ldef) {
   if (ldef == C.ldef) return;
+  if (C.level_file) free(C.level_file);
+  C.level_file = NULL;
   C.ldef = ldef;
   level_api_destroy(&C.api);
   reset_kernel_error();
@@ -385,6 +392,8 @@ void main_init(GameRegistry* registry) {
   on_select_level(ldef);
   // temporary
   // load_file_level("../examples/script_example1.lua");
+  // load_file_level("../examples/simple_clock.lua");
+  load_file_level("../examples/example_multifile.lua");
 }
 
 static void simu_play_sounds() {
@@ -994,6 +1003,21 @@ static void toggle_always_on_top() {
 
 static void toggle_sim_show_t() { C.sim_show_t = !C.sim_show_t; }
 
+static void custom_level_open() {
+  on_modal_before_open();
+  ModalResult mr = modal_open_file_lua(NULL);
+  on_modal_after_open();
+  if (mr.ok) {
+    load_file_level(mr.fPath);
+    free(mr.fPath);
+  } else if (mr.cancel) {
+  } else {
+    char txt[500];
+    snprintf(txt, sizeof(txt), "ERROR: %s\n", mr.errMsg);
+    msg_add(txt, MSG_DURATION);
+  }
+}
+
 void main_update_hud() {
   Paint* ca = &C.ca;
   if (btn_update(&C.btn_new)) on_new_click();
@@ -1042,7 +1066,9 @@ void main_update_hud() {
   if (C.btn_rewind.pressed) C.rewind_pressed = true;
   if (C.btn_forward.pressed) C.forward_pressed = true;
 
-  if (btn_update(&C.btn_level)) win_level_open(C.ldef, on_select_level);
+  if (btn_update(&C.btn_level_campaign))
+    win_level_open(C.ldef, on_select_level);
+  if (btn_update(&C.btn_level_custom)) custom_level_open();
   if (btn_update(&C.btn_wiki)) tutorial_open();
   if (btn_update(&C.btn_stamp)) win_stamp_open();
 
@@ -1166,13 +1192,8 @@ void main_draw() {
   btn_draw_icon(&C.btn_pause, bscale, sprites, rect_pause);
 
   btn_draw_text(&C.btn_wiki, bscale, "Wiki");
-  // if (getlevel()) {
-  //  TODO: how to handle this?
-  //  btn_draw_text(&C.btn_level, bscale,
-  //                TextFormat("Level: %s", getlevel()->ldef->name));
-  // btn_draw_text(&C.btn_level, bscale, TextFormat("Level: %s", "xx"));
-  btn_draw_text(&C.btn_level, bscale, "Change Level");
-  //}
+  btn_draw_text(&C.btn_level_custom, bscale, "Custom");
+  btn_draw_text(&C.btn_level_campaign, bscale, "Campaign");
 
   bool color_disabled = mode != MODE_EDIT;
   btn_draw_color(C.fg_color_rect, paint_get_color(&C.ca), false,
@@ -1244,7 +1265,9 @@ void main_draw() {
         "propagate even faster here.\nUse (TAB) to quickly alternate "
         "between previously used layer.");
 
-    btn_draw_legend(&C.btn_level, bscale, "Select Level/Campaign.");
+    btn_draw_legend(&C.btn_level_custom, bscale,
+                    "Select custom level from local files");
+    btn_draw_legend(&C.btn_level_campaign, bscale, "Select campaign level");
     btn_draw_legend(&C.btn_wiki, bscale, "Wiki");
     btn_draw_legend(&C.btn_sound, bscale, "Toggle simulation sound");
     btn_draw_legend(&C.btn_neon, bscale,
@@ -1381,8 +1404,10 @@ void main_update_layout() {
     C.btn_about.hitbox = (Rectangle){x4, y0, bw, bh};
     C.btn_exit.hitbox = (Rectangle){x5, y0, bw, bh};
 
-    C.btn_level.hitbox = (Rectangle){x7, y0, 9 * bw, bh};
-    x7 += C.btn_level.hitbox.width + (17 * s) + 4 * s;
+    C.btn_level_custom.hitbox = (Rectangle){x7, y0, 5 * bw, bh};
+    x7 += C.btn_level_custom.hitbox.width + 1 * s;
+    C.btn_level_campaign.hitbox = (Rectangle){x7, y0, 5 * bw, bh};
+    x7 += C.btn_level_campaign.hitbox.width + (17 * s) + 4 * s;
     C.btn_wiki.hitbox = (Rectangle){x7, y0, 4 * bw, bh};
     x7 += C.btn_wiki.hitbox.width + 4 * s;
     C.btn_sound.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
@@ -1734,7 +1759,8 @@ void main_update_widgets() {
 
   C.btn_simu.disabled = C.kernel_error;
 
-  C.btn_level.disabled = ned;
+  C.btn_level_campaign.disabled = ned;
+  C.btn_level_custom.disabled = ned;
   C.btn_stamp.disabled = ned;
   C.btn_brush.toggled = tool == TOOL_BRUSH;
   C.btn_line.toggled = tool == TOOL_LINE;

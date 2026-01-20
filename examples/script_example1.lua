@@ -1,21 +1,21 @@
 
 
-function _setup()
+function _Setup()
   PORT_A = AddPortOut(7, 'a')
   PORT_B = AddPortIn(7, 'b')
 end
 
 
-function _start()
+function _Start()
   print('started')
 end
 
-function _update()
+function _Update()
   local n = ReadPort(PORT_B)
   WritePort(PORT_A, (n + 1) % 128)
 end
 
-function _draw()
+function _Draw()
   local white = {255, 255, 255, 255};
   rlPushMatrix()
   rlScalef(3,3,1)
