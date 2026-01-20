@@ -46,10 +46,21 @@ typedef struct {
   Sim* sim;
   LevelAsset* assets;
   lua_State* L;
+  LevelAPI* api; /* Reference to API for addPort */
 } LuaLevel;
 
+/* Error handler that captures stack trace */
+static int lua_error_handler(lua_State* L) {
+  const char* msg = lua_tostring(L, 1);
+  luaL_traceback(L, L, msg, 1);
+  return 1;
+}
+
 static inline Status status_lua_error(lua_State* L) {
-  return status_error(lua_tostring(L, -1));
+  const char* err = lua_tostring(L, -1);
+  Status s = status_error(err);
+  lua_pop(L, 1);
+  return s;
 }
 
 // Recursive function to pack Lua objects to MessagePack
@@ -126,66 +137,6 @@ static void lua_to_msgpack(lua_State* L, int index, msgpack_packer* pk) {
   }
 }
 
-/*
- * Uses old algorithm for defining pins, with the side image generation.
- * The plan is to replace, in further versions, with a more powerful API where
- * users can manually create the API image and define pin locations.
- *
- * The spec is:
- *
- * ports = {
- *  {name="Ain", width=4, input=true},
- *  {name="Bin", width=4, input=false},
- * }
- *
- */
-static void lua_level_init_pins(LuaLevel* lvl, LevelAPI* api) {
-  lua_State* L = lvl->L;
-  lua_getglobal(L, "PORTS");
-  assert(lua_istable(L, -1));
-#if 0
-  if (!lua_istable(L, -1)) {
-    lua_pop(L, 1);
-    return NULL;
-  }
-#endif
-  int nport = lua_rawlen(L, -1);
-  PinGroup* out = NULL;
-  for (int i = 0; i < nport; i++) {
-    PinGroup pg = {0};
-    lua_rawgeti(L, -1, i + 1);
-    lua_getfield(L, -1, "name");
-    pg.id = clone_string(lua_tostring(L, -1));
-    lua_pop(L, 1);
-
-    lua_getfield(L, -1, "width");
-    int width = lua_tointeger(L, -1);
-    lua_pop(L, 1);
-
-    lua_getfield(L, -1, "input");
-    pg.type = lua_toboolean(L, -1) ? PIN_IMG2LUA : PIN_LUA2IMG;
-    lua_pop(L, 1);
-
-    lua_getfield(L, -1, "pins");
-    for (int j = 0; j < width; j++) {
-      lua_rawgeti(L, -1, j + 1);
-      /* pin = {x=0,y=2}*/
-      lua_getfield(L, -1, "x");
-      int x = lua_tointeger(L, -1);
-      lua_pop(L, 1);
-      lua_getfield(L, -1, "y");
-      int y = lua_tointeger(L, -1);
-      lua_pop(L, 1);
-      lua_pop(L, 1);
-      pg_add_pin(&pg, x, y);
-    }
-    lua_pop(L, 1);
-    lua_pop(L, 1);
-    level_api_add_pg(api, pg);
-  }
-  lua_pop(L, 1);
-}
-
 static LuaLevel* lua_getlevel(lua_State* L) {
   lua_getfield(L, LUA_REGISTRYINDEX, "level_ptr");
   LuaLevel* lvl = (LuaLevel*)lua_touserdata(L, -1);
@@ -218,6 +169,54 @@ int read_table_floats(lua_State* L, int idx, int n, float* values) {
   }
   return 0;
 };
+
+/* Extract Color from Lua table {r, g, b, a} */
+static Color lua_checkcolor(lua_State* L, int idx) {
+  luaL_checktype(L, idx, LUA_TTABLE);
+  Color c;
+
+  lua_rawgeti(L, idx, 1);  // r
+  if (!lua_isnumber(L, -1)) {
+    luaL_error(L, "color[1] (r) must be a number");
+  }
+  c.r = (unsigned char)lua_tointeger(L, -1);
+  lua_pop(L, 1);
+
+  lua_rawgeti(L, idx, 2);  // g
+  if (!lua_isnumber(L, -1)) {
+    luaL_error(L, "color[2] (g) must be a number");
+  }
+  c.g = (unsigned char)lua_tointeger(L, -1);
+  lua_pop(L, 1);
+
+  lua_rawgeti(L, idx, 3);  // b
+  if (!lua_isnumber(L, -1)) {
+    luaL_error(L, "color[3] (b) must be a number");
+  }
+  c.b = (unsigned char)lua_tointeger(L, -1);
+  lua_pop(L, 1);
+
+  lua_rawgeti(L, idx, 4);  // a
+  if (!lua_isnumber(L, -1)) {
+    luaL_error(L, "color[4] (a) must be a number");
+  }
+  c.a = (unsigned char)lua_tointeger(L, -1);
+  lua_pop(L, 1);
+
+  return c;
+}
+
+static int lua_DrawRectangle(lua_State* L) {
+  // DrawRectangle(x, y, width, height, {255, 255, 0, 255})
+  int x = (int)luaL_checknumber(L, 1);
+  int y = (int)luaL_checknumber(L, 2);
+  int width = (int)luaL_checknumber(L, 3);
+  int height = (int)luaL_checknumber(L, 4);
+  Color c = lua_checkcolor(L, 5);
+
+  DrawRectangle(x, y, width, height, c);
+  return 0;
+}
 
 static int lua_draw_rectangle_pro(lua_State* L) {
   LuaLevel* lvl = lua_getlevel(L);
@@ -365,7 +364,7 @@ int l_print(lua_State* L) {
   return 1;
 }
 
-int lua_rl_translatef(lua_State* L) {
+int lua_rlTranslatef(lua_State* L) {
   int i = 1;
   int x = (float)luaL_checknumber(L, i++);
   int y = (float)luaL_checknumber(L, i++);
@@ -374,17 +373,17 @@ int lua_rl_translatef(lua_State* L) {
   return 0;
 }
 
-int lua_rl_pop_matrix(lua_State* L) {
+int lua_rlPopMatrix(lua_State* L) {
   rlPopMatrix();
   return 0;
 }
 
-int lua_rl_push_matrix(lua_State* L) {
+int lua_rlPushMatrix(lua_State* L) {
   rlPushMatrix();
   return 0;
 }
 
-int lua_rl_scalef(lua_State* L) {
+int lua_rlScalef(lua_State* L) {
   int i = 1;
   int x = (float)luaL_checknumber(L, i++);
   int y = (float)luaL_checknumber(L, i++);
@@ -393,7 +392,7 @@ int lua_rl_scalef(lua_State* L) {
   return 0;
 }
 
-int lua_measure_text_size(lua_State* L) {
+int lua_MeasureText(lua_State* L) {
   const char* text = luaL_checkstring(L, 1);
   int x = get_rendered_text_size(text).x;
   lua_pushinteger(L, x);
@@ -412,10 +411,8 @@ int lua_draw_box(lua_State* L) {
   int x = (float)luaL_checknumber(L, i++);
   int y = (float)luaL_checknumber(L, i++);
   int w = (float)luaL_checknumber(L, i++);
-  int r = (float)luaL_checknumber(L, i++);
-  int g = (float)luaL_checknumber(L, i++);
-  int b = (float)luaL_checknumber(L, i++);
-  int a = (float)luaL_checknumber(L, i++);
+  Color c = lua_checkcolor(L, i++);
+
   // font_draw_texture(text, x, y, (Color){r, g, b, a});
   Rectangle rect = {
       x,
@@ -423,8 +420,27 @@ int lua_draw_box(lua_State* L) {
       w,
       0,
   };
-  Color c = (Color){r, g, b, a};
-  draw_text_box_advanced(text, rect, c, NULL, NULL);
+  if (text) {
+    draw_text_box_advanced(text, rect, c, NULL, NULL);
+  }
+  return 0;
+}
+
+int lua_DrawText(lua_State* L) {
+  int nargs = lua_gettop(L);  // Get number of arguments
+
+  // First argument (required): text
+  if (nargs < 1) {
+    return luaL_error(L, "print requires at least 1 argument (text)");
+  }
+  const char* text = luaL_checkstring(L, 1);
+  int i = 2;
+  int x = (float)luaL_checknumber(L, i++);
+  int y = (float)luaL_checknumber(L, i++);
+  Color c = lua_checkcolor(L, i++);
+  if (text) {
+    font_draw_texture(text, x, y, c);
+  }
   return 0;
 }
 
@@ -522,7 +538,51 @@ int lua_frombuffer(lua_State* L, Buffer buf) {
   return 0;  // Failure
 }
 
-#define WRAP(f) lua_register(L, #f, lua_##f);
+static int lua_add_input_port(lua_State* L) {
+  LuaLevel* lvl = lua_getlevel(L);
+
+  // Parse arguments: width, id
+  int width = luaL_checkinteger(L, 1);
+  const char* id = luaL_checkstring(L, 2);
+
+  // Validate width
+  if (width <= 0) {
+    return luaL_error(L, "Port width must be positive, got %d", width);
+  }
+
+  // Get the current index before adding the port
+  int index = arrlen(lvl->api->pg);
+
+  // Add the input port to the API
+  level_api_add_port(lvl->api, width, id, PIN_IMG2LUA);
+
+  // Return the index
+  lua_pushinteger(L, index);
+  return 1;
+}
+
+static int lua_add_output_port(lua_State* L) {
+  LuaLevel* lvl = lua_getlevel(L);
+
+  // Parse arguments: width, id
+  int width = luaL_checkinteger(L, 1);
+  const char* id = luaL_checkstring(L, 2);
+
+  // Validate width
+  if (width <= 0) {
+    return luaL_error(L, "Port width must be positive, got %d", width);
+  }
+
+  // Get the current index before adding the port
+  int index = arrlen(lvl->api->pg);
+
+  // Add the output port to the API
+  level_api_add_port(lvl->api, width, id, PIN_LUA2IMG);
+
+  // Return the index
+  lua_pushinteger(L, index);
+  return 1;
+}
 
 static Status init_level_lua(LuaLevel* lvl) {
   lua_State* L = luaL_newstate();
@@ -531,19 +591,28 @@ static Status init_level_lua(LuaLevel* lvl) {
   }
   lvl->L = L;
   luaL_openlibs(L);
-  lua_register(L, "caPrint", l_print);
-  lua_register(L, "draw_font", lua_draw_font);
-  lua_register(L, "draw_box", lua_draw_box);
-  WRAP(rl_scalef);
-  WRAP(rl_translatef);
-  WRAP(rl_push_matrix);
-  WRAP(rl_pop_matrix);
-  WRAP(measure_text_size);
-  lua_register(L, "pget", lua_pget);
-  lua_register(L, "pset", lua_pset);
-  lua_register(L, "draw_texture_pro", lua_draw_texture_pro);
+  /* Basic */
+  lua_register(L, "AddPortIn", lua_add_input_port);
+  lua_register(L, "AddPortOut", lua_add_output_port);
+  lua_register(L, "ReadPort", lua_pget);
+  lua_register(L, "WritePort", lua_pset);
+
+  /* Drawing */
+  lua_register(L, "MeasureText", lua_MeasureText);
+  lua_register(L, "DrawText", lua_DrawText);
+  lua_register(L, "DrawTextBox", lua_draw_box);
+  lua_register(L, "DrawRectangle", lua_DrawRectangle);
+  lua_register(L, "rlScalef", lua_rlScalef);
+  lua_register(L, "rlTranslatef", lua_rlTranslatef);
+  lua_register(L, "rlPushMatrix", lua_rlPushMatrix);
+  lua_register(L, "rlPopMatrix", lua_rlPopMatrix);
+
   lua_register(L, "draw_rectangle_pro", lua_draw_rectangle_pro);
+  lua_register(L, "draw_texture_pro", lua_draw_texture_pro);
+  lua_register(L, "draw_font", lua_draw_font);
+  /* Campaign-Only */
   lua_register(L, "notify_level_complete", lua_notify_level_complete);
+
   /* Stores level in lua for easy of access */
   lua_pushlightuserdata(L, lvl);
   lua_setfield(L, LUA_REGISTRYINDEX, "level_ptr");
@@ -572,20 +641,26 @@ static Status lua_level_start(void* u, Sim* sim) {
   LuaLevel* lvl = u;
   lvl->sim = sim;
   lua_State* L = lvl->L;
+  lua_getfield(L, LUA_REGISTRYINDEX, "error_handler");
   lua_getglobal(L, "_start");
-  if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
+  if (lua_pcall(L, 0, 0, -2) != LUA_OK) {
     return status_lua_error(L);
   }
+  lua_pop(L, 1);  // Pop error handler
   return status_ok();
 }
 
 static Status lua_level_draw(void* u) {
   LuaLevel* lvl = u;
   lua_State* L = lvl->L;
+  lua_pushcfunction(L, lua_error_handler);
   lua_getglobal(L, "_draw");
-  if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-    return status_lua_error(L);
+  if (lua_pcall(L, 0, 0, -2) != LUA_OK) {
+    Status s = status_lua_error(L);
+    lua_pop(L, 1);  // Pop error handler
+    return s;
   }
+  lua_pop(L, 1);  // Pop error handler
   return status_ok();
 }
 
@@ -604,42 +679,55 @@ Status level_draw_board(Level* lvl) {
 Status lua_level_update(void* u, Buffer* buffer) {
   LuaLevel* lvl = u;
   lua_State* L = lvl->L;
+  lua_pushcfunction(L, lua_error_handler);
   lua_getglobal(L, "_update");
-  if (lua_pcall(L, 0, 1, 0) != LUA_OK) {
-    return status_lua_error(L);
+  if (lua_pcall(L, 0, 1, -2) != LUA_OK) {
+    Status s = status_lua_error(L);
+    lua_pop(L, 1);  // Pop error handler
+    return s;
   }
   *buffer = lua_tobuffer(L, -1);
-  lua_pop(L, 1);
+  lua_pop(L, 2);  // Pop result and error handler
   return status_ok();
 }
 
 static Status lua_level_fw(void* u, Buffer buf) {
   LuaLevel* lvl = u;
   lua_State* L = lvl->L;
+  lua_pushcfunction(L, lua_error_handler);
   lua_getglobal(L, "_forward");
   int r = lua_frombuffer(L, buf);
   if (r == 0) {
+    lua_pop(L, 1);  // Pop error handler
     return status_ok();
   }
   assert(r);
-  if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-    return status_lua_error(L);
+  if (lua_pcall(L, 1, 0, -3) != LUA_OK) {
+    Status s = status_lua_error(L);
+    lua_pop(L, 1);  // Pop error handler
+    return s;
   }
+  lua_pop(L, 1);  // Pop error handler
   return status_ok();
 }
 
 static Status lua_level_bw(void* u, Buffer buf) {
   LuaLevel* lvl = u;
   lua_State* L = lvl->L;
+  lua_pushcfunction(L, lua_error_handler);
   lua_getglobal(L, "_backward");
   int r = lua_frombuffer(L, buf);
   if (r == 0) {
+    lua_pop(L, 1);  // Pop error handler
     return status_ok();
   }
   assert(r);
-  if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-    return status_lua_error(L);
+  if (lua_pcall(L, 1, 0, -3) != LUA_OK) {
+    Status s = status_lua_error(L);
+    lua_pop(L, 1);  // Pop error handler
+    return s;
   }
+  lua_pop(L, 1);  // Pop error handler
   return status_ok();
 }
 
@@ -655,6 +743,7 @@ Status lua_level_create(LevelAPI* api, LevelDef* ldef) {
   api->destroy = lua_level_destroy;
 
   lvl->ldef = ldef;
+  lvl->api = api;
   Status status = init_level_lua(lvl);
   if (!status.ok) return status;
   msgpack_sbuffer_init(&lvl->sbuf);
@@ -663,9 +752,17 @@ Status lua_level_create(LevelAPI* api, LevelDef* ldef) {
     int nk = arrlen(ldef->kernels);
     for (int i = 0; i < nk; i++) {
       printf("Loading %s ...\n", ldef->kernels[i]);
-      if (luaL_dofile(lvl->L, ldef->kernels[i]) != LUA_OK) {
+      if (luaL_loadfile(lvl->L, ldef->kernels[i]) != LUA_OK) {
         return status_lua_error(lvl->L);
       }
+      lua_pushcfunction(lvl->L, lua_error_handler);
+      lua_insert(lvl->L, -2);  // Move error handler below the loaded chunk
+      if (lua_pcall(lvl->L, 0, 0, -2) != LUA_OK) {
+        Status s = status_lua_error(lvl->L);
+        lua_pop(lvl->L, 1);  // Pop error handler
+        return s;
+      }
+      lua_pop(lvl->L, 1);  // Pop error handler
     }
     /* Loading assets*/
     int na = arrlen(ldef->assets);
@@ -678,13 +775,52 @@ Status lua_level_create(LevelAPI* api, LevelDef* ldef) {
     }
   }
 
+  lua_pushcfunction(lvl->L, lua_error_handler);
   lua_getglobal(lvl->L, "_setup");
-  if (lua_pcall(lvl->L, 0, 0, 0) != LUA_OK) {
-    return status_lua_error(lvl->L);
+  if (lua_pcall(lvl->L, 0, 0, -2) != LUA_OK) {
+    Status s = status_lua_error(lvl->L);
+    lua_pop(lvl->L, 1);  // Pop error handler
+    return s;
   }
-  if (lvl->ldef) {
-    lua_level_init_pins(lvl, api);
-  }
+  lua_pop(lvl->L, 1);  // Pop error handler
   return status_ok();
 }
 
+Status lua_level_create_custom(LevelAPI* api, const char* kernel_fname) {
+  LuaLevel* lvl = calloc(1, sizeof(LuaLevel));
+  *api = (LevelAPI){0};
+  api->u = lvl;
+  api->start = lua_level_start;
+  api->update = lua_level_update;
+  api->fw = NULL;
+  api->bw = NULL;
+  api->draw = lua_level_draw;
+  api->destroy = lua_level_destroy;
+
+  lvl->ldef = NULL;
+  lvl->api = api;
+  Status status = init_level_lua(lvl);
+  if (!status.ok) return status;
+  msgpack_sbuffer_init(&lvl->sbuf);
+  msgpack_packer_init(&lvl->pk, &lvl->sbuf, msgpack_sbuffer_write);
+  if (luaL_loadfile(lvl->L, kernel_fname) != LUA_OK) {
+    return status_lua_error(lvl->L);
+  }
+  lua_pushcfunction(lvl->L, lua_error_handler);
+  lua_insert(lvl->L, -2);  // Move error handler below the loaded chunk
+  if (lua_pcall(lvl->L, 0, 0, -2) != LUA_OK) {
+    Status s = status_lua_error(lvl->L);
+    lua_pop(lvl->L, 1);  // Pop error handler
+    return s;
+  }
+  lua_pop(lvl->L, 1);  // Pop error handler
+  lua_pushcfunction(lvl->L, lua_error_handler);
+  lua_getglobal(lvl->L, "_setup");
+  if (lua_pcall(lvl->L, 0, 0, -2) != LUA_OK) {
+    Status s = status_lua_error(lvl->L);
+    lua_pop(lvl->L, 1);  // Pop error handler
+    return s;
+  }
+  lua_pop(lvl->L, 1);  // Pop error handler
+  return status_ok();
+}

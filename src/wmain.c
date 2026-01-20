@@ -129,6 +129,7 @@ static struct {
   /* If true, it means there was an error in the kernel/lua
    * side, and the simulation can't start.   */
   bool kernel_error;
+  char* kernel_error_msg;
 
   Rectangle* bot_layout;
   double hover_wire_distance;
@@ -170,6 +171,12 @@ static int main_get_simu_mode() { return C.mode; }
 static bool main_is_simulation_on() {
   return main_get_simu_mode() == MODE_SIMU;
 }
+
+static void main_open_custom_script(const char* fname) {
+  // TODO
+}
+
+static bool main_can_rewind() { return C.api.bw != NULL; }
 
 static void on_modal_before_open() {
   if (C.always_on_top) {
@@ -272,18 +279,34 @@ static void handle_kernel_error(Status s) {
     main_stop_simu();
   }
   C.kernel_error = true;
-  msg_add("Level crashed, please check console for error", 5);
+  msg_add("Level crashed :(", 5);
   printf("------------- LEVEL ERROR -------------\n");
   printf("%s\n", s.err_msg);
   printf("-------------------------------------\n");
-  free(s.err_msg);
+  C.kernel_error_msg = s.err_msg;
+}
+
+static void reset_kernel_error() {
+  if (C.kernel_error_msg) free(C.kernel_error_msg);
+  C.kernel_error_msg = NULL;
+  C.kernel_error = false;
+}
+
+static void load_file_level(const char* fname) {
+  C.ldef = NULL;
+  level_api_destroy(&C.api);
+  reset_kernel_error();
+  Status s = lua_level_create_custom(&C.api, fname);
+  if (!s.ok) {
+    handle_kernel_error(s);
+  }
 }
 
 static void on_select_level(LevelDef* ldef) {
   if (ldef == C.ldef) return;
   C.ldef = ldef;
-  int n = arrlen(ldef->kernels);
   level_api_destroy(&C.api);
+  reset_kernel_error();
   Status s = lua_level_create(&C.api, ldef);
   if (!s.ok) {
     handle_kernel_error(s);
@@ -360,6 +383,8 @@ void main_init(GameRegistry* registry) {
 
   LevelDef* ldef = registry->group_order[0]->levels[0];
   on_select_level(ldef);
+  // temporary
+  // load_file_level("../examples/script_example1.lua");
 }
 
 static void simu_play_sounds() {
@@ -703,7 +728,13 @@ void main_start_simu() {
     texs[i] = C.ca.h.t_buffer[i];
   }
   LevelAPI* api = getlevel();
-  sim_init(&C.sim, nl, imgs, api, &texs[0]);
+  Status s = sim_init(&C.sim, nl, imgs, api, &texs[0]);
+  if (!s.ok) {
+    handle_kernel_error(s);
+    sim_destroy(&C.sim);
+    return;
+  }
+
   C.hsim = wrap_sim(&C.sim);
   C.simu_target_steps = 0;
   C.pix_toggle = -1;
@@ -873,12 +904,16 @@ void main_update_controls() {
     if (IsKeyPressed(KEY_K)) {
       C.paused = !C.paused;
     }
-    if (IsKeyDown(KEY_J)) C.rewind_pressed = true;
     if (IsKeyDown(KEY_L)) C.forward_pressed = true;
+    bool can_rewind = main_can_rewind();
+    if (can_rewind) {
+      if (IsKeyDown(KEY_J)) C.rewind_pressed = true;
+    }
   }
 
   if (C.mode == MODE_SIMU) {
-    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+    bool can_rewind = main_can_rewind();
+    if (can_rewind && IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
       C.time_open = true;
       C.time_ref = C.simu_target_steps;  // C.sim.state.cur_tick;
       C.time_pos_ref = GetMousePosition();
@@ -1241,9 +1276,16 @@ void main_draw() {
     }
 
     btn_draw_legend(&C.btn_pause, bscale, "Pause/Unpause Simulation (K).");
-    btn_draw_legend(&C.btn_rewind, bscale,
-                    "Rewinds simulation (J).\nYou can also press (RIGHT MOUSE "
-                    "BUTTON) during simulation to rewind with more accuracy.");
+    bool rewind_disabled = !main_can_rewind();
+    if (rewind_disabled) {
+      btn_draw_legend(&C.btn_rewind, bscale,
+                      "Rewind is disabled for this level");
+    } else {
+      btn_draw_legend(
+          &C.btn_rewind, bscale,
+          "Rewinds simulation (J).\nYou can also press (RIGHT MOUSE "
+          "BUTTON) during simulation to rewind with more accuracy.");
+    }
     btn_draw_legend(&C.btn_forward, bscale,
                     "Forwards simulation (L).\nYou can also press (RIGHT MOUSE "
                     "BUTTON) during simulation to rewind with more accuracy.");
@@ -1667,6 +1709,7 @@ void main_update_widgets() {
   int tool = paint_get_tool(&C.ca);
   bool demo = ui_is_demo();
 
+  bool can_rewind = main_can_rewind();
   C.btn_new.disabled = ned;
   C.btn_open.disabled = ned || demo;
 
@@ -1685,7 +1728,7 @@ void main_update_widgets() {
   C.btn_rewind.toggled = C.rewind_pressed;
   C.btn_forward.toggled = C.forward_pressed;
 
-  C.btn_rewind.disabled = !ned;
+  C.btn_rewind.disabled = !ned || !can_rewind;
   C.btn_forward.disabled = !ned || !C.paused;
   C.btn_pause.disabled = !ned;
 

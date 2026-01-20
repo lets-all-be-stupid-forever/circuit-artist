@@ -22,12 +22,12 @@ function Sandbox:update()
   -- 3rd rising edge has por=0
   -- por needs to change at the falling edge
   if cycle < 4 then
-    pset(0, 1)
+    WritePort(0, 1)
   elseif cycle == 4 then
-    pset(0, 0)
+    WritePort(0, 0)
   end
   local clk = cycle % 2
-  pset(1, clk)
+  WritePort(1, clk)
   self.v_cycle(cycle)
 end
 

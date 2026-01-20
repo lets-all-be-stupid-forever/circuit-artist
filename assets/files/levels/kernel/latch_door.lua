@@ -40,7 +40,7 @@ local function customDraw(self)
   else
     ilock = ASSET_LOCK_UP
   end
-  if pget(2) == 1 then
+  if ReadPort(2) == 1 then
     iclosed = ASSET_CLOSED
   else
     iclosed = ASSET_OPEN
@@ -50,15 +50,15 @@ local function customDraw(self)
 
   local x0 = 800
   local y0 = 0
-  rl_push_matrix();
-  rl_translatef(x0,y0,0);
-  rl_scalef(s,s,1);
-  draw_rectangle_pro(0, 0, w, h, 0, 0, 0, bg[1], bg[2], bg[3], bg[4])
+  rlPushMatrix();
+  rlTranslatef(x0,y0,0);
+  rlScalef(s,s,1);
+  DrawRectangle(0, 0, w, h, bg)
   draw_texture_pro(ASSET_BASE, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
   draw_texture_pro(iclosed, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
   draw_texture_pro(ilock, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
   draw_texture_pro(iunlock, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
-  rl_pop_matrix()
+  rlPopMatrix()
 end
 
 local extra = {

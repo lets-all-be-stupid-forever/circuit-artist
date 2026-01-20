@@ -95,14 +95,22 @@ function _backward(patch)
   end
 end
 
-
 function _setup(args)
   for i=1,#__chips do
     __chips[i]:setup()
-    PORTS = __chips[i].ports
+    local ports = __chips[i].ports
+    for j=1,#ports do
+      local p = ports[j]
+      local ptype
+      if p.input then
+        AddPortIn(p.width, p.name)
+      else
+        AddPortOut(p.width, p.name)
+      end
+    end
   end
-  fixpins(PORTS, 0)
 end
+
 
 function _start()
   resetVariables()

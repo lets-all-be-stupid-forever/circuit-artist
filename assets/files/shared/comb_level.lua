@@ -35,7 +35,7 @@ function CombinatorialTest:update()
       if port.input then
         -- Testing
         local expect = self.cases[icase][port.name]
-        local output = pget(iport-1)
+        local output = ReadPort(iport-1)
         if expect ~= nil and expect ~= output then
           self.v_err(true)
           self.v_errors(
@@ -60,7 +60,7 @@ function CombinatorialTest:update()
     local port = self.ports[iport]
     if not port.input then
       -- print(port.name, iport-1, self.cases[icase+1][port.name])
-      pset(iport-1, self.cases[icase+1][port.name])
+      WritePort(iport-1, self.cases[icase+1][port.name])
     end
   end
   self.v_icase(icase + 1)
@@ -106,8 +106,8 @@ function CombinatorialTest:draw()
     table.insert(msgs, {text=self.cases[icase].name, box_w=300})
   end
 
-  rl_push_matrix();
-  rl_scalef(3,3,1);
+  rlPushMatrix();
+  rlScalef(3,3,1);
   for i=1,#msgs do
     local txt = msgs[i].text
     local color = msgs[i].color or WHITE
@@ -118,26 +118,20 @@ function CombinatorialTest:draw()
     -- local size = MeasureText(txt, lh)
     if txt ~= nil then
       local bg = BLACK
-      local w = measure_text_size(txt)
+      local w = MeasureText(txt)
       local off = 4
-      draw_rectangle_pro(0, y - pady, w + 6, bh,
-      0,0 ,0,
-      0,0,0,200)
-
+      DrawRectangle(0, y - pady, w + 6, bh, {0,0,0,200})
       local box_w = msgs[i].box_w
       if box_w ~= nil then
-        draw_box(txt, off + 1, y+1, box_w, bg[1], bg[2], bg[3], bg[4])
-        draw_box(txt, off + 0, y, box_w, color[1], color[2], color[3], color[4])
+        DrawTextBox(txt, off + 1, y+1, box_w, bg)
+        DrawTextBox(txt, off + 0, y, box_w, color)
       else
-        draw_font(txt, off + 1, y+1, bg[1], bg[2], bg[3], bg[4])
-        draw_font(txt, off + 0, y, color[1], color[2], color[3], color[4])
+        DrawText(txt, off + 1, y+1, bg)
+        DrawText(txt, off + 0, y, color)
       end
-
-
-      -- caPrint(txt, 0, y, 1)
     end
   end
-  rl_pop_matrix();
+  rlPopMatrix();
 
   if self.customDraw then
      self:customDraw()

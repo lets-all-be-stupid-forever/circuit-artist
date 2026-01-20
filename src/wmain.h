@@ -1,5 +1,6 @@
 #ifndef CA_WMAIN_H
 #define CA_WMAIN_H
+#include "game_registry.h"
 #include "paint.h"
 #include "pin_spec.h"
 #include "raylib.h"
@@ -15,7 +16,7 @@ typedef enum {
 typedef void (*Callback)();
 
 // Main screen.
-void main_init();
+void main_init(GameRegistry* registry);
 void main_open();
 void main_update();
 void main_draw();

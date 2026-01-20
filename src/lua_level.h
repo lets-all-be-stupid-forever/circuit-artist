@@ -10,5 +10,6 @@
 #include "stdbool.h"
 
 Status lua_level_create(LevelAPI* lvl, LevelDef* ldef);
+Status lua_level_create_custom(LevelAPI* api, const char* kernel_fname);
 
 #endif

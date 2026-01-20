@@ -57,6 +57,7 @@ typedef struct {
   Status (*draw)(void* u);
 } LevelAPI;
 
+void level_api_add_port(LevelAPI* api, int width, const char* id, int type);
 void level_api_add_pg(LevelAPI* api, PinGroup pg);
 void level_api_destroy(LevelAPI* api);
 

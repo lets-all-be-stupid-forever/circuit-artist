@@ -4,7 +4,7 @@ local function customDraw(self)
   -- First I need access to pins
   local pins = {}
   for i =1,7 do
-    pins[i] = pget(i)
+    pins[i] = ReadPort(i)
   end
 
   local white = {255, 255, 255, 255}
