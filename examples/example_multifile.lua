@@ -1,3 +1,6 @@
+--[[
+Example loading external file
+]]
 require "extra_funcs"
 
 function _Setup()

@@ -196,6 +196,8 @@ typedef struct Sim {
   uint32_t* pulse_dirty_mask;
   int dirty_mask_size;
   bool pause_requested; /* pausing from within simulation */
+  int64_t update_interval;
+  int base_tps;
 } Sim;
 
 Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,

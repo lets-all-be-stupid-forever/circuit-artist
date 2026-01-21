@@ -344,6 +344,35 @@ static int lua_Pause(lua_State* L) {
   return 0;
 }
 
+static int lua_SetUpdateInterval(lua_State* L) {
+  Sim* sim = lua_getsim(L);
+  if (!sim) {
+    return luaL_error(
+        L, "SetUpdateInterval() should be called during Start() or Update()");
+  }
+  i64 interval = luaL_checkinteger(L, 1);
+  if (interval < 0) {
+    return luaL_error(L, "Update interval must be non-negative");
+  }
+  if (interval != 0) interval = interval < 4 ? 4 : interval;
+  sim->update_interval = interval;
+  return 0;
+}
+
+static int lua_SetBaseTPS(lua_State* L) {
+  Sim* sim = lua_getsim(L);
+  if (!sim) {
+    return luaL_error(
+        L, "SetBaseTPS() should be called during Start() or Update()");
+  }
+  i64 tps = luaL_checkinteger(L, 1);
+  if (tps < 1) {
+    return luaL_error(L, "Base TPS can't be less than 1");
+  }
+  sim->base_tps = tps;
+  return 0;
+}
+
 int lua_print_redirect(lua_State* L) {
   int n = lua_gettop(L);
   lua_getglobal(L, "tostring");
@@ -643,6 +672,8 @@ static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
   lua_register(L, "ReadPort", lua_pget);
   lua_register(L, "WritePort", lua_pset);
   lua_register(L, "Pause", lua_Pause);
+  lua_register(L, "SetUpdateInterval", lua_SetUpdateInterval);
+  lua_register(L, "SetBaseTPS", lua_SetBaseTPS);
 
   /* Drawing */
   lua_register(L, "MeasureText", lua_MeasureText);

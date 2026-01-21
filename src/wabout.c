@@ -54,6 +54,7 @@ void easy_about_open() {
       "\n"
       "A game by `lets_all_be_stupid_forever`.\n"
       "circuitartistgame@gmail.com\n"
+      "Check our blog: `www.circuitartistgame.com`\n"
       "\n"
       "Available on "
       "Steam.\nhttps://store.steampowered.com/app/3139580/Circuit_Artist/"

@@ -174,10 +174,6 @@ static bool main_is_simulation_on() {
   return main_get_simu_mode() == MODE_SIMU;
 }
 
-static void main_open_custom_script(const char* fname) {
-  // TODO
-}
-
 static bool main_can_rewind() { return C.api.bw != NULL; }
 
 static void on_modal_before_open() {
@@ -211,9 +207,7 @@ void on_click() {
 }
 
 static float get_simu_dt() {
-  double seconds_to_frame = 60.0;
-  double ticks_per_frame = 4;
-  double v1 = ticks_per_frame * seconds_to_frame;
+  double v1 = C.sim.base_tps;
   int c = C.clock_speed;
   switch (c) {
     case 0:
@@ -229,10 +223,10 @@ static float get_simu_dt() {
       return v1 * 4;
       break;
     case 4:
-      return v1 * 16 * 2;
+      return v1 * 32;
       break;
     case 5:
-      return v1 * 32 * 4;
+      return v1 * 128;
       break;
   }
   return 10000;
@@ -405,7 +399,7 @@ void main_init(GameRegistry* registry) {
   on_select_level(ldef);
   // temporary
   // load_file_level("../examples/script_example1.lua");
-  load_file_level("../examples/simple_clock.lua");
+  // load_file_level("../examples/simple_clock.lua");
   // load_file_level("../examples/example_multifile.lua");
 }
 
@@ -1213,8 +1207,8 @@ void main_draw() {
   btn_draw_icon(&C.btn_pause, bscale, sprites, rect_pause);
 
   btn_draw_text(&C.btn_wiki, bscale, "Wiki");
-  btn_draw_text(&C.btn_level_custom, bscale, "Custom");
-  btn_draw_text(&C.btn_level_campaign, bscale, "Campaign");
+  btn_draw_text(&C.btn_level_custom, bscale, "Custom Level");
+  btn_draw_text(&C.btn_level_campaign, bscale, "Campaign Level");
 
   bool color_disabled = mode != MODE_EDIT;
   btn_draw_color(C.fg_color_rect, paint_get_color(&C.ca), false,
@@ -1286,9 +1280,13 @@ void main_draw() {
         "propagate even faster here.\nUse (TAB) to quickly alternate "
         "between previously used layer.");
 
-    btn_draw_legend(&C.btn_level_custom, bscale,
-                    "Select custom level from local files\nPress (F5) to "
-                    "quickly reload script");
+    btn_draw_legend(
+        &C.btn_level_custom, bscale,
+        "Select custom level from local files\nPress (F5) to "
+        "quickly reload script\n"
+        "Check game's blog website, wiki or examples folder in game's "
+        "folder for instructions\n"
+        "www.circuitartistgame.com");
     btn_draw_legend(&C.btn_level_campaign, bscale, "Select campaign level");
     btn_draw_legend(&C.btn_wiki, bscale, "Wiki");
     btn_draw_legend(&C.btn_sound, bscale, "Toggle simulation sound");
@@ -1426,9 +1424,9 @@ void main_update_layout() {
     C.btn_about.hitbox = (Rectangle){x4, y0, bw, bh};
     C.btn_exit.hitbox = (Rectangle){x5, y0, bw, bh};
 
-    C.btn_level_campaign.hitbox = (Rectangle){x7, y0, 5 * bw, bh};
+    C.btn_level_campaign.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
     x7 += C.btn_level_campaign.hitbox.width + 1 * s;
-    C.btn_level_custom.hitbox = (Rectangle){x7, y0, 5 * bw, bh};
+    C.btn_level_custom.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
     x7 += C.btn_level_custom.hitbox.width + (17 * s) + 4 * s;
     C.btn_wiki.hitbox = (Rectangle){x7, y0, 4 * bw, bh};
     x7 += C.btn_wiki.hitbox.width + 4 * s;

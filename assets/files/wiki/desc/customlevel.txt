@@ -1,0 +1,82 @@
+
+`CUSTOM LEVEL`
+
+You can write custom levels using `local` lua script.
+
+The `examples/` folder in the game's directory contains a few examples.
+
+The script needs to define 4 functions:
+
+- `_Setup()`: Declares ports/pins. (called once on load)
+- `_Start()`: Initializes simulation variables. (called before each simulation)
+- `_Update()`: Level logic. Called every N ticks or whenever simulation "stops".
+- `_Draw()`: Draws on screen. Called every UI frame during simulation.
+
+More details:
+
+!hl
+
+`_Setup()`: This function should define the ports of the level. It is called right after the lua scripts are loaded. Each port is defined by: input or output, the number of wires and its name. 
+
+Input (as in input to the script), is defined by `AddPortIn(numWires, wireName)` and output wires as `AddPortOut(numWires, wireName)`. These functions return the ID of the port, which should be later used to read/write to it.
+
+Example:
+
+function _Setup()
+  PORT_A = AddPortIn(2, 'a')
+  PORT_B = AddPortOut(4, 'b')
+end
+
+!hl
+
+`_Start()`: Called when simulation starts, before any update. It should initialize simulation data and can declare some simulation parameters.
+
+- `SetUpdateInterval(N)` rate in which _Update() is called. if N=0, it is called whenever circuit stops. If N>0, _Update() is called every N ticks. 
+
+A fixed tick rate might be useful for CPU or fixed clock design, but is sensitive to critical path design.
+
+
+- `SetBaseTPS(T)`: Simulation's Ticks Per Second (TPS) for speed 3.
+
+Default value is 240.
+
+The scaling TPS per speed is:
+
+- speed1: BaseTPS / 16
+- speed2: BaseTPS / 4
+- speed3: BaseTPS
+- speed4: BaseTPS * 4
+- speed5: BaseTPS * 32
+- speed6: BaseTPS * 128
+
+It allows higher simulation speeds, might be useful for CPU designs that need higher TPS.
+
+!hl
+
+`_Update()`: This function should contain the evolution logic of the level. It can read or write to ports using the `value = ReadPort(portId)` or `WritePort(portId, value)`.
+
+Example:
+
+function _Update()
+  local a = ReadPort(PORT_A)
+  WritePort(PORT_B, a+1)
+end
+
+!hl
+
+`_Draw()`: Called every drawing frame, it `should not write to ports` here (it can read).
+
+Implemented functions are: (many of them are based on raylib's implementation)
+
+- `DrawRectangle(x, y, width, height, {r, g, b, a})` (colors are defined by {r,g,b,a} array with 0-255 range)
+- `DrawText(txt, x, y, {r,g,b,a})` Draws text on screen.
+- `MeasureText(txt)` returns the length in pixels of the text (when calling DrawText).
+- `DrawTextBox(txt, x, y, w, {r,g,b,a})` Same as DrawText but will jump line when length goes past w (good for long text)
+- `rlPushMatrix()` pushes (saves) matrix for transformations
+- `rlPopMatrix()` pops (reverts) matrix for transformations
+- `rlScalef(sx, sy, sz)` scales drawing (mind putting sz to 1)
+- `rlTranslatef(tx, ty, tz)` translates drawing (mind putting tz to 0)
+
+You can check raylib documentation/examples for more info/or more ideas on how to extend API.
+
+

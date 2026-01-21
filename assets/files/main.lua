@@ -1545,6 +1545,7 @@ add_wiki("basic", "wires_crossing", "Crossing Wires")
 add_wiki("basic", "wires_io", "Wires IO")
 add_wiki("basic", "bit_order", "Bit Order")
 add_wiki("basic", "posint", "Number Representation")
+add_wiki("basic", "customlevel", "Custom Level")
 
 add_wiki("gates", "nand", "Nand Gate")
 add_wiki("gates", "not", "Not Gate")

@@ -525,6 +525,7 @@ Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,
                 RenderTexture2D* layers) {
   *sim = (Sim){0};
   bool debug = false;
+  sim->base_tps = 240;
   Status status = status_ok();
   sim->api = api;
   double start = GetTime();
@@ -845,8 +846,15 @@ static Status sim_diff(void* ctx, Buffer* patch) {
   bool with_level = sim_is_idle(sim);
   builder->cycle = with_level && !sim->state.done && !sim->state.error;
   /* Only updates/moves cycle forward when level is not complete/stopped. */
-  if (builder->cycle) {
+  int interval = sim->update_interval;
+  if (builder->cycle && interval == 0) {
     s = sim_update_level(sim);
+  }
+  if (interval > 0) {
+    int t = state->cur_tick;
+    if (t % interval == 0) {
+      s = sim_update_level(sim);
+    }
   }
   if (s.ok) {
     patch_builder_update_nrj(builder, state);
