@@ -852,7 +852,7 @@ static Status sim_diff(void* ctx, Buffer* patch) {
   }
   if (interval > 0) {
     int t = state->cur_tick;
-    if (t % interval == 0) {
+    if (t % interval == 0 && t != 0) {
       s = sim_update_level(sim);
     }
   }
