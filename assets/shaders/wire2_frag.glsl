@@ -26,10 +26,9 @@ float unpack_float32(vec4 rgba) {
 // Do I need to pass p0,p1,p? Or can i just pass p ?
 float interp(int p0, int p1, int p, float rc, float d0,
                            float d1) {
-
   if (d0 == 0 && d1 == 0) {
-return 0;
-}
+    return 0.f;
+  }
   float a, t0, t1;
   if (p0 == p) return d0;
   if (p1 == p) return d1;
