@@ -1654,35 +1654,3 @@ void sim_dry_run(GameRegistry* r) {
 #undef SETPIXEL
 }
 
-void level_api_add_pg(LevelAPI* api, PinGroup pg) { arrput(api->pg, pg); }
-void level_api_add_port(LevelAPI* api, int width, const char* id, int type) {
-  PinGroup pg = {0};
-  pg.id = clone_string(id), pg.type = type;
-  int y = 0;
-  int n = arrlen(api->pg);
-  if (n > 0) {
-    int wg = arrlen(api->pg[n - 1].pins);
-    // position of last pin of previous port
-    y = api->pg[n - 1].pins[wg - 1].y;
-    y += 4;
-  }
-  y += 4;
-  for (int i = 0; i < width; i++) {
-    int px = 0;
-    int py = y + 2 * i;
-    pg_add_pin(&pg, px, py);
-  }
-  arrput(api->pg, pg);
-}
-
-void level_api_destroy(LevelAPI* api) {
-  int np = arrlen(api->pg);
-  for (int i = 0; i < np; i++) {
-    pg_destroy(&api->pg[i]);
-  }
-  arrfree(api->pg);
-  if (api->u) {
-    api->destroy(api->u);
-  }
-  *api = (LevelAPI){0};
-}

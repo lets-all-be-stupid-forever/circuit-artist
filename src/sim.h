@@ -5,8 +5,8 @@
 #include "event_queue.h"
 #include "game_registry.h"
 #include "hsim.h"
+#include "level_api.h"
 #include "paged_stack.h"
-#include "pin_spec.h"
 #include "pixel_graph.h"
 #include "renderv2.h"
 #include "series.h"
@@ -45,21 +45,6 @@ typedef struct {
   i64 b;
   i64 f; /* flag for undefined*/
 } PinComm;
-
-typedef struct {
-  void* u;
-  PinGroup* pg;
-  void (*destroy)(void* u);
-  Status (*start)(void* u, struct Sim* sim);
-  Status (*update)(void* u, Buffer* buffer);
-  Status (*fw)(void* u, Buffer buf);
-  Status (*bw)(void* u, Buffer buf);
-  Status (*draw)(void* u);
-} LevelAPI;
-
-void level_api_add_port(LevelAPI* api, int width, const char* id, int type);
-void level_api_add_pg(LevelAPI* api, PinGroup pg);
-void level_api_destroy(LevelAPI* api);
 
 typedef struct {
   /* Serialized states */

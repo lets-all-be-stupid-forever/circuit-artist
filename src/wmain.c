@@ -487,46 +487,6 @@ float get_clock_delta(v2 c, v2 a, v2 b) {
 
 static LevelAPI* getlevel() { return &C.api; }
 
-static void draw_pin_sockets(RenderTexture target) {
-  BeginTextureMode(target);
-  Cam2D cam = C.ca.cam;
-  rlPushMatrix();
-  rlTranslatef(cam.off.x, cam.off.y, 0);
-  rlScalef(cam.sp, cam.sp, 1);
-  PinGroup* l_pg = getlevel()->pg;
-  for (int ig = 0; ig < arrlen(l_pg); ig++) {
-    PinGroup* pg = &l_pg[ig];
-    int w = C.ca.h.buffer[0].width;
-    int npin = arrlen(pg->pins);
-    for (int ipin = 0; ipin < npin; ipin++) {
-      int x = pg->pins[ipin].x;
-      int y = pg->pins[ipin].y;
-      int w = paint_img_width(&C.ca);
-      int h = paint_img_height(&C.ca);
-      if (x < 0) x = w + x;
-      if (y < 0) y = h + y;
-      Rectangle source;
-      Texture sprite = ui_get_sprites();
-      Rectangle target = {x, y, 1, 1};
-      int type = pg->type;
-      Color clr;
-      if (type == PIN_LUA2IMG) {
-        clr = GREEN;
-        source = (Rectangle){576, 160, 16, 16};
-      } else {
-        clr = RED;
-        source = (Rectangle){576, 160 + 16, 16, 16};
-      }
-      if (cam.sp < 16) {
-        source = (Rectangle){576 + 16, 160, 16, 16};
-      }
-      DrawTexturePro(sprite, source, target, (Vector2){0, 0}, 0, clr);
-    }
-  }
-  rlPopMatrix();
-  EndTextureMode();
-}
-
 Status main_draw_level_kernel() {
   if (!main_is_simulation_on()) return status_ok();
   LevelAPI* api = getlevel();
@@ -537,35 +497,6 @@ Status main_draw_level_kernel() {
   rlPopMatrix();
   EndTextureMode();
   return s;
-}
-
-static void my_draw_board() {
-  LevelAPI* lvl = getlevel();
-  PinGroup* pg = lvl->pg;
-  int ng = arrlen(pg);
-  BeginTextureMode(C.level_overlay_tex);
-  ClearBackground(BLANK);
-  rlPushMatrix();
-  rlTranslatef(C.ca.cam.off.x, C.ca.cam.off.y, 0);
-  rlScalef(C.ca.cam.sp, C.ca.cam.sp, 1);
-  for (int ig = 0; ig < ng; ig++) {
-    int np = arrlen(pg[ig].pins);
-    int th = 2 * np;
-    int lh = 8;
-    int y = pg[ig].pins[0].y;
-    y = y + (th - lh) / 2;
-    bool input = pg[ig].type == PIN_LUA2IMG;
-    const char* name;
-    if (input) {
-      name = TextFormat("%s ->", pg[ig].id);
-    } else {
-      name = TextFormat("%s <-", pg[ig].id);
-    }
-    int w = get_rendered_text_size(name).x;
-    font_draw_texture(name, -w - 2, y, WHITE);
-  }
-  rlPopMatrix();
-  EndTextureMode();
 }
 
 void main_update() {
@@ -611,7 +542,9 @@ void main_update() {
   int mode = main_get_simu_mode();
   if (mode == MODE_EDIT) {
     paint_render_texture(&C.ca, C.sidepanel_tex, C.img_target_tex);
-    draw_pin_sockets(C.img_target_tex);
+    int w = paint_img_width(&C.ca);
+    int h = paint_img_height(&C.ca);
+    level_api_draw_pin_sockets(&C.api, C.ca.cam, w, h, C.img_target_tex);
   }
 
   if (mode == MODE_SIMU || mode == MODE_ERROR) {
@@ -645,7 +578,12 @@ void main_update() {
     texdel(rendered);
   }
 
-  my_draw_board();
+  {
+    int w = paint_img_width(&C.ca);
+    int h = paint_img_height(&C.ca);
+    level_api_draw_board(&C.api, C.ca.cam, w, h, C.level_overlay_tex);
+  }
+
   if (!C.kernel_error) {
     Status s = status_ok();
     // if (s.ok) s = main_draw_level_board();

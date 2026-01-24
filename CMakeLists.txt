@@ -73,6 +73,7 @@ SET(ca_src
   src/hsim.c
   src/img.c
   src/lua_level.c
+  src/level_api.c
   src/log.c
   src/modal.c
   src/msg.c

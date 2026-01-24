@@ -613,8 +613,16 @@ static int lua_add_input_port(lua_State* L) {
   // Get the current index before adding the port
   int index = arrlen(lvl->api->pg);
 
+  // Parse optional third parameter for position (0 = false, 1 = true)
+  int nargs = lua_gettop(L);
+  bool position = false; // default to false
+  if (nargs >= 3 && !lua_isnil(L, 3)) {
+    int pos_value = luaL_checkinteger(L, 3);
+    position = (pos_value == 1);
+  }
+
   // Add the input port to the API
-  level_api_add_port(lvl->api, width, id, PIN_IMG2LUA);
+  level_api_add_port(lvl->api, width, id, PIN_IMG2LUA, position);
 
   // Return the index
   lua_pushinteger(L, index);
@@ -636,8 +644,16 @@ static int lua_add_output_port(lua_State* L) {
   // Get the current index before adding the port
   int index = arrlen(lvl->api->pg);
 
+  // Parse optional third parameter for position (0 = false, 1 = true)
+  int nargs = lua_gettop(L);
+  bool position = false; // default to false
+  if (nargs >= 3 && !lua_isnil(L, 3)) {
+    int pos_value = luaL_checkinteger(L, 3);
+    position = (pos_value == 1);
+  }
+
   // Add the output port to the API
-  level_api_add_port(lvl->api, width, id, PIN_LUA2IMG);
+  level_api_add_port(lvl->api, width, id, PIN_LUA2IMG, position);
 
   // Return the index
   lua_pushinteger(L, index);
@@ -674,6 +690,12 @@ static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
   lua_register(L, "Pause", lua_Pause);
   lua_register(L, "SetUpdateInterval", lua_SetUpdateInterval);
   lua_register(L, "SetBaseTPS", lua_SetBaseTPS);
+
+  /* Port position constants */
+  lua_pushinteger(L, 0);
+  lua_setglobal(L, "LEFT");
+  lua_pushinteger(L, 1);
+  lua_setglobal(L, "RIGHT");
 
   /* Drawing */
   lua_register(L, "MeasureText", lua_MeasureText);
@@ -872,3 +894,4 @@ Status lua_level_create_custom(LevelAPI* api, const char* kernel_fname) {
   lua_pop(lvl->L, 1);  // Pop error handler
   return lua_call_global(lvl->L, "_Setup", 0, 0);
 }
+

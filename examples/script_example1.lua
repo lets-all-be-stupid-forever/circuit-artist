@@ -7,8 +7,8 @@ ranging from 0 to 255.
 ]]
 
 function _Setup()
-  PORT_A = AddPortOut(7, 'a')
-  PORT_B = AddPortIn(7, 'b')
+  PORT_A = AddPortOut(7, 'a', LEFT)
+  PORT_B = AddPortIn(7, 'b', RIGHT)
 end
 
 

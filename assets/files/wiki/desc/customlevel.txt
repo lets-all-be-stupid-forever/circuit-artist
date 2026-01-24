@@ -23,8 +23,8 @@ Input (as in input to the script), is defined by `AddPortIn(numWires, wireName)`
 Example:
 
 function _Setup()
-  PORT_A = AddPortIn(2, 'a')
-  PORT_B = AddPortOut(4, 'b')
+  PORT_A = AddPortIn(2, 'a', LEFT)
+  PORT_B = AddPortOut(4, 'b', RIGHT)
 end
 
 !hl
