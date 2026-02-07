@@ -6,6 +6,7 @@
 #include "json.h"
 #include "layout.h"
 #include "msg.h"
+#include "paths.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -165,8 +166,8 @@ static void swap_stamps(int i0, int i1) {
   C.stamps[i1] = tmp;
 }
 
-static void add_bp_from_img(const char* path) {
-  Image img = LoadImage(path);
+static void add_bp_from_img_asset(const char* asset) {
+  Image img = load_image_asset(asset);
   int nl = 0;
   Image tmp[MAX_LAYERS] = {0};
   image_decode_layers(img, &nl, tmp);
@@ -178,12 +179,12 @@ static void add_bp_from_img(const char* path) {
 }
 
 static void initialize_stamps() {
-  add_bp_from_img("../assets/default_page_1.png");
-  add_bp_from_img("../assets/default_page_2.png");
-  add_bp_from_img("../assets/default_bp1.png");
-  add_bp_from_img("../assets/default_bp2.png");
-  add_bp_from_img("../assets/default_bp3.png");
-  add_bp_from_img("../assets/default_bp4.png");
+  add_bp_from_img_asset("default_page_1.png");
+  add_bp_from_img_asset("default_page_2.png");
+  add_bp_from_img_asset("default_bp1.png");
+  add_bp_from_img_asset("default_bp2.png");
+  add_bp_from_img_asset("default_bp3.png");
+  add_bp_from_img_asset("default_bp4.png");
   swap_stamps(0, get_page_stamp_idx(0));
   swap_stamps(1, get_page_stamp_idx(1));
   swap_stamps(2, get_page_slot_stamp_idx(0, 0));

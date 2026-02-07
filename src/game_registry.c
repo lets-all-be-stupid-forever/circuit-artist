@@ -7,6 +7,7 @@
 
 #include "fs.h"
 #include "json.h"
+#include "paths.h"
 #include "stb_ds.h"
 #include "stdlib.h"
 #include "steam.h"
@@ -106,7 +107,7 @@ static int lua_add_level(lua_State* L) {
   if (!icon2) {
     return luaL_error(L, "Invalid icon path");
   }
-  ldef->icon = load_sprite(icon2);
+  ldef->icon = load_sprite_asset(icon2);
   free(icon2);
   lua_pop(L, 1);  // Remove icon from stack
 
@@ -308,9 +309,10 @@ static int lua_loadtxt(lua_State* L) {
   return 1;
 }
 
-void init_mod(GameRegistry* r, const char* mod_path) {
+void init_mod(GameRegistry* r, const char* mod_asset_path) {
   _load_ctx.registry = r;
   assert(!_load_ctx.mod_root);
+  char* mod_path = get_asset_path(mod_asset_path);
   _load_ctx.mod_root = mod_path;
   // TODO: do an extra safe check that mod_path is within acceptable game paths
   char* path = checkmodpath(mod_path, "main.lua");
@@ -318,9 +320,11 @@ void init_mod(GameRegistry* r, const char* mod_path) {
     // TODO: What do I do here?
     // ui_handle_lua_error(L);
     free(path);
+    free(mod_path);
     return;
   }
   free(path);
+  free(mod_path);
   _load_ctx.mod_root = NULL;
   _load_ctx.registry = NULL;
 }
@@ -536,7 +540,7 @@ void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
   TutorialTopic topic = {0};
   topic.id = clone_string(topic_id);
   topic.name = clone_string(name);
-  topic.icon = load_sprite(icon_file);
+  topic.icon = load_sprite_asset(icon_file);
   arrput(r->topics, topic);
 }
 
@@ -548,7 +552,7 @@ void registry_add_tutorial_item(GameRegistry* r, const char* topic_id,
   int idx = find_topic_by_id(r, topic_id);
   TutorialTopic* topic = &r->topics[idx];
   TutorialItem item = {0};
-  item.icon = load_sprite(icon_file);
+  item.icon = load_sprite_asset(icon_file);
   item.desc = clone_string(desc);
   item.desc_imgs = sprites;
   item.id = clone_string(item_id);

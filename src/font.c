@@ -7,6 +7,7 @@
 
 #include "colors.h"
 #include "img.h"
+#include "paths.h"
 
 typedef struct {
   // Atlas image.
@@ -120,9 +121,9 @@ static void parse_font(ArtFont* f) {
   assert(ichar == NUM_CHARS + 1);
 }
 
-static ArtFont create_font_from_file(const char* font_filename) {
+static ArtFont create_font_from_asset(const char* asset) {
   ArtFont fnt = {0};
-  fnt.atlas = LoadImage(font_filename);
+  fnt.atlas = load_image_asset(asset);
   fnt.offset = calloc(257, sizeof(int));
   parse_font(&fnt);
   fnt.tex = LoadTextureFromImage(fnt.atlas);
@@ -278,8 +279,8 @@ void font_draw_texture(const char* txt, int x, int y, Color color) {
 
 // Loads font from a dedicated file.
 // It's not stable, the font format needs to move towards what raylib is using.
-void load_art_font(const char* filepath) {
-  _font = create_font_from_file(filepath);
+void load_art_font_asset(const char* asset) {
+  _font = create_font_from_asset(asset);
 }
 
 // Returns the font line height in pixels.

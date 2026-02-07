@@ -28,7 +28,7 @@ void str_builder_add_raw(str_builder_t* sb, const char* txt);
 void str_builder_add(str_builder_t* sb, const char* fmt, ...);
 void str_builder_destroy(str_builder_t* sb);
 
-sprite_t load_sprite(const char* fname);
+sprite_t load_sprite_asset(const char* fname);
 void load_text_from_file(const char* fname, char** txt, sprite_t** sprites);
 void load_text_sprites(const char* txt, sprite_t** sprites);
 void load_text_sprites_v2(const char* root, const char* txt,
@@ -38,7 +38,7 @@ void delete_file(const char* path);
 /* Hack for layout parsing */
 Rectangle roff(Vector2 off, Rectangle r);
 
-Rectangle* parse_layout(const char* fname);
+Rectangle* parse_layout_asset(const char* asset);
 Vector2 find_modal_off(Rectangle layout);
 
 typedef struct {

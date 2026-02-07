@@ -71,7 +71,7 @@ static void set_sel(int topic, int item) {
 
 void tutorial_init(GameRegistry* r) {
   C.registry = r;
-  C.layout = parse_layout("../assets/layout/circ_layout1.png");
+  C.layout = parse_layout_asset("layout/circ_layout1.png");
   C.topic_sel = -1;
   C.item_sel = -1;
   textbox_init(&C.tb);

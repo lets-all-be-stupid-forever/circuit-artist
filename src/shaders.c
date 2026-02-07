@@ -1,6 +1,7 @@
 #include "shaders.h"
 
 #include "assert.h"
+#include "paths.h"
 #include "stb_ds.h"
 #include "stdio.h"
 
@@ -17,15 +18,15 @@
 #define SHADER_LOAD(name)                                         \
   {                                                               \
     _s.name##_shader =                                            \
-        LoadShader(0, "../assets/shaders/" #name "_shader.glsl"); \
+        load_shader_asset(NULL, "shaders/" #name "_shader.glsl"); \
     assert(IsShaderValid(_s.name##_shader));                      \
   }
 
-#define SHADER_LOAD2(name)                                                  \
-  {                                                                         \
-    _s.name##_shader = LoadShader("../assets/shaders/" #name "_vert.glsl",  \
-                                  "../assets/shaders/" #name "_frag.glsl"); \
-    assert(IsShaderValid(_s.name##_shader));                                \
+#define SHADER_LOAD2(name)                                               \
+  {                                                                      \
+    _s.name##_shader = load_shader_asset("shaders/" #name "_vert.glsl",  \
+                                         "shaders/" #name "_frag.glsl"); \
+    assert(IsShaderValid(_s.name##_shader));                             \
   }
 
 static Shaders _s = {0};
@@ -225,7 +226,7 @@ typedef struct {
   struct {
     char* key;
     int value;
-  } * locs;
+  }* locs;
 } ShaderDef;
 
 static struct {
@@ -233,7 +234,7 @@ static struct {
   struct {
     char* key;
     ShaderDef value;
-  } * registry;
+  }* registry;
 } C = {0};
 
 Shaders* get_shaders() { return &_s; }
@@ -243,7 +244,7 @@ void shader_load(const char* name) {
   if (i == -1) {
     ShaderDef sd = {0};
     sd.shader =
-        LoadShader(0, TextFormat("../assets/shaders/%s_shader.glsl", name));
+        load_shader_asset(NULL, TextFormat("shaders/%s_shader.glsl", name));
     assert(IsShaderValid(sd.shader));
     shput(C.registry, name, sd);
     i = shgeti(C.registry, name);
@@ -307,4 +308,3 @@ void shader_vec4v(const char* name, Vector4* val, int n) {
   SetShaderValueV(C.registry[C.active].value.shader, loc, val,
                   SHADER_UNIFORM_VEC4, n);
 }
-

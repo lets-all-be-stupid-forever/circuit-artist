@@ -81,6 +81,7 @@ SET(ca_src
   src/paged_cstack.c
   src/paged_stack.c
   src/paint.c
+  src/paths.c
   src/pin_spec.c
   src/pixel_graph.c
   src/plot.c
