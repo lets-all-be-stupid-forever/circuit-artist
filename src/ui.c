@@ -13,6 +13,7 @@
 #include "log.h"
 #include "modal.h"
 #include "msg.h"
+#include "paths.h"
 #include "profiler.h"
 #include "shaders.h"
 #include "stb_ds.h"
@@ -34,8 +35,8 @@
 
 static struct {
   int scale;           // Global UI pixel scaling.
-  Image img_sprites;   // Global UI sprites loaded from ../assets/sprite4.png
-  Texture2D sprites;   // Global UI sprites loaded from ../assets/sprite4.png
+  Image img_sprites;   // Global UI sprites loaded from the sprite4.png asset
+  Texture2D sprites;   // Global UI sprites loaded from the sprite4.png asset
   WindowEnum* window;  // Active window/screen.
   MouseCursorType cursor;  // Current mouse cursor type.
   bool close_requested;    // If true, will try to close the game.
@@ -94,10 +95,10 @@ void ui_init() {
   InitWindow(screen_width, screen_height, "Circuit Artist");
   InitAudioDevice();
   C.registry = create_game_registry();
-  init_mod(C.registry, "../assets/files");
+  init_mod(C.registry, "files");
   load_progress(C.registry);
 
-  load_art_font("../assets/font5x7.png");
+  load_art_font_asset("font5x7.png");
 
   if (C.lua_error) return;
   BeginDrawing();
@@ -108,7 +109,7 @@ void ui_init() {
   DrawRectangle(0, 0, 2000, 2000, BLACK);
   EndDrawing();
   SetWindowState(FLAG_WINDOW_MAXIMIZED);
-  C.img_sprites = LoadImage("../assets/sprite4.png");
+  C.img_sprites = load_image_asset("sprite4.png");
   C.sprites = LoadTextureFromImage(C.img_sprites);
   HideCursor();
   msg_init();

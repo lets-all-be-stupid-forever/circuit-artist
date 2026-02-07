@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "paths.h"
 #include "ui.h"
 
 #ifdef WIN32
@@ -34,6 +35,7 @@ int main(int argc, char** argv) {
   }
 #endif
 
+  paths_init();
   ui_init();
   SetExitKey(0);  // Avoids window closing with escape key
   SetTargetFPS(60);

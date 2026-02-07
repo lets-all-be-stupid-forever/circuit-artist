@@ -17,6 +17,7 @@
 #include "modal.h"
 #include "msg.h"
 #include "paint.h"
+#include "paths.h"
 #include "profiler.h"
 #include "sim.h"
 #include "stb_ds.h"
@@ -242,8 +243,8 @@ static float get_simu_slack_steps() {
   return C.simu_target_steps - C.sim.state.cur_tick;
 }
 
-void load_palette(const char* fname) {
-  Image pal = LoadImage(fname);
+void load_palette_asset(const char* asset) {
+  Image pal = load_image_asset(asset);
   Color* colors = pal.data;
   int w = pal.width;
   if (w > 64) w = 64;
@@ -331,14 +332,14 @@ void main_init(GameRegistry* registry) {
   srand(time(NULL));
   C.kernel_error = false;
   C.use_neon = true;
-  C.sound = LoadSound("../assets/s2.wav");
-  C.sound_click = LoadSound("../assets/click.wav");
-  C.sound_success = LoadSound("../assets/success.wav");
-  C.sound_click2 = LoadSound("../assets/paintact.wav");
-  C.sound_click3 = LoadSound("../assets/paintact2.wav");
-  C.sound_oops = LoadSound("../assets/oops.wav");
-  C.bot_layout = parse_layout("../assets/layout/main_bot_layout.png");
-  C.sound2 = LoadSound("../assets/click.wav");
+  C.sound = load_sound_asset("s2.wav");
+  C.sound_click = load_sound_asset("click.wav");
+  C.sound_success = load_sound_asset("success.wav");
+  C.sound_click2 = load_sound_asset("paintact.wav");
+  C.sound_click3 = load_sound_asset("paintact2.wav");
+  C.sound_oops = load_sound_asset("oops.wav");
+  C.bot_layout = parse_layout_asset("layout/main_bot_layout.png");
+  C.sound2 = load_sound_asset("click.wav");
   C.base_volume = .2f;
   C.muted_paint = false;
   SetSoundVolume(C.sound, .1);
@@ -368,7 +369,7 @@ void main_init(GameRegistry* registry) {
   C.palette[17] = GetColor(0x333333FF);
 
   C.num_colors = 18;
-  load_palette("../assets/pal.png");
+  load_palette_asset("pal.png");
   int s = ui_get_scale();
   C.header_size = 24 * s;
   C.bottom_size = 3 * 17 * 1 * s - 6 * s;
@@ -376,14 +377,15 @@ void main_init(GameRegistry* registry) {
   paint_set_color(&C.ca, C.palette[3]);
   if (false) {
     // Image img = LoadImage("../solutions/big2.png");
-    Image img = LoadImage("../a.png");
+    Image img =  LoadImage("../a.png");
     paint_load_image(&C.ca, img);
   } else {
     if (ui_is_demo()) {
-      Image img = LoadImage("../assets/help_small2.png");
+      
+      Image img = load_image_asset("help_small2.png");
       paint_load_image(&C.ca, img);
     } else {
-      Image img = LoadImage("../assets/help.png");
+      Image img = load_image_asset("help.png");
       paint_load_image(&C.ca, img);
     }
     // paint_new_buffer(&C.ca);

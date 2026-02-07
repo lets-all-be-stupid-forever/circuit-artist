@@ -11,6 +11,7 @@
 #include "common.h"
 #include "font.h"
 #include "fs.h"
+#include "paths.h"
 #include "stdlib.h"
 #include "string.h"
 #include "time.h"
@@ -354,8 +355,8 @@ void str_builder_destroy(str_builder_t* sb) {
   sb->cap = 0;
 }
 
-sprite_t load_sprite(const char* fname) {
-  Texture tex = LoadTexture(fname);
+sprite_t load_sprite_asset(const char* asset) {
+  Texture tex = load_texture_asset(asset);
   return (sprite_t){.tex = tex,
                     .region = (Rectangle){
                         0,
@@ -377,9 +378,9 @@ static inline bool is_bg(Color c) {
   return (c.r != 255 || c.g != 255 || c.b != 255);
 }
 
-Rectangle* parse_layout(const char* fname) {
+Rectangle* parse_layout_asset(const char* asset) {
   Rectangle* out = NULL;
-  Image img = LoadImage(fname);
+  Image img = load_image_asset(asset);
   int s = ui_get_scale();
   // 1. Only WHITE counts.
   // 2. Assumes opaque rectangles.
@@ -709,10 +710,7 @@ void load_text_sprites(const char* txt, sprite_t** out_sprites) {
     char tmp[200];
     strncpy(tmp, nxt + 5, i - 5);
     tmp[i - 5] = '\0';
-    char tmp2[300];
-    strcpy(tmp2, "../assets/");
-    strcat(tmp2, tmp);
-    arrput(sprites, load_sprite(tmp2));
+    arrput(sprites, load_sprite_asset(tmp));
     nxt = &nxt[3];
   }
   *out_sprites = sprites;
@@ -731,7 +729,7 @@ void load_text_sprites_v2(const char* root, const char* txt,
     char* p = checkmodpath(root, tmp);
     assert(p);
     printf("Loadin sprite %s ...", p);
-    arrput(sprites, load_sprite(p));
+    arrput(sprites, load_sprite_asset(p));
     free(p);
     nxt = &nxt[3];
   }
