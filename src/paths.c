@@ -14,6 +14,15 @@ static void init_env_path(const char** path, const char* name);
 
 void paths_init() {
   init_env_path(&C.asset_path, "CA_ASSET_DIR");
+  if (!DirectoryExists(C.asset_path)) {
+    fprintf(stderr,
+            "\e[31m"
+            "ERROR"
+            "\e[m"
+            ": $CA_ASSET_DIR must be a directory that exists. (%s)\n",
+            C.asset_path);
+    exit(EXIT_FAILURE);
+  }
 }
 
 static void init_env_path(const char** path, const char* name) {
