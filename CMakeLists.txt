@@ -56,6 +56,7 @@ ENDIF()
 set(CMAKE_C_STANDARD 11)
 
 SET(ca_src
+  src/asset_path.c
   src/brush.c
   src/buffer.c
   src/clipapi.cpp

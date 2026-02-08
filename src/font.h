@@ -2,7 +2,7 @@
 #define CA_FONT_H
 #include "common.h"
 
-void load_art_font(const char* filepath);
+void load_art_font_asset(const char* filepath);
 void unload_art_font();
 void font_draw(Image* dst, const char* txt, int x, int y, Color c);
 void font_draw_texture(const char* txt, int x, int y, Color c);
