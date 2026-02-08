@@ -487,8 +487,8 @@ void save_progress(GameRegistry* r) {
     json_object_object_add(levels, r->levels[i].value->id, complete);
   }
   json_object_object_add(root, "levels", levels);
-  if (json_object_to_file_ext(PROGRESS_FILE, root, JSON_C_TO_STRING_PRETTY) <
-      0) {
+  if (json_object_to_file_ext(get_progress_path(), root,
+                              JSON_C_TO_STRING_PRETTY) < 0) {
     fprintf(stderr, "Error writing to file\n");
     json_object_put(root);
     ui_crash("Error creating save file\n");
@@ -498,12 +498,13 @@ void save_progress(GameRegistry* r) {
 }
 
 void load_progress(GameRegistry* r) {
-  if (!FileExists(PROGRESS_FILE)) {
+  if (!FileExists(get_progress_path())) {
     return;
   }
+
   json_object* levels;
   json_object* complete;
-  json_object* root = json_object_from_file(PROGRESS_FILE);
+  json_object* root = json_object_from_file(get_progress_path());
   assert(root);
   if (json_object_object_get_ex(root, "levels", &levels)) {
     int nl = shlen(r->levels);
