@@ -8,9 +8,6 @@
 #define GL_INT 0x1404
 #define M_PI 3.141592653589793
 
-#define PROGRESS_FILE "../save_1_1.json"
-#define STAMPS_FILE "../blueprints_1_1.json"
-
 #define SIM_MAX_QUEUE_DELAY (8000)
 #define SIM_MAX_WIRE_DELAY (6000)
 

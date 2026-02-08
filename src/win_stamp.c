@@ -73,7 +73,8 @@ static void stamp_save() {
   }
   json_object_object_add(root, "stamps", stamps);
 
-  if (json_object_to_file_ext(STAMPS_FILE, root, JSON_C_TO_STRING_PRETTY) < 0) {
+  if (json_object_to_file_ext(get_stamp_path(), root, JSON_C_TO_STRING_PRETTY) <
+      0) {
     fprintf(stderr, "Error writing to file\n");
     json_object_put(root);
     ui_crash("Error creating save file\n");
@@ -83,11 +84,11 @@ static void stamp_save() {
 }
 
 const char* stamp_fname(Stamp* s) {
-  return TextFormat("../blueprints/%s_full.png", s->id);
+  return get_data_path(TextFormat("blueprints/%s_full.png", s->id));
 }
 
 const char* stamp_fname_thumbnail(Stamp* s) {
-  return TextFormat("../blueprints/%s_thumb.png", s->id);
+  return get_data_path(TextFormat("blueprints/%s_thumb.png", s->id));
 }
 
 static int get_page_slot_stamp_idx(int page, int i) {
@@ -195,13 +196,13 @@ static void initialize_stamps() {
 }
 
 void stamp_load() {
-  if (!FileExists(STAMPS_FILE)) {
+  if (!FileExists(get_stamp_path())) {
     initialize_stamps();
     return;
   }
   json_object* stamps;
   json_object *stamp, *id, *name, *rot;
-  json_object* root = json_object_from_file(STAMPS_FILE);
+  json_object* root = json_object_from_file(get_stamp_path());
   assert(root);
   if (json_object_object_get_ex(root, "stamps", &stamps)) {
     int nl = json_object_array_length(stamps);
@@ -275,8 +276,8 @@ static void update_layout() {
 }
 
 static void ensure_blueprints_folder_exists() {
-  if (!DirectoryExists("../blueprints")) {
-    MakeDirectory("../blueprints");
+  if (!DirectoryExists(get_data_path("blueprints"))) {
+    MakeDirectory(get_data_path("blueprints"));
   }
 }
 
