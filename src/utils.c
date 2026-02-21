@@ -377,14 +377,6 @@ sprite_t load_sprite_asset(const char* asset) {
                     }};
 }
 
-void load_text_from_file(const char* fname, char** out_txt,
-                         sprite_t** out_sprites) {
-  char* txt = LoadFileText(fname);
-  load_text_sprites(txt, out_sprites);
-  *out_txt = clone_string(txt);
-  UnloadFileText(txt);
-}
-
 static inline bool is_bg(Color c) {
   return (c.r != 255 || c.g != 255 || c.b != 255);
 }
@@ -710,21 +702,6 @@ Rectangle roff(Vector2 off, Rectangle r) {
       r.width,
       r.height,
   };
-}
-
-void load_text_sprites(const char* txt, sprite_t** out_sprites) {
-  const char* nxt = txt;
-  sprite_t* sprites = NULL;
-  while ((nxt = strstr(nxt, "!img:"))) {
-    int i = 5;
-    while (nxt[i] != ' ' && nxt[i] != '\n') i++;
-    char tmp[200];
-    strncpy(tmp, nxt + 5, i - 5);
-    tmp[i - 5] = '\0';
-    arrput(sprites, load_sprite_asset(tmp));
-    nxt = &nxt[3];
-  }
-  *out_sprites = sprites;
 }
 
 void load_text_sprites_v2(const char* root, const char* txt,
