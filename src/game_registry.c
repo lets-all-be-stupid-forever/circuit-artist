@@ -107,7 +107,7 @@ static int lua_add_level(lua_State* L) {
   if (!icon2) {
     return luaL_error(L, "Invalid icon path");
   }
-  ldef->icon = load_sprite_asset(icon2);
+  ldef->icon = create_sprite(LoadTexture(icon2));
   free(icon2);
   lua_pop(L, 1);  // Remove icon from stack
 
@@ -541,7 +541,7 @@ void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
   TutorialTopic topic = {0};
   topic.id = clone_string(topic_id);
   topic.name = clone_string(name);
-  topic.icon = load_sprite_asset(icon_file);
+  topic.icon = create_sprite(LoadTexture(icon_file));
   arrput(r->topics, topic);
 }
 
@@ -553,7 +553,7 @@ void registry_add_tutorial_item(GameRegistry* r, const char* topic_id,
   int idx = find_topic_by_id(r, topic_id);
   TutorialTopic* topic = &r->topics[idx];
   TutorialItem item = {0};
-  item.icon = load_sprite_asset(icon_file);
+  item.icon = create_sprite(LoadTexture(icon_file));
   item.desc = clone_string(desc);
   item.desc_imgs = sprites;
   item.id = clone_string(item_id);

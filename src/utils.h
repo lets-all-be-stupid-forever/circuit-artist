@@ -28,7 +28,7 @@ void str_builder_add_raw(str_builder_t* sb, const char* txt);
 void str_builder_add(str_builder_t* sb, const char* fmt, ...);
 void str_builder_destroy(str_builder_t* sb);
 
-sprite_t load_sprite_asset(const char* fname);
+sprite_t create_sprite(Texture tex);
 void load_text_sprites(const char* root, const char* txt,
                        sprite_t** out_sprites);
 void delete_file(const char* path);

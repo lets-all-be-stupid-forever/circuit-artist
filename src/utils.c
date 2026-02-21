@@ -355,19 +355,7 @@ void str_builder_destroy(str_builder_t* sb) {
   sb->cap = 0;
 }
 
-sprite_t load_sprite_raw(const char* asset) {
-  Texture tex = LoadTexture(asset);
-  return (sprite_t){.tex = tex,
-                    .region = (Rectangle){
-                        0,
-                        0,
-                        tex.width,
-                        tex.height,
-                    }};
-}
-
-sprite_t load_sprite_asset(const char* asset) {
-  Texture tex = load_texture_asset(asset);
+sprite_t create_sprite(Texture tex) {
   return (sprite_t){.tex = tex,
                     .region = (Rectangle){
                         0,
@@ -716,8 +704,8 @@ void load_text_sprites(const char* root, const char* txt,
     tmp[i - 5] = '\0';
     char* p = checkmodpath(root, tmp);
     assert(p);
-    printf("Loadin sprite %s ...", p);
-    arrput(sprites, load_sprite_raw(p));
+    printf("Loadin sprite %s ...\n", p);
+    arrput(sprites, create_sprite(LoadTexture(p)));
     free(p);
     nxt = &nxt[3];
   }
