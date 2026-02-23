@@ -702,11 +702,11 @@ void load_text_sprites(const char* root, const char* txt,
     char tmp[200];
     strncpy(tmp, nxt + 5, i - 5);
     tmp[i - 5] = '\0';
-    char* p = checkmodpath(root, tmp);
-    assert(p);
-    printf("Loadin sprite %s ...\n", p);
-    arrput(sprites, create_sprite(LoadTexture(p)));
-    free(p);
+    char* tex_path = checkmodpath(root, tmp);
+    assert(tex_path);
+    printf("Loadin sprite %s ...\n", tex_path);
+    arrput(sprites, create_sprite(LoadTexture(tex_path)));
+    free(tex_path);
     nxt = &nxt[3];
   }
   *out_sprites = sprites;

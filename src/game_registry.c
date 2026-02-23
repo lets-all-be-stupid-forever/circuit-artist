@@ -103,12 +103,12 @@ static int lua_add_level(lua_State* L) {
     return luaL_error(L, "icon field must be a string");
   }
   const char* icon = lua_tostring(L, -1);
-  char* icon2 = checkmodpath(root, icon);
-  if (!icon2) {
+  char* icon_path = checkmodpath(root, icon);
+  if (!icon_path) {
     return luaL_error(L, "Invalid icon path");
   }
-  ldef->icon = create_sprite(LoadTexture(icon2));
-  free(icon2);
+  ldef->icon = create_sprite(LoadTexture(icon_path));
+  free(icon_path);
   lua_pop(L, 1);  // Remove icon from stack
 
   /* Description */
@@ -359,11 +359,11 @@ static int lua_tutorial_add_item(lua_State* L) {
   const char* name = luaL_checkstring(L, 3);
   const char* desc = luaL_checkstring(L, 4);
   const char* icon = luaL_checkstring(L, 5);
-  char* icon2 = checkmodpath(root, icon);
+  char* icon_path = checkmodpath(root, icon);
   sprite_t* sprites;
   load_text_sprites(root, desc, &sprites);
-  registry_add_tutorial_item(r, topic_id, id, name, desc, sprites, icon2);
-  free(icon2);
+  registry_add_tutorial_item(r, topic_id, id, name, desc, sprites, icon_path);
+  free(icon_path);
   return 0;
 }
 
@@ -530,8 +530,8 @@ static int find_topic_by_id(GameRegistry* r, const char* topic_id) {
 }
 
 void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
-                                 const char* name, const char* icon_file) {
-  assert(FileExists(icon_file));
+                                 const char* name, const char* icon_path) {
+  assert(FileExists(icon_path));
   int idx = find_topic_by_id(r, topic_id);
   if (idx != -1) {
     // TODO Handle this error properly
@@ -541,19 +541,19 @@ void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
   TutorialTopic topic = {0};
   topic.id = clone_string(topic_id);
   topic.name = clone_string(name);
-  topic.icon = create_sprite(LoadTexture(icon_file));
+  topic.icon = create_sprite(LoadTexture(icon_path));
   arrput(r->topics, topic);
 }
 
 void registry_add_tutorial_item(GameRegistry* r, const char* topic_id,
                                 const char* item_id, const char* name,
                                 const char* desc, sprite_t* sprites,
-                                const char* icon_file) {
-  assert(FileExists(icon_file));
+                                const char* icon_path) {
+  assert(FileExists(icon_path));
   int idx = find_topic_by_id(r, topic_id);
   TutorialTopic* topic = &r->topics[idx];
   TutorialItem item = {0};
-  item.icon = create_sprite(LoadTexture(icon_file));
+  item.icon = create_sprite(LoadTexture(icon_path));
   item.desc = clone_string(desc);
   item.desc_imgs = sprites;
   item.id = clone_string(item_id);
