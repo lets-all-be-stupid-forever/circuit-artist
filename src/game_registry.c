@@ -117,7 +117,7 @@ static int lua_add_level(lua_State* L) {
     return luaL_error(L, "Description field must be a string");
   }
   ldef->description = clone_string(lua_tostring(L, -1));
-  load_text_sprites_v2(root, ldef->description, &ldef->sprites);
+  load_text_sprites(root, ldef->description, &ldef->sprites);
   lua_pop(L, 1);  // Remove icon from stack
 
   /* Name */
@@ -361,7 +361,7 @@ static int lua_tutorial_add_item(lua_State* L) {
   const char* icon = luaL_checkstring(L, 5);
   char* icon2 = checkmodpath(root, icon);
   sprite_t* sprites;
-  load_text_sprites_v2(root, desc, &sprites);
+  load_text_sprites(root, desc, &sprites);
   registry_add_tutorial_item(r, topic_id, id, name, desc, sprites, icon2);
   free(icon2);
   return 0;

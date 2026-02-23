@@ -29,8 +29,8 @@ void str_builder_add(str_builder_t* sb, const char* fmt, ...);
 void str_builder_destroy(str_builder_t* sb);
 
 sprite_t load_sprite_asset(const char* fname);
-void load_text_sprites_v2(const char* root, const char* txt,
-                          sprite_t** out_sprites);
+void load_text_sprites(const char* root, const char* txt,
+                       sprite_t** out_sprites);
 void delete_file(const char* path);
 
 /* Hack for layout parsing */

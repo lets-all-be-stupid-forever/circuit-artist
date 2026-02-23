@@ -704,8 +704,8 @@ Rectangle roff(Vector2 off, Rectangle r) {
   };
 }
 
-void load_text_sprites_v2(const char* root, const char* txt,
-                          sprite_t** out_sprites) {
+void load_text_sprites(const char* root, const char* txt,
+                       sprite_t** out_sprites) {
   const char* nxt = txt;
   sprite_t* sprites = NULL;
   while ((nxt = strstr(nxt, "!img:"))) {
