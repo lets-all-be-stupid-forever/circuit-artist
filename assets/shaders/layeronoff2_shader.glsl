@@ -445,10 +445,7 @@ vec4 exclusion(vec4 base, vec4 blend) {
 
 
 vec4 blend2(vec4 c1, vec4 c, int l) {
-  // return exclusion(c1, c);
-  // return screen(c1, c);
   return screen_blend(c1, c);
-
   return blend(c1, c);
   if (l <= al) {
   return blend(c1, c);
@@ -479,27 +476,16 @@ return vec4(0,0,0, 1);
 
 void main()
 {
-  //vec4 c = find_bg_pixel();
-  //vec4 c = vec4(0,0,0,1);
-  // vec4 c = vec4(.2,.2,0,1);
   vec4 c = vec4(0,0,0,0);
   vec4 bg = find_bg_pixel();
   bg.a = 0.5;
   p_via =  vec4(0);
 
-// if (al == 1) c = vec4(.2, 0, 0, 1);
-// if (al == 2) c = vec4(0, .2, 0, 1);
-// if (al == 3) c = vec4(0, 0, .2, 1);
-#if 1
   vec4 c0 = vec4(0);
   vec4 c1 = vec4(0); 
   vec4 c2 = vec4(0); 
   vec4 c3 = vec4(0); 
 
-  // if (layer_hidden[0] == 0) c0 = drawlayer(0);
-  // if (layer_hidden[1] == 0) c1 = drawlayer(1);
-  // if (layer_hidden[2] == 0) c2 = drawlayer(2);
-  // if (layer_hidden[3] == 0) c3 = drawlayer(3);
   c0 = drawlayer(0);
   c1 = drawlayer(1);
   c2 = drawlayer(2);
@@ -524,18 +510,6 @@ void main()
   if (al >2) c = blend(bg, c);
   if (c3.a > 0 && layer_mode[3] != -2) c = blend2(c3, c, 3);
   c = blend2(p_via, c, 0);
-#else
-  for (int i =0; i< nl; i++) {
-    if (i == al) continue;
-    vec4 cc = drawlayer(i);
-    if (cc.a > 0 && layer_mode[i] != -2) c = blend2(cc, c, i);
-  }
-  vec4 cc = drawlayer(al);
-  if (cc.a > 0 && layer_mode[al] != -2) c = blend2(cc, c, al);
-
-#endif
-
-//  vec4 img_color2 = texture(layer1, pos);
   finalColor = c;
 }
 
