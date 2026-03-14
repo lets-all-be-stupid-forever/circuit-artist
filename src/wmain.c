@@ -1602,7 +1602,7 @@ void main_draw_status_bar() {
       int sw = selSize.x;
       int sh = selSize.y;
       if (sw >= 0) {
-        snprintf(txt, sizeof(txt), "w: %d h: %d (%d pixels)", sw, sh, sw * sh);
+        snprintf(txt, sizeof(txt), "w: %d h: %d", sw, sh);
         font_draw_texture_outlined(txt, xc, yc2, tc, bg);
       }
     }
