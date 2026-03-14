@@ -93,7 +93,7 @@ SET(ca_src
   src/sim.c
   src/steam.cpp
   src/tex.c
-  src/tutorial.c
+  src/win_wiki.c
   src/ui.c
   src/uigraph.c
   src/utils.c

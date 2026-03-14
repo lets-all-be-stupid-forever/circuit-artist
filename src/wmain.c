@@ -22,7 +22,6 @@
 #include "sim.h"
 #include "stb_ds.h"
 #include "time.h"
-#include "tutorial.h"
 #include "ui.h"
 #include "uigraph.h"
 #include "utils.h"
@@ -31,6 +30,7 @@
 #include "widgets.h"
 #include "win_level.h"
 #include "win_stamp.h"
+#include "win_wiki.h"
 #include "wnumber.h"
 #include "wtext.h"
 
@@ -1021,7 +1021,7 @@ void main_update_hud() {
   if (btn_update(&C.btn_level_campaign))
     win_level_open(C.ldef, on_select_level);
   if (btn_update(&C.btn_level_custom)) custom_level_open();
-  if (btn_update(&C.btn_wiki)) tutorial_open();
+  if (btn_update(&C.btn_wiki)) win_wiki_open();
   if (btn_update(&C.btn_stamp)) win_stamp_open();
 
   if (btn_update(&C.btn_clockopt[0])) C.clock_speed = 0;

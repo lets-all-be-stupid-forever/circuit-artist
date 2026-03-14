@@ -5,13 +5,13 @@
 #include "game_registry.h"
 #include "layout.h"
 #include "stb_ds.h"
-#include "tutorial.h"
 #include "ui.h"
 #include "utils.h"
 #include "wabout.h"
 #include "widgets.h"
 #include "win_campaign.h"
 #include "win_msg.h"
+#include "win_wiki.h"
 
 #define NUM_BUTTONS 42
 
@@ -257,11 +257,10 @@ void win_level_update() {
     if (btn_update(&C.btn_msg[i])) {
       LevelDefExtraItem* item = &lvl->extra_content[i];
       if (item->text) {
-        // about_open(item->title, item->text, NULL);
         win_msg_open_text(item->text, NULL);
       }
       if (item->wiki) {
-        tutorial_open_on_item(item->wiki);
+        win_wiki_open_on_item(item->wiki);
       }
       if (item->tex.width > 0) {
         win_msg_open_tex(item->tex, item->scale);

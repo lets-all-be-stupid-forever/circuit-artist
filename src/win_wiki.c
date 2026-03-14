@@ -1,4 +1,4 @@
-#include "tutorial.h"
+#include "win_wiki.h"
 
 #include "assert.h"
 #include "common.h"
@@ -69,7 +69,7 @@ static void set_sel(int topic, int item) {
   }
 }
 
-void tutorial_init(GameRegistry* r) {
+void win_wiki_init(GameRegistry* r) {
   C.registry = r;
   C.layout = parse_layout_asset("layout/circ_layout1.png");
   C.topic_sel = -1;
@@ -82,13 +82,13 @@ void tutorial_init(GameRegistry* r) {
   set_sel(0, 0);
 }
 
-void tutorial_open() {
-  ui_winpush(WINDOW_TUTORIAL);
+void win_wiki_open() {
+  ui_winpush(WINDOW_WIKI);
   C.opened_this_frame = true;
   C.closed = false;
 }
 
-void tutorial_update() {
+void win_wiki_update() {
   update_layout();
   int ntopic = arrlen(get_topics());
   for (int i = 0; i < 10; i++) {
@@ -133,11 +133,8 @@ static TutorialItem* get_item() {
   return &get_topics()[C.topic_sel].items[C.item_sel];
 }
 
-void tutorial_draw() {
+void win_wiki_draw() {
   draw_win(C.modal, "WIKI");
-  // DrawRectangleRec(C.tb.box, BLACK);
-  // draw_widget_frame(C.tb.box);
-
   textbox_draw(&C.tb);
   listbox_draw(&C.lb, C.item_sel);
   TutorialTopic* topics = get_topics();
@@ -153,8 +150,8 @@ void tutorial_draw() {
   btn_draw_text(&C.btn_close, ui_get_scale(), "CLOSE");
 }
 
-void tutorial_open_on_item(const char* item_id) {
-  tutorial_open();
+void win_wiki_open_on_item(const char* item_id) {
+  win_wiki_open();
   TutorialTopic* topics = get_topics();
   int nt = arrlen(topics);
   for (int it = 0; it < nt; it++) {

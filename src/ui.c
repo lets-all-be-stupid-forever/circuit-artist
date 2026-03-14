@@ -19,7 +19,6 @@
 #include "stb_ds.h"
 #include "stdio.h"
 #include "steam.h"
-#include "tutorial.h"
 #include "ui.h"
 #include "utils.h"
 #include "wabout.h"
@@ -28,6 +27,7 @@
 #include "win_level.h"
 #include "win_msg.h"
 #include "win_stamp.h"
+#include "win_wiki.h"
 #include "wmain.h"
 #include "wnumber.h"
 #include "wtext.h"
@@ -117,7 +117,7 @@ void ui_init() {
   win_stamp_init();
   profiler_init();
   modal_init();
-  tutorial_init(C.registry);
+  win_wiki_init(C.registry);
   shaders_init();
   win_level_init(C.registry);
   main_init(C.registry);
@@ -221,7 +221,7 @@ void ui_update_frame() {
   if (update_window == WINDOW_ABOUT) about_update();
   if (update_window == WINDOW_DIALOG) dialog_update();
   if (update_window == WINDOW_LOG) win_log_update();
-  if (update_window == WINDOW_TUTORIAL) tutorial_update();
+  if (update_window == WINDOW_WIKI) win_wiki_update();
   if (update_window == WINDOW_LEVEL) win_level_update();
   if (update_window == WINDOW_CAMPAIGN) win_campaign_update();
   if (update_window == WINDOW_MSG) win_msg_update();
@@ -243,7 +243,7 @@ void ui_update_frame() {
     if (window == WINDOW_ABOUT) about_draw();
     if (window == WINDOW_DIALOG) dialog_draw();
     if (window == WINDOW_LOG) win_log_draw();
-    if (window == WINDOW_TUTORIAL) tutorial_draw();
+    if (window == WINDOW_WIKI) win_wiki_draw();
     if (window == WINDOW_LEVEL) win_level_draw();
     if (window == WINDOW_CAMPAIGN) win_campaign_draw();
     if (window == WINDOW_STAMP) win_stamp_draw();
