@@ -100,7 +100,6 @@ SET(ca_src
   src/wabout.c
   src/wdialog.c
   src/widgets.c
-  src/win_blueprint.c
   src/win_campaign.c
   src/win_level.c
   src/win_msg.c

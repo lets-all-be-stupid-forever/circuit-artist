@@ -29,7 +29,6 @@
 #include "wabout.h"
 #include "wdialog.h"
 #include "widgets.h"
-#include "win_blueprint.h"
 #include "win_level.h"
 #include "win_stamp.h"
 #include "wnumber.h"
@@ -377,11 +376,10 @@ void main_init(GameRegistry* registry) {
   paint_set_color(&C.ca, C.palette[3]);
   if (false) {
     // Image img = LoadImage("../solutions/big2.png");
-    Image img =  LoadImage("../a.png");
+    Image img = LoadImage("../a.png");
     paint_load_image(&C.ca, img);
   } else {
     if (ui_is_demo()) {
-      
       Image img = load_image_asset("help_small2.png");
       paint_load_image(&C.ca, img);
     } else {
@@ -769,7 +767,6 @@ void main_update_controls() {
   }
 
   if (isEdit && IsKeyPressed(KEY_Q)) {
-    // win_blueprint_open();
     win_stamp_open();
   }
 

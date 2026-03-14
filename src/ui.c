@@ -24,7 +24,6 @@
 #include "utils.h"
 #include "wabout.h"
 #include "wdialog.h"
-#include "win_blueprint.h"
 #include "win_campaign.h"
 #include "win_level.h"
 #include "win_msg.h"
@@ -114,7 +113,6 @@ void ui_init() {
   HideCursor();
   msg_init();
   win_campaign_init(C.registry);
-  win_blueprint_init();
   about_init();
   win_stamp_init();
   profiler_init();
@@ -226,7 +224,6 @@ void ui_update_frame() {
   if (update_window == WINDOW_TUTORIAL) tutorial_update();
   if (update_window == WINDOW_LEVEL) win_level_update();
   if (update_window == WINDOW_CAMPAIGN) win_campaign_update();
-  if (update_window == WINDOW_BLUEPRINT) win_blueprint_update();
   if (update_window == WINDOW_MSG) win_msg_update();
   profiler_tac();
 
@@ -249,7 +246,6 @@ void ui_update_frame() {
     if (window == WINDOW_TUTORIAL) tutorial_draw();
     if (window == WINDOW_LEVEL) win_level_draw();
     if (window == WINDOW_CAMPAIGN) win_campaign_draw();
-    if (window == WINDOW_BLUEPRINT) win_blueprint_draw();
     if (window == WINDOW_STAMP) win_stamp_draw();
     if (window == WINDOW_MSG) win_msg_draw();
   }
