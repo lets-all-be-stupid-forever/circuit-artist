@@ -109,8 +109,7 @@ static void setup_dist_map(
     float* node_dist,                 /* Distance of each node */
     float** distmap,                  /* Output distance map for each layer */
     int ic,                           /* Component being treated */
-    WireSegment** seglist, /* List of wire segments used in visualization*/
-    u8** ori,              /* orientation of each pixel */
+    u8** ori,                         /* orientation of each pixel */
     RenderV2* rv2, float* out_maxdist /* Maximum distance */
 ) {
   int l0, xx0, yy0; /* Layer, x and y index of the node */
@@ -131,9 +130,8 @@ static void setup_dist_map(
     float* map = distmap[l0];
     u8* l_ori = ori[l0];
     // Case (i): single pixel with no edges
-    if (ne == 0) {
+    if (ne == 0 || ne == 1) {
       WireSegment ws = (WireSegment){ic, yy0 * w + xx0, yy0 * w + xx0};
-      arrput((seglist[l0]), ws);
       renderv2_addhseg(rv2, ic, l0, xx0, xx0, yy0, 1, dd0, dd0);
     }
     float rc = spec.r_per_w[l0] * spec.c_per_w[l0];
@@ -148,16 +146,7 @@ static void setup_dist_map(
       int x0 = xx0;
       int y0 = yy0;
       find_idx(s, w0, idx1, &l1, &y1, &x1);
-      if (l0 != l1) {
-        // Case (ii): edge connects different layers - add 1-pixel seg at each
-        // layer
-        WireSegment ws0 = (WireSegment){ic, y0 * w + x0, y0 * w + x0};
-        arrput((seglist[l0]), ws0);
-        int w1 = w0;  // assuming same width for all layers
-        WireSegment ws1 = (WireSegment){ic, y1 * w1 + x1, y1 * w1 + x1};
-        arrput((seglist[l1]), ws1);
-        continue;
-      }
+
       /* positive indexes are from hseg
        * negative indexes are from vseg
        * So, I don't want to add a seg if it's vias
@@ -165,7 +154,6 @@ static void setup_dist_map(
       if ((idx0 >= 0 && idx1 >= 0) || (idx0 < 0 && idx1 < 0)) {
         WireSegment ws = (WireSegment){ic, y0 * w + x0, y1 * w + x1};
         assert((y0 == y1) || (x0 == x1));
-        arrput((seglist[l0]), ws);
       }
 
       max_dist = maxf(max_dist, d0);
@@ -466,8 +454,8 @@ void dist_graph_init(DistGraph* dg, DistSpec spec, int w, int h, int nl,
     }
 #endif
     /* From graph to 2D distance map And wire segments */
-    setup_dist_map(spec, lone, w0, h0, &gg, node_distance, dg->distmap, c,
-                   dg->seglist, ori, rv2, &dg->wprop[c].max_delay);
+    setup_dist_map(spec, lone, w0, h0, &gg, node_distance, dg->distmap, c, ori,
+                   rv2, &dg->wprop[c].max_delay);
     dg->t_setup += GetTime() - t0;
     t0 = GetTime();
   }
@@ -516,7 +504,6 @@ void dist_graph_destroy(DistGraph* dg) {
   free(dg->gate_delay);
   for (int i = 0; i < MAX_LAYERS; i++) {
     free(dg->distmap[i]);
-    arrfree(dg->seglist[i]);
   }
 }
 

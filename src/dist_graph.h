@@ -20,8 +20,7 @@ typedef struct {
 typedef struct {
   WireProps* wprop; /* max distance of each wire (in time steps) */
   int* gate_delay;  /* activation delay of each WIRE (when gate is present) */
-  float* distmap[MAX_LAYERS];       /* distance for each pixel */
-  WireSegment* seglist[MAX_LAYERS]; /* Array of segments, ordered by wireId */
+  float* distmap[MAX_LAYERS]; /* distance for each pixel */
 
   double t_setup;
   double t_build;
