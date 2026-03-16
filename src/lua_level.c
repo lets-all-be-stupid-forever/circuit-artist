@@ -307,13 +307,13 @@ static int lua_pget(lua_State* L) {
   i64 iport = luaL_checkinteger(L, 1);
   Sim* sim = lua_getsim(L);
   int npin = arrlen(sim->api->pg);
-  if (iport >= npin) {
+  if (iport < 0 || iport >= npin) {
     return luaL_error(
-        L, TextFormat("Invalid Pin Number: %d (max %d)", iport, npin - 1));
+        L, TextFormat("Invalid Pin Number: %d (valid range: 0-%d)", iport, npin - 1));
   }
   if (!isskt(sim->api->pg[iport].type)) {
     return luaL_error(
-        L, "Trying to read pin (%d) that is not a socket: can't read", iport);
+        L, TextFormat("Trying to read pin %d that is not a socket: can't read", iport));
   }
 
   PinComm pc = sim_port_read(sim, iport);
@@ -334,6 +334,15 @@ static int lua_pset(lua_State* L) {
   i64 b = luaL_checkinteger(L, 2);
   PinComm pc = {.b = b, .f = 0};
   Sim* sim = lua_getsim(L);
+  int npin = arrlen(sim->api->pg);
+  if (iport < 0 || iport >= npin) {
+    return luaL_error(
+        L, TextFormat("Invalid Pin Number: %d (valid range: 0-%d)", iport, npin - 1));
+  }
+  if (!isdrv(sim->api->pg[iport].type)) {
+    return luaL_error(
+        L, TextFormat("Trying to write to pin %d that is not a driver: can't write", iport));
+  }
   sim_port_write(sim, iport, pc);
   return 0;
 }
