@@ -96,6 +96,7 @@ function _Backward(patch)
 end
 
 function _Setup(args)
+  EnableRewind()
   for i=1,#__chips do
     __chips[i]:setup()
     local ports = __chips[i].ports

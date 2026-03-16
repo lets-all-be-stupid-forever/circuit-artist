@@ -615,7 +615,7 @@ static int lua_add_input_port(lua_State* L) {
 
   // Parse optional third parameter for position (0 = false, 1 = true)
   int nargs = lua_gettop(L);
-  bool position = false; // default to false
+  bool position = false;  // default to false
   if (nargs >= 3 && !lua_isnil(L, 3)) {
     int pos_value = luaL_checkinteger(L, 3);
     position = (pos_value == 1);
@@ -646,7 +646,7 @@ static int lua_add_output_port(lua_State* L) {
 
   // Parse optional third parameter for position (0 = false, 1 = true)
   int nargs = lua_gettop(L);
-  bool position = false; // default to false
+  bool position = false;  // default to false
   if (nargs >= 3 && !lua_isnil(L, 3)) {
     int pos_value = luaL_checkinteger(L, 3);
     position = (pos_value == 1);
@@ -658,65 +658,6 @@ static int lua_add_output_port(lua_State* L) {
   // Return the index
   lua_pushinteger(L, index);
   return 1;
-}
-
-static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
-  lua_State* L = luaL_newstate();
-  if (!L) {
-    return status_error("Failed to create Lua state\n");
-  }
-  lvl->L = L;
-  luaL_openlibs(L);
-
-  // Remove io, os, and file loading functions for campaign levels (security)
-  if (!is_custom) {
-    lua_pushnil(L);
-    lua_setglobal(L, "io");
-    lua_pushnil(L);
-    lua_setglobal(L, "os");
-    lua_pushnil(L);
-    lua_setglobal(L, "require");
-    lua_pushnil(L);
-    lua_setglobal(L, "dofile");
-    lua_pushnil(L);
-    lua_setglobal(L, "loadfile");
-  }
-
-  /* Basic */
-  lua_register(L, "AddPortIn", lua_add_input_port);
-  lua_register(L, "AddPortOut", lua_add_output_port);
-  lua_register(L, "ReadPort", lua_pget);
-  lua_register(L, "WritePort", lua_pset);
-  lua_register(L, "Pause", lua_Pause);
-  lua_register(L, "SetUpdateInterval", lua_SetUpdateInterval);
-  lua_register(L, "SetBaseTPS", lua_SetBaseTPS);
-
-  /* Port position constants */
-  lua_pushinteger(L, 0);
-  lua_setglobal(L, "LEFT");
-  lua_pushinteger(L, 1);
-  lua_setglobal(L, "RIGHT");
-
-  /* Drawing */
-  lua_register(L, "MeasureText", lua_MeasureText);
-  lua_register(L, "DrawText", lua_DrawText);
-  lua_register(L, "DrawTextBox", lua_draw_box);
-  lua_register(L, "DrawRectangle", lua_DrawRectangle);
-  lua_register(L, "rlScalef", lua_rlScalef);
-  lua_register(L, "rlTranslatef", lua_rlTranslatef);
-  lua_register(L, "rlPushMatrix", lua_rlPushMatrix);
-  lua_register(L, "rlPopMatrix", lua_rlPopMatrix);
-
-  lua_register(L, "draw_rectangle_pro", lua_draw_rectangle_pro);
-  lua_register(L, "draw_texture_pro", lua_draw_texture_pro);
-  lua_register(L, "draw_font", lua_draw_font);
-  /* Campaign-Only */
-  lua_register(L, "notify_level_complete", lua_notify_level_complete);
-
-  /* Stores level in lua for easy of access */
-  lua_pushlightuserdata(L, lvl);
-  lua_setfield(L, LUA_REGISTRYINDEX, "level_ptr");
-  return status_ok();
 }
 
 static void lua_level_destroy(void* u) {
@@ -802,14 +743,106 @@ static Status lua_level_bw(void* u, Buffer buf) {
   return status_ok();
 }
 
+static int lua_EnableRewind(lua_State* L) {
+  LuaLevel* lvl = lua_getlevel(L);
+
+  // Check if _Forward exists and is a function
+  lua_getglobal(L, "_Forward");
+  if (lua_isnil(L, -1)) {
+    lua_pop(L, 1);
+    return luaL_error(L, "_Forward() function must be defined to enable rewind");
+  }
+  if (!lua_isfunction(L, -1)) {
+    lua_pop(L, 1);
+    return luaL_error(L, "_Forward must be a function");
+  }
+  lua_pop(L, 1);
+
+  // Check if _Backward exists and is a function
+  lua_getglobal(L, "_Backward");
+  if (lua_isnil(L, -1)) {
+    lua_pop(L, 1);
+    return luaL_error(L, "_Backward() function must be defined to enable rewind");
+  }
+  if (!lua_isfunction(L, -1)) {
+    lua_pop(L, 1);
+    return luaL_error(L, "_Backward must be a function");
+  }
+  lua_pop(L, 1);
+
+  lvl->api->fw = lua_level_fw;
+  lvl->api->bw = lua_level_bw;
+  return 0;
+}
+
+static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
+  lua_State* L = luaL_newstate();
+  if (!L) {
+    return status_error("Failed to create Lua state\n");
+  }
+  lvl->L = L;
+  luaL_openlibs(L);
+
+  // Remove io, os, and file loading functions for campaign levels (security)
+  if (!is_custom) {
+    lua_pushnil(L);
+    lua_setglobal(L, "io");
+    lua_pushnil(L);
+    lua_setglobal(L, "os");
+    lua_pushnil(L);
+    lua_setglobal(L, "require");
+    lua_pushnil(L);
+    lua_setglobal(L, "dofile");
+    lua_pushnil(L);
+    lua_setglobal(L, "loadfile");
+  }
+
+  /* Basic */
+  lua_register(L, "AddPortIn", lua_add_input_port);
+  lua_register(L, "AddPortOut", lua_add_output_port);
+  lua_register(L, "ReadPort", lua_pget);
+  lua_register(L, "WritePort", lua_pset);
+  lua_register(L, "Pause", lua_Pause);
+  lua_register(L, "SetUpdateInterval", lua_SetUpdateInterval);
+  lua_register(L, "SetBaseTPS", lua_SetBaseTPS);
+  lua_register(L, "EnableRewind", lua_EnableRewind);
+
+  /* Port position constants */
+  lua_pushinteger(L, 0);
+  lua_setglobal(L, "LEFT");
+  lua_pushinteger(L, 1);
+  lua_setglobal(L, "RIGHT");
+
+  /* Drawing */
+  lua_register(L, "MeasureText", lua_MeasureText);
+  lua_register(L, "DrawText", lua_DrawText);
+  lua_register(L, "DrawTextBox", lua_draw_box);
+  lua_register(L, "DrawRectangle", lua_DrawRectangle);
+  lua_register(L, "rlScalef", lua_rlScalef);
+  lua_register(L, "rlTranslatef", lua_rlTranslatef);
+  lua_register(L, "rlPushMatrix", lua_rlPushMatrix);
+  lua_register(L, "rlPopMatrix", lua_rlPopMatrix);
+
+  lua_register(L, "draw_rectangle_pro", lua_draw_rectangle_pro);
+  lua_register(L, "draw_texture_pro", lua_draw_texture_pro);
+  lua_register(L, "draw_font", lua_draw_font);
+  /* Campaign-Only */
+  lua_register(L, "notify_level_complete", lua_notify_level_complete);
+
+  /* Stores level in lua for easy of access */
+  lua_pushlightuserdata(L, lvl);
+  lua_setfield(L, LUA_REGISTRYINDEX, "level_ptr");
+  return status_ok();
+}
+
 Status lua_level_create(LevelAPI* api, LevelDef* ldef) {
   LuaLevel* lvl = calloc(1, sizeof(LuaLevel));
   *api = (LevelAPI){0};
   api->u = lvl;
   api->start = lua_level_start;
   api->update = lua_level_update;
-  api->fw = lua_level_fw;
-  api->bw = lua_level_bw;
+  api->fw = NULL;
+  api->bw = NULL;
   api->draw = lua_level_draw;
   api->destroy = lua_level_destroy;
 
