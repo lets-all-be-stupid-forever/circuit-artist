@@ -52,7 +52,7 @@ function CombinatorialTest:update()
     end
     if icase == #self.cases then
       self.v_done(true)
-      notify_level_complete()
+      NotifyLevelComplete()
       Pause()
       return
     end

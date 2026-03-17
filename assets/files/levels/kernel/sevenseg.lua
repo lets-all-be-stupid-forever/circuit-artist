@@ -22,10 +22,10 @@ local function customDraw(self)
   local y0 = 120
   local s = 3
 
-  draw_rectangle_pro(x0, y0, s*w, s*h, 0, 0, 0, bg[1], bg[2], bg[3], bg[4])
+  DrawRectanglePro(x0, y0, s*w, s*h, 0, 0, 0, bg[1], bg[2], bg[3], bg[4])
   local function drawseg(k, c)
     local x = k * w
-    draw_texture_pro(0,
+    DrawTexturePro(0,
           x, 0, w, h,
           x0, y0, s*w, s*h,
           0, 0,

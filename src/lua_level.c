@@ -244,7 +244,7 @@ static int lua_DrawRectangle(lua_State* L) {
   return 0;
 }
 
-static int lua_draw_rectangle_pro(lua_State* L) {
+static int lua_DrawRectanglePro(lua_State* L) {
   LuaLevel* lvl = lua_getlevel(L);
   Color c;
   Rectangle rec;
@@ -266,7 +266,7 @@ static int lua_draw_rectangle_pro(lua_State* L) {
   return 0;
 }
 
-static int lua_draw_texture_pro(lua_State* L) {
+static int lua_DrawTexturePro(lua_State* L) {
   LuaLevel* lvl = lua_getlevel(L);
   int iasset = luaL_checkinteger(L, 1);
   if (iasset < 0 || iasset >= arrlen(lvl->assets)) {
@@ -309,11 +309,13 @@ static int lua_pget(lua_State* L) {
   int npin = arrlen(sim->api->pg);
   if (iport < 0 || iport >= npin) {
     return luaL_error(
-        L, TextFormat("Invalid Pin Number: %d (valid range: 0-%d)", iport, npin - 1));
+        L, TextFormat("Invalid Pin Number: %d (valid range: 0-%d)", iport,
+                      npin - 1));
   }
   if (!isskt(sim->api->pg[iport].type)) {
     return luaL_error(
-        L, TextFormat("Trying to read pin %d that is not a socket: can't read", iport));
+        L, TextFormat("Trying to read pin %d that is not a socket: can't read",
+                      iport));
   }
 
   PinComm pc = sim_port_read(sim, iport);
@@ -325,7 +327,10 @@ static int lua_pget(lua_State* L) {
 static int lua_notify_level_complete(lua_State* L) {
   LuaLevel* lvl = lua_getlevel(L);
   Sim* sim = lvl->sim;
-  dispatch_level_complete(lvl->ldef);
+  /* Ldef exists if it's a campaign level */
+  if (lvl->ldef) {
+    dispatch_level_complete(lvl->ldef);
+  }
   return 0;
 }
 
@@ -337,11 +342,14 @@ static int lua_pset(lua_State* L) {
   int npin = arrlen(sim->api->pg);
   if (iport < 0 || iport >= npin) {
     return luaL_error(
-        L, TextFormat("Invalid Pin Number: %d (valid range: 0-%d)", iport, npin - 1));
+        L, TextFormat("Invalid Pin Number: %d (valid range: 0-%d)", iport,
+                      npin - 1));
   }
   if (!isdrv(sim->api->pg[iport].type)) {
     return luaL_error(
-        L, TextFormat("Trying to write to pin %d that is not a driver: can't write", iport));
+        L, TextFormat(
+               "Trying to write to pin %d that is not a driver: can't write",
+               iport));
   }
   sim_port_write(sim, iport, pc);
   return 0;
@@ -468,7 +476,7 @@ int lua_MeasureText(lua_State* L) {
   return 1;
 }
 
-int lua_draw_box(lua_State* L) {
+int lua_DrawTextBox(lua_State* L) {
   int nargs = lua_gettop(L);  // Get number of arguments
 
   // First argument (required): text
@@ -513,7 +521,7 @@ int lua_DrawText(lua_State* L) {
   return 0;
 }
 
-int lua_draw_font(lua_State* L) {
+int lua_DrawFont(lua_State* L) {
   int nargs = lua_gettop(L);  // Get number of arguments
 
   // First argument (required): text
@@ -759,7 +767,8 @@ static int lua_EnableRewind(lua_State* L) {
   lua_getglobal(L, "_Forward");
   if (lua_isnil(L, -1)) {
     lua_pop(L, 1);
-    return luaL_error(L, "_Forward() function must be defined to enable rewind");
+    return luaL_error(L,
+                      "_Forward() function must be defined to enable rewind");
   }
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 1);
@@ -771,7 +780,8 @@ static int lua_EnableRewind(lua_State* L) {
   lua_getglobal(L, "_Backward");
   if (lua_isnil(L, -1)) {
     lua_pop(L, 1);
-    return luaL_error(L, "_Backward() function must be defined to enable rewind");
+    return luaL_error(L,
+                      "_Backward() function must be defined to enable rewind");
   }
   if (!lua_isfunction(L, -1)) {
     lua_pop(L, 1);
@@ -825,18 +835,18 @@ static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
   /* Drawing */
   lua_register(L, "MeasureText", lua_MeasureText);
   lua_register(L, "DrawText", lua_DrawText);
-  lua_register(L, "DrawTextBox", lua_draw_box);
+  lua_register(L, "DrawTextBox", lua_DrawTextBox);
   lua_register(L, "DrawRectangle", lua_DrawRectangle);
   lua_register(L, "rlScalef", lua_rlScalef);
   lua_register(L, "rlTranslatef", lua_rlTranslatef);
   lua_register(L, "rlPushMatrix", lua_rlPushMatrix);
   lua_register(L, "rlPopMatrix", lua_rlPopMatrix);
 
-  lua_register(L, "draw_rectangle_pro", lua_draw_rectangle_pro);
-  lua_register(L, "draw_texture_pro", lua_draw_texture_pro);
-  lua_register(L, "draw_font", lua_draw_font);
+  lua_register(L, "DrawRectanglePro", lua_DrawRectanglePro);
+  lua_register(L, "DrawTexturePro", lua_DrawTexturePro);
+  lua_register(L, "DrawFont", lua_DrawFont);
   /* Campaign-Only */
-  lua_register(L, "notify_level_complete", lua_notify_level_complete);
+  lua_register(L, "NotifyLevelComplete", lua_notify_level_complete);
 
   /* Stores level in lua for easy of access */
   lua_pushlightuserdata(L, lvl);

@@ -54,10 +54,10 @@ local function customDraw(self)
   rlTranslatef(x0,y0,0);
   rlScalef(s,s,1);
   DrawRectangle(0, 0, w, h, bg)
-  draw_texture_pro(ASSET_BASE, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
-  draw_texture_pro(iclosed, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
-  draw_texture_pro(ilock, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
-  draw_texture_pro(iunlock, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
+  DrawTexturePro(ASSET_BASE, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
+  DrawTexturePro(iclosed, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
+  DrawTexturePro(ilock, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
+  DrawTexturePro(iunlock, 0, 0, w, h, 0, 0, w, h, 0, 0, 0, c[1], c[2], c[3], c[4])
   rlPopMatrix()
 end
 
