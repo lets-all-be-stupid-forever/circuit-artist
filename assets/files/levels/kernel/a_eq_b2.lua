@@ -10,11 +10,6 @@ function makeCases(nbits)
   local function addcase(a, b)
     local r = 0
     if (a==b) then r = 1 end
-    print(a, math.type(a))
-    print(b, math.type(b))
-    -- TODO put an assert error here and debug
-    assert (math.type(a) == 'integer')
-    assert (math.type(b) == 'integer')
     table.insert(cases, {
       a=a,
       b=b,
