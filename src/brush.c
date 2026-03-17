@@ -7,7 +7,7 @@
 
 void brush_init(brush_t* b) {
   *b = (brush_t){0};
-  b->max_path_size = 1000;
+  b->max_path_size = 64;
   b->path_cnt = 0;
   b->path_pixels = calloc(b->max_path_size, sizeof(int));
 }
@@ -17,8 +17,10 @@ bool brush_append_point(brush_t* b, int px, int py) {
   // If have reached maximum size for brush, dont add more points.
   // (otherwise we might have issues in drawing as well)
   if (2 * b->path_cnt == b->max_path_size) {
-    return false;
+    b->max_path_size *= 2;
+    b->path_pixels = realloc(b->path_pixels, b->max_path_size * sizeof(int));
   }
+
   // Won't add point to brush if it's the same as last one.
   int c = b->path_cnt - 1;
   if (c >= 0 && b->path_pixels[2 * c + 0] == px &&
