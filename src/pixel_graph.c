@@ -494,10 +494,16 @@ void pixel_graph_init(PixelGraph* pg, DistSpec spec, int nl, Image* imgs,
 
   /* Sockets and Drivers always have dedicated nodes */
   for (int i = 0; i < arrlen(pg->drv); i++) {
-    img_code[0][pg->drv[i]] |= FLAG_DRV;
+    // When it's negative, it means the driver is outside the image.
+    if (pg->drv[i] >= 0) {
+      img_code[0][pg->drv[i]] |= FLAG_DRV;
+    }
   }
   for (int i = 0; i < arrlen(pg->skt); i++) {
-    img_code[0][pg->skt[i]] |= FLAG_DRV;
+    // When it's negative, it means the socket is outside the image.
+    if (pg->skt[i] >= 0) {
+      img_code[0][pg->skt[i]] |= FLAG_DRV;
+    }
   }
 
   miniprof_time();  // T1 ends
