@@ -3,6 +3,15 @@
 #include "brush.h"
 #include "hist.h"
 
+/* Helper struct to track sub-pixel camera position during panning to avoid
+ * stuttering artifacts during rendering.  */
+typedef struct {
+  bool active;
+  int start;
+  int cur;
+  double delta;
+} PanState;
+
 /**
  * State of the painting functionality.
  * Manages things like tools and camera.
@@ -48,6 +57,8 @@ typedef struct {
   int render_mode;
   RectangleInt prev_tool_rect;
   int prev_layer; /* Saves previous selected layer for quick back and forth */
+  PanState pan_x;
+  PanState pan_y;
 } Paint;
 
 void paint_init(Paint* ca);

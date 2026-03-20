@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "clipapi.h"
 #include "colors.h"
@@ -1448,6 +1449,22 @@ static void paint_append_line_width_number(Paint* ca, int key) {
   }
 }
 
+static void pan_update(PanState* pan, double dt, int dx, int* target) {
+  if (dx == 0) {
+    pan->active = false;
+    pan->delta = 0;
+    return;
+  }
+  if (!pan->active) {
+    pan->active = true;
+    pan->delta = 0;
+  }
+  pan->delta += dt * dx * 0.6;
+  int step = (int)round(pan->delta);
+  pan->delta -= step;
+  *target += step;
+}
+
 void paint_movement_keys(Paint* ca) {
   // If control is pressed, don't do anything, to avoid conflict with save
   // (Ctrl+S) or other command.
@@ -1456,11 +1473,12 @@ void paint_movement_keys(Paint* ca) {
   }
   int dy = IsKeyDown(KEY_W) - IsKeyDown(KEY_S);
   int dx = IsKeyDown(KEY_A) - IsKeyDown(KEY_D);
-  if (dx != 0 || dy != 0) {
-    ca->cam.off.x += dx * 10;
-    ca->cam.off.y += dy * 10;
-    paint_ensure_camera_within_bounds(ca);
-  }
+  double dt = 1000.0 * ui_get_frame_time();
+
+  pan_update(&ca->pan_x, dt, dx, &ca->cam.off.x);
+  pan_update(&ca->pan_y, dt, dy, &ca->cam.off.y);
+
+  paint_ensure_camera_within_bounds(ca);
 
   int zoom = IsKeyPressed(KEY_EQUAL) - IsKeyPressed(KEY_MINUS);
   if (zoom != 0) {

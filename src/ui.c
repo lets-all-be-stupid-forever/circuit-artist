@@ -47,6 +47,7 @@ static struct {
   lua_State* L;            /* Game lua environment (non-sandboxed)*/
   char* lua_error; /* Lua error message: Causes app to go in crash mode */
   GameRegistry* registry;
+  double previous_time;
 } C = {0};
 
 static void ui_draw_mouse();
@@ -90,7 +91,8 @@ void ui_init() {
   /* The minimum must be done here so we can display errors */
   int screen_width = 640 * 2;
   int screen_height = 320 * 2;
-  SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+  // SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+  SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
   InitWindow(screen_width, screen_height, "Circuit Artist");
   InitAudioDevice();
   C.registry = create_game_registry();
@@ -154,15 +156,76 @@ static void ui_update_debug() {
   }
 }
 
+/* Default frame control logic used in raylib.
+ *
+ * Can cause stutter due to the inacuracy of WaitTime(), making you drop a
+ * few frames.
+ */
+static void frame_control_default() {
+  double target_fps = 60;
+  SwapScreenBuffer();
+  double current_time = GetTime();
+  double update_draw_time = current_time - C.previous_time;
+  double wait_time = (1.0 / target_fps) - update_draw_time;
+  if (wait_time > 0.0) {
+    WaitTime(wait_time);
+    current_time = GetTime();
+  }
+  double delta_time = current_time - C.previous_time;
+  C.frame_time = delta_time;
+  C.previous_time = current_time;
+  PollInputEvents();
+}
+
+/*
+ * Uses busy-wait to wait part of remaining time interval.
+ *
+ * The issue is that WaitTime() function is not reliable: it can oscilate in
+ * function of the OS (ie the wait time might be bigger than what asked).
+ * The solution is to use WaitTime() for part of the interval and do a busy
+ * wait for the remaining 2ms of the frame time.
+ */
+static void frame_control_spin() {
+  double target_fps = 60;
+  SwapScreenBuffer();
+  double current_time = GetTime();
+  double update_draw_time = current_time - C.previous_time;
+  double wait_time = (1.0 / target_fps) - update_draw_time;
+  if (wait_time < 0) wait_time = 0;
+  double eps = 0.002;
+  double target = wait_time + current_time;
+  if (target - current_time > eps) {
+    WaitTime(target - current_time - eps);
+    current_time = GetTime();
+  }
+  // busy - wait
+  while (current_time < target) {
+    current_time = GetTime();
+  }
+  double delta_time = current_time - C.previous_time;
+  C.frame_time = delta_time;
+  C.previous_time = current_time;
+  PollInputEvents();
+}
+
+/* Frame control for when VSYNC is active.
+ *
+ * For MacOS this is tricky because you might end up with more frames than
+ * your monitor. In practice with the ProMotion thing you get 120FPS, which
+ * means more extra work on rendering.
+ * */
+static void frame_control_vsync() {
+  SwapScreenBuffer();
+  double current_time = GetTime();
+  double delta_time = current_time - C.previous_time;
+  C.frame_time = delta_time;
+  C.previous_time = current_time;
+  PollInputEvents();
+}
+
 void ui_run() {
-  double previousTime = GetTime();  // Previous time measure
-  double currentTime = 0.0;         // Current time measure
-  double updateDrawTime = 0.0;      // Update + Draw time
-  double waitTime = 0.0;            // Wait time (if target fps required)
-  float deltaTime = 0.0f;
-  int targetFPS = 60;
+  C.previous_time = GetTime();  // Previous time measure
   while (true) {
-    PollInputEvents();
     if (ui_get_should_close()) {
       // save_level_progress();
       break;
@@ -172,23 +235,11 @@ void ui_run() {
     } else {
       ui_update_frame();
     }
-    SwapScreenBuffer();
-    currentTime = GetTime();
-    updateDrawTime = currentTime - previousTime;
 
-    if (targetFPS > 0)  // We want a fixed frame rate
-    {
-      waitTime = (1.0f / (float)targetFPS) - updateDrawTime;
-      if (waitTime > 0.0) {
-        WaitTime((float)waitTime);
-        currentTime = GetTime();
-        deltaTime = (float)(currentTime - previousTime);
-      }
-    } else {
-      deltaTime = (float)updateDrawTime;  // Framerate could be variable
-    }
-    C.frame_time = deltaTime;
-    previousTime = currentTime;
+    /* 3 different strategies for frame control */
+    frame_control_spin();
+    // frame_control_default();
+    // frame_control_vsync();
   }
 }
 
