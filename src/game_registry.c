@@ -295,6 +295,28 @@ static int lua_add_level(lua_State* L) {
   return 0;
 }
 
+static int lua_Import(lua_State* L) {
+  const char* path = luaL_checkstring(L, 1);
+  char* full_path = checkmodpath(_load_ctx.mod_root, path);
+  if (!full_path) {
+    return luaL_error(L, "Import: invalid path '%s'", path);
+  }
+  if (!FileExists(full_path)) {
+    free(full_path);
+    return luaL_error(L, "Import: couldn't find file '%s'", path);
+  }
+  int top_before = lua_gettop(L);
+  if (luaL_loadfile(L, full_path) != LUA_OK) {
+    free(full_path);
+    return lua_error(L);  // error message already on stack
+  }
+  free(full_path);
+  if (lua_pcall(L, 0, LUA_MULTRET, 0) != LUA_OK) {
+    return lua_error(L);  // error message already on stack
+  }
+  return lua_gettop(L) - top_before;
+}
+
 static int lua_loadtxt(lua_State* L) {
   const char* path = luaL_checkstring(L, 1);
   if (!path) {
@@ -382,6 +404,7 @@ GameRegistry* create_game_registry() {
   lua_register(L, "tut_add_topic", lua_tutorial_add_topic);
   lua_register(L, "tut_add_item", lua_tutorial_add_item);
   lua_register(L, "loadtxt", lua_loadtxt);
+  lua_register(L, "Import", lua_Import);
   r->L = L;
   return r;
 }
