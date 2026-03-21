@@ -782,3 +782,633 @@ T.npu1_prog_text = [[
 ]]
 
 
+T.wiki_tldr_title = "TLDR"
+T.wiki_hotkeys_name = "Hotkeys"
+T.wiki_hotkeys_text = [[
+
+`HOTKEYS`
+
+`Undo`
+Ctrl-Z
+
+`Redo`
+Ctrl-Shift-Z
+Ctrl-Y
+
+`Navigation`
+W = Up
+A = Left
+S = Down
+D = Right
+= (equal) zoom in
+- (minus) zoom out
+
+]]
+
+T.wiki_wires1_name = "Basic wires"
+T.wiki_wires1_text = [[
+
+`BASIC WIRES`
+
+!img:wiki/imgs/wires_pins_example.png
+
+Wires are formed by connected non-black pixels. Wires can have 3 states as displayed below:
+- `ON` (lighter color)
+- `OFF` (darker color)
+- `UNDEFINED` (magenta color)
+!img:wiki/imgs/wires1.png
+The `ON` state represents the logic `1`, and the `OFF` state represents the logic `0`. Wires state can be toggled (1->0 or 0->1) by clicking on it during simulation mode.
+!img:wiki/imgs/wires2.png
+The `UNDEFINED` state means that we don't know the state of the wire. Most wires start simulation in this state.
+]]
+
+T.wiki_wires_crossing_name =  "Crossing Wires"
+T.wiki_wires_crossing_text = [[
+
+`CROSSING WIRES`
+
+The width or shape of a wire is not important, nor its color, as long as the pixels are connected.
+!img:wiki/imgs/wires3.png
+`Wires are allowed to cross`. Wires only connect at T or L connections.
+!img:wiki/imgs/wire_cross.png
+Wires are only connected via up/down/left/right pixel neighbours. Diagonal pixels are not considered connected. In the example below, in the first case you have 4 different wires, while in the second example you have a single wire.
+!img:wiki/imgs/wire_diagonal.png
+
+]]
+
+T.wiki_wires_io_name = "Wires IO"
+T.wiki_wires_io_text = [[
+
+`WIRE INPUT AND OUTPUT`
+
+`Each wire can have only 1 or 0 inputs`. If you connect a wire to more than 1 input, an error message will be displayed and the simulation will not start.
+
+If a wire has no input, it will be automatically initialized with a 0 value at the beginning of the simulation.
+
+
+]]
+
+T.wiki_bit_order_name = "Bit Order"
+T.wiki_bit_order_text = [[
+
+`BIT ORDER`
+
+Multi-wire "connections" can be used to represent numbers. In that case, for input/output connections, the game uses the `top-most wire as least significant bit`.
+
+In your chip, you can use your own conventions for the least significant bit in vertical and horizontal multi-bit wires. However, the line tool corner (shift/control keys) mode works best if you keep the top-most/left-most as the least significant bit convention.
+
+!img:wiki/imgs/bit_order.png
+
+]]
+
+T.wiki_posint_name =  "Number Representation"
+T.wiki_posint_text = [[
+
+`NUMBERS IN BINARY`
+
+In everyday life, we count using the decimal system (base-10), which uses ten different digits: 0, 1, 2, 3, 4, 5, 6, 7, 8, and 9.
+
+In computers and digital circuits, we use the binary system (base-2), which uses only TWO digits: 0 and 1.
+
+How Binary Numbers Work:
+
+Just like in decimal where each position represents a power of 10 (ones, tens, hundreds, thousands...), in binary each position represents a power of 2.
+
+Reading from RIGHT to LEFT:
+- The rightmost bit (bit 0) represents 2^0 = 1
+- The next bit (bit 1) represents 2^1 = 2
+- The next bit (bit 2) represents 2^2 = 4
+- The next bit (bit 3) represents 2^3 = 8
+- And so on: 16, 32, 64, 128, 256...
+
+To find the decimal value of a binary number, add up the powers of 2 for each position that has a 1.
+
+Examples:
+
+Binary: 101
+= 1×4 + 0×2 + 1×1
+= 4 + 0 + 1
+= 5 in decimal
+
+Binary: 1010
+= 1×8 + 0×4 + 1×2 + 0×1
+= 8 + 0 + 2 + 0
+= 10 in decimal
+
+Binary: 11111
+= 1×16 + 1×8 + 1×4 + 1×2 + 1×1
+= 16 + 8 + 4 + 2 + 1
+= 31 in decimal
+
+Binary: 00000 = 0 in decimal
+Binary: 00001 = 1 in decimal
+Binary: 00010 = 2 in decimal
+Binary: 00011 = 3 in decimal
+Binary: 00100 = 4 in decimal
+Binary: 00101 = 5 in decimal
+
+This is how digital circuits represent numbers using only electrical signals that are either ON (1) or OFF (0).
+]]
+
+T.wiki_customlevel_name = "Custom Level"
+T.wiki_customlevel_text = [[
+
+`CUSTOM LEVEL`
+
+You can write custom levels using `local` lua script.
+
+The `examples/` folder in the game's directory contains a few examples.
+
+The script needs to define 4 functions:
+
+- `_Setup()`: Declares ports/pins. (called once on load)
+- `_Start()`: Initializes simulation variables. (called before each simulation)
+- `_Update()`: Level logic. Called every N ticks or whenever simulation "stops".
+- `_Draw()`: Draws on screen. Called every UI frame during simulation.
+
+More details:
+
+!hl
+
+`_Setup()`: This function should define the ports of the level. It is called right after the lua scripts are loaded. Each port is defined by: input or output, the number of wires and its name.
+
+Input (as in input to the script), is defined by `AddPortIn(numWires, wireName)` and output wires as `AddPortOut(numWires, wireName)`. These functions return the ID of the port, which should be later used to read/write to it.
+
+Example:
+
+function _Setup()
+  PORT_A = AddPortIn(2, 'a', LEFT)
+  PORT_B = AddPortOut(4, 'b', RIGHT)
+end
+
+!hl
+
+`_Start()`: Called when simulation starts, before any update. It should initialize simulation data and can declare some simulation parameters.
+
+- `SetUpdateInterval(N)` rate in which _Update() is called. if N=0, it is called whenever circuit stops. If N>0, _Update() is called every N ticks.
+
+A fixed tick rate might be useful for CPU or fixed clock design, but is sensitive to critical path design.
+
+
+- `SetBaseTPS(T)`: Simulation's Ticks Per Second (TPS) for speed 3.
+
+Default value is 240.
+
+The scaling TPS per speed is:
+
+- speed1: BaseTPS / 16
+- speed2: BaseTPS / 4
+- speed3: BaseTPS
+- speed4: BaseTPS * 4
+- speed5: BaseTPS * 32
+- speed6: BaseTPS * 128
+
+It allows higher simulation speeds, might be useful for CPU designs that need higher TPS.
+
+!hl
+
+`_Update()`: This function should contain the evolution logic of the level. It can read or write to ports using the `value = ReadPort(portId)` or `WritePort(portId, value)`.
+
+Example:
+
+function _Update()
+  local a = ReadPort(PORT_A)
+  WritePort(PORT_B, a+1)
+end
+
+!hl
+
+`_Draw()`: Called every drawing frame, it `should not write to ports` here (it can read).
+
+Implemented functions are: (many of them are based on raylib's implementation)
+
+- `DrawRectangle(x, y, width, height, {r, g, b, a})` (colors are defined by {r,g,b,a} array with 0-255 range)
+- `DrawText(txt, x, y, {r,g,b,a})` Draws text on screen.
+- `MeasureText(txt)` returns the length in pixels of the text (when calling DrawText).
+- `DrawTextBox(txt, x, y, w, {r,g,b,a})` Same as DrawText but will jump line when length goes past w (good for long text)
+- `rlPushMatrix()` pushes (saves) matrix for transformations
+- `rlPopMatrix()` pops (reverts) matrix for transformations
+- `rlScalef(sx, sy, sz)` scales drawing (mind putting sz to 1)
+- `rlTranslatef(tx, ty, tz)` translates drawing (mind putting tz to 0)
+
+You can check raylib documentation/examples for more info/or more ideas on how to extend API.
+
+]]
+
+T.wiki_nand_name = "Nand Gate"
+T.wiki_nand_text = [[
+
+`NAND GATE`
+
+A NAND logic gate is represented by 3 pixels, as shown below.
+
+!img:wiki/imgs/nand0.png
+
+The NAND logic gate has 2 inputs and 1 output. It reads the values of the inputs and, depending on those values, assigns a value to the output wire. The assignment table can be found below:
+
+ a=0 b=0 --> NAND=1
+ a=0 b=1 --> NAND=1
+ a=1 b=0 --> NAND=1
+ a=1 b=1 --> NAND=0
+
+For example, if the 2 inputs are 0, then the output will be assigned to 1. See examples below.
+
+!img:wiki/imgs/nand2.png
+
+The NAND gates can be drawn in any orientation (facing up, down, left or right):
+
+!img:wiki/imgs/nand3.png
+
+Every non-black pixel in the image that is not part of a NAND gate is considered a wire, and has some state associated to it, as described below.
+
+]]
+
+T.wiki_not_name = "Not Gate"
+T.wiki_not_text = [[
+
+`NOT GATE`
+
+The not gate inverts the value of an input bit A.
+
+Example:
+a=0 --> NOT=1
+a=1 --> NOT=0
+!img:wiki/imgs/not2.png
+A not gate can be create using a single NAND gate, as shown in the picture above.
+
+]]
+
+T.wiki_and_name = "And Gate"
+T.wiki_and_text= [[
+
+`AND GATE`
+
+The AND gate returns a 1 only if both inputs are 1, otherwise returns a 0. I.e., the output is only 1 if `a` AND `b` are 1.
+
+Example:
+a=0 b=0 --> AND=0
+a=0 b=1 --> AND=0
+a=1 b=0 --> AND=0
+a=1 b=1 --> AND=1
+!img:wiki/imgs/and2.png
+An AND gate can be created using 2 NAND gates, as shown below. That is equivalent to a NAND gate followed by a NOT gate.
+
+]]
+
+T.wiki_or_name = "Or Gate"
+T.wiki_or_text = [[
+
+`OR GATE`
+
+The OR gate returns a 1 if either input `a` OR input `b` is 1.
+
+Example:
+a=0 b=0 --> OR=0
+a=0 b=1 --> OR=1
+a=1 b=0 --> OR=1
+a=1 b=1 --> OR=1
+!img:wiki/imgs/or2.png
+An OR gate can be created using 3 NAND gates.
+
+]]
+
+T.wiki_xor_name = "Xor Gate"
+T.wiki_xor_text = [[
+
+`XOR GATE`
+
+The XOR gate returns 1 if exactly one of the inputs is 1; otherwise, it returns 0. (It's like a bit sum without carry.)
+
+Example:
+a=0 b=0 --> XOR=0
+a=0 b=1 --> XOR=1
+a=1 b=0 --> XOR=1
+a=1 b=1 --> XOR=0
+!img:wiki/imgs/xor2.png
+A XOR gate can be created using 4 NAND gates.
+
+]]
+
+T.wiki_decoder1_name = "Decoder"
+T.wiki_decoder1_text = [[
+
+`DECODER`
+
+!img:wiki/imgs/decoder_tut1.png
+
+A decoder takes a binary input and outputs a signal where exactly one bit is high, indicating which input value was received.
+Example:
+A=0 --> D=01 (bit 0 active)
+A=1 --> D=10 (bit 1 active)
+
+!img:wiki/imgs/decoder_tut2.png
+
+A 1-bit input decoder can be implemented as in the example above.
+
+]]
+
+T.wiki_mux_name = "Mux"
+T.wiki_mux_text = [[
+
+`MUX`
+
+!img:mux1.png
+
+A `MUX` is like a data `selector`: Given 2 inputs `a` and `b`, and a selection input `s`, if `s` is 0, `MUX` returns the value of `a`, and if `s` is 1, `MUX` returns the value of `b`.
+
+!img:mux3.png
+
+Muxes work like selectors (or a "switch"). They're useful for example when you have multiple calculations and want to select only one of the results. It's like an 'if' statement in programming: IF S=0, RETURN A; ELSE IF S=1, RETURN B.
+
+!img:mux2.png
+]]
+
+T.wiki_demux_name = "Demux"
+T.wiki_demux_text = [[
+
+`DEMUX`
+
+!img:demux1.png
+
+A `DEMUX` is like a bit `router`: Given an input bit `a`, 2 outputs `Y0` and `Y1` and a selector bit `s`, if `s` is 0, then set `Y0` to the value of `a` and `Y1` to 0. Otherwise, if `s` is 1, set `Y0` to 0 and `Y1` to the value of `a`.
+!img:demux3.png
+Demuxes work like routers: you have a wire and the selector bit chooses to which wire the input bit should go.
+Example:
+a=0, s=0 --> Y0 = 0, Y1 = 0
+a=1, s=0 --> Y0 = 1, Y1 = 0
+a=0, s=1 --> Y0 = 0, Y1 = 0
+a=1, s=1 --> Y0 = 0, Y1 = 1
+A DEMUX can be implemented as follows:
+!img:demux2.png
+You can also create DEMUXes with more outputs by combining DEMUXes with fewer outputs:
+!img:demux4.png
+]]
+
+T.wiki_srlatch_name ="SR Latch"
+T.wiki_srlatch_text = [[
+
+`SR Latch`
+
+This section will show one way to store 1 bit of memory.
+
+It's generally not possible to store memory without using cycles, ie, wires that have outputs interlinked with some inputs somehow. We generally want to avoid arbitrarily using cycles in circuits because they can make the circuit complicated and can introduce oscillation errors, but bit storage is an exception.
+
+The `SR latch` is a simple interlinked configuration of gates that is stable and can "remember" its previous configuration. You can change its values using the right inputs:
+!img:wiki/mem1.png
+The `S` and `R` inputs stand for `set` and `reset`: you can see that when S=1 and R=0, we have the value of `Q` updated to 1, and when R=1 and S=0, the value of `Q` is reset to 0. When inputs are 0,0 the latch doesn't do anything, it just maintains the previous set result, thus working as a 1-bit storage memory. The S=1 and R=1 case is a bit tricky: it produces an invalid state because we want the `Q` and `Q'` values to always be opposite, so in practice we avoid this case.
+
+Mind that in the schema picture, we use `S'` and `R'` as inputs, they are the inverted values of `S` and `R` respectively.
+
+]]
+
+T.wiki_dlatch_name = "D Latch"
+T.wiki_dlatch_text= [[
+
+`D LATCH`
+
+!img:wiki/mem2.png
+We can extend the SR latch to create a `D`-Latch, where we have two inputs: a data input `D`, containing the bit to be assigned to the memory, and an `E` enable input, which will tell the memory to update or not (when E=0, the bit is not assigned and nothing happens). The output `Q` will represent the stored bit.
+!img:wiki/mem3.png
+It can be implemented as follows:
+!img:wiki/mem4.png
+
+Mind that Q can change at any time whenever `E`=1. This can be inconvenient sometimes. Imagine for example, that you pick the stored bit, do some calculation on it and want to store it again. If the E keeps active, the bit will be updated immediately, which will trigger the calculation again!
+
+]]
+
+T.wiki_dflipflop_name = "D Flip Flop"
+T.wiki_dflipflop_text= [[
+
+`D FLIP FLOP`
+
+!img:wiki/mem8.png
+Sometimes you want the memory to be updated only once when the clock (`CLK`) goes from 0 to 1.
+
+Then, you can perform your calculations however you want, have the `D` bit modified with the new (next) value of the storage without interfering the current storage/calculation. Then, the storage is only updated again whenever CLK goes to 0 and then back again to 1! (ie, in the next `CYCLE`, creating a proper sequential mechanism)
+
+!img:wiki/mem9.png
+
+This can be achieved with a `D flip flop`, that can be created using two D latches.
+
+!img:wiki/mem10.png
+
+We call this behaviour a `rising edge-triggered` memory, in contrast with the previous `level-triggered` memory of `D Latches`. Below a comparison between the two storage modes:
+
+!img:wiki/mem13.png
+
+]]
+
+T.wiki_synchronous_name = "Synchronous Circuits"
+T.wiki_synchronous_text= [[
+
+In this section, you'll see how to use memory to create `synchronous sequential` circuits.
+
+`Sequential` as in, calculations and memory updates are always done in sequence: first you update the memory, then you perform calculations, then you update the memory again, and so on.
+!img:wiki/sync4.png
+`Synchronous` as in, every bit storage you have is updated once and at the `same time` for each `enable` cycle. We use a special bit to perform this synchronization, which we call `CLOCK` bit.  Whenever it goes up, the memories are updated (with the current input `D` value, which come from calculations from previous cycle) and it is only updated again when it goes to 0 and back to 1. This forms what we call a `clock cycle`. We can see that the actual "sequential" property of our system is tightly linked with the cycles of the clock: each cycle defines one "update->compute" step in our sequence .
+!img:wiki/sync2.png
+You can structure synchronous circuits in 2 major subcircuits: (i) the `combinatorial` subcircuit and (ii) the `memory` subcircuit:
+!img:wiki/sync1.png
+The role of the `memory` subcircuit is to store and update the memory of the system. It's very similar to a big D flip flop but instead of a single bit, it stores multiple bits `S`, and the output is just a stored version of the input `S`.
+
+The role of the `combinatorial` subcircuit is to take the previous state `S_prv` as input, as well as some external input bits `Din` and generate both the bits corresponding to the next desired state `S_nxt` and the outputs of the system `Dout`. In this subcircuit there's no memory or "loops", just straight logic computation.
+
+This way, once you're designing a sequential circuit, you can separate the logic from the storage and think in terms of: (i) what should the memory look like? (ii) how can I use the current memory (and inputs) to generate the next state of the memory (and outputs)?
+
+`EXAMPLE`: Let's design a circuit with 1 bit input `A` and that outputs the bit `Y` that appeared 2 clock cycles ago. The circuit should look like:
+
+1. CC=0 A=A0 --> Y=n/a
+2. CC=1 A=A1 --> Y=n/a
+3. CC=2 A=A2 --> Y=A0
+4. CC=3 A=A3 --> Y=A1
+
+We would need 2 bits for the memory: one `S0` for storing the current bit and one `S1` for the bit one clock ago. At the current clock cycle, you want to output the bit that appeared 1-clock "ago" from the last clock cycle, ie, the `S1` that you have as input. The updates then would look like the following:
+
+- `S0_nxt = Din`
+- `S1_nxt = S0_prv`
+- `Dout = S1_prv`
+
+And the circuit would look something like that:
+!img:wiki/sync3.png
+
+]]
+T.wiki_meminit_name = "Memory Initialization"
+T.wiki_meminit_text= [[
+
+`MEMORY INITIALIZATION:`
+
+Flip flops don't have an initial state: the latches start at an undefined state, so everytime you have a synchronous circuit, before doing any calculation you need to initialize your memory somehow.
+
+That's why we often introduce an extra auxiliar bit called `POWER-ON-RESET` that is 1 for a few initial clock cycles, then become zero.
+
+!img:wiki/sync6.png
+!img:wiki/sync8.png
+
+]]
+T.wiki_propdelay_name = "Propagation Delay"
+T.wiki_propdelay_text= [[
+
+`PROPAGATION DELAY`
+
+Both NAND gates and wires have propagation delay. When you chain components together, delays add up.
+
+`When to AVOID clock delay:`
+You should generally avoid adding gates between the clock signal and flip-flop inputs. If some flip-flops receive the clock later than others, your memory will no longer be synchronous and you might have bugs.
+
+!img:wiki/sync5.png
+
+`When to USE clock delay:`
+However, there are cases where you WANT to delay the clock:
+
+1. When you derive the clock from your data (like detecting button presses), the clock must arrive AFTER the data is stable. Use NOT-NOT chains to delay the clock.
+
+2. To create gated clocks that reduce updates on unused circuit parts, saving simulation time (and power in real circuits).
+
+In these cases, plan carefully and mind the propagation delays of your gates and wires.
+]]
+
+T.wiki_setuphold_name = "Setup and Hold Time"
+T.wiki_setuphold_text = [[
+
+`SETUP TIME AND HOLD TIME`
+
+These are two critical timing requirements for flip-flops:
+
+`Setup Time:`
+The data input must be stable for a certain amount of time BEFORE the clock rising edge arrives. This is called the `setup time`. If the data changes too close to the clock edge, the flip-flop might capture an incorrect or unstable value.
+
+`Hold Time:`
+The data input must remain stable for a certain amount of time AFTER the clock rising edge. This is called the `hold time`. If the data changes too quickly after the clock edge, the flip-flop might not capture it correctly.
+
+]]
+
+T.wiki_halfadder_name = "Half Adder"
+T.wiki_halfadder_text= [[
+
+`HALF ADDER`
+
+This circuit is called a HALF ADDER. It can be implemented using just two logic gates:
+- An XOR gate produces the sum output
+- An AND gate produces the carry output (which is 1 only when both inputs are 1)
+!img:wiki/imgs/addition1.png
+!img:wiki/imgs/addition2.png
+
+]]
+
+T.wiki_fulladder_name = "Full Adder"
+T.wiki_fulladder_text = [[
+
+`FULL ADDER`
+
+A full adder extends the half adder by accepting a third input—the carry from a previous bit position. This allows you to chain multiple adders together to handle multi-bit numbers.
+
+!img:wiki/imgs/addition3.png
+
+]]
+
+T.wiki_rcadder_name = "Ripple Carry Adder"
+T.wiki_rcadder_text = [[
+
+`MULTI-BIT ADDER`
+
+You can create a multi-bit number adder combining multiple full-adders in series, combining the "carry output" from the previous digit to the "cary input" of the next digit.  This is also called a `Ripple-carry adder`.
+
+!img:wiki/imgs/rc_adder.png
+
+There are also other ways to create multi-bit adders, some more efficient. For instance, propagating the carries one by one can introduce a lot of delay when adding numbers with a lot of bits.
+]]
+
+T.wiki_bit_shifting_name = "Bit Shifting"
+T.wiki_bit_shifting_text= [[
+
+`BIT SHIFTING`
+
+In this section we will explore how to shift bits in a number.
+
+Shift operations basically "slide" the positions of the bits, either to the left or to the right. They are useful for many applications, including easy multiplication and division by a power of two: shifting a number one position to the left is roughtly equivalent to multiplying a number by two, shifting by two bits multiplying it by 4 and so on.
+
+Shifting operations are typically represented by the "<<" or ">>" symbol: "A << n" represents shifting a number A n positions to the left, and "A >> n" n positions to the right.
+
+For example, if `A`=00100 and `n`=1, shifting 1 bit to the right gives us: A >> n = 00010. Shifting 1 bit to left gives us: A << n = 01000.
+
+Although shifting by a constant number can be done directly by wiring, shifting by "arbitrary" amounts can be more complex, and there are different ways to implement it. We describe two in more details in the sections `Barrel Shifter` and `Logarithmic shifter`.
+]]
+
+T.wiki_barrel_shifter_name = "Barrel Shifter"
+T.wiki_barrel_shifter_text= [[
+
+`BARREL SHIFTER`
+
+A `barrel shifter` can perform any shift amount in a single operation using a crossbar network of multiplexers. For a 4-bit right shifter C = A >> B, the circuit works as follows:
+
+!img:wiki/imgs/shift2.png
+
+`Structure`:
+- Create a grid where each output bit can be connected to any input bit
+- Use multiplexers at each output position to select the correct input based on the shift amount B
+- The shift amount B acts as the select signal for all multiplexers
+
+!img:wiki/imgs/shift3.png
+
+`How it works`:
+- Each output bit position has a multiplexer that can choose from multiple input sources
+- For a right shift by B positions, output[i] gets input[i+B] (with appropriate bounds checking)
+- Positions that would receive bits from outside the input range are filled with zeros
+
+`Key advantage`: Unlike simple shifters that shift one position per clock cycle, a barrel shifter can shift by any amount (0 to 3 positions for a 4-bit shifter) in one operation.
+
+`Implementation`: The "crossbar" structure allows any input to route to any output through a network of multiplexers controlled by the shift amount.
+
+!img:wiki/imgs/shift4.png
+
+]]
+
+T.wiki_logarithmic_shifter_name =  "Logarithmic Shifter"
+T.wiki_logarithmic_shifter_text = [[
+
+`LOGARITHMIC SHIFTER`
+
+A `logarithmic shifter` is a clever way to shift bits by any amount using less components than a barrel shifter. The key idea is to break down the shift into smaller steps.
+
+Think about it this way: instead of having one big circuit that can shift by 0, 1, 2, or 3 positions all at once, we use two smaller steps connected together. Each step makes a simple choice: "shift a bit, or don't shift".
+
+For a 4-bit shifter C = A >> B (where B tells us how many positions to shift), the circuit works like this:
+
+`Step-by-step process`:
+
+Step 1: Look at B[0] (the first bit of B)
+- If B[0] = 1: shift the bits right by 1 position
+- If B[0] = 0: don't shift, keep bits as they are
+
+Step 2: Take the result from Step 1, and look at B[1] (the second bit of B)
+- If B[1] = 1: shift the bits right by 2 positions
+- If B[1] = 0: don't shift, keep bits as they are
+
+The final result is the output C!
+
+!img:wiki/imgs/log_shift.png
+
+`Example`: Let's say we want to shift right by 3 positions (B = 11 in binary):
+- Step 1: B[0] = 1, so we shift by 1 position
+- Step 2: B[1] = 1, so we shift by 2 more positions
+- Total: We shifted by 1 + 2 = 3 positions!
+
+`Another example`: To shift by 2 positions (B = 10 in binary):
+- Step 1: B[0] = 0, so we don't shift
+- Step 2: B[1] = 1, so we shift by 2 positions
+- Total: We shifted by 0 + 2 = 2 positions!
+
+`Why is this smart?`
+
+Each step is very simple - it just decides between two options (shift or don't shift). By connecting these simple steps together, we can create any shift amount from 0 to 3.
+
+For bigger numbers, you just add more steps: a step for "shift by 4", a step for "shift by 8", and so on. Each new step doubles the shift amount.
+
+This is much simpler to build than a barrel shifter because each step only needs to make one simple choice, rather than choosing between many different options all at once!
+
+]]
+
+T.wiki_topic_basics = "Basics"
+T.wiki_topic_gates = "Gates"
+T.wiki_topic_mem = "Sequential Circuits"
+T.wiki_topic_math = "Math"

@@ -1,45 +1,53 @@
 
-function add_wiki(topic, id, name)
-  local desc = "wiki/desc/" .. id .. ".txt"
+function add_wiki2(topic, id)
   local icon = "wiki/icons/" .. id .. ".png"
-  tut_add_item(topic, id, name, loadtxt(desc), icon)
+  local name = T['wiki_' .. id .. '_name']
+  local desc = T['wiki_' .. id .. '_text']
+  tut_add_item(topic, id, name, desc, icon)
 end
 
-tut_add_topic("basic", "Basics", "wiki/icon_basics.png");
-tut_add_topic("gates", "Gates", "wiki/icon_gates.png");
-tut_add_topic("mem", "Sequential Circuits", "wiki/icon_memory.png");
-tut_add_topic("math", "Math", "wiki/icon_math.png");
+
+tut_add_topic("basic", T.wiki_topic_basics, "wiki/icon_basics.png");
+tut_add_topic("gates", T.wiki_topic_gates, "wiki/icon_gates.png");
+tut_add_topic("mem", T.wiki_topic_mem, "wiki/icon_memory.png");
+tut_add_topic("math", T.wiki_topic_math, "wiki/icon_math.png");
+
+local tldr_txt = [[
 
 
-add_wiki("basic", "tldr", "TLDR")
-add_wiki("basic", "hotkeys", "Hotkeys")
-add_wiki("basic", "wires1", "Basic wires")
-add_wiki("basic", "wires_crossing", "Crossing Wires")
-add_wiki("basic", "wires_io", "Wires IO")
-add_wiki("basic", "bit_order", "Bit Order")
-add_wiki("basic", "posint", "Number Representation")
-add_wiki("basic", "customlevel", "Custom Level")
+!img:help_small.png
+]]
+tut_add_item("basic", "tldr", T.wiki_tldr_title, tldr_txt, "wiki/icons/tldr.png")
 
-add_wiki("gates", "nand", "Nand Gate")
-add_wiki("gates", "not", "Not Gate")
-add_wiki("gates", "and", "And Gate")
-add_wiki("gates", "or", "Or Gate")
-add_wiki("gates", "xor", "Xor Gate")
-add_wiki("gates", "decoder1", "Decoder")
-add_wiki("gates", "mux", "Mux")
-add_wiki("gates", "demux", "Demux")
+add_wiki2("basic", "hotkeys")
+add_wiki2("basic", "wires1")
+add_wiki2("basic", "hotkeys")
+add_wiki2("basic", "wires_crossing")
+add_wiki2("basic", "wires_io")
+add_wiki2("basic", "bit_order")
+add_wiki2("basic", "posint")
+add_wiki2("basic", "customlevel")
 
-add_wiki("mem", "srlatch", "SR Latch")
-add_wiki("mem", "dlatch", "D Latch")
-add_wiki("mem", "dflipflop", "D Flip Flop")
-add_wiki("mem", "synchronous", "Synchronous Circuits")
-add_wiki("mem", "meminit", "Memory Initialization")
-add_wiki("mem", "propdelay", "Propagation Delay")
-add_wiki("mem", "setuphold", "Setup and Hold Time")
+add_wiki2("gates", "nand")
+add_wiki2("gates", "not")
+add_wiki2("gates", "and")
+add_wiki2("gates", "or")
+add_wiki2("gates", "xor")
+add_wiki2("gates", "decoder1")
+add_wiki2("gates", "mux")
+add_wiki2("gates", "demux")
 
-add_wiki("math", "halfadder", "Half Adder")
-add_wiki("math", "fulladder", "Full Adder")
-add_wiki("math", "rcadder", "Ripple Carry Adder")
-add_wiki("math", "bit_shifting", "Bit Shifting")
-add_wiki("math", "barrel_shifter", "Barrel Shifter")
-add_wiki("math", "logarithmic_shifter", "Logarithmic Shifter")
+add_wiki2("mem", "srlatch")
+add_wiki2("mem", "dlatch")
+add_wiki2("mem", "dflipflop")
+add_wiki2("mem", "synchronous")
+add_wiki2("mem", "meminit")
+add_wiki2("mem", "propdelay")
+add_wiki2("mem", "setuphold")
+
+add_wiki2("math", "halfadder")
+add_wiki2("math", "fulladder")
+add_wiki2("math", "rcadder")
+add_wiki2("math", "bit_shifting")
+add_wiki2("math", "barrel_shifter")
+add_wiki2("math", "logarithmic_shifter")

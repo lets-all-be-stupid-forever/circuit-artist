@@ -1,7 +1,0 @@
-
-`FULL ADDER`
-
-A full adder extends the half adder by accepting a third input—the carry from a previous bit position. This allows you to chain multiple adders together to handle multi-bit numbers.
-
-!img:wiki/imgs/addition3.png
-
