@@ -305,15 +305,24 @@ static int lua_Import(lua_State* L) {
     free(full_path);
     return luaL_error(L, "Import: couldn't find file '%s'", path);
   }
-  int top_before = lua_gettop(L);
+  // Push debug.traceback as error handler so pcall captures full stack at error site
+  lua_getglobal(L, "debug");
+  lua_getfield(L, -1, "traceback");
+  lua_remove(L, -2);
+  int handler_idx = lua_gettop(L);
+
+  int top_before = handler_idx;
   if (luaL_loadfile(L, full_path) != LUA_OK) {
+    lua_remove(L, handler_idx);
     free(full_path);
-    return lua_error(L);  // error message already on stack
+    return lua_error(L);
   }
   free(full_path);
-  if (lua_pcall(L, 0, LUA_MULTRET, 0) != LUA_OK) {
-    return lua_error(L);  // error message already on stack
+  if (lua_pcall(L, 0, LUA_MULTRET, handler_idx) != LUA_OK) {
+    lua_remove(L, handler_idx);
+    return lua_error(L);
   }
+  lua_remove(L, handler_idx);
   return lua_gettop(L) - top_before;
 }
 
