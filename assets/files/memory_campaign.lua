@@ -10,28 +10,10 @@ easy_add_level2({
   id="latch_door",
   group='memory1',
   deps={},
-  assets={
-    'levels/door/door_base.png',
-    'levels/door/door_open.png',
-    'levels/door/door_closed.png',
-    'levels/door/door_lock_up.png',
-    'levels/door/door_lock_down.png',
-    'levels/door/door_unlock_up.png',
-    'levels/door/door_unlock_down.png',
-  },
   extra_text= {
-    {
-      title=T.latch_door_door_title,
-      img="levels/door/door_img1.png",
-      scale=3,
-    },
     {
       title=T.latch_door_think_title,
       text=T.latch_door_think_text,
-    },
-    {
-      title=T.latch_door_hint_title,
-      text=T.latch_door_hint_text,
     },
     {wiki='srlatch'},
   }
@@ -45,10 +27,6 @@ easy_add_level2({
     {
       title=T.dlatch_example_title,
       text=T.dlatch_example_text,
-    },
-    {
-      title=T.dlatch_analogy_title,
-      text=T.dlatch_analogy_text,
     },
     {wiki='dlatch'},
     {
@@ -75,24 +53,10 @@ easy_add_level2({
   deps={},
   extra_text= {
     {
-      title=T.photo_problem_title,
-      text=T.photo_problem_text,
-    },
-    {
-      title=T.photo_rising_title,
-      text=T.photo_rising_text,
-    },
-    {
-      title=T.photo_building_title,
-      text=T.photo_building_text,
-    },
-    {
-      title=T.photo_example_title,
-      img='levels/camera_img2.png',
-      scale=4,
+      title=T.photo_analogy_title,
+      text=T.photo_analogy_text,
     },
     {wiki='dflipflop'},
-    {wiki='synchronous'},
   }
 })
 
@@ -223,10 +187,6 @@ easy_add_level2({
   deps={},
   extra_text= {
     {
-      title=T.npu1_arch_title,
-      text=T.npu1_arch_text,
-    },
-    {
       title=T.npu1_data_title,
       text=T.npu1_data_text,
     },
@@ -238,5 +198,6 @@ easy_add_level2({
       title=T.npu1_prog_title,
       text=T.npu1_prog_text,
     },
+    {wiki='synchronous'},
   }
 })

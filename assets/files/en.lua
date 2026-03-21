@@ -369,48 +369,40 @@ So far, outputs have depended only on current inputs. In this tutorial, you'll l
 Start with simple latches, progress to flip-flops and registers, and finish by building the NAND Processing Unit Prototype 0.
 ]]
 
-T.latch_door_name = "Door Lock System"
+T.latch_door_name = "SR Latch"
 T.latch_door_desc = [[
-Create a simple door lock system.
+Build an SR Latch - a circuit that allows you to set a stored bit to 0 or 1.
 
-The system has 2 buttons:
-- one to unlock the door (`unlock_door_button`)
-- one to lock the door (`lock_door_button`)
+It should have an output bit `Q` that is "remembered", and two inputs:
 
-Each button is connected to a wire that goes into the circuit. When the button is not being pressed, the wire value for the button is 0, and when the button is down (ie being pressed), the wire value is 1.
+- A set bit `S` that changes `Q` to 1
+- A reset bit `R` that changes `Q` to 0.
 
-When the `lock_door_button` is pressed, the door should become locked, and should remain locked until the unlock button is pressed. When the `unlock_door_button` is pressed, the door should become unlocked, and should remain unlocked until the lock button is pressed.
+Whenever `S` and `R` are both 0, the value of `Q`, the "stored" bit, should remain the same.
 
-The circuit should return whether the door is locked or not:
-- `door_locked`=1  --> The door is LOCKED.
-- `door_locked`=0  --> The door is UNLOCKED.
+The SR latch is the building block for more sofisticated memory circuits.
 
-The initial value of `door_locked` is not important.
+We will ignore the case where `S`=1 and `R`=1 simulatenously (they're considered invalid states).
 
-There's a mechanism in the door that doesn't allow both buttons to be pressed at the same time.
 ]]
-T.latch_door_door_title = "Door"
-T.latch_door_think_title = "Think about it"
+T.latch_door_think_title = "How to build it"
 T.latch_door_think_text = [[
-When both buttons are released (both inputs are 0), how does the circuit "know" what to output?
-
-Try connecting two NOT gates in a loop: the output of the first feeds into the second, and the output of the second feeds back into the first. Now click on one of the wires to change its value - the circuit stabilizes with one wire at 0 and the other at 1. Click again to flip it. This is memory! But there's a problem: you can only change it by clicking, not via an input signal.
+Try connecting two NOT gates in a loop: the output of the first feeds into the second, and the output of the second feeds back into the first. Click on one of the wires to change its value - the circuit stabilizes with one wire at 0 and the other at 1. This is memory! But there's a problem: you can only change it by clicking, not via an input signal.
 
 Now replace those NOT gates with NAND gates. Remember that NAND(x, 1) = NOT(x), so when one input is held at 1, a NAND behaves like NOT. But when you set that input to 0, the NAND outputs 1 regardless - this lets you "force" a wire to 1 via an input.
 
 With two NAND gates in a loop, each with an extra input, you have a controllable memory cell: one input forces the output to 1, the other forces it to 0, and when both inputs are 1, the circuit remembers its previous state.
 ]]
-T.latch_door_hint_title = "Hint"
-T.latch_door_hint_text = [[
-Think of the lock button as "Set" (set door_locked to 1) and the unlock button as "Reset" (reset door_locked to 0). When neither button is pressed, the output should stay as it was.
-]]
 
 T.dlatch_name = "D Latch"
 T.dlatch_desc = [[
-Create a D Latch - a circuit that can be "enabled" or "disabled".
+Create a memory circuit with 2 inputs `D` and `E` that stores a `Q` bit such that:
 
-When enabled (`E=1`), the output `Q` copies the input `D`.
-When disabled (`E=0`), the output `Q` holds its last value, ignoring any changes to `D`.
+- When `E`=1: `Q` <- `D`
+- When `E`=0: `Q` doesn't change.
+
+Ie, it stores the value of `D` (data bit) whenever `E` (enable bit) is on.
+
 ]]
 T.dlatch_example_title = "Example"
 T.dlatch_example_text = [[
@@ -421,75 +413,49 @@ Example:
 - 4th input: D=1 E=0 --> Q=1 (Q doesn't change because E=0)
 - 5th input: D=0 E=1 --> Q=0 (Q changes again because E=1)
 ]]
-T.dlatch_analogy_title = "Analogy with the Door Level"
-T.dlatch_analogy_text = [[
-It's like the door lock level, but:
-- You want to LOCK when D=1 and E=1 and UNLOCK when D=0 and E=1
-- When E=0, you want to behave as if no button is pressed. This can be done with LOCK=0 and UNLOCK=0.
-]]
 T.dlatch_symbol_title = 'Symbol'
 T.dlatch_truthtable_title = 'Truth Table'
 T.dlatch_impl_title = 'D Latch Implementation'
 
-T.photo_name = "Bit Photo"
+T.photo_name = "D Flip-Flop"
 T.photo_desc = [[
-!img:levels/camera_img1.png
 
-Build a simple camera that takes photos of a bit.
+Build a D Flip-Flop - an extension of the D-latch that only updates `Q` at one specific point in time instead of continuously.
 
-The camera has:
-- A `sensor` that receives light non-stop, and sends the light value to the 1-bit input of the circuit.
-- A "take photo" button (`take_photo_button_pressed`), that can be pressed (=1) or not pressed (=0).
-- A 1-bit output display (`photo`).
+The idea is that, instead of changing the `Q` value whenever D changes, there will be an extra input (`CLK`), and we only want the `Q` value to update when the `CLK` signal changes from 0 to 1. It's an auxiliary signal to tell the exact moment we want the memory to be updated.
 
-Whenever the user presses the button, the output should capture the bit value present at the sensor at that EXACT moment. When the user releases the button, the display should still show the last taken photo. When the user presses the button again, a new photo should be taken.
-
-The sensor value may change while the user is still pressing the button, but even if it does, the output should not change: it should capture the value of the sensor at the EXACT moment the button is pressed.
-
-At the exact moment the user presses the button, the sensor will not change.
+You can check the wiki for more details.
 ]]
-T.photo_problem_title = 'The Problem with D Latch'
-T.photo_problem_text = [[
-You might think: "I'll use a D Latch with the button as Enable and the sensor as D."
+T.photo_analogy_title = 'The Camera Analogy'
+T.photo_analogy_text = [[
+Imagine a camera with a sensor that continuously reads a value, and a shutter button. When you press the button, the camera captures the sensor value at that exact moment - not before, not after. Even if the sensor changes while you hold the button, the photo doesn't change.
 
-But there's a problem: while the button is held down (E=1), the output keeps following the sensor. If the sensor changes while you're holding the button, the "photo" changes too!
-
-You need the output to capture the sensor value at the EXACT moment the button is pressed, then hold that value even if the sensor changes afterward.
+This is exactly what a D Flip-Flop does: it "photographs" the value of `D` at the exact moment `CLK` rises from 0 to 1.
 ]]
-T.photo_rising_title = 'Rising Edge Detection'
-T.photo_rising_text = [[
-The key insight is that you need to detect the "rising edge" - the exact moment the button goes from 0 to 1.
-
-A D Latch updates continuously while enabled. A `D Flip-Flop` updates only once, at the rising edge of the clock signal.
-
-The button press IS your clock signal! When the button goes from 0 to 1, that rising edge should capture the sensor value.
-]]
-T.photo_building_title = 'Building a D Flip-Flop'
-T.photo_building_text = [[
-A D Flip-Flop can be built using two D Latches in a "master-slave" configuration:
-
-1. The first latch (master) is enabled when CLK=0
-2. The second latch (slave) is enabled when CLK=1
-3. Connect the output of master to the input of slave
-
-When CLK rises (0→1): master locks its value, slave captures it. When CLK is high: master ignores D, slave holds steady. The result: output only changes at the rising edge!
-]]
-T.photo_example_title = 'Example'
-
 T.combo_detector_name = "Combo Detector"
 T.combo_detector_desc = [[
-Build a circuit that detects if the last 4 button presses were all button A.
+You're given as input the "press state" of 2 buttons: button A and button B.
 
-**Inputs:**
-- `button_A`: 1 when button A is being pressed, 0 otherwise
-- `button_B`: 1 when button B is being pressed, 0 otherwise
-
+Whenever a button is pressed, the press state becomes 1 and then becomes 0 when it is released.
 Only one button can be pressed at a time (never both). When no button is pressed, both inputs are 0.
 
-**Output:**
-- `combo_detected`: 1 if the last 4 button presses were all button A, 0 otherwise
+Your task is to create a circuit that detects whenever the button A was pressed 4 times in a row. So return `combo_detected` as 1 if the last 4 button presses were A or 0 otherwise.
+
+A button is considered as pressed when it is down (ie, input is 1).
 
 The first 4 outputs are not checked (the system needs 4 presses to have enough history).
+
+For example, let's say the press order is the following:
+
+- B pressed --> combo=0
+- A pressed --> combo=0
+- A pressed --> combo=0
+- B pressed --> combo=0
+- A pressed --> combo=0
+- A pressed --> combo=0
+- A pressed --> combo=0
+- A pressed --> `combo=1` <-- Detected!
+
 ]]
 T.combo_detector_clock_title = 'Creating a Clock Signal'
 T.combo_detector_clock_text = [[
@@ -736,7 +702,7 @@ Until now, circuits performed a fixed computation: given the same inputs, they a
 
 The NPU-P0 should have 4 registers (R0, R1, R2, R3) for storage and should support 4 operations. The `op` input selects which operation to perform, while other inputs specify parameters like which register to target or what value to load.
 
-**Inputs:**
+`Inputs:`
 - `rst`: Reset signal (should set all registers to 0 on rising edge)
 - `clk`: Clock signal (operations should execute on rising edge)
 - `op`: 2-bit operation code
@@ -744,29 +710,14 @@ The NPU-P0 should have 4 registers (R0, R1, R2, R3) for storage and should suppo
 - `reg1`: 2-bit register selector (destination)
 - `reg2`: 2-bit register selector (source)
 
-**Operations (should be active on clock rising edge):**
+`Operations (should be active on clock rising edge):`
 - `op=0` NOP: Do nothing
 - `op=1` LOAD: Load the `data` bit into register `reg1`
 - `op=2` MOV: Copy the value of register `reg2` into register `reg1`
 - `op=3` NAND: Compute R0 NAND R1 and store result in R0
 
-**Output:**
+`Output:`
 - `y`: Should output the current value of R3
-]]
-T.npu1_arch_title = 'Architecture Hint'
-T.npu1_arch_text = [[
-Think of the NPU-P0 as combining several components you've already built:
-
-1. **Register File**: 4 flip-flops to store R0-R3
-2. **Read Logic**: Muxes to select register values based on `reg1` and `reg2`
-3. **Write Logic**: Compute what value to write based on `op`:
-   - NOP: don't write anything (disable all registers)
-   - LOAD: write `data`
-   - MOV: write value of register `reg2`
-   - NAND: write R0 NAND R1 (only to R0)
-4. **Write Routing**: Enable only the correct register to update
-
-The tricky part is computing the write enable for each register based on `op` and `reg1`.
 ]]
 T.npu1_data_title = "Note on 'data' input"
 T.npu1_data_text = [[
@@ -776,24 +727,33 @@ T.npu1_asm_title = "NPU-P0 Assembly Reference"
 T.npu1_asm_text = [[
 The NPU-P0 understands 4 instructions:
 
-`NOP`
-  Do nothing. Registers remain unchanged.
-  Example: NOP
+`NOP` (op=0)
+Do nothing. Registers remain unchanged.
 
-`LOAD Rx, value`
-  Load a constant (0 or 1) into register Rx.
-  Example: LOAD R0, 1  ; R0 becomes 1
-  Example: LOAD R2, 0  ; R2 becomes 0
+!hl
 
-`MOV Rx, Ry`
-  Copy the value from register Ry into register Rx.
-  Example: MOV R1, R0  ; R1 becomes the value of R0
-  Example: MOV R3, R2  ; R3 becomes the value of R2
+`LOAD Rx, value` (op=1, reg1=Rx data=value)
+Load a constant (0 or 1) into register Rx.
 
-`NAND`
+Examples:
+`LOAD R0, 1` --> R0 <- 1
+`LOAD R2, 0` --> R2 <- 0
+
+!hl
+
+`MOV Rx, Ry` (op=2, reg1=Rx, reg2=Ry)
+Copy the value from register Ry into register Rx.
+
+Examples:
+`MOV R1, R0` --> R1 <- R0
+`MOV R3, R2` --> R3 <- R2
+
+!hl
+
+`NAND` (op=3)
   Compute R0 NAND R1 and store the result in R0.
-  Example: If R0=0 and R1=1, after NAND: R0 becomes 1 (because NAND(0,1)=1), R1 remains 1.
-  Example: If R0=1 and R1=1, after NAND: R0 becomes 0 (because NAND(1,1)=0), R1 remains 1.
+  Basically: R0 <- NAND(R0,R1)
+
 ]]
 T.npu1_prog_title = "Test Program: AND.asm"
 T.npu1_prog_text = [[
@@ -820,7 +780,5 @@ T.npu1_prog_text = [[
 ; A=1 B=0 -> R3=0
 ; A=1 B=1 -> R3=1
 ]]
-
-
 
 
