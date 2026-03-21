@@ -1,3 +1,4 @@
+Import "shared/comb_level.lua"
 
 local Sandbox = Component:extend()
 

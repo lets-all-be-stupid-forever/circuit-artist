@@ -1,12 +1,12 @@
 
-add_group({
+AddGroup({
   id="sevseg1",
-  icon='sevenseg.png',
+  icon='icons/campaign_sevenseg1.png',
   name=T.sevseg_name,
   desc=T.sevseg_desc,
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="match7",
   group='sevseg1',
   deps={},
@@ -17,14 +17,14 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="match7_or_23",
   group='sevseg1',
   deps={},
   extra_text= {}
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="decoder1",
   group='sevseg1',
   deps={},
@@ -35,28 +35,28 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="decoder2",
   group='sevseg1',
   deps={'decoder1'},
   extra_text= {}
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="decoder_2bit",
   group='sevseg1',
   deps={},
   extra_text= {}
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="decoder3",
   group='sevseg1',
   deps={'decoder2'},
   extra_text= {}
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="match_many",
   group='sevseg1',
   deps={'decoder2'},
@@ -73,13 +73,10 @@ easy_add_level2({
 })
 
 
-easy_add_level2({
+AddCampaignLevel({
   id="sevenseg",
   group='sevseg1',
   deps={'decoder2'},
-  assets={
-    'seven_seg_display.png',
-  },
   extra_text= {
     {
       title=T.sevenseg_sample,

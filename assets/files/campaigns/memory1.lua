@@ -1,12 +1,12 @@
 
-add_group({
+AddGroup({
   name=T.memory1_name,
   id='memory1',
-  icon='campaign_memory1.png',
+  icon='icons/campaign_memory1.png',
   desc=T.memory1_desc,
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="latch_door",
   group='memory1',
   deps={},
@@ -19,7 +19,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="dlatch",
   group='memory1',
   deps={},
@@ -47,7 +47,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="photo",
   group='memory1',
   deps={},
@@ -60,7 +60,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="combo_detector",
   group='memory1',
   deps={},
@@ -90,7 +90,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="dflipflop_with_enable",
   group='memory1',
   deps={},
@@ -120,7 +120,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="dff_w_r",
   group='memory1',
   deps={},
@@ -146,7 +146,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="register4",
   group='memory1',
   deps={},
@@ -163,7 +163,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="registerfile",
   group='memory1',
   deps={},
@@ -181,7 +181,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="npu1",
   group='memory1',
   deps={},

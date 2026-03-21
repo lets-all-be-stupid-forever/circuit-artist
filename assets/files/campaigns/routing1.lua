@@ -1,17 +1,13 @@
 
-------------------------------------------------------------
--- Second campaign: 7 seg
-------------------------------------------------------------
-
-add_group({
+AddGroup({
   name=T.routing1_name,
   id='routing1',
-  icon='routing.png',
+  icon='icons/campaign_routing1.png',
   desc=T.routing1_desc
 })
 
 
-easy_add_level2({
+AddCampaignLevel({
   id="mux_2_1",
   group='routing1',
   deps={},
@@ -37,7 +33,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="mux_4_1",
   group='routing1',
   deps={},
@@ -54,14 +50,14 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="mux_4_2",
   group='routing1',
   deps={},
   extra_text={}
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="bus2",
   group='routing1',
   deps={},
@@ -78,7 +74,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="demux_1_2",
   group='routing1',
   deps={},
@@ -112,7 +108,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="demux_1_4",
   group='routing1',
   deps={},
@@ -125,14 +121,14 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="demux_2_4",
   group='routing1',
   deps={},
   extra_text= {}
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="router",
   group='routing1',
   deps={},

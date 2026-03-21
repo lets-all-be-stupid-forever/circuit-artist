@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 easyAddTest({
   cases = {
     {a=0, b=0, a_nand_b=1, name='0 AND 0 = 0'},

@@ -17,15 +17,15 @@
 
 typedef struct {
   GameRegistry* registry;
-  const char* mod_root;
+  Mod* mod;
 } LoadCtx;
 
 /* TODO: needs to be a context */
 static LoadCtx _load_ctx = {0};
 
-static int lua_add_group(lua_State* L) {
+static int lua_AddGroup(lua_State* L) {
   GameRegistry* r = _load_ctx.registry;
-  const char* root = _load_ctx.mod_root;
+  const char* root = _load_ctx.mod->root;
   LevelGroup* group = calloc(1, sizeof(LevelDef));
   group->registry = r;
 
@@ -90,10 +90,11 @@ static void group_add_level(LevelGroup* group, LevelDef* ldef) {
   arrput(group->levels, ldef);
 }
 
-static int lua_add_level(lua_State* L) {
+static int lua_AddLevel(lua_State* L) {
   LevelDef* ldef = calloc(1, sizeof(LevelDef));
-  const char* root = _load_ctx.mod_root;
+  const char* root = _load_ctx.mod->root;
   GameRegistry* r = _load_ctx.registry;
+  ldef->mod = _load_ctx.mod;
   // Check that we received a table
   luaL_checktype(L, 1, LUA_TTABLE);
 
@@ -130,10 +131,7 @@ static int lua_add_level(lua_State* L) {
 
   /* Group */
   lua_getfield(L, 1, "group");
-  if (!lua_isstring(L, -1)) {
-    return luaL_error(L, "group field must be a string");
-  }
-  const char* group_id = lua_tostring(L, -1);
+  const char* group_id = lua_isstring(L, -1) ? lua_tostring(L, -1) : "custom";
   LevelGroup* group = get_group_by_id(r, group_id);
   if (!group) {
     return luaL_error(L, TextFormat("There's no group with id: %s", group_id));
@@ -148,45 +146,16 @@ static int lua_add_level(lua_State* L) {
   ldef->id = clone_string(lua_tostring(L, -1));
   lua_pop(L, 1);  // Remove icon from stack
 
-  // Get the "content" field (which is a table/array)
-  lua_getfield(L, 1, "content");
-  if (!lua_istable(L, -1)) {
-    return luaL_error(L, "content field must be a table");
+  /* Kernel */
+  lua_getfield(L, 1, "kernel");
+  if (!lua_isstring(L, -1)) {
+    return luaL_error(L, "kernel field must be a string");
   }
-  // Iterate through the content array
-  int content_length = (int)lua_rawlen(L, -1);  // Get array length
-  for (int i = 1; i <= content_length; i++) {
-    lua_rawgeti(L, -1, i);  // Get content[i]
-    if (lua_isstring(L, -1)) {
-      const char* item = lua_tostring(L, -1);
-      char* kernel_path = checkmodpath(root, item);
-      if (!kernel_path) {
-        return luaL_error(L, "Invalid kernel path.");
-      }
-      arrput(ldef->kernels, kernel_path);
-    }
-    lua_pop(L, 1);  // Remove item from stack
+  char* kernel_path = checkmodpath(root, lua_tostring(L, -1));
+  if (!kernel_path) {
+    return luaL_error(L, "Invalid kernel path.");
   }
-  lua_pop(L, 1);
-
-  /* Assets */
-  lua_getfield(L, 1, "assets");
-  if (!lua_istable(L, -1)) {
-    return luaL_error(L, "assets field must be a table");
-  }
-  int assets_length = (int)lua_rawlen(L, -1);  // Get array length
-  for (int i = 1; i <= assets_length; i++) {
-    lua_rawgeti(L, -1, i);  // Get content[i]
-    if (lua_isstring(L, -1)) {
-      const char* item = lua_tostring(L, -1);
-      char* kernel_path = checkmodpath(root, item);
-      if (!kernel_path) {
-        return luaL_error(L, "Invalid kernel path.");
-      }
-      arrput(ldef->assets, kernel_path);
-    }
-    lua_pop(L, 1);  // Remove item from stack
-  }
+  ldef->kernel = kernel_path;
   lua_pop(L, 1);
 
   /* Dependencies */
@@ -297,7 +266,7 @@ static int lua_add_level(lua_State* L) {
 
 static int lua_Import(lua_State* L) {
   const char* path = luaL_checkstring(L, 1);
-  char* full_path = checkmodpath(_load_ctx.mod_root, path);
+  char* full_path = checkmodpath(_load_ctx.mod->root, path);
   if (!full_path) {
     return luaL_error(L, "Import: invalid path '%s'", path);
   }
@@ -305,7 +274,8 @@ static int lua_Import(lua_State* L) {
     free(full_path);
     return luaL_error(L, "Import: couldn't find file '%s'", path);
   }
-  // Push debug.traceback as error handler so pcall captures full stack at error site
+  // Push debug.traceback as error handler so pcall captures full stack at error
+  // site
   lua_getglobal(L, "debug");
   lua_getfield(L, -1, "traceback");
   lua_remove(L, -2);
@@ -326,37 +296,22 @@ static int lua_Import(lua_State* L) {
   return lua_gettop(L) - top_before;
 }
 
-static int lua_loadtxt(lua_State* L) {
-  const char* path = luaL_checkstring(L, 1);
-  if (!path) {
-    return luaL_error(L, "Expected a string path");
-  }
-  char* apath = checkmodpath(_load_ctx.mod_root, path);
-  if (!apath) abort();
-  char* content = LoadFileText(apath);
-  free(apath);
-  lua_pushlstring(L, content, strlen(content));
-  UnloadFileText(content);
-  return 1;
-}
-
 void init_mod(GameRegistry* r, const char* mod_asset_path) {
   _load_ctx.registry = r;
-  assert(!_load_ctx.mod_root);
-  char* mod_path = get_asset_path(mod_asset_path);
-  _load_ctx.mod_root = mod_path;
+  assert(!_load_ctx.mod);
+  Mod* mod = calloc(1, sizeof(Mod));
+  mod->root = get_asset_path(mod_asset_path);
+  arrput(r->mods, mod);
+  _load_ctx.mod = mod;
   // TODO: do an extra safe check that mod_path is within acceptable game paths
-  char* path = checkmodpath(mod_path, "main.lua");
+  char* path = checkmodpath(mod->root, "main.lua");
   if (dofile_with_traceback(r->L, path) != LUA_OK) {
     // TODO: What do I do here?
-    // ui_handle_lua_error(L);
     free(path);
-    free(mod_path);
     return;
   }
   free(path);
-  free(mod_path);
-  _load_ctx.mod_root = NULL;
+  _load_ctx.mod = NULL;
   _load_ctx.registry = NULL;
 }
 
@@ -371,7 +326,7 @@ LevelDef* get_level_by_id(GameRegistry* r, const char* level_id) {
 
 static int lua_tutorial_add_topic(lua_State* L) {
   GameRegistry* r = _load_ctx.registry;
-  const char* root = _load_ctx.mod_root;
+  const char* root = _load_ctx.mod->root;
   const char* id = luaL_checkstring(L, 1);
   const char* name = luaL_checkstring(L, 2);
   const char* icon = luaL_checkstring(L, 3);
@@ -384,7 +339,7 @@ static int lua_tutorial_add_topic(lua_State* L) {
 
 static int lua_tutorial_add_item(lua_State* L) {
   GameRegistry* r = _load_ctx.registry;
-  const char* root = _load_ctx.mod_root;
+  const char* root = _load_ctx.mod->root;
   const char* topic_id = luaL_checkstring(L, 1);
   const char* id = luaL_checkstring(L, 2);
   const char* name = luaL_checkstring(L, 3);
@@ -408,11 +363,10 @@ GameRegistry* create_game_registry() {
     return NULL;
   }
   luaL_openlibs(L);
-  lua_register(L, "add_group", lua_add_group);
-  lua_register(L, "add_level", lua_add_level);
+  lua_register(L, "AddGroup", lua_AddGroup);
+  lua_register(L, "AddLevel", lua_AddLevel);
   lua_register(L, "tut_add_topic", lua_tutorial_add_topic);
   lua_register(L, "tut_add_item", lua_tutorial_add_item);
-  lua_register(L, "loadtxt", lua_loadtxt);
   lua_register(L, "Import", lua_Import);
   r->L = L;
   return r;

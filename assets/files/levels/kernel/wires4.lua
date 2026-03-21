@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 easyAddTest({
   cases = {
     {A_in=bits("0000"), A_out=bits("0000") , name="A=0"},

@@ -44,6 +44,10 @@ typedef struct {
   int scale;
 } LevelDefExtraItem;
 
+typedef struct Mod {
+  char* root; /* Absolute path to the mod's root folder */
+} Mod;
+
 /*
  * Descriptor of a level, defined by a JSON file.
  */
@@ -57,11 +61,10 @@ typedef struct LevelDef {
   char* name;             /* Level name */
   LevelGroup* group;      /* Level Group  (default=Custom)*/
   char* description;      /* Level description text */
-  char** kernels;         /* Absolute path */
-  char** assets;   /* Absolute path to assets (PNG only for now, loaded as
-                      texture) */
-  bool complete;   /* wether level was complete (injected from save)*/
-  bool can_choose; /* If can choose level (computed from dependencies) */
+  Mod* mod;               /* The mod this level belongs to */
+  char* kernel;           /* Absolute path to the kernel script */
+  bool complete;          /* wether level was complete (injected from save)*/
+  bool can_choose;        /* If can choose level (computed from dependencies) */
   LevelDefExtraItem* extra_content;
 } LevelDef;
 
@@ -80,6 +83,7 @@ typedef struct GameRegistry {
   LevelGroupDict* groups;
   LevelDefDict* levels;
   LevelGroup** group_order;
+  Mod** mods;
   lua_State* L;
 } GameRegistry;
 

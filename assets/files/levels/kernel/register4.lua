@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 comb_level[[
 conn out 1 CLK
 conn out 4 Data

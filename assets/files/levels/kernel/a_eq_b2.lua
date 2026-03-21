@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 math.randomseed(0)
 
 function randbits(n)

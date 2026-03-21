@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 comb_level[[
 conn out 2 n
 conn in 4 decoded

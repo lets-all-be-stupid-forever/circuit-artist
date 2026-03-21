@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 easyAddTest({
   cases = {
     {a=0, not_a=1, name='NOT 0 = 1'},

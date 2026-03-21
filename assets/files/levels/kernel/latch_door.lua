@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 comb_level([[
 conn out 1 R
 conn out 1 S

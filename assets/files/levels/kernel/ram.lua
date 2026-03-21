@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 comb_level[[
 conn out 1 power_on_reset
 conn out 1 clock

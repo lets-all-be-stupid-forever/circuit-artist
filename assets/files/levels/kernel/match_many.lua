@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 comb_level[[
 conn out 5 n
 conn in 1 is_n_1_or_3_or_5_or_6_or_15_or_21_or_24_or_31

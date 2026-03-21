@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 comb_level[[
 conn out 5 n
 conn in 1 n_is_7

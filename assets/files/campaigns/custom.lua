@@ -1,12 +1,12 @@
 
-add_group({
+AddGroup({
   id="custom",
-  icon='sandbox.png',
+  icon='icons/sandbox.png',
   name=T.custom_name,
   desc=T.custom_desc,
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="sandbox",
   group='custom',
   extra_text={

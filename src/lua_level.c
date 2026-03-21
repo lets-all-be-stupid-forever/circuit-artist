@@ -8,6 +8,7 @@
 #include "assert.h"
 #include "font.h"
 #include "fs.h"
+#include "game_registry.h"
 #include "json.h"
 #include "log.h"
 #include "raylib.h"
@@ -22,6 +23,7 @@
 #include "widgets.h"
 
 #define NUM_BUTTONS 42
+#define TEXTURE_MT "ca2.Texture"
 
 typedef struct {
   Texture2D tex;
@@ -41,11 +43,11 @@ typedef struct {
 typedef struct {
   PinGroup* pg;   /* Circuit interface */
   LevelDef* ldef; /* Paths */
+  Mod* mod;       /* The mod this level belongs to */
   bool error;
   msgpack_sbuffer sbuf;
   msgpack_packer pk;
   Sim* sim;
-  LevelAsset* assets;
   lua_State* L;
   LevelAPI* api; /* Reference to API for addPort */
 } LuaLevel;
@@ -196,6 +198,26 @@ int read_table_floats(lua_State* L, int idx, int n, float* values) {
   return 0;
 };
 
+/* Extract Rectangle from Lua table {x, y, width, height} */
+static Rectangle lua_checkrectangle(lua_State* L, int idx) {
+  luaL_checktype(L, idx, LUA_TTABLE);
+  Rectangle r;
+  lua_rawgeti(L, idx, 1); r.x      = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
+  lua_rawgeti(L, idx, 2); r.y      = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
+  lua_rawgeti(L, idx, 3); r.width  = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
+  lua_rawgeti(L, idx, 4); r.height = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
+  return r;
+}
+
+/* Extract Vector2 from Lua table {x, y} */
+static Vector2 lua_checkvector2(lua_State* L, int idx) {
+  luaL_checktype(L, idx, LUA_TTABLE);
+  Vector2 v;
+  lua_rawgeti(L, idx, 1); v.x = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
+  lua_rawgeti(L, idx, 2); v.y = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
+  return v;
+}
+
 /* Extract Color from Lua table {r, g, b, a} */
 static Color lua_checkcolor(lua_State* L, int idx) {
   luaL_checktype(L, idx, LUA_TTABLE);
@@ -245,57 +267,85 @@ static int lua_DrawRectangle(lua_State* L) {
 }
 
 static int lua_DrawRectanglePro(lua_State* L) {
-  LuaLevel* lvl = lua_getlevel(L);
-  Color c;
-  Rectangle rec;
-  Vector2 orig;
-  float rot;
-  int i = 1;
-  rec.x = (float)luaL_checknumber(L, i++);
-  rec.y = (float)luaL_checknumber(L, i++);
-  rec.width = (float)luaL_checknumber(L, i++);
-  rec.height = (float)luaL_checknumber(L, i++);
-  orig.x = (float)luaL_checknumber(L, i++);
-  orig.y = (float)luaL_checknumber(L, i++);
-  rot = (float)luaL_checknumber(L, i++);
-  c.r = (int)luaL_checknumber(L, i++);
-  c.g = (int)luaL_checknumber(L, i++);
-  c.b = (int)luaL_checknumber(L, i++);
-  c.a = (int)luaL_checknumber(L, i++);
+  // DrawRectanglePro({x,y,w,h}, {ox,oy}, rot, {r,g,b,a})
+  Rectangle rec  = lua_checkrectangle(L, 1);
+  Vector2   orig = lua_checkvector2(L, 2);
+  float     rot  = (float)luaL_checknumber(L, 3);
+  Color     c    = lua_checkcolor(L, 4);
   DrawRectanglePro(rec, orig, rot, c);
   return 0;
 }
 
-static int lua_DrawTexturePro(lua_State* L) {
+static int lua_Import(lua_State* L) {
   LuaLevel* lvl = lua_getlevel(L);
-  int iasset = luaL_checkinteger(L, 1);
-  if (iasset < 0 || iasset >= arrlen(lvl->assets)) {
-    return luaL_error(L, "invalid asset index %d (num assets: %d)", iasset,
-                      arrlen(lvl->assets));
+  const char* path = luaL_checkstring(L, 1);
+  const char* full_path = path;
+  char* checked_path = NULL;
+  if (lvl->ldef) {
+    checked_path = checkmodpath(lvl->ldef->mod->root, path);
+    if (!checked_path) {
+      return luaL_error(L, "Import: invalid path '%s'", path);
+    }
+    full_path = checked_path;
   }
-  Rectangle src;
-  Rectangle dst;
-  Vector2 orig;
-  float rot;
-  int i = 2;
-  Color c;
-  src.x = (float)luaL_checknumber(L, i++);
-  src.y = (float)luaL_checknumber(L, i++);
-  src.width = (float)luaL_checknumber(L, i++);
-  src.height = (float)luaL_checknumber(L, i++);
-  dst.x = (float)luaL_checknumber(L, i++);
-  dst.y = (float)luaL_checknumber(L, i++);
-  dst.width = (float)luaL_checknumber(L, i++);
-  dst.height = (float)luaL_checknumber(L, i++);
-  orig.x = (float)luaL_checknumber(L, i++);
-  orig.y = (float)luaL_checknumber(L, i++);
-  rot = (float)luaL_checknumber(L, i++);
-  c.r = (int)luaL_checknumber(L, i++);
-  c.g = (int)luaL_checknumber(L, i++);
-  c.b = (int)luaL_checknumber(L, i++);
-  c.a = (int)luaL_checknumber(L, i++);
-  Texture tex = lvl->assets[iasset].tex;
-  DrawTexturePro(tex, src, dst, orig, rot, c);
+  if (!FileExists(full_path)) {
+    free(checked_path);
+    return luaL_error(L, "Import: couldn't find file '%s'", path);
+  }
+  lua_getglobal(L, "debug");
+  lua_getfield(L, -1, "traceback");
+  lua_remove(L, -2);
+  int handler_idx = lua_gettop(L);
+  int top_before = handler_idx;
+  if (luaL_loadfile(L, full_path) != LUA_OK) {
+    lua_remove(L, handler_idx);
+    free(checked_path);
+    return lua_error(L);
+  }
+  free(checked_path);
+  if (lua_pcall(L, 0, LUA_MULTRET, handler_idx) != LUA_OK) {
+    lua_remove(L, handler_idx);
+    return lua_error(L);
+  }
+  lua_remove(L, handler_idx);
+  return lua_gettop(L) - top_before;
+}
+
+static int lua_texture_gc(lua_State* L) {
+  Texture2D* tex = luaL_checkudata(L, 1, TEXTURE_MT);
+  UnloadTexture(*tex);
+  return 0;
+}
+
+static int lua_LoadTexture(lua_State* L) {
+  LuaLevel* lvl = lua_getlevel(L);
+  const char* path = luaL_checkstring(L, 1);
+  const char* full_path = path;
+  char* checked_path = NULL;
+  if (lvl->ldef) {
+    checked_path = checkmodpath(lvl->ldef->mod->root, path);
+    if (!checked_path) {
+      return luaL_error(L, "LoadTexture: invalid path '%s'", path);
+    }
+    full_path = checked_path;
+  }
+  Texture2D* tex = lua_newuserdata(L, sizeof(Texture2D));
+  *tex = LoadTexture(full_path);
+  free(checked_path);
+  luaL_getmetatable(L, TEXTURE_MT);
+  lua_setmetatable(L, -2);
+  return 1;
+}
+
+static int lua_DrawTexturePro(lua_State* L) {
+  // DrawTexturePro(tex, {sx,sy,sw,sh}, {dx,dy,dw,dh}, {ox,oy}, rot, {r,g,b,a})
+  Texture2D* tex = luaL_checkudata(L, 1, TEXTURE_MT);
+  Rectangle  src  = lua_checkrectangle(L, 2);
+  Rectangle  dst  = lua_checkrectangle(L, 3);
+  Vector2    orig = lua_checkvector2(L, 4);
+  float      rot  = (float)luaL_checknumber(L, 5);
+  Color      c    = lua_checkcolor(L, 6);
+  DrawTexturePro(*tex, src, dst, orig, rot, c);
   return 0;
 }
 
@@ -683,14 +733,6 @@ static void lua_level_destroy(void* u) {
     lua_close(lvl->L);
     msgpack_sbuffer_destroy(&lvl->sbuf);
   }
-
-  int na = arrlen(lvl->assets);
-  for (int i = 0; i < na; i++) {
-    if (lvl->assets[i].tex.width > 0) {
-      UnloadTexture(lvl->assets[i].tex);
-    }
-  }
-  arrfree(lvl->assets);
   lvl->L = NULL;
   free(lvl);
 }
@@ -842,9 +884,16 @@ static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
   lua_register(L, "rlPushMatrix", lua_rlPushMatrix);
   lua_register(L, "rlPopMatrix", lua_rlPopMatrix);
 
+  lua_register(L, "Import", lua_Import);
   lua_register(L, "DrawRectanglePro", lua_DrawRectanglePro);
   lua_register(L, "DrawTexturePro", lua_DrawTexturePro);
   lua_register(L, "DrawFont", lua_DrawFont);
+  lua_register(L, "LoadTexture", lua_LoadTexture);
+
+  luaL_newmetatable(L, TEXTURE_MT);
+  lua_pushcfunction(L, lua_texture_gc);
+  lua_setfield(L, -2, "__gc");
+  lua_pop(L, 1);
   /* Campaign-Only */
   lua_register(L, "NotifyLevelComplete", lua_notify_level_complete);
 
@@ -872,30 +921,18 @@ Status lua_level_create(LevelAPI* api, LevelDef* ldef) {
   msgpack_sbuffer_init(&lvl->sbuf);
   msgpack_packer_init(&lvl->pk, &lvl->sbuf, msgpack_sbuffer_write);
   if (ldef) {
-    int nk = arrlen(ldef->kernels);
-    for (int i = 0; i < nk; i++) {
-      printf("Loading %s ...\n", ldef->kernels[i]);
-      if (luaL_loadfile(lvl->L, ldef->kernels[i]) != LUA_OK) {
-        return status_lua_error(lvl->L);
-      }
-      lua_pushcfunction(lvl->L, lua_error_handler);
-      lua_insert(lvl->L, -2);  // Move error handler below the loaded chunk
-      if (lua_pcall(lvl->L, 0, 0, -2) != LUA_OK) {
-        Status s = status_lua_error(lvl->L);
-        lua_pop(lvl->L, 1);  // Pop error handler
-        return s;
-      }
+    printf("Loading %s ...\n", ldef->kernel);
+    if (luaL_loadfile(lvl->L, ldef->kernel) != LUA_OK) {
+      return status_lua_error(lvl->L);
+    }
+    lua_pushcfunction(lvl->L, lua_error_handler);
+    lua_insert(lvl->L, -2);  // Move error handler below the loaded chunk
+    if (lua_pcall(lvl->L, 0, 0, -2) != LUA_OK) {
+      Status s = status_lua_error(lvl->L);
       lua_pop(lvl->L, 1);  // Pop error handler
+      return s;
     }
-    /* Loading assets*/
-    int na = arrlen(ldef->assets);
-    for (int i = 0; i < na; i++) {
-      printf("Loading Asset %s ...\n", ldef->assets[i]);
-      // TODO: check if ends with ".png", and if the file exists..
-      LevelAsset asset = {0};
-      asset.tex = LoadTexture(ldef->assets[i]);
-      arrput(lvl->assets, asset);
-    }
+    lua_pop(lvl->L, 1);  // Pop error handler
   }
 
   return lua_call_global(lvl->L, "_Setup", 0, 0);

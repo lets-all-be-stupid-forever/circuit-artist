@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 function makeTable()
   local t = {}
   local name={'a', 'b'}

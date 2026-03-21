@@ -1,4 +1,7 @@
+Import "shared/comb_level.lua"
 
+
+local seg_tex = LoadTexture("seven_seg_display.png")
 
 local function customDraw(self)
   -- First I need access to pins
@@ -12,26 +15,31 @@ local function customDraw(self)
   local blue = {102, 191, 255, 255 }
 
   local bg = {2, 2, 2, 255}
+  local border= {100, 100, 100, 255}
 
   -- w=128
   -- h=23
   local w = 128/8
   local h = 23
 
-  local x0 = 0
-  local y0 = 120
+  local x0 = 10
+  local y0 = 220
   local s = 3
 
-  DrawRectanglePro(x0, y0, s*w, s*h, 0, 0, 0, bg[1], bg[2], bg[3], bg[4])
+  rlPushMatrix()
+  rlTranslatef(x0, y0, 0)
+  rlScalef(2,2,1)
+  DrawRectanglePro({-2, -2, s*w+4, s*h+4}, {0, 0}, 0, border)
+  DrawRectanglePro({0, 0, s*w, s*h}, {0, 0}, 0, bg)
   local function drawseg(k, c)
     local x = k * w
-    DrawTexturePro(0,
-          x, 0, w, h,
-          x0, y0, s*w, s*h,
-          0, 0,
-          0,
-          c[1], c[2], c[3], c[4]
-      )
+    DrawTexturePro(seg_tex,
+      {x, 0, w, h},
+      {0, 0, s*w, s*h},
+      {0, 0},
+      0,
+      c
+    )
   end
 
   for i=1,7 do
@@ -40,6 +48,7 @@ local function customDraw(self)
       drawseg(i-1, blue)
     end
   end
+  rlPopMatrix()
 
 
 end

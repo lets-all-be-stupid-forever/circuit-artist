@@ -1,3 +1,5 @@
+Import "shared/preload_chip.lua"
+
 local CombinatorialTest = Component:extend()
 local GREEN = {0, 255, 0, 255}
 local RED = {255, 0, 0, 255}

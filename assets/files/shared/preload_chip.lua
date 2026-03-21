@@ -1,3 +1,5 @@
+Import "shared/classic.lua"
+
 local __ctx = {
    variables = {},
    changes = {},

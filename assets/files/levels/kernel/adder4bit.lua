@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 easyAddTest({
   ports = {
     {name="a", width=4, input=false},

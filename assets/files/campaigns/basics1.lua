@@ -1,32 +1,32 @@
 
-add_group({
+AddGroup({
   id='basics1',
   name=T.basics_name,
-  icon='basics.png',
+  icon='icons/campaign_basics1.png',
   desc=T.basics_desc
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="wires1",
   group='basics1',
   extra_text= { { wiki="wires1", } }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="wires2",
   group='basics1',
   deps={'wires1'},
   extra_text= { { wiki="wires_crossing", } }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="wires3",
   group='basics1',
   deps={'wires2'},
   extra_text= { { wiki="wires_io", } }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="wires4",
   group='basics1',
   deps={'wires3'},
@@ -45,7 +45,7 @@ easy_add_level2({
   },
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="nand",
   group='basics1',
   deps={'wires1'},
@@ -67,7 +67,7 @@ easy_add_level2({
 })
 
 
-easy_add_level2({
+AddCampaignLevel({
   id="not",
   group='basics1',
   deps={'nand'},
@@ -86,7 +86,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="and",
   group='basics1',
   deps={'not'},
@@ -106,7 +106,7 @@ easy_add_level2({
 })
 
 
-easy_add_level2({
+AddCampaignLevel({
   id="or",
   group='basics1',
   deps={'and'},
@@ -125,7 +125,7 @@ easy_add_level2({
   }
 })
 
-easy_add_level2({
+AddCampaignLevel({
   id="xor",
   group='basics1',
   deps={'or'},
@@ -145,7 +145,7 @@ easy_add_level2({
 })
 
 
-easy_add_level2({
+AddCampaignLevel({
   id="a_eq_b1",
   group='basics1',
   deps={'xor'},
@@ -159,7 +159,7 @@ easy_add_level2({
 })
 
 
-easy_add_level2({
+AddCampaignLevel({
   id="a_eq_b2",
   group='basics1',
   deps={'a_eq_b1', 'wires4'},

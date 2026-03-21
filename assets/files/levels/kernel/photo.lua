@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 comb_level[[
 conn out 1 take_photo_button_pressed
 conn out 1 sensor

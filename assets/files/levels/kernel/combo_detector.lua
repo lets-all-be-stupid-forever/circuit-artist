@@ -1,3 +1,5 @@
+Import "shared/comb_level.lua"
+
 -- Button Combo Detector
 -- Detects if the last 4 button presses were all button A
 
