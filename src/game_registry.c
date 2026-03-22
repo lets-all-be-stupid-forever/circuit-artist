@@ -319,12 +319,7 @@ LevelDef* get_level_by_id(GameRegistry* r, const char* level_id) {
   return shget(r->levels, level_id);
 }
 
-// void handle_lua_error(lua_State* L) {
-//   C.lua_error = clone_string(lua_tostring(L, -1));
-//   lua_close(L);
-// }
-
-static int lua_tutorial_add_topic(lua_State* L) {
+static int lua_AddWikiTopic(lua_State* L) {
   GameRegistry* r = _load_ctx.registry;
   const char* root = _load_ctx.mod->root;
   const char* id = luaL_checkstring(L, 1);
@@ -337,7 +332,7 @@ static int lua_tutorial_add_topic(lua_State* L) {
   return 0;
 }
 
-static int lua_tutorial_add_item(lua_State* L) {
+static int lua_AddWikiItem(lua_State* L) {
   GameRegistry* r = _load_ctx.registry;
   const char* root = _load_ctx.mod->root;
   const char* topic_id = luaL_checkstring(L, 1);
@@ -365,8 +360,8 @@ GameRegistry* create_game_registry() {
   luaL_openlibs(L);
   lua_register(L, "AddGroup", lua_AddGroup);
   lua_register(L, "AddLevel", lua_AddLevel);
-  lua_register(L, "tut_add_topic", lua_tutorial_add_topic);
-  lua_register(L, "tut_add_item", lua_tutorial_add_item);
+  lua_register(L, "AddWikiTopic", lua_AddWikiTopic);
+  lua_register(L, "AddWikiItem", lua_AddWikiItem);
   lua_register(L, "Import", lua_Import);
   r->L = L;
   return r;
