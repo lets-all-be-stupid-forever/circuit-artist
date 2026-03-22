@@ -21,7 +21,6 @@ tut_add_item("basic", "tldr", T.wiki_tldr_title, tldr_txt, "wiki/icons/tldr.png"
 
 add_wiki2("basic", "hotkeys")
 add_wiki2("basic", "wires1")
-add_wiki2("basic", "hotkeys")
 add_wiki2("basic", "wires_crossing")
 add_wiki2("basic", "wires_io")
 add_wiki2("basic", "bit_order")
