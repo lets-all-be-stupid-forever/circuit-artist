@@ -383,7 +383,7 @@ void main_init(GameRegistry* registry) {
       Image img = load_image_asset("help_small2.png");
       paint_load_image(&C.ca, img);
     } else {
-      Image img = load_image_asset("help.png");
+      Image img = load_image_asset("help2.png");
       paint_load_image(&C.ca, img);
     }
     // paint_new_buffer(&C.ca);
