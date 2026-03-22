@@ -99,7 +99,7 @@ void ui_init() {
   init_mod(C.registry, "files");
   load_progress(C.registry);
 
-  load_art_font_asset("font5x7.png");
+  load_art_font_asset("imgs/font5x7.png");
 
   if (C.lua_error) return;
   BeginDrawing();
@@ -110,7 +110,7 @@ void ui_init() {
   DrawRectangle(0, 0, 2000, 2000, BLACK);
   EndDrawing();
   SetWindowState(FLAG_WINDOW_MAXIMIZED);
-  C.img_sprites = load_image_asset("sprite4.png");
+  C.img_sprites = load_image_asset("imgs/sprite4.png");
   C.sprites = LoadTextureFromImage(C.img_sprites);
   HideCursor();
   msg_init();

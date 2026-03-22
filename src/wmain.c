@@ -331,14 +331,15 @@ void main_init(GameRegistry* registry) {
   srand(time(NULL));
   C.kernel_error = false;
   C.use_neon = true;
-  C.sound = load_sound_asset("s2.wav");
-  C.sound_click = load_sound_asset("click.wav");
-  C.sound_success = load_sound_asset("success.wav");
-  C.sound_click2 = load_sound_asset("paintact.wav");
-  C.sound_click3 = load_sound_asset("paintact2.wav");
-  C.sound_oops = load_sound_asset("oops.wav");
+  C.sound = load_sound_asset("sounds/s2.wav");
+  C.sound_click = load_sound_asset("sounds/click.wav");
+  C.sound_success = load_sound_asset("sounds/success.wav");
+  C.sound_click2 = load_sound_asset("sounds/paintact.wav");
+  C.sound_click3 = load_sound_asset("sounds/paintact2.wav");
+  C.sound_oops = load_sound_asset("sounds/oops.wav");
+  C.sound2 = load_sound_asset("sounds/click.wav");
+
   C.bot_layout = parse_layout_asset("layout/main_bot_layout.png");
-  C.sound2 = load_sound_asset("click.wav");
   C.base_volume = .2f;
   C.muted_paint = false;
   SetSoundVolume(C.sound, .1);
@@ -368,22 +369,21 @@ void main_init(GameRegistry* registry) {
   C.palette[17] = GetColor(0x333333FF);
 
   C.num_colors = 18;
-  load_palette_asset("pal.png");
+  load_palette_asset("imgs/pal.png");
   int s = ui_get_scale();
   C.header_size = 24 * s;
   C.bottom_size = 3 * 17 * 1 * s - 6 * s;
   paint_init(&C.ca);
   paint_set_color(&C.ca, C.palette[3]);
   if (false) {
-    // Image img = LoadImage("../solutions/big2.png");
     Image img = LoadImage("../a.png");
     paint_load_image(&C.ca, img);
   } else {
     if (ui_is_demo()) {
-      Image img = load_image_asset("help_small2.png");
+      Image img = load_image_asset("circuits/help_small.png");
       paint_load_image(&C.ca, img);
     } else {
-      Image img = load_image_asset("help2.png");
+      Image img = load_image_asset("circuits/help.png");
       paint_load_image(&C.ca, img);
     }
     // paint_new_buffer(&C.ca);

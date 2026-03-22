@@ -180,12 +180,12 @@ static void add_bp_from_img_asset(const char* asset) {
 }
 
 static void initialize_stamps() {
-  add_bp_from_img_asset("default_page_1.png");
-  add_bp_from_img_asset("default_page_2.png");
-  add_bp_from_img_asset("default_bp1.png");
-  add_bp_from_img_asset("default_bp2.png");
-  add_bp_from_img_asset("default_bp3.png");
-  add_bp_from_img_asset("default_bp4.png");
+  add_bp_from_img_asset("default_blueprints/default_page_1.png");
+  add_bp_from_img_asset("default_blueprints/default_page_2.png");
+  add_bp_from_img_asset("default_blueprints/default_bp1.png");
+  add_bp_from_img_asset("default_blueprints/default_bp2.png");
+  add_bp_from_img_asset("default_blueprints/default_bp3.png");
+  add_bp_from_img_asset("default_blueprints/default_bp4.png");
   swap_stamps(0, get_page_stamp_idx(0));
   swap_stamps(1, get_page_stamp_idx(1));
   swap_stamps(2, get_page_slot_stamp_idx(0, 0));
