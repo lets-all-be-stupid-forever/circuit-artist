@@ -1112,15 +1112,15 @@ T.wiki_mux_text = [[
 
 `MUX`
 
-!img:mux1.png
+!img:wiki/imgs/mux1.png
 
 A `MUX` is like a data `selector`: Given 2 inputs `a` and `b`, and a selection input `s`, if `s` is 0, `MUX` returns the value of `a`, and if `s` is 1, `MUX` returns the value of `b`.
 
-!img:mux3.png
+!img:wiki/imgs/mux3.png
 
 Muxes work like selectors (or a "switch"). They're useful for example when you have multiple calculations and want to select only one of the results. It's like an 'if' statement in programming: IF S=0, RETURN A; ELSE IF S=1, RETURN B.
 
-!img:mux2.png
+!img:wiki/imgs/mux2.png
 ]]
 
 T.wiki_demux_name = "Demux"
@@ -1128,10 +1128,10 @@ T.wiki_demux_text = [[
 
 `DEMUX`
 
-!img:demux1.png
+!img:wiki/imgs/demux1.png
 
 A `DEMUX` is like a bit `router`: Given an input bit `a`, 2 outputs `Y0` and `Y1` and a selector bit `s`, if `s` is 0, then set `Y0` to the value of `a` and `Y1` to 0. Otherwise, if `s` is 1, set `Y0` to 0 and `Y1` to the value of `a`.
-!img:demux3.png
+!img:wiki/imgs/demux3.png
 Demuxes work like routers: you have a wire and the selector bit chooses to which wire the input bit should go.
 Example:
 a=0, s=0 --> Y0 = 0, Y1 = 0
@@ -1139,9 +1139,9 @@ a=1, s=0 --> Y0 = 1, Y1 = 0
 a=0, s=1 --> Y0 = 0, Y1 = 0
 a=1, s=1 --> Y0 = 0, Y1 = 1
 A DEMUX can be implemented as follows:
-!img:demux2.png
+!img:wiki/imgs/demux2.png
 You can also create DEMUXes with more outputs by combining DEMUXes with fewer outputs:
-!img:demux4.png
+!img:wiki/imgs/demux4.png
 ]]
 
 T.wiki_srlatch_name ="SR Latch"
@@ -1154,7 +1154,7 @@ This section will show one way to store 1 bit of memory.
 It's generally not possible to store memory without using cycles, ie, wires that have outputs interlinked with some inputs somehow. We generally want to avoid arbitrarily using cycles in circuits because they can make the circuit complicated and can introduce oscillation errors, but bit storage is an exception.
 
 The `SR latch` is a simple interlinked configuration of gates that is stable and can "remember" its previous configuration. You can change its values using the right inputs:
-!img:wiki/mem1.png
+!img:wiki/imgs/mem1.png
 The `S` and `R` inputs stand for `set` and `reset`: you can see that when S=1 and R=0, we have the value of `Q` updated to 1, and when R=1 and S=0, the value of `Q` is reset to 0. When inputs are 0,0 the latch doesn't do anything, it just maintains the previous set result, thus working as a 1-bit storage memory. The S=1 and R=1 case is a bit tricky: it produces an invalid state because we want the `Q` and `Q'` values to always be opposite, so in practice we avoid this case.
 
 Mind that in the schema picture, we use `S'` and `R'` as inputs, they are the inverted values of `S` and `R` respectively.
@@ -1166,11 +1166,11 @@ T.wiki_dlatch_text= [[
 
 `D LATCH`
 
-!img:wiki/mem2.png
+!img:wiki/imgs/mem2.png
 We can extend the SR latch to create a `D`-Latch, where we have two inputs: a data input `D`, containing the bit to be assigned to the memory, and an `E` enable input, which will tell the memory to update or not (when E=0, the bit is not assigned and nothing happens). The output `Q` will represent the stored bit.
-!img:wiki/mem3.png
+!img:wiki/imgs/mem3.png
 It can be implemented as follows:
-!img:wiki/mem4.png
+!img:wiki/imgs/mem4.png
 
 Mind that Q can change at any time whenever `E`=1. This can be inconvenient sometimes. Imagine for example, that you pick the stored bit, do some calculation on it and want to store it again. If the E keeps active, the bit will be updated immediately, which will trigger the calculation again!
 
@@ -1181,20 +1181,20 @@ T.wiki_dflipflop_text= [[
 
 `D FLIP FLOP`
 
-!img:wiki/mem8.png
+!img:wiki/imgs/mem8.png
 Sometimes you want the memory to be updated only once when the clock (`CLK`) goes from 0 to 1.
 
 Then, you can perform your calculations however you want, have the `D` bit modified with the new (next) value of the storage without interfering the current storage/calculation. Then, the storage is only updated again whenever CLK goes to 0 and then back again to 1! (ie, in the next `CYCLE`, creating a proper sequential mechanism)
 
-!img:wiki/mem9.png
+!img:wiki/imgs/mem9.png
 
 This can be achieved with a `D flip flop`, that can be created using two D latches.
 
-!img:wiki/mem10.png
+!img:wiki/imgs/mem10.png
 
 We call this behaviour a `rising edge-triggered` memory, in contrast with the previous `level-triggered` memory of `D Latches`. Below a comparison between the two storage modes:
 
-!img:wiki/mem13.png
+!img:wiki/imgs/mem13.png
 
 ]]
 
@@ -1204,11 +1204,11 @@ T.wiki_synchronous_text= [[
 In this section, you'll see how to use memory to create `synchronous sequential` circuits.
 
 `Sequential` as in, calculations and memory updates are always done in sequence: first you update the memory, then you perform calculations, then you update the memory again, and so on.
-!img:wiki/sync4.png
+!img:wiki/imgs/sync4.png
 `Synchronous` as in, every bit storage you have is updated once and at the `same time` for each `enable` cycle. We use a special bit to perform this synchronization, which we call `CLOCK` bit.  Whenever it goes up, the memories are updated (with the current input `D` value, which come from calculations from previous cycle) and it is only updated again when it goes to 0 and back to 1. This forms what we call a `clock cycle`. We can see that the actual "sequential" property of our system is tightly linked with the cycles of the clock: each cycle defines one "update->compute" step in our sequence .
-!img:wiki/sync2.png
+!img:wiki/imgs/sync2.png
 You can structure synchronous circuits in 2 major subcircuits: (i) the `combinatorial` subcircuit and (ii) the `memory` subcircuit:
-!img:wiki/sync1.png
+!img:wiki/imgs/sync1.png
 The role of the `memory` subcircuit is to store and update the memory of the system. It's very similar to a big D flip flop but instead of a single bit, it stores multiple bits `S`, and the output is just a stored version of the input `S`.
 
 The role of the `combinatorial` subcircuit is to take the previous state `S_prv` as input, as well as some external input bits `Din` and generate both the bits corresponding to the next desired state `S_nxt` and the outputs of the system `Dout`. In this subcircuit there's no memory or "loops", just straight logic computation.
@@ -1229,7 +1229,7 @@ We would need 2 bits for the memory: one `S0` for storing the current bit and on
 - `Dout = S1_prv`
 
 And the circuit would look something like that:
-!img:wiki/sync3.png
+!img:wiki/imgs/sync3.png
 
 ]]
 T.wiki_meminit_name = "Memory Initialization"
@@ -1241,8 +1241,8 @@ Flip flops don't have an initial state: the latches start at an undefined state,
 
 That's why we often introduce an extra auxiliar bit called `POWER-ON-RESET` that is 1 for a few initial clock cycles, then become zero.
 
-!img:wiki/sync6.png
-!img:wiki/sync8.png
+!img:wiki/imgs/sync6.png
+!img:wiki/imgs/sync8.png
 
 ]]
 T.wiki_propdelay_name = "Propagation Delay"
@@ -1255,7 +1255,7 @@ Both NAND gates and wires have propagation delay. When you chain components toge
 `When to AVOID clock delay:`
 You should generally avoid adding gates between the clock signal and flip-flop inputs. If some flip-flops receive the clock later than others, your memory will no longer be synchronous and you might have bugs.
 
-!img:wiki/sync5.png
+!img:wiki/imgs/sync5.png
 
 `When to USE clock delay:`
 However, there are cases where you WANT to delay the clock:

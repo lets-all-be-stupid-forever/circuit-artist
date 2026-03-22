@@ -7,15 +7,15 @@ function add_wiki2(topic, id)
 end
 
 
-tut_add_topic("basic", T.wiki_topic_basics, "wiki/icon_basics.png");
-tut_add_topic("gates", T.wiki_topic_gates, "wiki/icon_gates.png");
-tut_add_topic("mem", T.wiki_topic_mem, "wiki/icon_memory.png");
-tut_add_topic("math", T.wiki_topic_math, "wiki/icon_math.png");
+tut_add_topic("basic", T.wiki_topic_basics, "wiki/icons/icon_basics.png");
+tut_add_topic("gates", T.wiki_topic_gates, "wiki/icons/icon_gates.png");
+tut_add_topic("mem", T.wiki_topic_mem, "wiki/icons/icon_memory.png");
+tut_add_topic("math", T.wiki_topic_math, "wiki/icons/icon_math.png");
 
 local tldr_txt = [[
 
 
-!img:help_small.png
+!img:wiki/imgs/help_small.png
 ]]
 tut_add_item("basic", "tldr", T.wiki_tldr_title, tldr_txt, "wiki/icons/tldr.png")
 

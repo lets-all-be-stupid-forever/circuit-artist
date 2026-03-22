@@ -1,2 +1,0 @@
-
-Implement a 5:32 decoder.

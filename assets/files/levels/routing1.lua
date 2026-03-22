@@ -2,7 +2,7 @@
 AddGroup({
   name=T.routing1_name,
   id='routing1',
-  icon='icons/campaign_routing1.png',
+  icon='levels/icons/campaign_routing1.png',
   desc=T.routing1_desc
 })
 
@@ -44,7 +44,7 @@ AddCampaignLevel({
     },
     {
       title=T.mux_4_1_schema,
-      img="mux4.png",
+      img="levels/imgs/mux4.png",
       scale=4,
     },
   }
@@ -68,7 +68,7 @@ AddCampaignLevel({
     },
     {
       title=T.bus2_example2,
-      img='bus_example.png',
+      img='levels/imgs/bus_example.png',
       scale=4,
     }
   }
@@ -115,7 +115,7 @@ AddCampaignLevel({
   extra_text= {
     {
       title=T.demux_1_4_tip_title,
-      img='demux4.png',
+      img='levels/imgs/demux4.png',
       scale=4,
     },
   }
@@ -139,7 +139,7 @@ AddCampaignLevel({
     },
     {
       title=T.router_example2_title,
-      img='router_example.png',
+      img='levels/imgs/router_example.png',
       scale=4,
     }
   }

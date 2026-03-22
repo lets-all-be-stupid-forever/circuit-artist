@@ -2,7 +2,7 @@
 AddGroup({
   name=T.memory1_name,
   id='memory1',
-  icon='icons/campaign_memory1.png',
+  icon='levels/icons/campaign_memory1.png',
   desc=T.memory1_desc,
 })
 
@@ -113,7 +113,7 @@ AddCampaignLevel({
     },
     {
       title=T.dflipflop_with_enable_schema_title,
-      img='levels/D_with_enable.png',
+      img='levels/imgs/D_with_enable.png',
       scale=4,
     },
     {wiki='dflipflop'},
@@ -135,7 +135,7 @@ AddCampaignLevel({
     },
     {
       title=T.dff_w_r_schema_title,
-      img='levels/D_with_reset.png',
+      img='levels/imgs/D_with_reset.png',
       scale=4,
     },
     {

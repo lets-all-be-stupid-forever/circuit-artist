@@ -2,7 +2,7 @@
 AddGroup({
   id='basics1',
   name=T.basics_name,
-  icon='icons/campaign_basics1.png',
+  icon='levels/icons/campaign_basics1.png',
   desc=T.basics_desc
 })
 

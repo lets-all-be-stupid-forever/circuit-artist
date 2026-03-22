@@ -1,7 +1,7 @@
 
 AddGroup({
   id="custom",
-  icon='icons/sandbox.png',
+  icon='levels/icons/sandbox.png',
   name=T.custom_name,
   desc=T.custom_desc,
 })

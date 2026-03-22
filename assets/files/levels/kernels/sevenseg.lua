@@ -1,7 +1,7 @@
 Import "shared/comb_level.lua"
 
 
-local seg_tex = LoadTexture("seven_seg_display.png")
+local seg_tex = LoadTexture("imgs/campaign/seven_seg_display.png")
 
 local function customDraw(self)
   -- First I need access to pins

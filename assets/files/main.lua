@@ -6,16 +6,16 @@ function AddCampaignLevel(ctx)
     deps=ctx.deps,
     icon="levels/icons/" .. ctx.id .. ".png",
     description=T[ctx.id .. '_desc'],
-    kernel="levels/kernel/" .. ctx.id .. ".lua",
+    kernel="levels/kernels/" .. ctx.id .. ".lua",
     extra_text=ctx.extra_text,
   })
 end
 
-----------------------------------------------------
 Import 'locale/en.lua'
-Import 'campaigns/custom.lua'
-Import 'campaigns/basics1.lua'
-Import 'campaigns/sevseg1.lua'
-Import 'campaigns/routing1.lua'
-Import 'campaigns/memory1.lua'
-Import 'wikis.lua'
+----------------------------------------------------
+Import 'levels/custom.lua'
+Import 'levels/basics1.lua'
+Import 'levels/sevseg1.lua'
+Import 'levels/routing1.lua'
+Import 'levels/memory1.lua'
+Import 'wiki/pages.lua'

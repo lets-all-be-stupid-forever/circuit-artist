@@ -1,7 +1,7 @@
 
 AddGroup({
   id="sevseg1",
-  icon='icons/campaign_sevenseg1.png',
+  icon='levels/icons/campaign_sevenseg1.png',
   name=T.sevseg_name,
   desc=T.sevseg_desc,
 })
