@@ -4,7 +4,6 @@ function AddCampaignLevel(ctx)
     group=ctx.group,
     name=T[ctx.id .. '_name'],
     deps=ctx.deps,
-    icon="levels/icons/" .. ctx.id .. ".png",
     description=T[ctx.id .. '_desc'],
     kernel="levels/kernels/" .. ctx.id .. ".lua",
     extra_text=ctx.extra_text,

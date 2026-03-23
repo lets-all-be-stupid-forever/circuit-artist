@@ -28,6 +28,7 @@ static int lua_AddGroup(lua_State* L) {
   const char* root = _load_ctx.mod->root;
   LevelGroup* group = calloc(1, sizeof(LevelDef));
   group->registry = r;
+  group->mod = _load_ctx.mod;
 
   luaL_checktype(L, 1, LUA_TTABLE);
 
@@ -36,7 +37,10 @@ static int lua_AddGroup(lua_State* L) {
     return luaL_error(L, "id field must be a string");
   }
   group->id = clone_string(lua_tostring(L, -1));
-  lua_pop(L, 1);  // Remove id from stack
+  lua_pop(L, 1);
+  if (get_group_by_id(r, group->id)) {
+    return luaL_error(L, "Group with id '%s' already exists", group->id);
+  }
 
   lua_getfield(L, 1, "name");
   if (!lua_isstring(L, -1)) {
@@ -64,6 +68,10 @@ static int lua_AddGroup(lua_State* L) {
   group->icon = LoadTexture(icon_path);
   free(icon_path);
   lua_pop(L, 1);  // Remove icon from stack
+
+  lua_getfield(L, 1, "allow_inter_mod");
+  group->allow_inter_mod = lua_toboolean(L, -1);  // defaults to false if nil
+  lua_pop(L, 1);
 
   lua_getfield(L, 1, "deps");
   if (!lua_isnil(L, -1)) {
@@ -98,20 +106,6 @@ static int lua_AddLevel(lua_State* L) {
   // Check that we received a table
   luaL_checktype(L, 1, LUA_TTABLE);
 
-  // Get the "icon" field
-  lua_getfield(L, 1, "icon");
-  if (!lua_isstring(L, -1)) {
-    return luaL_error(L, "icon field must be a string");
-  }
-  const char* icon = lua_tostring(L, -1);
-  char* icon_path = checkmodpath(root, icon);
-  if (!icon_path) {
-    return luaL_error(L, "Invalid icon path");
-  }
-  ldef->icon = create_sprite(LoadTexture(icon_path));
-  free(icon_path);
-  lua_pop(L, 1);  // Remove icon from stack
-
   /* Description */
   lua_getfield(L, 1, "description");
   if (!lua_isstring(L, -1)) {
@@ -136,6 +130,11 @@ static int lua_AddLevel(lua_State* L) {
   if (!group) {
     return luaL_error(L, TextFormat("There's no group with id: %s", group_id));
   }
+  if (group->mod != _load_ctx.mod && !group->allow_inter_mod) {
+    return luaL_error(L, TextFormat("Group '%s' belongs to a different mod and "
+                                    "doesn't allow new levels",
+                                    group_id));
+  }
   lua_pop(L, 1);  // Remove icon from stack
 
   /* ID */
@@ -144,7 +143,10 @@ static int lua_AddLevel(lua_State* L) {
     return luaL_error(L, "id field must be a string");
   }
   ldef->id = clone_string(lua_tostring(L, -1));
-  lua_pop(L, 1);  // Remove icon from stack
+  lua_pop(L, 1);
+  if (get_level_by_id(r, ldef->id)) {
+    return luaL_error(L, "Level with id '%s' already exists", ldef->id);
+  }
 
   /* Kernel */
   lua_getfield(L, 1, "kernel");
@@ -296,11 +298,18 @@ static int lua_Import(lua_State* L) {
   return lua_gettop(L) - top_before;
 }
 
-void init_mod(GameRegistry* r, const char* mod_asset_path) {
+static Mod* create_mod() {
+  Mod* mod = calloc(1, sizeof(Mod));
+  mod->default_mod = false;
+  mod->local = false;
+  return mod;
+}
+
+static Mod* init_mod_from_folder(GameRegistry* r, const char* mod_path) {
   _load_ctx.registry = r;
   assert(!_load_ctx.mod);
-  Mod* mod = calloc(1, sizeof(Mod));
-  mod->root = get_asset_path(mod_asset_path);
+  Mod* mod = create_mod();
+  mod->root = clone_string(mod_path);
   arrput(r->mods, mod);
   _load_ctx.mod = mod;
   // TODO: do an extra safe check that mod_path is within acceptable game paths
@@ -308,39 +317,76 @@ void init_mod(GameRegistry* r, const char* mod_asset_path) {
   if (dofile_with_traceback(r->L, path) != LUA_OK) {
     // TODO: What do I do here?
     free(path);
-    return;
+    return NULL;
   }
   free(path);
   _load_ctx.mod = NULL;
   _load_ctx.registry = NULL;
+  return mod;
 }
 
 LevelDef* get_level_by_id(GameRegistry* r, const char* level_id) {
   return shget(r->levels, level_id);
 }
 
+static int find_topic_by_id(GameRegistry* r, const char* topic_id) {
+  TutorialTopic* topics = r->topics;
+  for (int i = 0; i < arrlen(topics); i++) {
+    if (strcmp(topics[i].id, topic_id) == 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 static int lua_AddWikiTopic(lua_State* L) {
   GameRegistry* r = _load_ctx.registry;
   const char* root = _load_ctx.mod->root;
-  const char* id = luaL_checkstring(L, 1);
-  const char* name = luaL_checkstring(L, 2);
-  const char* icon = luaL_checkstring(L, 3);
-  char* icon2 = checkmodpath(root, icon);
-  printf(" ------> ICON2=%s\n", icon2);
-  registry_add_tutorial_topic(r, id, name, icon2);
-  free(icon2);
+  luaL_checktype(L, 1, LUA_TTABLE);
+
+  lua_getfield(L, 1, "id");
+  const char* id = luaL_checkstring(L, -1);
+  if (find_topic_by_id(r, id) != -1) {
+    return luaL_error(L, "Wiki topic with id '%s' already exists", id);
+  }
+  lua_getfield(L, 1, "name");
+  const char* name = luaL_checkstring(L, -1);
+  lua_getfield(L, 1, "icon");
+  char* icon_path;
+  if (lua_isstring(L, -1)) {
+    icon_path = checkmodpath(root, lua_tostring(L, -1));
+  } else {
+    icon_path = get_asset_path("imgs/default_wiki_topic_icon.png");
+  }
+
+  registry_add_tutorial_topic(r, id, name, icon_path);
+  free(icon_path);
   return 0;
 }
 
 static int lua_AddWikiItem(lua_State* L) {
   GameRegistry* r = _load_ctx.registry;
   const char* root = _load_ctx.mod->root;
-  const char* topic_id = luaL_checkstring(L, 1);
-  const char* id = luaL_checkstring(L, 2);
-  const char* name = luaL_checkstring(L, 3);
-  const char* desc = luaL_checkstring(L, 4);
-  const char* icon = luaL_checkstring(L, 5);
-  char* icon_path = checkmodpath(root, icon);
+  luaL_checktype(L, 1, LUA_TTABLE);
+
+  lua_getfield(L, 1, "topic");
+  const char* topic_id = luaL_checkstring(L, -1);
+  lua_getfield(L, 1, "id");
+  const char* id = luaL_checkstring(L, -1);
+  if (find_wiki_from_id(r, id)) {
+    return luaL_error(L, "Wiki item with id '%s' already exists", id);
+  }
+  lua_getfield(L, 1, "name");
+  const char* name = luaL_checkstring(L, -1);
+  lua_getfield(L, 1, "desc");
+  const char* desc = luaL_checkstring(L, -1);
+  lua_getfield(L, 1, "icon");
+  char* icon_path;
+  if (lua_isstring(L, -1)) {
+    icon_path = checkmodpath(root, lua_tostring(L, -1));
+  } else {
+    icon_path = get_asset_path("imgs/default_wiki_item_icon.png");
+  }
   sprite_t* sprites;
   load_text_sprites(root, desc, &sprites);
   registry_add_tutorial_item(r, topic_id, id, name, desc, sprites, icon_path);
@@ -378,6 +424,11 @@ void steam_stat_sync(GameRegistry* r) {
   bool dirty = false;
   for (int ig = 0; ig < ng; ig++) {
     LevelGroup* g = r->group_order[ig];
+    // Mods that can be extended do not have progression on steam.
+    if (g->allow_inter_mod) continue;
+    // Only default mod's campaigns are tracked (for now)
+    if (!g->mod->default_mod) continue;
+
     int nl = arrlen(g->levels);
     int comp_here = 0;
     for (int il = 0; il < nl; il++) {
@@ -402,7 +453,7 @@ void steam_stat_sync(GameRegistry* r) {
 }
 #endif
 
-void update_levels_completion(GameRegistry* r) {
+static void update_levels_completion(GameRegistry* r) {
   int ng = arrlen(r->group_order);
   for (int ig = 0; ig < ng; ig++) {
     LevelGroup* g = r->group_order[ig];
@@ -500,16 +551,6 @@ void load_progress(GameRegistry* r) {
   update_levels_completion(r);
 }
 
-static int find_topic_by_id(GameRegistry* r, const char* topic_id) {
-  TutorialTopic* topics = r->topics;
-  for (int i = 0; i < arrlen(topics); i++) {
-    if (strcmp(topics[i].id, topic_id) == 0) {
-      return i;
-    }
-  }
-  return -1;
-}
-
 void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
                                  const char* name, const char* icon_path) {
   assert(FileExists(icon_path));
@@ -554,4 +595,40 @@ TutorialItem* find_wiki_from_id(GameRegistry* r, const char* item_id) {
     }
   }
   return NULL;
+}
+
+static void init_default_mod(GameRegistry* r) {
+  char* default_mod_path = get_asset_path("default_mod");
+  Mod* mod = init_mod_from_folder(r, default_mod_path);
+  mod->default_mod = true;
+  free(default_mod_path);
+}
+
+static void init_local_mods(GameRegistry* r) {
+  char* mods_path = clone_string(get_data_path("mods"));
+  if (!DirectoryExists(mods_path)) {
+    free(mods_path);
+    return;
+  }
+  FilePathList entries = LoadDirectoryFiles(mods_path);
+  for (int i = 0; i < (int)entries.count; i++) {
+    const char* entry = entries.paths[i];
+    if (!DirectoryExists(entry)) continue;
+    const char* main_lua = TextFormat("%s/main.lua", entry);
+    if (!FileExists(main_lua)) continue;
+    Mod* mod = init_mod_from_folder(r, entry);
+    if (mod) {
+      mod->local = true;
+    }
+  }
+  UnloadDirectoryFiles(entries);
+  free(mods_path);
+}
+
+/*
+ * Loads the mods one by one.
+ */
+void init_mods(GameRegistry* r) {
+  init_default_mod(r);
+  //  init_local_mods(r);
 }

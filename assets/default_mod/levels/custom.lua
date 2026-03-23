@@ -4,6 +4,7 @@ AddGroup({
   icon='levels/icons/sandbox.png',
   name=T.custom_name,
   desc=T.custom_desc,
+  allow_inter_mod=true,
 })
 
 AddCampaignLevel({

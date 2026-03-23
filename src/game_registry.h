@@ -23,6 +23,12 @@ typedef struct {
   TutorialItem* items;
 } TutorialTopic;
 
+typedef struct Mod {
+  char* root;       /* Absolute path to the mod's root folder */
+  bool local;       /* Flag for local mods */
+  bool default_mod; /* Flag for default mod (readonly) */
+} Mod;
+
 typedef struct LevelGroup {
   char* id;
   char* name;
@@ -30,7 +36,10 @@ typedef struct LevelGroup {
   struct LevelDef** levels;
   int nlevels;
   struct GameRegistry* registry;
-  bool complete; /* A level is complete when all levels are complete */
+  Mod* mod;
+  bool allow_inter_mod; /* Allow levels from other mods to be added to this
+                           group */
+  bool complete;        /* A level is complete when all levels are complete */
   struct LevelGroup** deps;
   bool can_choose;
   Texture icon;
@@ -44,15 +53,10 @@ typedef struct {
   int scale;
 } LevelDefExtraItem;
 
-typedef struct Mod {
-  char* root; /* Absolute path to the mod's root folder */
-} Mod;
-
 /*
  * Descriptor of a level, defined by a JSON file.
  */
 typedef struct LevelDef {
-  sprite_t icon;          /* Icon of the level */
   sprite_t* sprites;      /* Sprites for description */
   int x;                  /* Position in the grid */
   int y;                  /* Position in the grid */
@@ -88,10 +92,9 @@ typedef struct GameRegistry {
 } GameRegistry;
 
 GameRegistry* create_game_registry();
-void init_mod(GameRegistry* r, const char* mod_path);
+void init_mods(GameRegistry* r);
 LevelDef* get_level_by_id(GameRegistry* r, const char* level_id);
 LevelGroup* get_group_by_id(GameRegistry* r, const char* group_id);
-void update_levels_completion(GameRegistry* r);
 void dispatch_level_complete(LevelDef* ldef);
 void save_progress(GameRegistry* r);
 void load_progress(GameRegistry* r);

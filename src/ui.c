@@ -96,7 +96,8 @@ void ui_init() {
   InitWindow(screen_width, screen_height, "Circuit Artist");
   InitAudioDevice();
   C.registry = create_game_registry();
-  init_mod(C.registry, "files");
+
+  init_mods(C.registry);
   load_progress(C.registry);
 
   load_art_font_asset("imgs/font5x7.png");

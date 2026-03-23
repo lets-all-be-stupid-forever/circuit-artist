@@ -3,21 +3,32 @@ function MyAddWikiItem(topic, id)
   local icon = "wiki/icons/" .. id .. ".png"
   local name = T['wiki_' .. id .. '_name']
   local desc = T['wiki_' .. id .. '_text']
-  AddWikiItem(topic, id, name, desc, icon)
+  AddWikiItem({
+    topic=topic,
+    id=id,
+    name=name,
+    desc=desc,
+    icon=icon,
+  })
 end
 
 
-AddWikiTopic("basic", T.wiki_topic_basics, "wiki/icons/icon_basics.png");
-AddWikiTopic("gates", T.wiki_topic_gates, "wiki/icons/icon_gates.png");
-AddWikiTopic("mem", T.wiki_topic_mem, "wiki/icons/icon_memory.png");
-AddWikiTopic("math", T.wiki_topic_math, "wiki/icons/icon_math.png");
+AddWikiTopic({
+  id="basic",
+  name=T.wiki_topic_basics,
+  icon="wiki/icons/icon_basics.png",
+});
+
+AddWikiTopic({id="gates", name=T.wiki_topic_gates, icon="wiki/icons/icon_gates.png"});
+AddWikiTopic({id="mem",   name=T.wiki_topic_mem,   icon="wiki/icons/icon_memory.png"});
+AddWikiTopic({id="math",  name=T.wiki_topic_math,  icon="wiki/icons/icon_math.png"});
 
 local tldrText= [[
 
 
 !img:wiki/imgs/help_small.png
 ]]
-AddWikiItem("basic", "tldr", T.wiki_tldr_title, tldrText, "wiki/icons/tldr.png")
+AddWikiItem({topic="basic", id="tldr", name=T.wiki_tldr_title, desc=tldrText, icon="wiki/icons/tldr.png"})
 
 MyAddWikiItem("basic", "hotkeys")
 MyAddWikiItem("basic", "wires1")
