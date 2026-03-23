@@ -31,6 +31,7 @@
 #include "wmain.h"
 #include "wnumber.h"
 #include "wtext.h"
+#include "win_mtext.h"
 
 static struct {
   int scale;           // Global UI pixel scaling.
@@ -117,6 +118,7 @@ void ui_init() {
   msg_init();
   win_campaign_init(C.registry);
   about_init();
+  win_mtext_init();
   win_stamp_init();
   profiler_init();
   modal_init();
@@ -277,6 +279,7 @@ void ui_update_frame() {
   if (update_window == WINDOW_LEVEL) win_level_update();
   if (update_window == WINDOW_CAMPAIGN) win_campaign_update();
   if (update_window == WINDOW_MSG) win_msg_update();
+  if (update_window == WINDOW_MTEXT) win_mtext_update();
   profiler_tac();
 
   // We stop the app here if should_close is flagged.
@@ -300,6 +303,7 @@ void ui_update_frame() {
     if (window == WINDOW_CAMPAIGN) win_campaign_draw();
     if (window == WINDOW_STAMP) win_stamp_draw();
     if (window == WINDOW_MSG) win_msg_draw();
+    if (window == WINDOW_MTEXT) win_mtext_draw();
   }
   ui_draw_mouse();
   profiler_tac();

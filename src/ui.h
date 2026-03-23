@@ -32,6 +32,7 @@ typedef enum {
   WINDOW_LEVEL,
   WINDOW_CAMPAIGN,
   WINDOW_BLUEPRINT,
+  WINDOW_MTEXT,
 } WindowEnum;
 
 void ui_init();

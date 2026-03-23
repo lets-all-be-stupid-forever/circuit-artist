@@ -29,6 +29,7 @@
 #include "wdialog.h"
 #include "widgets.h"
 #include "win_level.h"
+#include "win_mtext.h"
 #include "win_stamp.h"
 #include "win_wiki.h"
 #include "wnumber.h"
@@ -499,6 +500,10 @@ Status main_draw_level_kernel() {
   return s;
 }
 
+static void on_mtext_accept(void* ctx, const char* txt) {
+  printf("[mtext] accepted:\n%s\n", txt);
+}
+
 void main_update() {
   main_update_viewport();
   C.rewind_pressed = false;
@@ -860,6 +865,18 @@ void main_update_controls() {
   if (isEdit && IsKeyPressed(KEY_U) && paint_get_has_selection(&C.ca)) {
     add_blueprint();
   }
+
+#if 0
+  if (isEdit && IsKeyPressed(KEY_K)) {
+    win_mtext_open(on_mtext_accept, NULL,
+                   "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+                   "Sed do eiusmod tempor incididunt ut labore et dolore magna "
+                   "aliqua. Ut enim ad minim veniam, quis nostrud exercitation "
+                   "ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\n"
+                   "Duis aute irure dolor in reprehenderit in voluptate velit "
+                   "esse cillum dolore eu fugiat nulla pariatur.");
+  }
+#endif
 
   if (!isEdit) {
     if (IsKeyPressed(KEY_K)) {

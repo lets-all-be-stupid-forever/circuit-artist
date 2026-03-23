@@ -135,4 +135,30 @@ typedef struct {
 void label_set_text(Label* l, const char* txt);
 void label_draw(Label* l);
 
+// MultiLineEdit - editable multi-line text widget with cursor, selection, scroll
+#define MLE_BUFSIZE 4096
+#define MLE_MAX_LINES 1024
+
+typedef struct {
+  Rectangle hitbox;
+  char buf[MLE_BUFSIZE];
+  int len;
+  int cursor;      // byte offset [0..len]
+  int sel_anchor;  // -1 = no selection; otherwise other end of selection
+  float alive;     // cursor blink timer
+  Scroll scroll;
+  int content_h;   // cached content height in screen pixels
+  int line_count;  // cached number of lines
+  int text_w;      // usable text width in unscaled pixels (for word wrap)
+  bool dragging;   // true while left mouse button held for drag-select
+  bool readonly;   // if true, editing is disabled but selection still works
+} MultiLineEdit;
+
+void mle_init(MultiLineEdit* m);
+void mle_set_box(MultiLineEdit* m, Rectangle box);
+void mle_set_text(MultiLineEdit* m, const char* txt);
+const char* mle_get_text(MultiLineEdit* m);
+bool mle_update(MultiLineEdit* m);
+void mle_draw(MultiLineEdit* m);
+
 #endif

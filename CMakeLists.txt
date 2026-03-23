@@ -108,6 +108,7 @@ SET(ca_src
   src/wmain.c
   src/wnumber.c
   src/wtext.c
+  src/win_mtext.c
   third_party/clip/clip.cpp
   third_party/clip/image.cpp
   third_party/raylib/src/external/glad.h
