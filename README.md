@@ -2,9 +2,6 @@
   
 ![Image](assets/imgs/logo2.png)
 
-
----
-# Ciricuit Artist 
 ### A Digital Logic Simulation Game 
 #### Every Circuit Is An Image
 
