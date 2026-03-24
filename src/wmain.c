@@ -28,9 +28,9 @@
 #include "wabout.h"
 #include "wdialog.h"
 #include "widgets.h"
+#include "win_blueprint.h"
 #include "win_level.h"
 #include "win_mtext.h"
-#include "win_stamp.h"
 #include "win_wiki.h"
 #include "wnumber.h"
 #include "wtext.h"
@@ -73,7 +73,7 @@ static struct {
   Btn btn_brush;
   Btn btn_text;
   Btn btn_line;
-  Btn btn_stamp;
+  Btn btn_blueprint;
   Btn btn_picker;
   Btn btn_bucket;
   Btn btn_marquee;
@@ -723,8 +723,8 @@ static void add_blueprint() {
 
   Image full = paint_export_sel(&C.ca);
   int nl = hist_get_num_layers_sel(&C.ca.h);
-  int istamp = stamp_create_and_open(nl, C.ca.h.selbuffer, full);
-  if (istamp == -1) {
+  int ibp = blueprint_create_and_open(nl, C.ca.h.selbuffer, full);
+  if (ibp == -1) {
     msg_add(
         "INVENTORY FULL: Failed to create blueprint. Please open inventory "
         "space.",
@@ -772,7 +772,7 @@ void main_update_controls() {
   }
 
   if (isEdit && IsKeyPressed(KEY_Q)) {
-    win_stamp_open();
+    win_blueprint_open();
   }
 
   if (isEdit && IsKeyPressed(KEY_F1)) {
@@ -868,13 +868,14 @@ void main_update_controls() {
 
 #if 0
   if (isEdit && IsKeyPressed(KEY_K)) {
-    win_mtext_open(on_mtext_accept, NULL,
-                   "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
-                   "Sed do eiusmod tempor incididunt ut labore et dolore magna "
-                   "aliqua. Ut enim ad minim veniam, quis nostrud exercitation "
-                   "ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\n"
-                   "Duis aute irure dolor in reprehenderit in voluptate velit "
-                   "esse cillum dolore eu fugiat nulla pariatur.");
+    win_mtext_open(
+        on_mtext_accept, NULL,
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+        "Sed do eiusmod tempor incididunt ut labore et dolore magna "
+        "aliqua. Ut enim ad minim veniam, quis nostrud exercitation "
+        "ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\n"
+        "Duis aute irure dolor in reprehenderit in voluptate velit "
+        "esse cillum dolore eu fugiat nulla pariatur.");
   }
 #endif
 
@@ -1039,7 +1040,7 @@ void main_update_hud() {
     win_level_open(C.ldef, on_select_level);
   if (btn_update(&C.btn_level_custom)) custom_level_open();
   if (btn_update(&C.btn_wiki)) win_wiki_open();
-  if (btn_update(&C.btn_stamp)) win_stamp_open();
+  if (btn_update(&C.btn_blueprint)) win_blueprint_open();
 
   if (btn_update(&C.btn_clockopt[0])) C.clock_speed = 0;
   if (btn_update(&C.btn_clockopt[1])) C.clock_speed = 1;
@@ -1173,7 +1174,7 @@ void main_draw() {
                    color_disabled);
   }
   btn_draw_icon(&C.btn_line, bscale, sprites, rect_line);
-  btn_draw_icon(&C.btn_stamp, bscale, sprites, rect_blueprint);
+  btn_draw_icon(&C.btn_blueprint, bscale, sprites, rect_blueprint);
   btn_draw_icon(&C.btn_brush, bscale, sprites, rect_brush);
   btn_draw_icon(&C.btn_picker, bscale, sprites, rect_picker);
   btn_draw_icon(&C.btn_bucket, bscale, sprites, rect_bucket);
@@ -1205,7 +1206,7 @@ void main_draw() {
     btn_draw_legend(&C.btn_save, bscale, "Save Image (CTRL+S)");
     btn_draw_legend(&C.btn_saveas, bscale, "Save Image As .. ");
 
-    btn_draw_legend(&C.btn_stamp, bscale,
+    btn_draw_legend(&C.btn_blueprint, bscale,
                     "Open Blueprints Window (Q)\nOpens even if selection tool "
                     "is not active.");
     btn_draw_legend(&C.btn_about, bscale, "About Circuit Artist");
@@ -1434,7 +1435,7 @@ void main_update_layout() {
     C.btn_flipv.hitbox = (Rectangle){bx1, by3, bw, bh};
     C.btn_rotate.hitbox = (Rectangle){bx0, by4, bw, bh};
     C.btn_fill.hitbox = (Rectangle){bx1, by4, bw, bh};
-    C.btn_stamp.hitbox = (Rectangle){bx0, by5b, bw, bh};
+    C.btn_blueprint.hitbox = (Rectangle){bx0, by5b, bw, bh};
     C.btn_blueprint_add.hitbox = (Rectangle){bx1, by5b, bw, bh};
     C.btn_sel_open.hitbox = (Rectangle){bx0, by5b + 18 * s + 4 * s, bw, bh};
     C.btn_sel_save.hitbox = (Rectangle){bx1, by5b + 18 * s + 4 * s, bw, bh};
@@ -1744,7 +1745,7 @@ void main_update_widgets() {
 
   C.btn_level_campaign.disabled = ned;
   C.btn_level_custom.disabled = ned;
-  C.btn_stamp.disabled = ned;
+  C.btn_blueprint.disabled = ned;
   C.btn_brush.toggled = tool == TOOL_BRUSH;
   C.btn_line.toggled = tool == TOOL_LINE;
   C.btn_marquee.toggled = tool == TOOL_SEL;
@@ -1770,7 +1771,7 @@ void main_update_widgets() {
   C.btn_sel_open.hidden = (tool != TOOL_SEL) || ned;
   C.btn_sel_save.hidden = (tool != TOOL_SEL) || ned;
   C.btn_blueprint_add.hidden = (tool != TOOL_SEL) || ned;
-  C.btn_stamp.hidden = (tool != TOOL_SEL) || ned;
+  C.btn_blueprint.hidden = (tool != TOOL_SEL) || ned;
 
   for (int i = 0; i < MAX_LAYERS; i++) {
     C.btn_layer[i].disabled = ned;

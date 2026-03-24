@@ -26,7 +26,7 @@
 #include "win_campaign.h"
 #include "win_level.h"
 #include "win_msg.h"
-#include "win_stamp.h"
+#include "win_blueprint.h"
 #include "win_wiki.h"
 #include "wmain.h"
 #include "wnumber.h"
@@ -119,7 +119,7 @@ void ui_init() {
   win_campaign_init(C.registry);
   about_init();
   win_mtext_init();
-  win_stamp_init();
+  win_blueprint_init();
   profiler_init();
   modal_init();
   win_wiki_init(C.registry);
@@ -270,7 +270,7 @@ void ui_update_frame() {
   // script_update();
   if (update_window == WINDOW_TEXT) text_modal_update();
   if (update_window == WINDOW_NUMBER) number_modal_update();
-  if (update_window == WINDOW_STAMP) win_stamp_update();
+  if (update_window == WINDOW_BLUEPRINT) win_blueprint_update();
   if (update_window == WINDOW_MAIN) main_update();
   if (update_window == WINDOW_ABOUT) about_update();
   if (update_window == WINDOW_DIALOG) dialog_update();
@@ -301,7 +301,7 @@ void ui_update_frame() {
     if (window == WINDOW_WIKI) win_wiki_draw();
     if (window == WINDOW_LEVEL) win_level_draw();
     if (window == WINDOW_CAMPAIGN) win_campaign_draw();
-    if (window == WINDOW_STAMP) win_stamp_draw();
+    if (window == WINDOW_BLUEPRINT) win_blueprint_draw();
     if (window == WINDOW_MSG) win_msg_draw();
     if (window == WINDOW_MTEXT) win_mtext_draw();
   }

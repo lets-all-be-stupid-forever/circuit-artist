@@ -103,7 +103,7 @@ SET(ca_src
   src/win_campaign.c
   src/win_level.c
   src/win_msg.c
-  src/win_stamp.c
+  src/win_blueprint.c
   src/wire_graph.c
   src/wmain.c
   src/wnumber.c

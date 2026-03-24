@@ -80,5 +80,5 @@ void win_mtext_draw() {
 
 void win_mtext_init() {
   mle_init(&C.mle);
-  C.mle.readonly = true;
+  // C.mle.readonly = true;
 }

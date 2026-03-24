@@ -13,6 +13,6 @@ Shader load_shader_asset(const char* vs_asset, const char* fs_asset);
 
 const char* get_data_path(const char* path);
 const char* get_progress_path();
-const char* get_stamp_path();
+const char* get_blueprint_path();
 
 #endif
