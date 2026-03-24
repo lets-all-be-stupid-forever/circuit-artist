@@ -6,6 +6,7 @@
 typedef struct {
   char* id;
   char* name;
+  char* folder;
   int rot;
   Texture thumbnail;
 } Blueprint;

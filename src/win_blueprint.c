@@ -4,7 +4,6 @@
 #include "font.h"
 #include "img.h"
 #include "json.h"
-#include "layout.h"
 #include "msg.h"
 #include "paths.h"
 #include "stdio.h"
@@ -16,6 +15,19 @@
 #include "widgets.h"
 #include "wmain.h"
 #include "wtext.h"
+
+#define WIN_BLUEPRINT_win_blueprint ((Rectangle){0, 0, 1168, 682})
+#define WIN_BLUEPRINT_btn_close ((Rectangle){1006, 631, 132, 32})
+#define WIN_BLUEPRINT_btn_delete ((Rectangle){28, 631, 116, 32})
+#define WIN_BLUEPRINT_btn_rename ((Rectangle){153, 631, 116, 32})
+#define WIN_BLUEPRINT_btn_use ((Rectangle){404, 631, 322, 32})
+#define WIN_BLUEPRINT_staging ((Rectangle){30, 168, 128, 448})
+#define WIN_BLUEPRINT_pages ((Rectangle){180, 73, 960, 64})
+#define WIN_BLUEPRINT_slots ((Rectangle){180, 168, 960, 448})
+#define WIN_BLUEPRINT_unlock ((Rectangle){128, 73, 34, 34})
+#define WIN_BLUEPRINT_btn_rot ((Rectangle){279, 631, 116, 32})
+#define BLUEPRINT_FILE_1_1 "blueprints_1_1.json"
+#define BLUEPRINT_FILE_v2 "blueprints_v2.json"
 
 #define S_COLS 15
 #define S_ROWS 7
@@ -45,49 +57,54 @@ static struct {
 
 #define LAYOUT(name) roff(off, WIN_BLUEPRINT_##name)
 
+const char* get_blueprint_path() { return get_data_path(BLUEPRINT_FILE_v2); }
+
+// blueprints_v2.json: positional array, each slot is null or {id, rot}
 static void blueprint_save() {
-  json_object *bps, *bp, *name, *id, *rot;
   json_object* root = json_object_new_object();
   if (!root) {
-    ui_crash("Couldn't create bp inventory file.");
+    ui_crash("Couldn't create blueprint inventory file.");
     return;
   }
-  json_object_object_add(root, "version", json_object_new_int(0));
-  bps = json_object_new_array();
-  int total_bps = TOTAL_BLUEPRINTS;
-  for (int i = 0; i < total_bps; i++) {
+  json_object_object_add(root, "version", json_object_new_int(2));
+  json_object* bps = json_object_new_array();
+  for (int i = 0; i < TOTAL_BLUEPRINTS; i++) {
     Blueprint* s = C.blueprints[i];
+    json_object* bp;
     if (!s) {
       bp = json_object_new_null();
     } else {
       bp = json_object_new_object();
-      id = json_object_new_string(s->id);
-      name = json_object_new_string(s->name);
-      rot = json_object_new_int(s->rot);
-      json_object_object_add(bp, "id", id);
-      json_object_object_add(bp, "name", name);
-      json_object_object_add(bp, "rot", rot);
+      json_object_object_add(bp, "id",  json_object_new_string(s->id));
+      json_object_object_add(bp, "rot", json_object_new_int(s->rot));
     }
     json_object_array_add(bps, bp);
   }
-  json_object_object_add(root, "stamps", bps);
-
+  json_object_object_add(root, "blueprints", bps);
   if (json_object_to_file_ext(get_blueprint_path(), root,
                               JSON_C_TO_STRING_PRETTY) < 0) {
-    fprintf(stderr, "Error writing to file\n");
-    json_object_put(root);
-    ui_crash("Error creating save file\n");
-    return;
+    fprintf(stderr, "Error writing blueprint inventory\n");
+    ui_crash("Error writing blueprint inventory\n");
   }
   json_object_put(root);
 }
 
-const char* blueprint_fname(Blueprint* s) {
-  return get_data_path(TextFormat("blueprints/%s_full.png", s->id));
+static void blueprint_save_meta(Blueprint* s) {
+  json_object* meta = json_object_new_object();
+  json_object_object_add(meta, "id",   json_object_new_string(s->id));
+  json_object_object_add(meta, "name", json_object_new_string(s->name));
+  json_object_to_file_ext(
+      get_data_path(TextFormat("blueprints_v2/%s/meta.json", s->id)),
+      meta, JSON_C_TO_STRING_PRETTY);
+  json_object_put(meta);
+}
+
+const char* blueprint_fname_full(Blueprint* s) {
+  return TextFormat("%s/full.png", s->folder);
 }
 
 const char* blueprint_fname_thumbnail(Blueprint* s) {
-  return get_data_path(TextFormat("blueprints/%s_thumb.png", s->id));
+  return TextFormat("%s/thumb.png", s->folder);
 }
 
 static int get_page_slot_blueprint_idx(int page, int i) {
@@ -135,25 +152,49 @@ static int find_first_available_slot() {
   return -1;
 }
 
+static void blueprint_rm_files(Blueprint* bp) {
+  if (!bp || !bp->folder) return;
+  char path[1024];
+  snprintf(path, sizeof(path), "%s/thumb.png", bp->folder);
+  delete_file(path);
+  snprintf(path, sizeof(path), "%s/full.png", bp->folder);
+  delete_file(path);
+  snprintf(path, sizeof(path), "%s/meta.json", bp->folder);
+  delete_file(path);
+  remove(bp->folder);
+}
+
+static void blueprint_destroy(Blueprint* bp) {
+  if (!bp) return;
+  free(bp->id);
+  free(bp->name);
+  free(bp->folder);
+  UnloadTexture(bp->thumbnail);
+  free(bp);
+}
+
 static int blueprint_create(int nl, Image* imgs, Image full) {
   int ibp = find_first_available_slot();
-  if (ibp == -1) {
-    return -1;
-  }
+  if (ibp == -1) return -1;
   assert(!C.blueprints[ibp]);
+
   Image thumb = gen_thumbnail(nl, imgs, 64, 64);
   char* id = clone_string(randid());
-  assert(ibp >= 0);
   Blueprint* bp = calloc(1, sizeof(Blueprint));
+  bp->id     = id;
+  bp->name   = clone_string("");
+  bp->folder = clone_string(get_data_path(TextFormat("blueprints_v2/%s", id)));
   C.blueprints[ibp] = bp;
-  bp->id = id;
+
+  // Create per-blueprint folder and write files
+  MakeDirectory(bp->folder);
+  ExportImage(full,  blueprint_fname_full(bp));
   ExportImage(thumb, blueprint_fname_thumbnail(bp));
-  ExportImage(full, blueprint_fname(bp));
+  blueprint_save_meta(bp);
 
   bp->thumbnail = LoadTextureFromImage(thumb);
-
-  bp->name = clone_string("");
   UnloadImage(thumb);
+
   blueprint_save();
   return ibp;
 }
@@ -192,43 +233,119 @@ static void initialize_bps() {
   blueprint_save();
 }
 
+// Loads a blueprint from a folder and places it in C.blueprints.
+// If a stub (id-only Blueprint) already occupies a slot with the matching id,
+// that slot is filled in. Otherwise the first free slot is used.
+// Does nothing if the folder has no valid meta.json + thumb.png.
+static void inject_blueprint_from_folder(const char* folder) {
+  char meta_path[1024], thumb_path[1024];
+  snprintf(meta_path, sizeof(meta_path), "%s/meta.json", folder);
+  snprintf(thumb_path, sizeof(thumb_path), "%s/thumb.png", folder);
+  if (!FileExists(meta_path) || !FileExists(thumb_path)) return;
+
+  json_object* meta = json_object_from_file(meta_path);
+  if (!meta) return;
+
+  json_object *id_obj = NULL, *name_obj = NULL;
+  json_object_object_get_ex(meta, "id", &id_obj);
+  json_object_object_get_ex(meta, "name", &name_obj);
+  if (!id_obj) { json_object_put(meta); return; }
+
+  const char* id   = json_object_get_string(id_obj);
+  const char* name = name_obj ? json_object_get_string(name_obj) : "";
+
+  // Find an existing stub slot with the matching id.
+  int slot = -1;
+  for (int i = 0; i < TOTAL_BLUEPRINTS; i++) {
+    if (C.blueprints[i] && strcmp(C.blueprints[i]->id, id) == 0) {
+      slot = i;
+      break;
+    }
+  }
+
+  if (slot == -1) {
+    // No reserved slot — use any free slot.
+    slot = find_first_available_slot();
+    if (slot == -1) { json_object_put(meta); return; }
+    Blueprint* bp = calloc(1, sizeof(Blueprint));
+    bp->id     = clone_string(id);
+    bp->folder = clone_string(folder);
+    C.blueprints[slot] = bp;
+  }
+
+  Blueprint* bp = C.blueprints[slot];
+  free(bp->name);
+  free(bp->folder);
+  bp->name   = clone_string(name);
+  bp->folder = clone_string(folder);
+  bp->thumbnail = LoadTexture(thumb_path);
+
+  json_object_put(meta);
+}
+
+// Scans blueprints_v2/ for subfolders and calls inject_blueprint_from_folder
+// on each. Call this to pick up locally stored blueprints.
+static void register_local_blueprints() {
+  char v2dir[512];
+  snprintf(v2dir, sizeof(v2dir), "%s", get_data_path("blueprints_v2"));
+  if (!DirectoryExists(v2dir)) return;
+
+  FilePathList dirs = LoadDirectoryFiles(v2dir);
+  for (unsigned int i = 0; i < dirs.count; i++) {
+    if (DirectoryExists(dirs.paths[i])) {
+      inject_blueprint_from_folder(dirs.paths[i]);
+    }
+  }
+  UnloadDirectoryFiles(dirs);
+}
+
 void blueprint_load() {
   if (!FileExists(get_blueprint_path())) {
     initialize_bps();
     return;
   }
-  json_object* bps;
-  json_object *bp, *id, *name, *rot;
-  json_object* root = json_object_from_file(get_blueprint_path());
-  assert(root);
-  if (json_object_object_get_ex(root, "stamps", &bps)) {
-    int nl = json_object_array_length(bps);
-    for (int i = 0; i < nl; i++) {
-      bp = json_object_array_get_idx(bps, i);
-      if (bp) {
-        Blueprint* s = calloc(1, sizeof(Blueprint));
-        bool ok = true;
-        ok = ok && json_object_object_get_ex(bp, "id", &id);
-        ok = ok && json_object_object_get_ex(bp, "name", &name);
-        if (json_object_object_get_ex(bp, "rot", &rot)) {
-          s->rot = json_object_get_int(rot);
-        };
-        s->id = clone_string(json_object_get_string(id));
-        s->name = clone_string(json_object_get_string(name));
-        // Image img = LoadImage(blueprint_fname_thumbnail(s));
-        // image_remove_blacks(&img);
-        // s->thumbnail = LoadTextureFromImage(img);
-        // UnloadImage(img);
-        if (FileExists(blueprint_fname_thumbnail(s))) {
-          s->thumbnail = LoadTexture(blueprint_fname_thumbnail(s));
-          C.blueprints[i] = s;
-        } else {
-          free(s);
+
+  // Step 1: Parse blueprints_v2.json and reserve id-only stubs at the
+  // recorded slot positions (preserves slot layout even before folders
+  // are scanned).
+  {
+    json_object* root = json_object_from_file(get_blueprint_path());
+    if (root) {
+      json_object* bps = NULL;
+      json_object_object_get_ex(root, "blueprints", &bps);
+      if (bps) {
+        int n = (int)json_object_array_length(bps);
+        if (n > TOTAL_BLUEPRINTS) n = TOTAL_BLUEPRINTS;
+        for (int i = 0; i < n; i++) {
+          json_object* bp = json_object_array_get_idx(bps, i);
+          if (!bp || json_object_get_type(bp) == json_type_null) continue;
+          json_object *id_obj = NULL, *rot_obj = NULL;
+          json_object_object_get_ex(bp, "id", &id_obj);
+          json_object_object_get_ex(bp, "rot", &rot_obj);
+          if (!id_obj) continue;
+          Blueprint* stub = calloc(1, sizeof(Blueprint));
+          stub->id  = clone_string(json_object_get_string(id_obj));
+          stub->name = clone_string("");
+          if (rot_obj) stub->rot = json_object_get_int(rot_obj);
+          C.blueprints[i] = stub;
         }
       }
+      json_object_put(root);
     }
   }
-  json_object_put(root);
+
+  // Step 2: Scan actual folders and fill in (or add) blueprints.
+  register_local_blueprints();
+
+  // Step 3: Remove stubs that were never matched to a real folder
+  // (thumbnail.id == 0 means no texture was loaded).
+  for (int i = 0; i < TOTAL_BLUEPRINTS; i++) {
+    Blueprint* bp = C.blueprints[i];
+    if (bp && bp->thumbnail.id == 0) {
+      blueprint_destroy(bp);
+      C.blueprints[i] = NULL;
+    }
+  }
 }
 
 static void fix_slot_layout(Btn* buttons, int x0, int y0, int rows, int cols) {
@@ -273,12 +390,101 @@ static void update_layout() {
 }
 
 static void ensure_blueprints_folder_exists() {
-  if (!DirectoryExists(get_data_path("blueprints"))) {
-    MakeDirectory(get_data_path("blueprints"));
+  if (!DirectoryExists(get_data_path("blueprints_v2"))) {
+    MakeDirectory(get_data_path("blueprints_v2"));
   }
 }
 
+static void copy_file_if_exists(const char* src, const char* dst) {
+  if (!FileExists(src)) return;
+  int size = 0;
+  unsigned char* data = LoadFileData(src, &size);
+  if (data) {
+    SaveFileData(dst, data, size);
+    UnloadFileData(data);
+  }
+}
+
+// Migrates v1 blueprint data (blueprints_1_1.json + blueprints/<id>_*.png)
+// to v2 layout (blueprints_v2/<id>/{full.png,thumb.png,meta.json} +
+// blueprints_v2.json). Does NOT modify or delete v1 files. Safe to call
+// multiple times (skips if v2 already exists).
+static void migrate_v1_to_v2() {
+  if (!FileExists(get_data_path(BLUEPRINT_FILE_1_1))) return;
+  if (FileExists(get_data_path(BLUEPRINT_FILE_v2))) return;
+
+  json_object* root_v1 =
+      json_object_from_file(get_data_path(BLUEPRINT_FILE_1_1));
+  if (!root_v1) return;
+
+  json_object* stamps_v1 = NULL;
+  if (!json_object_object_get_ex(root_v1, "stamps", &stamps_v1)) {
+    json_object_put(root_v1);
+    return;
+  }
+
+  int count = json_object_array_length(stamps_v1);
+
+  json_object* root_v2 = json_object_new_object();
+  json_object_object_add(root_v2, "version", json_object_new_int(2));
+  json_object* bps_v2 = json_object_new_array();
+
+  for (int i = 0; i < count; i++) {
+    json_object* entry = json_object_array_get_idx(stamps_v1, i);
+    if (!entry || json_object_get_type(entry) == json_type_null) {
+      json_object_array_add(bps_v2, json_object_new_null());
+      continue;
+    }
+
+    json_object *id_obj, *name_obj, *rot_obj;
+    if (!json_object_object_get_ex(entry, "id", &id_obj) ||
+        !json_object_object_get_ex(entry, "name", &name_obj)) {
+      json_object_array_add(bps_v2, json_object_new_null());
+      continue;
+    }
+
+    const char* id   = json_object_get_string(id_obj);
+    const char* name = json_object_get_string(name_obj);
+    int rot = 0;
+    if (json_object_object_get_ex(entry, "rot", &rot_obj))
+      rot = json_object_get_int(rot_obj);
+
+    // Create per-blueprint folder (MakeDirectory creates intermediaries)
+    MakeDirectory(get_data_path(TextFormat("blueprints_v2/%s", id)));
+
+    // Copy images from v1 location to v2 location
+    copy_file_if_exists(
+        get_data_path(TextFormat("blueprints/%s_full.png", id)),
+        get_data_path(TextFormat("blueprints_v2/%s/full.png", id)));
+    copy_file_if_exists(
+        get_data_path(TextFormat("blueprints/%s_thumb.png", id)),
+        get_data_path(TextFormat("blueprints_v2/%s/thumb.png", id)));
+
+    // Write meta.json
+    json_object* meta = json_object_new_object();
+    json_object_object_add(meta, "id",   json_object_new_string(id));
+    json_object_object_add(meta, "name", json_object_new_string(name));
+    json_object_to_file_ext(
+        get_data_path(TextFormat("blueprints_v2/%s/meta.json", id)),
+        meta, JSON_C_TO_STRING_PRETTY);
+    json_object_put(meta);
+
+    // Add minimal entry to v2 master (id + rot only; name lives in meta.json)
+    json_object* bp_v2 = json_object_new_object();
+    json_object_object_add(bp_v2, "id",  json_object_new_string(id));
+    json_object_object_add(bp_v2, "rot", json_object_new_int(rot));
+    json_object_array_add(bps_v2, bp_v2);
+  }
+
+  json_object_object_add(root_v2, "blueprints", bps_v2);
+  json_object_to_file_ext(get_data_path(BLUEPRINT_FILE_v2), root_v2,
+                          JSON_C_TO_STRING_PRETTY);
+  json_object_put(root_v2);
+  json_object_put(root_v1);
+}
+
 void win_blueprint_init() {
+  migrate_v1_to_v2();
   ensure_blueprints_folder_exists();
   blueprint_load();
 }
@@ -294,13 +500,10 @@ static void on_confirm_delete(int r) {
   int i = C.sel;
   if (i != -1 && C.blueprints[i]) {
     Blueprint* s = C.blueprints[i];
-    delete_file(blueprint_fname_thumbnail(s));
-    delete_file(blueprint_fname(s));
-    UnloadTexture(s->thumbnail);
-    free(s->id);
-    free(s->name);
-    free(C.blueprints[i]);
+    blueprint_rm_files(s);
+    blueprint_destroy(C.blueprints[i]);
     C.blueprints[i] = NULL;
+    blueprint_save();
     msg_add("Blueprint deleted.", 4);
     C.sel = -1;
   }
@@ -320,6 +523,7 @@ static void on_rename_accept(void* ctx, const char* txt) {
     Blueprint* s = C.blueprints[i];
     free(s->name);
     s->name = clone_string(txt);
+    blueprint_save_meta(s);
     C.sel = -1;
   }
 }
@@ -327,7 +531,7 @@ static void on_rename_accept(void* ctx, const char* txt) {
 static void use_blueprint(int ibp) {
   Blueprint* s = C.blueprints[ibp];
   assert(s);
-  main_paste_file(blueprint_fname(s), s->rot);
+  main_paste_file(blueprint_fname_full(s), s->rot);
   on_click();
   ui_winpop();
   blueprint_save();

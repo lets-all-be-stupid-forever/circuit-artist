@@ -5,7 +5,6 @@
 #include <string.h>
 
 #define PROGRESS_FILE "save_1_1.json"
-#define BLUEPRINT_FILE "blueprints_1_1.json"
 
 static struct {
   const char* asset_path;
@@ -115,4 +114,3 @@ const char* get_data_path(const char* path) {
 }
 
 const char* get_progress_path() { return get_data_path(PROGRESS_FILE); }
-const char* get_blueprint_path() { return get_data_path(BLUEPRINT_FILE); }
