@@ -7,17 +7,16 @@
 
 [![Steam](https://img.shields.io/badge/Steam-Wishlist%20Now-1b2838?logo=steam&logoColor=white)](https://store.steampowered.com/app/3139580)
 
+[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2)](https://discord.gg/McpSTEW5jU)
+[![WordPress](https://img.shields.io/badge/WordPress-Blog-21759B?logo=wordpress&logoColor=white)](https://circuitartistgame.com/)
+[![License](https://img.shields.io/github/license/lets-all-be-stupid-forever/circuit-artist)](https://github.com/lets-all-be-stupid-forever/circuit-artist/blob/main/LICENSE)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)
 ![macOS](https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-0078D4?logoColor=white)
-
 ![C](https://img.shields.io/badge/C-A8B9CC?logo=c&logoColor=black)
 ![Moddable](https://img.shields.io/badge/Moddable-Lua%20Scripting-2C2D72?logo=lua&logoColor=white)
 [![Made with raylib](https://img.shields.io/badge/Made%20with-raylib-f5484a?logo=raylib&logoColor=white)](https://www.raylib.com)
 
-[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2)](https://discord.gg/McpSTEW5jU)
-[![WordPress](https://img.shields.io/badge/WordPress-Blog-21759B?logo=wordpress&logoColor=white)](https://circuitartistgame.com/)
-[![License](https://img.shields.io/github/license/lets-all-be-stupid-forever/circuit-artist)](https://github.com/lets-all-be-stupid-forever/circuit-artist/blob/main/LICENSE)
 
 
 </div>
