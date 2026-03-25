@@ -26,7 +26,7 @@ static LoadCtx _load_ctx = {0};
 static int lua_AddGroup(lua_State* L) {
   GameRegistry* r = _load_ctx.registry;
   const char* root = _load_ctx.mod->root;
-  LevelGroup* group = calloc(1, sizeof(LevelDef));
+  LevelGroup* group = calloc(1, sizeof(LevelGroup));
   group->registry = r;
   group->mod = _load_ctx.mod;
 
