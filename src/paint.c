@@ -14,6 +14,7 @@
 #include "rlgl.h"
 #include "shaders.h"
 #include "sim.h"
+#include "sound.h"
 #include "ui.h"
 #include "utils.h"
 #include "wmain.h"
@@ -1376,7 +1377,7 @@ void paint_handle_wheel_zoom(Paint* ca) {
   if (fabs(wheel) > 1e-3) {
     int z = wheel > 0 ? 1 : -1;
     paint_zoom_camera_at(ca, pos, z);
-    on_click();
+    play_sound_click();
   }
 }
 
@@ -1489,20 +1490,20 @@ void paint_movement_keys(Paint* ca) {
         .y = r.y + r.height / 2,
     };
     paint_zoom_camera_at(ca, screenpos, zoom);
-    on_click();
+    play_sound_click();
   }
 }
 
 static void paint_redo(Paint* ca) {
   hist_redo(&ca->h);
-  on_click();
+  play_sound_click();
   paint_on_tool_change(ca);
   paint_ensure_camera_within_bounds(ca);
 }
 
 static void paint_undo(Paint* ca) {
   hist_undo(&ca->h);
-  on_click();
+  play_sound_click();
   paint_on_tool_change(ca);
   paint_ensure_camera_within_bounds(ca);
 }
@@ -1516,7 +1517,7 @@ void paint_handle_keys(Paint* ca) {
     int key = paint_get_number_key_pressed();
     if (key >= 0) {
       paint_append_line_width_number(ca, key);
-      on_click();
+      play_sound_click();
     }
   }
 
@@ -1536,38 +1537,38 @@ void paint_handle_keys(Paint* ca) {
 
   // Copy
   if (is_control_down() && IsKeyPressed(KEY_C)) {
-    on_click();
+    play_sound_click();
     paint_copy_to_clipboard(ca);
   }
 
   // Paste
   if (is_control_down() && IsKeyPressed(KEY_V)) {
-    on_click();
+    play_sound_click();
     paint_paste_from_clipboard(ca);
   }
 
   if (IsKeyPressed(KEY_L)) {
-    on_click();
+    play_sound_click();
     paint_set_tool(ca, TOOL_LINE);
   }
 
   if (IsKeyPressed(KEY_B)) {
-    on_click();
+    play_sound_click();
     paint_set_tool(ca, TOOL_BRUSH);
   }
 
   if (IsKeyPressed(KEY_G)) {
-    on_click();
+    play_sound_click();
     paint_set_tool(ca, TOOL_BUCKET);
   }
 
   if (IsKeyPressed(KEY_I)) {
-    on_click();
+    play_sound_click();
     paint_set_tool(ca, TOOL_PICKER);
   }
 
   if (IsKeyPressed(KEY_M)) {
-    on_click();
+    play_sound_click();
     paint_set_tool(ca, TOOL_SEL);
   }
 
@@ -1575,7 +1576,7 @@ void paint_handle_keys(Paint* ca) {
   // between commands
   if (!ca->tool_pressed && paint_get_has_selection(ca) &&
       IsKeyPressed(KEY_ESCAPE)) {
-    on_click();
+    play_sound_click();
     paint_perform_tool_action(ca);
   }
 
@@ -1595,34 +1596,36 @@ void paint_handle_keys(Paint* ca) {
       if (IsKeyPressed(KEY_LEFT)) dx -= d;
       if (IsKeyPressed(KEY_RIGHT)) dx += d;
       hist_act_move_sel(&ca->h, dx, dy);
-      on_click();
+      play_sound_click();
     }
 
     bool has_sel = paint_get_has_selection(ca);
     if (has_sel && IsKeyPressed(KEY_H)) {
       hist_act_flip_sel(&ca->h, ACTION_SEL_FLIP_H);
-      on_click();
+      play_sound_click();
     }
     if (has_sel && IsKeyPressed(KEY_R)) {
-      on_click();
+      play_sound_click();
       hist_act_flip_sel(&ca->h, ACTION_SEL_ROTATE);
     }
     if (has_sel && IsKeyPressed(KEY_V) && !is_control_down()) {
       hist_act_flip_sel(&ca->h, ACTION_SEL_FLIP_V);
-      on_click();
+      play_sound_click();
     }
 
     if (has_sel && (IsKeyPressed(KEY_F))) {
       hist_act_fill_sel(&ca->h, ca->fg_color);
-      on_click();
+      play_sound_click();
     }
 
     if (has_sel && (IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE))) {
-      on_click();
+      play_sound_click();
       hist_act_delete_sel(&ca->h);
     }
   }
 }
+
+static void on_paint_act(Paint* ca) { play_sound_paint(ca->h.layer); }
 
 /**
  * Stops the resizing process.
@@ -1647,7 +1650,7 @@ static void paint_resizing_stop(Paint* pnt) {
   if (!pnt->resizePressed) {
     return;
   }
-  on_click();
+  play_sound_click();
   int new_x = pnt->pixelCursor.x;
   int new_y = pnt->pixelCursor.y;
   new_x = new_x < 8 ? 8 : new_x;
@@ -1721,12 +1724,12 @@ void paint_handle_mouse(Paint* ca, bool hit) {
         int px = ca->pixelCursor.x >> ll;
         int py = ca->pixelCursor.y >> ll;
         if (brush_append_point(&ca->brush, px, py)) {
-          on_paint_act();
+          on_paint_act(ca);
         };
       }
       bool rect_changed = !is_rectint_equal(tool_rect, ca->prev_tool_rect);
       if (rect_changed) {
-        on_paint_act();
+        on_paint_act(ca);
       }
       bool bap = false;  // behave as picker
       bap = bap || (tool == TOOL_PICKER);
@@ -1734,7 +1737,7 @@ void paint_handle_mouse(Paint* ca, bool hit) {
       bap = bap || ((tool == TOOL_BRUSH) && (ca->toolWithAlt));
       bap = bap || ((tool == TOOL_BUCKET) && (ca->toolWithAlt));
       if (bap) {
-        on_paint_act();
+        on_paint_act(ca);
         paint_pick_color_under_cursor(ca);
       }
     }

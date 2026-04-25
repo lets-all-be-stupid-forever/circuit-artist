@@ -20,6 +20,7 @@
 #include "paths.h"
 #include "profiler.h"
 #include "sim.h"
+#include "sound.h"
 #include "stb_ds.h"
 #include "time.h"
 #include "ui.h"
@@ -190,20 +191,6 @@ static void on_modal_after_open() {
 void main_open() {
   ui_winpush(WINDOW_MAIN);
   easy_blinking_open();
-}
-
-void on_paint_act() {
-  if (!C.muted_paint) {
-    int al = C.ca.h.layer;
-    if (!IsSoundPlaying(C.sound_click2)) {
-      SetSoundPitch(C.sound_click2, 1 << al);
-      PlaySound(C.sound_click2);
-    }
-  }
-}
-
-void on_click() {
-  if (!C.mute) PlaySound(C.sound_click);
 }
 
 static float get_simu_dt() {
@@ -405,13 +392,10 @@ void main_init(GameRegistry* registry) {
 static void simu_play_sounds() {
   int na = arrlen(C.sim.ui_events);
   int r = 0;
-  if (!C.mute) {
-    for (int i = 0; i < na; i++) {
-      SimUiEvent ev = C.sim.ui_events[i];
-      if (ev.sound > 0) {
-        // SetSoundPitch(C.sound, ev.sound);
-        PlaySound(C.sound);
-      }
+  for (int i = 0; i < na; i++) {
+    SimUiEvent ev = C.sim.ui_events[i];
+    if (ev.sound > 0) {
+      play_sound_nand();
     }
   }
 }
@@ -456,7 +440,7 @@ static Status main_update_simu() {
       C.sim.pause_requested = false;
       C.paused = true;
       C.simu_target_steps = C.sim.state.cur_tick;
-      on_click();
+      play_sound_click();
       break;
     }
     slack_steps -= 1.f;
@@ -696,9 +680,7 @@ void main_start_simu() {
   C.simu_target_steps = 0;
   C.pix_toggle = -1;
   if (sim_has_errors(&C.sim)) {
-    if (!C.mute) {
-      PlaySound(C.sound_oops);
-    }
+    play_sound_oops();
     C.mode = MODE_ERROR;
     return;
   }
@@ -774,20 +756,20 @@ void main_update_controls() {
   }
 
   if (isEdit && IsKeyPressed(KEY_F1)) {
-    on_click();
+    play_sound_click();
     paint_set_layer(&C.ca, 0);
   }
 
   if (isEdit && IsKeyPressed(KEY_F2)) {
     if (paint_get_num_layers(&C.ca) > 1) {
-      on_click();
+      play_sound_click();
       paint_set_layer(&C.ca, 1);
     }
   }
 
   if (isEdit && IsKeyPressed(KEY_F3)) {
     if (paint_get_num_layers(&C.ca) > 2) {
-      on_click();
+      play_sound_click();
       paint_set_layer(&C.ca, 2);
     }
   }
@@ -1056,7 +1038,7 @@ void main_update_hud() {
     if (rect_hover(C.color_btn[i], pos) && ui_get_hit_count() == 0) {
       ui_inc_hit_count();
       if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        on_click();
+        play_sound_click();
         paint_set_color(&C.ca, C.palette[i]);
       }
     }
@@ -1933,10 +1915,6 @@ void main_paste_file(const char* fname, int rot) {
 
 Paint* main_get_paint() { return &C.ca; }
 
-void play_sound(SoundEnum sound) {
-  switch (sound) {
-    case SOUND_LEVEL_COMPLETE:
-      PlaySound(C.sound_success);
-      break;
-  }
-}
+bool is_circuit_sound_on() { return !C.mute; }
+
+bool is_paint_sound_on() { return !C.muted_paint; }

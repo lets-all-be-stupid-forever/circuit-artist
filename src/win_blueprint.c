@@ -6,6 +6,7 @@
 #include "json.h"
 #include "msg.h"
 #include "paths.h"
+#include "sound.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -75,7 +76,7 @@ static void blueprint_save() {
       bp = json_object_new_null();
     } else {
       bp = json_object_new_object();
-      json_object_object_add(bp, "id",  json_object_new_string(s->id));
+      json_object_object_add(bp, "id", json_object_new_string(s->id));
       json_object_object_add(bp, "rot", json_object_new_int(s->rot));
     }
     json_object_array_add(bps, bp);
@@ -91,11 +92,11 @@ static void blueprint_save() {
 
 static void blueprint_save_meta(Blueprint* s) {
   json_object* meta = json_object_new_object();
-  json_object_object_add(meta, "id",   json_object_new_string(s->id));
+  json_object_object_add(meta, "id", json_object_new_string(s->id));
   json_object_object_add(meta, "name", json_object_new_string(s->name));
   json_object_to_file_ext(
-      get_data_path(TextFormat("blueprints_v2/%s/meta.json", s->id)),
-      meta, JSON_C_TO_STRING_PRETTY);
+      get_data_path(TextFormat("blueprints_v2/%s/meta.json", s->id)), meta,
+      JSON_C_TO_STRING_PRETTY);
   json_object_put(meta);
 }
 
@@ -181,14 +182,14 @@ static int blueprint_create(int nl, Image* imgs, Image full) {
   Image thumb = gen_thumbnail(nl, imgs, 64, 64);
   char* id = clone_string(randid());
   Blueprint* bp = calloc(1, sizeof(Blueprint));
-  bp->id     = id;
-  bp->name   = clone_string("");
+  bp->id = id;
+  bp->name = clone_string("");
   bp->folder = clone_string(get_data_path(TextFormat("blueprints_v2/%s", id)));
   C.blueprints[ibp] = bp;
 
   // Create per-blueprint folder and write files
   MakeDirectory(bp->folder);
-  ExportImage(full,  blueprint_fname_full(bp));
+  ExportImage(full, blueprint_fname_full(bp));
   ExportImage(thumb, blueprint_fname_thumbnail(bp));
   blueprint_save_meta(bp);
 
@@ -249,9 +250,12 @@ static void inject_blueprint_from_folder(const char* folder) {
   json_object *id_obj = NULL, *name_obj = NULL;
   json_object_object_get_ex(meta, "id", &id_obj);
   json_object_object_get_ex(meta, "name", &name_obj);
-  if (!id_obj) { json_object_put(meta); return; }
+  if (!id_obj) {
+    json_object_put(meta);
+    return;
+  }
 
-  const char* id   = json_object_get_string(id_obj);
+  const char* id = json_object_get_string(id_obj);
   const char* name = name_obj ? json_object_get_string(name_obj) : "";
 
   // Find an existing stub slot with the matching id.
@@ -266,9 +270,12 @@ static void inject_blueprint_from_folder(const char* folder) {
   if (slot == -1) {
     // No reserved slot — use any free slot.
     slot = find_first_available_slot();
-    if (slot == -1) { json_object_put(meta); return; }
+    if (slot == -1) {
+      json_object_put(meta);
+      return;
+    }
     Blueprint* bp = calloc(1, sizeof(Blueprint));
-    bp->id     = clone_string(id);
+    bp->id = clone_string(id);
     bp->folder = clone_string(folder);
     C.blueprints[slot] = bp;
   }
@@ -276,7 +283,7 @@ static void inject_blueprint_from_folder(const char* folder) {
   Blueprint* bp = C.blueprints[slot];
   free(bp->name);
   free(bp->folder);
-  bp->name   = clone_string(name);
+  bp->name = clone_string(name);
   bp->folder = clone_string(folder);
   bp->thumbnail = LoadTexture(thumb_path);
 
@@ -324,7 +331,7 @@ void blueprint_load() {
           json_object_object_get_ex(bp, "rot", &rot_obj);
           if (!id_obj) continue;
           Blueprint* stub = calloc(1, sizeof(Blueprint));
-          stub->id  = clone_string(json_object_get_string(id_obj));
+          stub->id = clone_string(json_object_get_string(id_obj));
           stub->name = clone_string("");
           if (rot_obj) stub->rot = json_object_get_int(rot_obj);
           C.blueprints[i] = stub;
@@ -443,7 +450,7 @@ static void migrate_v1_to_v2() {
       continue;
     }
 
-    const char* id   = json_object_get_string(id_obj);
+    const char* id = json_object_get_string(id_obj);
     const char* name = json_object_get_string(name_obj);
     int rot = 0;
     if (json_object_object_get_ex(entry, "rot", &rot_obj))
@@ -462,16 +469,16 @@ static void migrate_v1_to_v2() {
 
     // Write meta.json
     json_object* meta = json_object_new_object();
-    json_object_object_add(meta, "id",   json_object_new_string(id));
+    json_object_object_add(meta, "id", json_object_new_string(id));
     json_object_object_add(meta, "name", json_object_new_string(name));
     json_object_to_file_ext(
-        get_data_path(TextFormat("blueprints_v2/%s/meta.json", id)),
-        meta, JSON_C_TO_STRING_PRETTY);
+        get_data_path(TextFormat("blueprints_v2/%s/meta.json", id)), meta,
+        JSON_C_TO_STRING_PRETTY);
     json_object_put(meta);
 
     // Add minimal entry to v2 master (id + rot only; name lives in meta.json)
     json_object* bp_v2 = json_object_new_object();
-    json_object_object_add(bp_v2, "id",  json_object_new_string(id));
+    json_object_object_add(bp_v2, "id", json_object_new_string(id));
     json_object_object_add(bp_v2, "rot", json_object_new_int(rot));
     json_object_array_add(bps_v2, bp_v2);
   }
@@ -532,7 +539,7 @@ static void use_blueprint(int ibp) {
   Blueprint* s = C.blueprints[ibp];
   assert(s);
   main_paste_file(blueprint_fname_full(s), s->rot);
-  on_click();
+  play_sound_click();
   ui_winpop();
   blueprint_save();
   return;
@@ -556,16 +563,16 @@ static void update_slot(Btn* b, Vector2 mouse, int sidx) {
         if (sidx == C.sel) {
           // use_sel();
           C.sel = -1;
-          on_click();
+          play_sound_click();
           return;
         } else {
           swap_blueprints(C.sel, sidx);
           C.sel = -1;
-          on_click();
+          play_sound_click();
         }
       } else {
         if (C.blueprints[sidx]) {
-          on_click();
+          play_sound_click();
           if (is_control_down()) {
             /* Tries to move to fixed slot*/
             if (!isfixed) {
@@ -596,7 +603,7 @@ static void update_page_slot(Btn* b, Vector2 mouse, int sidx) {
     if (b->hover) {
       ui_set_cursor(MOUSE_POINTER);
       if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        on_click();
+        play_sound_click();
         int ipage = sidx - NUM_FIXED - NUM_PAGES * PAGESIZE;
         set_page(ipage);
       }

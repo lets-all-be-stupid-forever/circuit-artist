@@ -9,10 +9,6 @@
 #define MODE_SIMU 1
 #define MODE_ERROR 2
 
-typedef enum {
-  SOUND_LEVEL_COMPLETE,
-} SoundEnum;
-
 typedef void (*Callback)();
 
 // Main screen.
@@ -31,9 +27,8 @@ void main_load_image_from_path(const char* path);
 void main_start_simu();
 void main_stop_simu();
 Paint* main_get_paint();
-void on_click();
-void on_paint_act();
-void play_sound(SoundEnum sound);
+bool is_circuit_sound_on();
+bool is_paint_sound_on();
 
 typedef struct {
   bool done;

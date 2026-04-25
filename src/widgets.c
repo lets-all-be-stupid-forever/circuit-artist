@@ -8,6 +8,7 @@
 #include "assert.h"
 #include "colors.h"
 #include "font.h"
+#include "sound.h"
 #include "ui.h"
 #include "utils.h"
 #include "wmain.h"
@@ -365,7 +366,7 @@ bool btn_update(Btn* b) {
   }
   b->hover = hit;
   if (ret) {
-    on_click();
+    play_sound_click();
   }
   return ret;
 }
@@ -841,7 +842,8 @@ static int s_mle_line_count = 0;
 // MleLine.end is the exclusive upper bound of the visual line's content:
 //   - hard newline: end = position of '\n', next line starts at end+1
 //   - word wrap at space: end = position of ' ', next line starts at end+1
-//   - hard wrap (no space): end = first char of next line, next line starts at end
+//   - hard wrap (no space): end = first char of next line, next line starts at
+//   end
 //   - EOF: end = len
 // Cursor can be at [start .. end] for \n/space/EOF lines,
 // and [start .. end-1] for hard-wrap lines (end belongs to next line).
@@ -855,7 +857,7 @@ static void mle_build_lines(MultiLineEdit* m) {
     int last_space = -1;       // position of last ' ' seen on this visual line
     int last_space_next = -1;  // position after that space
 
-    for (int i = pos; ; i++) {
+    for (int i = pos;; i++) {
       if (i == m->len) {
         // EOF
         s_mle_lines[s_mle_line_count++] = (MleLine){line_start, m->len};
@@ -901,7 +903,7 @@ static void mle_build_lines(MultiLineEdit* m) {
     if (pos > m->len) break;
   }
 
-  done:
+done:
   if (s_mle_line_count == 0) {
     s_mle_lines[0] = (MleLine){0, 0};
     s_mle_line_count = 1;
@@ -933,7 +935,7 @@ static int mle_x_of(MultiLineEdit* m, int pos) {
 // Finds the byte offset in `line_idx` closest to unscaled x `target_x`
 static int mle_pos_from_x(MultiLineEdit* m, int line_idx, int target_x) {
   int start = s_mle_lines[line_idx].start;
-  int end   = s_mle_lines[line_idx].end;
+  int end = s_mle_lines[line_idx].end;
   int best = start;
   int best_dist = abs(target_x);
   static char tmp[MLE_BUFSIZE];
@@ -986,7 +988,8 @@ void mle_set_box(MultiLineEdit* m, Rectangle box) {
   m->hitbox = box;
   scroll_set_content_box(&m->scroll, box, 24);
   int s = ui_get_scale();
-  // Usable width: subtract scrollbar (24px screen) and left+right pad (4+4 unscaled)
+  // Usable width: subtract scrollbar (24px screen) and left+right pad (4+4
+  // unscaled)
   m->text_w = (int)(box.width - 24) / s - 4 - 4;
 }
 
@@ -1064,7 +1067,7 @@ bool mle_update(MultiLineEdit* m) {
 
   bool ret = false;
   bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
-  bool ctrl  = is_control_down();
+  bool ctrl = is_control_down();
 
   // Ctrl+A: select all
   if (ctrl && IsKeyPressed(KEY_A)) {
@@ -1104,7 +1107,8 @@ bool mle_update(MultiLineEdit* m) {
       if (m->sel_anchor >= 0) mle_delete_selection(m);
       int n = (int)strlen(cb);
       if (m->len + n < MLE_BUFSIZE) {
-        memmove(m->buf + m->cursor + n, m->buf + m->cursor, m->len - m->cursor + 1);
+        memmove(m->buf + m->cursor + n, m->buf + m->cursor,
+                m->len - m->cursor + 1);
         memcpy(m->buf + m->cursor, cb, n);
         m->len += n;
         m->cursor += n;
@@ -1120,7 +1124,8 @@ bool mle_update(MultiLineEdit* m) {
     while (key > 0) {
       if (key >= 32 && key <= 126 && m->len < MLE_BUFSIZE - 1) {
         if (m->sel_anchor >= 0) mle_delete_selection(m);
-        memmove(m->buf + m->cursor + 1, m->buf + m->cursor, m->len - m->cursor + 1);
+        memmove(m->buf + m->cursor + 1, m->buf + m->cursor,
+                m->len - m->cursor + 1);
         m->buf[m->cursor] = (char)key;
         m->cursor++;
         m->len++;
@@ -1154,11 +1159,13 @@ bool mle_update(MultiLineEdit* m) {
   }
 
   // Backspace
-  if (!m->readonly && (IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE))) {
+  if (!m->readonly &&
+      (IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE))) {
     if (m->sel_anchor >= 0) {
       mle_delete_selection(m);
     } else if (m->cursor > 0) {
-      memmove(m->buf + m->cursor - 1, m->buf + m->cursor, m->len - m->cursor + 1);
+      memmove(m->buf + m->cursor - 1, m->buf + m->cursor,
+              m->len - m->cursor + 1);
       m->cursor--;
       m->len--;
       m->alive = 0;
@@ -1167,7 +1174,8 @@ bool mle_update(MultiLineEdit* m) {
   }
 
   // Delete
-  if (!m->readonly && (IsKeyPressed(KEY_DELETE) || IsKeyPressedRepeat(KEY_DELETE))) {
+  if (!m->readonly &&
+      (IsKeyPressed(KEY_DELETE) || IsKeyPressedRepeat(KEY_DELETE))) {
     if (m->sel_anchor >= 0) {
       mle_delete_selection(m);
     } else if (m->cursor < m->len) {
@@ -1258,7 +1266,7 @@ void mle_draw(MultiLineEdit* m) {
   int s = ui_get_scale();
   int lh = get_font_line_height();
   int lh_total = lh + 2;  // unscaled spacing
-  int pad = 4;             // left text padding (unscaled)
+  int pad = 4;            // left text padding (unscaled)
 
   mle_build_lines(m);
 
@@ -1282,7 +1290,7 @@ void mle_draw(MultiLineEdit* m) {
   for (int i = 0; i < s_mle_line_count; i++) {
     int y = i * lh_total;
     int line_start = s_mle_lines[i].start;
-    int line_end   = s_mle_lines[i].end;
+    int line_end = s_mle_lines[i].end;
 
     // Selection highlight
     if (sel_min >= 0) {

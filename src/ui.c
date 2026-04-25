@@ -16,6 +16,7 @@
 #include "paths.h"
 #include "profiler.h"
 #include "shaders.h"
+#include "sound.h"
 #include "stb_ds.h"
 #include "stdio.h"
 #include "steam.h"
@@ -23,15 +24,15 @@
 #include "utils.h"
 #include "wabout.h"
 #include "wdialog.h"
+#include "win_blueprint.h"
 #include "win_campaign.h"
 #include "win_level.h"
 #include "win_msg.h"
-#include "win_blueprint.h"
+#include "win_mtext.h"
 #include "win_wiki.h"
 #include "wmain.h"
 #include "wnumber.h"
 #include "wtext.h"
-#include "win_mtext.h"
 
 static struct {
   int scale;           // Global UI pixel scaling.
@@ -100,6 +101,7 @@ void ui_init() {
 
   init_mods(C.registry);
   load_progress(C.registry);
+  sound_init();
 
   load_art_font_asset("imgs/font5x7.png");
 

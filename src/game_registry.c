@@ -8,6 +8,7 @@
 #include "fs.h"
 #include "json.h"
 #include "paths.h"
+#include "sound.h"
 #include "stb_ds.h"
 #include "stdlib.h"
 #include "steam.h"
@@ -495,7 +496,7 @@ static void update_levels_completion(GameRegistry* r) {
 void dispatch_level_complete(LevelDef* ldef) {
   if (!ldef->complete) {
     ldef->complete = true;
-    play_sound(SOUND_LEVEL_COMPLETE);
+    play_sound_level_complete();
     update_levels_completion(ldef->group->registry);
     save_progress(ldef->group->registry);
   }

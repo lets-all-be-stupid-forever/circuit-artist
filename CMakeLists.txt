@@ -87,6 +87,7 @@ SET(ca_src
   src/pixel_graph.c
   src/plot.c
   src/pq.c
+  src/sound.c
   src/profiler.c
   src/rectint.c
   src/series.c
