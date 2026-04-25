@@ -488,6 +488,9 @@ void draw_text_box_advanced(const char* text, Rectangle rect, Color first_color,
     } else {
       int nc = ki - k0;
       ParsedTokenType ptkn = parse_token(text + k0, nc);
+      if (!sprites && ptkn.type == TKN_IMG) {
+        ptkn.type = TKN_TEXT;
+      }
       switch (ptkn.type) {
         case TKN_HLINE: {
           if (offx != 0) {

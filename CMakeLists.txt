@@ -58,9 +58,9 @@ set(CMAKE_C_STANDARD 11)
 SET(ca_src
   src/brush.c
   src/buffer.c
+  src/blueprint.c
   src/clipapi.cpp
   src/colors.c
-  src/connected_components.c
   src/dist_graph.c
   src/elmore.c
   src/event_queue.c
@@ -107,6 +107,9 @@ SET(ca_src
   src/win_msg.c
   src/win_blueprint.c
   src/wire_graph.c
+  src/win_pubform.c
+  src/win_progress.c
+  src/win_bpdetail.c
   src/wmain.c
   src/wnumber.c
   src/wtext.c

@@ -41,7 +41,6 @@ typedef struct {
   v2 fPixelCursor;        // position in float precision
   v2i extraView;          // extra x space for camera
   bool xmode;
-
   int lineToolSize;    // Line size for Line tool.
   int lineToolSep;     // line tool separation size
   int lineKey;         // Line width entered via keyboard. (line tool)
@@ -59,6 +58,7 @@ typedef struct {
   int prev_layer; /* Saves previous selected layer for quick back and forth */
   PanState pan_x;
   PanState pan_y;
+  Color bg_color;  // Background color out of the canvas
 } Paint;
 
 void paint_init(Paint* ca);

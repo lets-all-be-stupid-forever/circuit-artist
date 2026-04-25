@@ -661,7 +661,7 @@ void load_text_sprites(const char* root, const char* txt,
     tmp[i - 5] = '\0';
     char* tex_path = checkmodpath(root, tmp);
     assert(tex_path);
-    printf("Loadin sprite %s ...\n", tex_path);
+    // printf("Loadin sprite %s ...\n", tex_path);
     arrput(sprites, create_sprite(LoadTexture(tex_path)));
     free(tex_path);
     nxt = &nxt[3];
@@ -796,4 +796,150 @@ const char* get_roman_number(int i) {
 
 void draw_bg(Rectangle r) {
   draw_tiled_rect(ui_get_scale(), ui_get_sprites(), rect_bg_pattern, r);
+}
+
+bool str_match(const char* a, const char* b) { return strcmp(a, b) == 0; }
+
+bool json_read_str(json_object* obj, const char* key, char** value) {
+  json_object* obj2;
+  json_object_object_get_ex(obj, key, &obj2);
+  if (!obj2) return false;
+  *value = clone_string(json_object_get_string(obj2));
+  return true;
+}
+
+void json_write_u64(json_object* obj, const char* key, u64 value) {
+  json_object_object_add(obj, key,
+                         json_object_new_string(TextFormat("%llu", value)));
+}
+
+/* Returns true if key was present, false otherwise. */
+bool json_read_u64(json_object* obj, const char* key, u64* value) {
+  json_object* obj2;
+  json_object_object_get_ex(obj, key, &obj2);
+  if (!obj2) return false;
+  char* end = NULL;
+  *value = strtoull(json_object_get_string(obj2), &end, 10);
+  return true;
+}
+
+/* Returns true if key was present, false otherwise. */
+bool json_read_int(json_object* obj, const char* key, int* value) {
+  json_object* obj2;
+  json_object_object_get_ex(obj, key, &obj2);
+  if (!obj2) return false;
+  *value = json_object_get_int(obj2);
+  return true;
+}
+
+void json_write_str(json_object* obj, const char* key, const char* value) {
+  if (value) {
+    json_object_object_add(obj, key, json_object_new_string(value));
+  }
+}
+
+void json_write_int(json_object* obj, const char* key, i32 value) {
+  json_object_object_add(obj, key, json_object_new_int(value));
+}
+
+bool starts_with(const char* a, const char* b) {
+  int nb = strlen(b);
+  int na = strlen(a);
+  if (na < nb) return false;
+  for (int i = 0; i < nb; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
+
+u64 str2u64(const char* s) {
+  char* end;
+  return strtoull(s, &end, 10);
+}
+
+static char* temp_folder = NULL;
+
+static void ensure_temp_folder_exists() {
+  if (!temp_folder) {
+    char* path = abs_path(get_data_path("temp"));
+    if (!DirectoryExists(path)) {
+      MakeDirectory(path);
+    }
+    temp_folder = path;
+  }
+}
+
+const char* get_temp_folder() {
+  ensure_temp_folder_exists();
+  return temp_folder;
+}
+
+void save_steam_metadata(const char* folder, u64 author_id,
+                         const char* author_name, int ntags, const char** tags,
+                         const int nkvtags, const char** kvtags_key,
+                         const char** kvtags_value) {
+  json_object* root = json_object_new_object();
+  json_write_u64(root, "author_id", author_id);
+  json_write_str(root, "author_name", author_name);
+  json_write_int(root, "game_version", 1);
+  json_object* j_tags = json_object_new_array();
+  for (int i = 0; i < ntags; i++) {
+    json_object_array_add(j_tags, json_object_new_string(tags[i]));
+  }
+  json_object_object_add(root, "tags", j_tags);
+  json_object* j_kvtags = json_object_new_array();
+  for (int i = 0; i < nkvtags; i++) {
+    json_object* j_item = json_object_new_object();
+    json_write_str(j_item, "key", kvtags_key[i]);
+    json_write_str(j_item, "value", kvtags_value[i]);
+    json_object_array_add(j_tags, j_item);
+  }
+  json_object_object_add(root, "kvtags", j_kvtags);
+  char* path = os_path_join(folder, "_steam_metadata.json");
+  json_object_to_file_ext(path, root, JSON_C_TO_STRING_PRETTY);
+  free(path);
+  json_object_put(root);
+}
+
+void remove_steam_metadata(const char* folder) {
+  char* path = os_path_join(folder, "_steam_metadata.json");
+  delete_file(path);
+  free(path);
+}
+
+bool load_steam_metadata(const char* folder, SteamMeta* m) {
+  char* path = os_path_join(folder, "_steam_metadata.json");
+  json_object* meta = json_object_from_file(path);
+  free(path);
+  if (!meta) {
+    return false;
+  }
+  json_read_u64(meta, "author_id", &m->author_id);
+  json_read_str(meta, "author_name", &m->author_name);
+
+  json_object* j_tags = NULL;
+  json_object_object_get_ex(meta, "tags", &j_tags);
+  if (j_tags) {
+    m->ntags = (int)json_object_array_length(j_tags);
+    if (m->ntags > 0) {
+      m->tags = calloc(m->ntags, sizeof(char*));
+      for (int i = 0; i < m->ntags; i++) {
+        json_object* item = json_object_array_get_idx(j_tags, i);
+        m->tags[i] = clone_string(json_object_get_string(item));
+      }
+    }
+  }
+  json_object_put(meta);
+  return true;
+}
+
+void unload_steam_meta(SteamMeta* m) {
+  free(m->author_name);
+  if (m->ntags > 0) {
+    for (int i = 0; i < m->ntags; i++) {
+      free(m->tags[i]);
+    }
+    free(m->tags);
+  }
+  *m = (SteamMeta){0};
 }

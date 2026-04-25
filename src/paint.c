@@ -749,9 +749,8 @@ static void paint_draw_rect(float x, float y, float w, int h, Color c) {
 }
 
 static void paint_draw_background(Paint* pnt) {
-  Color k = {21, 11, 3, 255};
   // ClearBackground(get_lut_color(COLOR_DARKGRAY));
-  ClearBackground(k);
+  ClearBackground(pnt->bg_color);
   int tw = pnt->h.t_buffer[0].texture.width;
   int th = pnt->h.t_buffer[0].texture.height;
   float cx = pnt->cam.off.x - 1e-2;

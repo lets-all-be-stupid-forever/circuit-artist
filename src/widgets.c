@@ -815,13 +815,29 @@ void label_set_text(Label* l, const char* txt) {
   strncpy(l->txt, txt, sizeof(l->txt));
 }
 
+void label_draw_centered(Label* l) {
+  rlPushMatrix();
+  rlTranslatef(l->hitbox.x, l->hitbox.y, 0);
+  int th = l->hitbox.height;
+  int tw = l->hitbox.width;
+  int lh = get_font_line_height();
+  int offy = (th - lh) / 4;
+  int wx = get_rendered_text_size(l->txt).x;
+  int offx = 4 + (tw / 4 - wx / 2);
+  int s = 2;
+  rlScalef(s, s, 1);
+  font_draw_texture(l->txt, offx + 1, offy + 1, BLACK);
+  font_draw_texture(l->txt, offx, offy, WHITE);
+  rlPopMatrix();
+}
+
 void label_draw(Label* l) {
   rlPushMatrix();
   rlTranslatef(l->hitbox.x, l->hitbox.y, 0);
-  int th = 20;
+  int th = l->hitbox.height;
   int lh = get_font_line_height();
-  int offy = (th - lh) / 2 + 2;
-  int offx = 5;
+  int offy = (th - lh) / 4;
+  int offx = 4;
   int s = 2;
   rlScalef(s, s, 1);
   font_draw_texture_outlined(l->txt, offx, offy, WHITE, BLACK);

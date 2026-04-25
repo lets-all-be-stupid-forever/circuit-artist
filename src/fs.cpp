@@ -61,3 +61,82 @@ char* checkmodpath2(const char* root, const char* caller, const char* rpath) {
   // 2. Relative to the folder of caller file (must still be within root)
   return NULL;
 }
+
+char* os_path_basename(const char* fname) {
+  if (!fname) return nullptr;
+
+  try {
+    std::filesystem::path p(fname);
+    std::string filename = p.filename().string();
+
+    char* out = (char*)std::malloc(filename.size() + 1);
+    if (!out) return nullptr;
+
+    std::memcpy(out, filename.c_str(), filename.size() + 1);
+    return out;
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+char* os_path_join_impl(const char* first, ...) {
+  if (!first) return nullptr;
+
+  try {
+    std::filesystem::path result(first);
+
+    va_list args;
+    va_start(args, first);
+
+    const char* part;
+    while ((part = va_arg(args, const char*)) != nullptr) {
+      result /= part;
+    }
+
+    va_end(args);
+
+    result = result.lexically_normal();
+
+    std::string s = result.string();
+
+    char* out = (char*)std::malloc(s.size() + 1);
+    if (!out) return nullptr;
+
+    std::memcpy(out, s.c_str(), s.size() + 1);
+    return out;
+
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+char* abs_path(const char* path) {
+  if (!path) return nullptr;
+
+  try {
+    std::filesystem::path p(path);
+
+    // closest to Python os.path.abspath
+    auto abs = std::filesystem::absolute(p).lexically_normal();
+
+    std::string s = abs.string();
+
+    char* out = (char*)std::malloc(s.size() + 1);
+    if (!out) return nullptr;
+
+    std::memcpy(out, s.c_str(), s.size() + 1);
+    return out;
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+bool os_path_exists(const char* path) {
+  if (!path) return false;
+  return std::filesystem::exists(path);
+}
+
+void ensure_folder_exists(const char* path) {
+  if (!path) return;
+  std::filesystem::create_directories(path);
+}

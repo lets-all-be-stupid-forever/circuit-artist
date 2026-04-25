@@ -134,8 +134,10 @@ typedef struct {
 
 void label_set_text(Label* l, const char* txt);
 void label_draw(Label* l);
+void label_draw_centered(Label* l);
 
-// MultiLineEdit - editable multi-line text widget with cursor, selection, scroll
+// MultiLineEdit - editable multi-line text widget with cursor, selection,
+// scroll
 #define MLE_BUFSIZE 4096
 #define MLE_MAX_LINES 1024
 

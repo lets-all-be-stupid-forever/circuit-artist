@@ -279,7 +279,7 @@ void win_level_draw() {
 
   label_draw(&C.campaign_title);
 
-  btn_draw_text(&C.btn_choose, ui_get_scale(), "SELECT LEVEL");
+  btn_draw_text_primary(&C.btn_choose, ui_get_scale(), "SELECT LEVEL");
   btn_draw_text(&C.btn_close, ui_get_scale(), "CLOSE");
 
   Texture2D sprites = ui_get_sprites();

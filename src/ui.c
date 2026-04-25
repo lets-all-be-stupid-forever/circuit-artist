@@ -25,10 +25,13 @@
 #include "wabout.h"
 #include "wdialog.h"
 #include "win_blueprint.h"
+#include "win_bpdetail.h"
 #include "win_campaign.h"
 #include "win_level.h"
 #include "win_msg.h"
 #include "win_mtext.h"
+#include "win_progress.h"
+#include "win_pubform.h"
 #include "win_wiki.h"
 #include "wmain.h"
 #include "wnumber.h"
@@ -118,6 +121,8 @@ void ui_init() {
   C.sprites = LoadTextureFromImage(C.img_sprites);
   HideCursor();
   msg_init();
+  win_pubform_init();
+  win_progress_init();
   win_campaign_init(C.registry);
   about_init();
   win_mtext_init();
@@ -259,6 +264,10 @@ void ui_update_frame() {
     main_ask_for_save_and_proceed(ui_close);
   }
 
+#ifdef WITH_STEAM
+  SteamRunFrame();
+#endif
+
   // Resets the hit count for the frame.
   C.hit_count = 0;
   profiler_reset();
@@ -282,6 +291,9 @@ void ui_update_frame() {
   if (update_window == WINDOW_CAMPAIGN) win_campaign_update();
   if (update_window == WINDOW_MSG) win_msg_update();
   if (update_window == WINDOW_MTEXT) win_mtext_update();
+  if (update_window == WINDOW_PUBFORM) win_pubform_update();
+  if (update_window == WINDOW_PROGRESS) win_progress_update();
+  if (update_window == WINDOW_BPDETAIL) win_bpdetail_update();
   profiler_tac();
 
   // We stop the app here if should_close is flagged.
@@ -306,6 +318,9 @@ void ui_update_frame() {
     if (window == WINDOW_BLUEPRINT) win_blueprint_draw();
     if (window == WINDOW_MSG) win_msg_draw();
     if (window == WINDOW_MTEXT) win_mtext_draw();
+    if (window == WINDOW_PUBFORM) win_pubform_draw();
+    if (window == WINDOW_PROGRESS) win_progress_draw();
+    if (window == WINDOW_BPDETAIL) win_bpdetail_draw();
   }
   ui_draw_mouse();
   profiler_tac();

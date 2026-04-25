@@ -263,7 +263,7 @@ static int lua_AddLevel(lua_State* L) {
 
   shput(r->levels, ldef->id, ldef);
   group_add_level(group, ldef);
-  printf("ADDED %s->%s\n", ldef->group->id, ldef->id);
+  // printf("ADDED %s->%s\n", ldef->group->id, ldef->id);
   return 0;
 }
 

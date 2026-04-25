@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "assert.h"
+#include "blueprint.h"
 #include "colors.h"
 #include "common.h"
 #include "font.h"
@@ -31,6 +32,7 @@
 #include "widgets.h"
 #include "win_blueprint.h"
 #include "win_level.h"
+#include "win_msg.h"
 #include "win_mtext.h"
 #include "win_wiki.h"
 #include "wnumber.h"
@@ -109,13 +111,6 @@ static struct {
   Image sidepanel_img;
   Texture2D sidepanel_tex;
   bool looping;
-  Sound sound;
-  Sound sound_success;
-  Sound sound_click;
-  Sound sound_click2;
-  Sound sound_click3;
-  Sound sound_oops;
-  Sound sound2;
   float base_volume;
   bool always_on_top;
 
@@ -143,6 +138,7 @@ static struct {
   LevelDef* ldef;
   char* level_file;
   LevelAPI api;
+  Blueprint* bp;
 } C = {0};
 
 static inline int maxint(int a, int b) { return a > b ? a : b; }
@@ -186,6 +182,28 @@ static void on_modal_after_open() {
   if (C.always_on_top) {
     SetWindowState(FLAG_WINDOW_TOPMOST);
   }
+}
+
+static void unlink_bp() {
+  C.bp = NULL;
+  win_msg_open_text("Image is no longer associated with the blueprint.", NULL);
+}
+
+/* called after an image has been saved */
+static void on_post_image_save(bool saveas) {
+  if (saveas) unlink_bp();
+  if (C.bp) {
+    Image imgs[MAX_LAYERS];
+    int nl = hist_get_num_layers(&C.ca.h);
+    for (int i = 0; i < nl; i++) {
+      imgs[i] = C.ca.h.buffer[i];
+    }
+    blueprint_update_thumbnail(C.bp, nl, imgs);
+    msg_add("Blueprint Saved.", MSG_DURATION);
+  } else {
+    msg_add("Image Saved.", MSG_DURATION);
+  }
+  main_update_title();
 }
 
 void main_open() {
@@ -318,21 +336,9 @@ void main_init(GameRegistry* registry) {
   srand(time(NULL));
   C.kernel_error = false;
   C.use_neon = true;
-  C.sound = load_sound_asset("sounds/s2.wav");
-  C.sound_click = load_sound_asset("sounds/click.wav");
-  C.sound_success = load_sound_asset("sounds/success.wav");
-  C.sound_click2 = load_sound_asset("sounds/paintact.wav");
-  C.sound_click3 = load_sound_asset("sounds/paintact2.wav");
-  C.sound_oops = load_sound_asset("sounds/oops.wav");
-  C.sound2 = load_sound_asset("sounds/click.wav");
 
   C.base_volume = .2f;
   C.muted_paint = false;
-  SetSoundVolume(C.sound, .1);
-  SetSoundVolume(C.sound2, C.base_volume);
-  SetSoundVolume(C.sound_click, C.base_volume);
-  SetSoundVolume(C.sound_click2, C.base_volume);
-  SetSoundVolume(C.sound_click3, C.base_volume);
   win_log_init();
   C.clock_speed = 2;
   C.palette[0] = WHITE;
@@ -528,6 +534,10 @@ void main_update() {
 
   int mode = main_get_simu_mode();
   if (mode == MODE_EDIT) {
+    Color k_normal = {21, 11, 3, 255};
+    // Color k_blueprint = {3, 11, 31, 255};
+    // C.ca.bg_color = (C.bp == NULL) ? k_normal : k_blueprint;
+    C.ca.bg_color = k_normal;
     paint_render_texture(&C.ca, C.sidepanel_tex, C.img_target_tex);
     int w = paint_img_width(&C.ca);
     int h = paint_img_height(&C.ca);
@@ -846,7 +856,7 @@ void main_update_controls() {
     add_blueprint();
   }
 
-#if 0
+#if 1
   if (isEdit && IsKeyPressed(KEY_K)) {
     win_mtext_open(
         on_mtext_accept, NULL,
@@ -1617,11 +1627,16 @@ void main_draw_status_bar() {
     snprintf(txt, sizeof(txt), "T: %d", C.sim.state.cur_tick);
     font_draw_texture_outlined(txt, xc, yc5, tc, bg);
   }
-  const char* fname = GetFileName(main_get_filename());
-  snprintf(txt, sizeof(txt), "[img] %s", fname);
-  font_draw_texture_outlined(txt, xc, yc6, tc, bg);
+  if (!C.bp) {
+    const char* fname = GetFileName(main_get_filename());
+    snprintf(txt, sizeof(txt), "[img] %s", fname);
+    font_draw_texture_outlined(txt, xc, yc6, tc, bg);
+  } else {
+    snprintf(txt, sizeof(txt), "[blueprint] %s", C.bp->name);
+    font_draw_texture_outlined(txt, xc, yc6, tc, bg);
+  }
   v2i buf_size = hist_get_buf_size(&C.ca.h);
-  snprintf(txt, sizeof(txt), "[img] w: %d h: %d", buf_size.x, buf_size.y);
+  snprintf(txt, sizeof(txt), "w: %d h: %d", buf_size.x, buf_size.y);
   font_draw_texture_outlined(txt, xc, yc7, tc, bg);
 
   const char* line = NULL;
@@ -1787,6 +1802,7 @@ void main_new_file() {
     free(C.fname);
     C.fname = NULL;
   }
+  C.bp = NULL;
   paint_new_buffer(&C.ca);
   main_update_title();
 }
@@ -1800,14 +1816,41 @@ void main_destroy() {
   UnloadRenderTexture(C.img_target_tex);
 }
 
-void main_load_image_from_path(const char* path) {
+static void main_load_image_from_path_ex(const char* path, bool keep_file) {
   paint_load_image(&C.ca, LoadImage(path));
   if (C.fname) {
     free(C.fname);
     C.fname = NULL;
   }
-  C.fname = clone_string(path);
+  if (keep_file) {
+    C.fname = clone_string(path);
+  }
   main_update_title();
+}
+
+void main_load_blueprint(Blueprint* bp) {
+  bool keep_filename = bp->steam_id == 0;
+  main_load_image_from_path_ex(blueprint_fname_full(bp), keep_filename);
+  main_update(); /* To refresh the canva's content */
+  if (keep_filename) {
+    win_msg_open_text(
+        "Image is associated with the blueprint.\nSaving it will modify the "
+        "blueprint's content.",
+        NULL);
+    C.bp = bp;
+  } else {
+    win_msg_open_text(
+        "Loaded blueprint's content.\n"
+        "Blueprint `not` associated to image (workshop).\n"
+        "Saving will create a new image.",
+        NULL);
+  }
+}
+
+void main_load_image_from_path(const char* path) {
+  bool keep_filename = true;
+  C.bp = NULL;
+  main_load_image_from_path_ex(path, keep_filename);
 }
 
 void main_open_file_modal() {
@@ -1850,12 +1893,12 @@ int main_on_save_click(bool saveas) {
     Image out = paint_export_buf(&C.ca);
     paint_set_not_dirty(&C.ca);
     if (!ExportImage(out, C.fname)) {
+      UnloadImage(out);
       msg_add("ERROR: Could not save image...", MSG_DURATION);
       return -2;
     }
     UnloadImage(out);
-    main_update_title();
-    msg_add("Image Saved.", MSG_DURATION);
+    on_post_image_save(saveas);
     return 0;
   }
   return 0;
@@ -1918,3 +1961,5 @@ Paint* main_get_paint() { return &C.ca; }
 bool is_circuit_sound_on() { return !C.mute; }
 
 bool is_paint_sound_on() { return !C.muted_paint; }
+
+Blueprint* main_get_editting_blueprint() { return C.bp; }

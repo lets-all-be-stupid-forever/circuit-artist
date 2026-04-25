@@ -1,6 +1,6 @@
 #include "wire_graph.h"
 
-#include "connected_components.h"
+#include "graph.h"
 #include "profiler.h"
 #include "stb_ds.h"
 #include "stdlib.h"

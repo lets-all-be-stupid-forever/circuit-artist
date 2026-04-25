@@ -9,6 +9,7 @@
 #include "rectint.h"
 #include "rlgl.h"
 #include "shaders.h"
+#include "utils.h"
 
 #define LAYER_MAGIC_1 7
 #define LAYER_MAGIC_2 11
@@ -1765,6 +1766,7 @@ Image img_resize_box(Image img, int ww, int hh) {
   return out;
 }
 
+#if 0
 Image gen_thumbnail(int nl, Image* layers, int wmax, int hmax) {
   int ww = layers[0].width;
   int hh = layers[0].height;
@@ -1825,6 +1827,7 @@ Image gen_thumbnail(int nl, Image* layers, int wmax, int hmax) {
   UnloadImage(out);
   return resized;
 }
+#endif
 
 void project_with_dist(Cam2D cam, Texture2D img, int dist_type) {
   shader_load("project_with_dist");
@@ -1922,4 +1925,115 @@ RenderTexture2D gen_render_texture(int w, int h, Color bg) {
   ClearBackground(bg);
   EndTextureMode();
   return r;
+}
+
+static Image pad_image(Image ref, int px, int py, Color c) {
+  Image dst = gen_image_filled(ref.width + px, ref.height + py, c);
+  Color* cdst = dst.data;
+  Color* cref = ref.data;
+  int rw = ref.width;
+  int rh = ref.height;
+  int dw = dst.width;
+  int dh = dst.height;
+  int offx = px / 2;
+  int offy = py / 2;
+  for (int y = 0; y < rh; y++) {
+    for (int x = 0; x < rw; x++) {
+      cdst[(y + offy) * dw + x + offx] = cref[y * rw + x];
+    }
+  }
+  return dst;
+}
+
+Image gen_thumbnail(int nl, Image* layers, int wmax, int hmax, bool pad) {
+  int ww = layers[0].width;
+  int hh = layers[0].height;
+  if (ww == 0) {
+    for (int i = 0; i < nl; i++) {
+      int ww2 = layers[i].width;
+      if (ww2 > 0) {
+        ww = layers[i].width;
+        hh = layers[i].height;
+        nl = 1;
+        layers = &layers[i];
+        break;
+      }
+    }
+  }
+  Image out = GenImageColor(ww, hh, BLANK);
+  for (int i = 0; i < nl; i++) {
+    RectangleInt r = {0, 0, ww, hh};
+    image_combine(layers[i], r, &out, (Vector2Int){0, 0});
+  }
+  image_add_blacks(out);
+
+#if 0
+  while (true) {
+    bool needs_downsample = false;
+    if (ww > 2 * wmax) needs_downsample = true;
+    if (hh > 2 * hmax) needs_downsample = true;
+    if (!needs_downsample) break;
+    Image downsampled = downsample_image(out);
+    UnloadImage(out);
+    ww = out.width;
+    hh = out.height;
+    out = downsampled;
+  }
+#endif
+  int wo, ho;
+#if 0
+  if (ww < wmax && hh < hmax) {
+    int f1 = wmax / ww;
+    int f2 = hmax / hh;
+    f1 = f1 < f2 ? f1 : f2;
+    if (f1 == 1) {
+      return out;
+    } else {
+      wo = f1 * ww;
+      ho = f1 * hh;
+    }
+  } else {
+    if (ww > hh) {
+      wo = wmax;
+      ho = (((float)hh) / ww) * wo;
+    } else {
+      ho = hmax;
+      wo = (((float)ww) / hh) * ho;
+    }
+  }
+#endif
+
+  if (ww > hh) {
+    wo = wmax;
+    ho = (((float)hh) / ww) * wo;
+  } else {
+    ho = hmax;
+    wo = (((float)ww) / hh) * ho;
+  }
+
+  // Image resized = img_resize(out, wo, ho, true);
+  Image resized = img_resize_box(out, wo, ho);
+  UnloadImage(out);
+  if (pad) {
+    Image padded = pad_image(resized, wmax - wo, hmax - ho, BLACK);
+    UnloadImage(resized);
+    resized = padded;
+  }
+  return resized;
+}
+
+char* create_temp_thumbnail(Image full) {
+  const char* temp = get_temp_folder();
+  char* path = clone_string(TextFormat("%s/temp_thumb.png", temp));
+  Image imgs[MAX_LAYERS] = {0};
+  int nl = -1;
+  image_decode_layers(full, &nl, imgs);
+  Image thumb = gen_thumbnail(nl, imgs, 512, 512, true);
+  // printf("thumb_size=%dx%d\n", thumb.width, thumb.height);
+  ExportImage(thumb, path);
+  for (int i = 0; i < nl; i++) {
+    UnloadImage(imgs[i]);
+  }
+  UnloadImage(thumb);
+  return path;
 }

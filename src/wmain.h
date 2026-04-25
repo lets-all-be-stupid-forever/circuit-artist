@@ -1,5 +1,6 @@
 #ifndef CA_WMAIN_H
 #define CA_WMAIN_H
+#include "blueprint.h"
 #include "game_registry.h"
 #include "paint.h"
 #include "pin_spec.h"
@@ -24,7 +25,9 @@ void main_paste_file(const char* fname, int rot);
 void main_set_line_sep(int n);
 int main_on_save_click(bool saveas);
 void main_load_image_from_path(const char* path);
+void main_load_blueprint(Blueprint* bp);
 void main_start_simu();
+Blueprint* main_get_editting_blueprint();
 void main_stop_simu();
 Paint* main_get_paint();
 bool is_circuit_sound_on();

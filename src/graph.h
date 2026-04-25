@@ -29,7 +29,7 @@ typedef struct {
   struct {
     int key;
     int value;
-  } * inv;
+  }* inv;
   int* nodes;
   GraphEdge* edges;
   int* ecount;
@@ -138,5 +138,6 @@ static void graph_destroy(Graph* g) {
 
 void graph_print_stats(Graph* g);
 void graph_print_weights(Graph* g);
+int find_connected_components(Graph* g, int* c);
 
 #endif

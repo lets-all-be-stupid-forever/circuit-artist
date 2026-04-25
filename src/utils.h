@@ -2,9 +2,14 @@
 #define CA_UTILS_H
 
 #include "common.h"
+#include "json.h"
 #include "lua.h"
 #include "raylib.h"
 #include "stdbool.h"
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 void draw_win(Rectangle r, const char* title);
 void draw_tiled_screen(int s, Texture2D tex, Rectangle src);
@@ -86,7 +91,38 @@ void draw_bg(Rectangle r);
 TexItem* incref(TexItem* v);
 void decref(TexItem* v);
 const char* randid();
+bool starts_with(const char* str, const char* prefix);
 
 const char* get_roman_number(int i);
+bool str_match(const char* a, const char* b);
+bool json_read_str(json_object* obj, const char* key, char** value);
+bool json_read_u64(json_object* obj, const char* key, u64* value);
+bool json_read_int(json_object* obj, const char* key, int* value);
+void json_write_u64(json_object* obj, const char* key, u64 value);
+void json_write_str(json_object* obj, const char* key, const char* value);
+void json_write_int(json_object* obj, const char* key, i32 value);
+const char* get_temp_folder();
+
+u64 str2u64(const char* s);
+
+void save_steam_metadata(const char* folder, u64 author_id,
+                         const char* author_name, int ntags, const char** tags,
+                         const int nkvtags, const char** kvtags_key,
+                         const char** kvtags_value);
+
+typedef struct {
+  u64 author_id;
+  char* author_name;
+  int ntags;
+  char** tags;
+} SteamMeta;
+
+bool load_steam_metadata(const char* folder, SteamMeta* meta);
+void unload_steam_meta(SteamMeta* meta);
+void remove_steam_metadata(const char* folder);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

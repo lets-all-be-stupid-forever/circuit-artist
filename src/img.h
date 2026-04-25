@@ -57,6 +57,7 @@ RenderTexture2D rotate_texture(RenderTexture2D img, int ccw);
 void draw_rt_on_screen(RenderTexture2D rt, v2 pos);
 
 RenderTexture2D make_thumbnail(Image img, int tx, int ty);
+Image gen_thumbnail(int nl, Image* layers, int w, int h, bool pad);
 void draw_projection_on_target(Cam2D cam, Tex2D tTmp, v2i szImg, int mode,
                                Color c);
 void draw_projection_on_target_pattern(Cam2D cam, Tex2D tTmp, v2i szImg,
@@ -71,7 +72,7 @@ Image invert_image_v(Image img);
 
 void export_texture(Texture2D tex, const char* fname);
 
-Image gen_thumbnail(int nl, Image* layers, int w, int h);
+// Image gen_thumbnail(int nl, Image* layers, int w, int h);
 
 /*
  * grayscale with distance to edge
@@ -86,6 +87,7 @@ void save_img_u8(int w, int h, u8* data, const char* fname);
 void save_img_f32(int w, int h, float* data, float vmin, float vmax,
                   const char* fname);
 void image_remove_blacks(Image* img);
+char* create_temp_thumbnail(Image full);
 
 #if defined(__cplusplus)
 }

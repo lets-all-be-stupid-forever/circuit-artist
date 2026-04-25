@@ -48,6 +48,13 @@
 #define rect_editpage ((Rectangle){48, 32, 13, 13})
 #define rect_blueprint ((Rectangle){48, 48, 13, 13})
 #define rect_blueprint_add ((Rectangle){48 + 16, 48, 13, 13})
+#define rect_trash ((Rectangle){176, 0, 13, 13})
+#define rect_rename ((Rectangle){80, 48, 13, 13})
+#define rect_rename_desc ((Rectangle){96, 48, 13, 13})
+#define rect_publish ((Rectangle){96, 32, 13, 13})
+#define rect_steam ((Rectangle){112, 48, 13, 13})
+#define rect_steam_big ((Rectangle){112, 64, 28, 28})
+#define rect_copy ((Rectangle){112, 32, 13, 13})
 
 #define rect_eye_on ((Rectangle){272, 16, 13, 13})
 #define rect_eye_off ((Rectangle){256, 16, 13, 13})

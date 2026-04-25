@@ -32,6 +32,9 @@ typedef enum {
   WINDOW_CAMPAIGN,
   WINDOW_BLUEPRINT,
   WINDOW_MTEXT,
+  WINDOW_PUBFORM,
+  WINDOW_PROGRESS,
+  WINDOW_BPDETAIL,
 } WindowEnum;
 
 void ui_init();

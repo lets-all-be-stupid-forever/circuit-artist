@@ -1,0 +1,17 @@
+<svg width="653" height="450" viewBox="0 0 653 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="bpdetail">
+<rect width="653" height="450" fill="white"/>
+<rect id="btn_publish" x="310" y="67" width="34" height="34" fill="#D9D9D9"/>
+<rect id="btn_load" x="238" y="67" width="34" height="34" fill="#D9D9D9"/>
+<rect id="btn_open_steam" x="346" y="67" width="34" height="34" fill="#D9D9D9"/>
+<rect id="btn_use" x="12" y="383" width="230" height="44" fill="#D9D9D9"/>
+<rect id="btn_close" x="412" y="383" width="230" height="44" fill="#D9D9D9"/>
+<rect id="btn_delete" opacity="0.3" x="418" y="67" width="34" height="34" fill="#D9D9D9"/>
+<rect id="btn_edit_title" x="202" y="67" width="34" height="34" fill="#D9D9D9"/>
+<rect id="btn_copy" x="382" y="67" width="34" height="34" fill="#D9D9D9"/>
+<rect id="rect_thumbnail" x="264" y="114" width="128" height="128" fill="#D9D9D9"/>
+<rect id="author" x="153" y="297" width="349" height="34" fill="#E88D8D"/>
+<rect id="name" x="153" y="255" width="350" height="34" fill="#D9D9D9"/>
+<rect id="btn_rotate" x="274" y="67" width="34" height="34" fill="#C92727"/>
+</g>
+</svg>

@@ -35,11 +35,11 @@ int main(int argc, char** argv) {
   }
 #endif
 
+  SetTraceLogLevel(LOG_WARNING);
   paths_init();
   ui_init();
   SetExitKey(0);  // Avoids window closing with escape key
   SetTargetFPS(60);
-  SetTraceLogLevel(LOG_WARNING);
   ui_run();
   ui_destroy();
   CloseAudioDevice();

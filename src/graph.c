@@ -1,5 +1,7 @@
 #include "graph.h"
 
+#include "union_find.h"
+
 static inline void edge_group_add_direct_edge(EdgeGroup* eg, int s, int t,
                                               float w) {
   eg->ne++;
@@ -135,3 +137,39 @@ void graph_print_stats(Graph* g) {
   printf("num_nodes=%d num_edges=%d\n", g->n, se);
 }
 
+int find_connected_components(Graph* g, int* c) {
+  /* uf rank */
+  int n = g->n;
+  int* r = calloc(n, sizeof(int));
+  int* cc = calloc(n, sizeof(int));
+  for (int i = 0; i < n; i++) {
+    cc[i] = i;
+  }
+  int me = g->max_edges;
+  for (int i = 0; i < n; i++) {
+    GraphEdge* ee = &g->edges[i * me];
+    int ne = g->ecount[i];
+    for (int e = 0; e < ne; e++) {
+      uf_union(cc, r, i, ee[e].e);
+    }
+  }
+  int k = 0;
+  for (int i = 0; i < n; i++) {
+    r[i] = -1;
+  }
+  // Flat-up the components
+  for (int i = 0; i < n; i++) {
+    cc[i] = uf_find(cc, i);
+    int ri = r[cc[i]];
+    if (ri == -1) {  // new component
+      r[cc[i]] = k;
+      c[i] = k;
+      k++;
+    } else {
+      c[i] = ri;
+    }
+  }
+  free(cc);
+  free(r);
+  return k;
+}

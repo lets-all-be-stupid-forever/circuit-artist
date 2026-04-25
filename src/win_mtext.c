@@ -18,7 +18,7 @@ static void update_layout() {
   int sh = GetScreenHeight();
   int s = ui_get_scale();
   int pad = 12 * s;
-  int mw = sw * 2 / 3;
+  int mw = 800;  // sw * 2 / 3;
   int mh = sh * 2 / 3;
   int mx = (sw - mw) / 2;
   int my = (sh - mh) / 2;
