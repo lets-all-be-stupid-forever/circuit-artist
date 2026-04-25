@@ -36,7 +36,6 @@ void delete_file(const char* path);
 /* Hack for layout parsing */
 Rectangle roff(Vector2 off, Rectangle r);
 
-Rectangle* parse_layout_asset(const char* asset);
 Vector2 find_modal_off(Rectangle layout);
 
 typedef struct {

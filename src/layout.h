@@ -1,25 +1,20 @@
 #ifndef CA_LAYOUT_H
 #define CA_LAYOUT_H
-#define WIN_LEVEL_win_level ((Rectangle){0, 0, 1228, 710})
-#define WIN_LEVEL_level_text ((Rectangle){600, 328, 580, 220})
-#define WIN_LEVEL_choose ((Rectangle){712, 656, 230, 34})
-#define WIN_LEVEL_LEVELS_PANEL ((Rectangle){56, 272, 470, 373})
-#define WIN_LEVEL_LEVEL_TITLE ((Rectangle){600, 274, 580, 38})
-#define WIN_LEVEL_close ((Rectangle){948, 656, 230, 34})
-#define WIN_LEVEL_campaign ((Rectangle){602, 45, 576, 38})
-#define WIN_LEVEL_msg1 ((Rectangle){600, 580, 34, 34})
-#define WIN_LEVEL_msg2 ((Rectangle){640, 580, 34, 34})
-#define WIN_LEVEL_msg3 ((Rectangle){680, 580, 34, 34})
-#define WIN_LEVEL_msg4 ((Rectangle){720, 580, 34, 34})
-#define WIN_LEVEL_msg5 ((Rectangle){758, 580, 34, 34})
-#define WIN_LEVEL_msg6 ((Rectangle){798, 580, 34, 34})
-#define WIN_LEVEL_msg7 ((Rectangle){836, 580, 34, 34})
-#define WIN_LEVEL_msg8 ((Rectangle){876, 580, 34, 34})
-#define WIN_LEVEL_CAMP_PANEL ((Rectangle){56, 46, 470, 202})
-#define WIN_LEVEL_camp_text ((Rectangle){604, 104, 576, 98})
-#define WIN_TEXT_win_text ((Rectangle){0, 0, 518, 208})
-#define WIN_TEXT_text ((Rectangle){16, 108, 472, 35})
-#define WIN_TEXT_label ((Rectangle){16, 66, 472, 35})
-#define WIN_TEXT_cancel ((Rectangle){310, 156, 178, 35})
-#define WIN_TEXT_ok ((Rectangle){116, 156, 178, 35})
+#include "raylib.h"
+#include "widgets.h"
+
+typedef struct {
+  struct {
+    char* key;
+    Rectangle value;
+  }* dict;  // id -> node
+  Vector2 off;
+} Layout;
+
+Layout* parse_layout(const char* fname);
+void layout_update_offset(Layout* l);
+Rectangle layout_rect(Layout* l, const char* id);
+void layout_free(Layout* l);
+Layout* easy_load_layout(const char* win_name);
+
 #endif

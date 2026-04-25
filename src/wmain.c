@@ -133,7 +133,6 @@ static struct {
   bool kernel_error;
   char* kernel_error_msg;
 
-  Rectangle* bot_layout;
   double hover_wire_distance;
   v2 time_c;
   v2 time_pos_ref;
@@ -340,7 +339,6 @@ void main_init(GameRegistry* registry) {
   C.sound_oops = load_sound_asset("sounds/oops.wav");
   C.sound2 = load_sound_asset("sounds/click.wav");
 
-  C.bot_layout = parse_layout_asset("layout/main_bot_layout.png");
   C.base_volume = .2f;
   C.muted_paint = false;
   SetSoundVolume(C.sound, .1);

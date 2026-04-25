@@ -14,20 +14,21 @@
 #include "win_wiki.h"
 
 #define NUM_BUTTONS 42
+#define NUM_LEVELS 11
+#define NUM_CAMP 10
 
 static struct {
   LevelAPI api; /* Active level */
   GameRegistry* registry;
   LevelGroup* selected_group;
   LevelDef* selected_level;
+  Layout* layout;
   char* mod_root;
   Rectangle modal;
   Rectangle group_panel;
-  Rectangle camp_panel;
   Rectangle buttons;
   Btn btn_option[NUM_BUTTONS];
   Label campaign_title;
-  // Btn btn_campaign2;
   Btn btn_choose;
   Btn btn_close;
   Btn btn_campaign[10];
@@ -64,85 +65,36 @@ static void update_campaign_title() {
   label_set_text(&C.campaign_title, C.selected_group->name);
 }
 static void update_layout() {
-  C.modal = WIN_LEVEL_win_level;
-  Vector2 off = find_modal_off(C.modal);
-  C.modal = roff(off, WIN_LEVEL_win_level);
+  layout_update_offset(C.layout);
+  Layout* l = C.layout;
+  C.modal = layout_rect(l, "window");
 
-  C.buttons = roff(off, WIN_LEVEL_LEVELS_PANEL);
-  C.level_title.hitbox = roff(off, WIN_LEVEL_LEVEL_TITLE);
+  C.level_title.hitbox = layout_rect(l, "leveltitle");
 
-  int x0 = C.buttons.x + 2;
-  int y0 = C.buttons.y + 2;
+  for (int i = 0; i < NUM_LEVELS; i++) {
+    C.btn_option[i].hitbox = layout_rect(l, TextFormat("level_%d", i + 1));
+    C.medals[i] = layout_rect(l, TextFormat("medal_%d", i + 1));
+  }
+
   int cols = 1;
-  int bw = C.buttons.width;
   int bh = 17 * 2;
-  C.camp_panel = roff(off, WIN_LEVEL_CAMP_PANEL);
 
-  C.btn_msg[0].hitbox = roff(off, WIN_LEVEL_msg1);
-  C.btn_msg[1].hitbox = roff(off, WIN_LEVEL_msg2);
-  C.btn_msg[2].hitbox = roff(off, WIN_LEVEL_msg3);
-  C.btn_msg[3].hitbox = roff(off, WIN_LEVEL_msg4);
-  C.btn_msg[4].hitbox = roff(off, WIN_LEVEL_msg5);
-  C.btn_msg[5].hitbox = roff(off, WIN_LEVEL_msg6);
-  C.btn_msg[6].hitbox = roff(off, WIN_LEVEL_msg7);
-  C.btn_msg[7].hitbox = roff(off, WIN_LEVEL_msg8);
-
-  for (int i = 0; i < NUM_BUTTONS; i++) {
-    int xx = i % cols;
-    int yy = i / cols;
-    Rectangle r = (Rectangle){
-        .x = xx * (bw + 2) + x0,
-        .y = yy * (bh + 2) + y0,
-        .width = bw,
-        .height = bh,
-    };
-    C.btn_option[i].hitbox = (Rectangle){
-        r.x,
-        r.y,
-        r.width - 20 * 2 - 4,
-        r.height,
-    };
-    C.medals[i] = (Rectangle){
-        r.x + r.width - 20 * 2,
-        r.y,
-        20 * 2,
-        r.height,
-    };
+  for (int i = 0; i < 8; i++) {
+    C.btn_msg[i].hitbox = layout_rect(l, TextFormat("extra%d", i + 1));
   }
-  C.btn_choose.hitbox = roff(off, WIN_LEVEL_choose);
-  C.btn_close.hitbox = roff(off, WIN_LEVEL_close);
+
+  C.btn_choose.hitbox = layout_rect(l, "btn_select");
+  C.btn_close.hitbox = layout_rect(l, "btn_close");
   // C.btn_campaign2.hitbox = roff(off, WIN_LEVEL_campaign);
-  C.campaign_title.hitbox = roff(off, WIN_LEVEL_campaign);
+  C.campaign_title.hitbox = layout_rect(l, "camptitle");
 
-  int c_cols = 5;
-  RectGridParam g = {
-      .x = C.camp_panel.x,
-      .y = C.camp_panel.y + 30,
-      .w = 90,
-      .h = 80,
-      .rows = 2,
-      .cols = c_cols,
-      .spacex = 4,
-      .spacey = 8,
-  };
-
-  for (int i = 0; i < 10; i++) {
-    Rectangle r = grid_rect(g, i / c_cols, i % c_cols);
-    int mw = 40;
-    C.btn_campaign[i].hitbox = r;
-    C.med_camp[i] = (Rectangle){
-        r.x + 4,
-        r.y + 4,
-        mw,
-        mw,
-    };
+  for (int i = 0; i < NUM_CAMP; i++) {
+    C.btn_campaign[i].hitbox = layout_rect(l, TextFormat("camp%d", i + 1));
+    C.med_camp[i] = layout_rect(l, TextFormat("campmed%d", i + 1));
   }
 
-  Rectangle rcamp = roff(off, WIN_LEVEL_camp_text);
-  rcamp.height += 46;
-  rcamp.y -= 6;
-  textbox_set_box(&C.tb, roff(off, WIN_LEVEL_level_text));
-  textbox_set_box(&C.tb_grp, rcamp);
+  textbox_set_box(&C.tb, layout_rect(l, "levelbox"));
+  textbox_set_box(&C.tb_grp, layout_rect(l, "campbox"));
 }
 
 void win_level_set_sel(LevelDef* ldef) {
@@ -161,8 +113,8 @@ void win_level_init(GameRegistry* r) {
   C.registry = r;
   textbox_init(&C.tb);
   textbox_init(&C.tb_grp);
-
-  C.selected_level = NULL; /* -1 means not loaded */
+  C.layout = easy_load_layout("level");
+  C.selected_level = NULL;
 }
 
 static void select_first_level() {

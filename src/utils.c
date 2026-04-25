@@ -369,49 +369,6 @@ static inline bool is_bg(Color c) {
   return (c.r != 255 || c.g != 255 || c.b != 255);
 }
 
-Rectangle* parse_layout_asset(const char* asset) {
-  Rectangle* out = NULL;
-  Image img = load_image_asset(asset);
-  int s = ui_get_scale();
-  // 1. Only WHITE counts.
-  // 2. Assumes opaque rectangles.
-
-  Color* colors = img.data;
-  int w = img.width;
-  int h = img.height;
-  for (int y = 0; y < h; y++) {
-    for (int x = 0; x < w; x++) {
-      Color c = colors[y * w + x];
-      if (is_bg(c)) {
-        continue;
-      }
-      int x0 = x;
-      int y0 = y;
-      int x1 = x + 1;
-      int y1 = y + 1;
-      while (!is_bg(colors[y0 * w + x1])) x1++;
-      while (!is_bg(colors[y1 * w + x0])) y1++;
-      x1--;
-      y1--;
-      int ww = x1 - x0 + 1;
-      int hh = y1 - y0 + 1;
-      // Puts black back
-      Rectangle r = {s * x0, s * y0, s * ww, s * hh};
-      arrput(out, r);
-      for (int xx = x0; xx <= x1; xx++) {
-        colors[y0 * w + xx] = BLACK;
-        colors[y1 * w + xx] = BLACK;
-      }
-      for (int yy = y0; yy <= y1; yy++) {
-        colors[yy * w + x0] = BLACK;
-        colors[yy * w + x1] = BLACK;
-      }
-    }
-  }
-  UnloadImage(img);
-  return out;
-}
-
 // Helper: checks if character is at a word boundary
 static bool is_boundary(char prev, char curr) {
   if (prev == '\0') return true;  // Start of string

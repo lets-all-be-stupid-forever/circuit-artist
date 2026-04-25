@@ -5,6 +5,7 @@
 #include "config.h"
 #include "font.h"
 #include "game_registry.h"
+#include "layout.h"
 #include "stb_ds.h"
 #include "stdlib.h"
 #include "string.h"
@@ -20,7 +21,7 @@ static struct {
   Listbox lb0;
   int topic_sel;
   int item_sel;
-  Rectangle* layout;
+  Layout* layout;
   Rectangle modal;
   bool opened_this_frame;
   bool closed;
@@ -29,24 +30,15 @@ static struct {
 } C = {0};
 
 static void update_layout() {
-  int sw = GetScreenWidth();
-  int sh = GetScreenHeight();
-  int ww = C.layout[0].width;
-  int wh = C.layout[0].height;
-  int s = ui_get_scale();
-  int x0 = (sw - ww) / 2;
-  int y0 = (sh - wh) / 2;
-  x0 = s * (x0 / s);
-  y0 = s * (y0 / s);
-  Vector2 off = {x0, y0};
-  Rectangle* l = C.layout;
-  C.modal = roff(off, *l++);
+  layout_update_offset(C.layout);
+  Layout* l = C.layout;
+  C.modal = layout_rect(l, "window");
   for (int i = 0; i < 7; i++) {
-    C.btn_topic[i].hitbox = roff(off, *l++);
+    C.btn_topic[i].hitbox = layout_rect(l, TextFormat("topic%d", i + 1));
   }
-  listbox_set_box(&C.lb, roff(off, *l++));
-  textbox_set_box(&C.tb, roff(off, *l++));
-  C.btn_close.hitbox = roff(off, *l++);
+  listbox_set_box(&C.lb, layout_rect(l, "listbox"));
+  textbox_set_box(&C.tb, layout_rect(l, "content_box"));
+  C.btn_close.hitbox = layout_rect(l, "btn_close");
 }
 
 static TutorialTopic* get_topics() { return C.registry->topics; }
@@ -71,7 +63,7 @@ static void set_sel(int topic, int item) {
 
 void win_wiki_init(GameRegistry* r) {
   C.registry = r;
-  C.layout = parse_layout_asset("layout/circ_layout1.png");
+  C.layout = easy_load_layout("wiki");
   C.topic_sel = -1;
   C.item_sel = -1;
   textbox_init(&C.tb);
