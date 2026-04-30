@@ -892,7 +892,7 @@ void save_steam_metadata(const char* folder, u64 author_id,
     json_object* j_item = json_object_new_object();
     json_write_str(j_item, "key", kvtags_key[i]);
     json_write_str(j_item, "value", kvtags_value[i]);
-    json_object_array_add(j_tags, j_item);
+    json_object_array_add(j_kvtags, j_item);
   }
   json_object_object_add(root, "kvtags", j_kvtags);
   char* path = os_path_join(folder, "_steam_metadata.json");

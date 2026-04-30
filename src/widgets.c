@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stb_ds.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -812,7 +813,7 @@ void textbox_scroll_to_bottom(Textbox* t) {
 }
 
 void label_set_text(Label* l, const char* txt) {
-  strncpy(l->txt, txt, sizeof(l->txt));
+  snprintf(l->txt, sizeof(l->txt), "%s", txt);
 }
 
 void label_draw_centered(Label* l) {

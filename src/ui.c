@@ -37,6 +37,11 @@
 #include "wnumber.h"
 #include "wtext.h"
 
+typedef struct {
+  bool push; /* push or pop */
+  WindowEnum win;
+} WinCmd;
+
 static struct {
   int scale;           // Global UI pixel scaling.
   Image img_sprites;   // Global UI sprites loaded from the sprite4.png asset
@@ -53,13 +58,39 @@ static struct {
   char* lua_error; /* Lua error message: Causes app to go in crash mode */
   GameRegistry* registry;
   double previous_time;
+  WinCmd* frame_cmds;
 } C = {0};
 
 static void ui_draw_mouse();
 static void ui_close();
 
-void ui_winpush(WindowEnum win) { arrput(C.window, win); }
-void ui_winpop() { arrpop(C.window); }
+static void flush_win_cmd() {
+  int n = arrlen(C.frame_cmds);
+  for (int i = 0; i < n; i++) {
+    WinCmd cmd = C.frame_cmds[i];
+    if (cmd.push) {
+      arrput(C.window, cmd.win);
+    } else {
+      WindowEnum we = C.window[arrlen(C.window) - 1];
+      if (we == WINDOW_PUBFORM) {
+        win_pubform_on_close();
+      }
+      arrpop(C.window);
+    }
+  }
+  arrsetlen(C.frame_cmds, 0);
+}
+
+void ui_winpush(WindowEnum win) {
+  WinCmd cmd = {.push = true, .win = win};
+  arrput(C.frame_cmds, cmd);
+  //  arrput(C.window, win);
+}
+void ui_winpop() {
+  WinCmd cmd = {.push = false, .win = 99};
+  arrput(C.frame_cmds, cmd);
+  //  arrpop(C.window);
+}
 
 void ui_inc_hit_count() { C.hit_count++; };
 
@@ -134,6 +165,7 @@ void ui_init() {
   win_level_init(C.registry);
   main_init(C.registry);
   main_open();
+  flush_win_cmd();
 }
 
 void ui_destroy() {
@@ -329,6 +361,7 @@ void ui_update_frame() {
     //    my_draw_fps(420, 80, C.frame_time);
   }
   EndDrawing();
+  flush_win_cmd();
 }
 
 void ui_draw_mouse() {

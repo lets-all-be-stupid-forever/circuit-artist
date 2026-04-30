@@ -313,6 +313,7 @@ struct SteamUploadContext {
       LaunchUpdateItem();
       return;
     } else {
+      create_pending = false;
       error = result.m_eResult;
       printf("Create Item failure!!\n");
     }
@@ -335,20 +336,20 @@ struct SteamUploadContext {
     for (int i = 0; i < tags.size(); i++) {
       s_tags.push_back(tags[i].c_str());
     }
-    if (!title.empty()) {
-      SteamParamStringArray_t p_tags = {0};
-      p_tags.m_ppStrings = s_tags.data();
-      p_tags.m_nNumStrings = s_tags.size();
-      bool allow_admin_tags = false;
-      SteamAPI_ISteamUGC_SetItemTags(C.ugc, handle, &p_tags, allow_admin_tags);
-      // SteamAPI_ISteamUGC_RemoveAllItemKeyValueTags(C.ugc, handle);
-      // for (int i = 0; i < p.num_kv_tags; i++) {
-      //   SteamAPI_ISteamUGC_AddItemKeyValueTag(C.ugc, c->handle, p.kv_keys[i],
-      //                                         p.kv_values[i]);
-      // }
-      SteamAPI_ISteamUGC_SetItemVisibility(
-          C.ugc, handle, k_ERemoteStoragePublishedFileVisibilityPublic);
-    }
+    // if (!title.empty()) {
+    SteamParamStringArray_t p_tags = {0};
+    p_tags.m_ppStrings = s_tags.data();
+    p_tags.m_nNumStrings = s_tags.size();
+    bool allow_admin_tags = false;
+    SteamAPI_ISteamUGC_SetItemTags(C.ugc, handle, &p_tags, allow_admin_tags);
+    // SteamAPI_ISteamUGC_RemoveAllItemKeyValueTags(C.ugc, handle);
+    // for (int i = 0; i < p.num_kv_tags; i++) {
+    //   SteamAPI_ISteamUGC_AddItemKeyValueTag(C.ugc, c->handle, p.kv_keys[i],
+    //                                         p.kv_values[i]);
+    // }
+    SteamAPI_ISteamUGC_SetItemVisibility(
+        C.ugc, handle, k_ERemoteStoragePublishedFileVisibilityPublic);
+    //    }
 
     save_steam_metadata(folder.c_str(), C.my_id, C.my_name.c_str(),
                         s_tags.size(), s_tags.data(), 0, NULL, NULL);
@@ -437,7 +438,7 @@ void steam_upload_free(void* ctx) {
 #endif
 }
 
-void steam_load_blueprints(BlueprintStore* store) {
+void steam_load_blueprints() {
 #ifdef WITH_STEAM
   bool include_locally_disabled = false;
   uint32 count =
@@ -449,6 +450,7 @@ void steam_load_blueprints(BlueprintStore* store) {
   for (uint32 i = 0; i < returned; i++) {
     process_item_ingress(items[i]);
   }
+  free(items);
 #endif
 }
 

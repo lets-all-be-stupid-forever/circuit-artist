@@ -115,7 +115,6 @@ void blueprint_draw_leg(Btn* b, Blueprint* s, int scale) {
   DrawRectangle(0, -2, w, 12 + 4, c);
   font_draw_texture_outlined(hover_name, 0, 0, WHITE, BLACK);
 #endif
-  rlPopMatrix();
 }
 
 const char* get_blueprint_path(BlueprintStore* store) {
@@ -283,8 +282,10 @@ static void register_local_blueprints(BlueprintStore* store) {
 
 static void blueprint_destroy(Blueprint* bp) {
   if (!bp) return;
+  free(bp->id);
   free(bp->name);
   free(bp->desc);
+  free(bp->lvl);
   free(bp->folder);
   free(bp->steam_author_name);
   UnloadTexture(bp->thumbnail);
@@ -346,7 +347,7 @@ void blueprint_store_load(BlueprintStore* store) {
 
   // Step 2: Scan actual folders and fill in (or add) blueprints.
   register_local_blueprints(store);
-  steam_load_blueprints(store);
+  steam_load_blueprints();
 
   // Step 3: Remove stubs that were never matched to a real folder
   // (thumbnail.id == 0 means no texture was loaded).
@@ -555,7 +556,7 @@ static void ensure_blueprints_folder_exists(BlueprintStore* store) {
 
 void blueprint_store_init(BlueprintStore* store) {
   int nbp = TOTAL_BLUEPRINTS;
-  store->blueprints = calloc(nbp, sizeof(BlueprintStore));
+  store->blueprints = calloc(nbp, sizeof(Blueprint*));
   store->nbp = nbp;
 
   migrate_v1_to_v2(store);

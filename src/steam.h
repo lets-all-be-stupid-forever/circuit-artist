@@ -29,7 +29,7 @@ void steam_open_overlay_item(u64 file_id);
 #endif
 
 void steam_open_overlay_blueprints();
-void steam_load_blueprints(BlueprintStore* store);
+void steam_load_blueprints();
 void* steam_upload_item(const char* folder, const char* chg_notes,
                         const char* title, const char* desc,
                         const char* thumb_path, int ntags, const char** tags);

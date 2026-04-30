@@ -106,7 +106,7 @@ static void launch_publish() {
   char* tags[2] = {"blueprint", NULL};
 
   pc.ctx =
-      steam_upload_item(C.folder, "Change note", C.tb_title.txt, "My blueprint",
+      steam_upload_item(C.folder, "Change note", C.tb_title.txt, C.tb_desc.text,
                         C.thumb_path, 1, (const char**)tags);
   pc.update = progress_update;
   win_progress_open(pc);
@@ -169,3 +169,4 @@ void win_pubform_draw() {
   }
 }
 
+void win_pubform_on_close() { reset_fields(); }

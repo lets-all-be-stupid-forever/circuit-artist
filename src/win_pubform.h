@@ -12,5 +12,6 @@ void win_pubform_init();
 void win_pubform_open(PubformParams params);
 void win_pubform_update();
 void win_pubform_draw();
+void win_pubform_on_close();
 
 #endif
