@@ -82,12 +82,13 @@ void dialog_update() {
   if (C.opt[0] && btn_update(&C.btn_opt[0])) result = 0;
   if (C.opt[1] && btn_update(&C.btn_opt[1])) result = 1;
   if (C.opt[2] && btn_update(&C.btn_opt[2])) result = 2;
+  if (IsKeyPressed(KEY_ENTER)) result = 0;
   if (IsKeyPressed(KEY_ESCAPE)) result = -1;
   if (result == -2) {  // nothing
     return;
   } else {
-    C.nxt_action(result);
     ui_winpop();
+    C.nxt_action(result);
   }
 }
 

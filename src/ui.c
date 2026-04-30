@@ -72,9 +72,8 @@ static void flush_win_cmd() {
       arrput(C.window, cmd.win);
     } else {
       WindowEnum we = C.window[arrlen(C.window) - 1];
-      if (we == WINDOW_PUBFORM) {
-        win_pubform_on_close();
-      }
+      if (we == WINDOW_PUBFORM) win_pubform_on_close();
+      if (we == WINDOW_BPDETAIL) win_bpdetail_on_close();
       arrpop(C.window);
     }
   }

@@ -40,6 +40,7 @@ static struct {
   Label lab_name;
   Blueprint* bp;
   BlueprintStore* store;
+  bool delete_on_close;
   int idx;
   // Rectangle sep;
 } C = {0};
@@ -85,9 +86,7 @@ static void on_rename_accept(void* ctx, const char* txt) {
 
 static void on_confirm_delete(int r) {
   if (r != 0) return;
-  blueprint_store_rm(C.store, C.idx);
-  blueprint_store_save(C.store);
-  msg_add("Blueprint deleted.", 4);
+  C.delete_on_close = true;
   ui_winpop();
 }
 
@@ -257,3 +256,11 @@ void win_bpdetail_draw() {
   }
 }
 
+void win_bpdetail_on_close() {
+  if (C.delete_on_close) {
+    C.delete_on_close = false;
+    blueprint_store_rm(C.store, C.idx);
+    blueprint_store_save(C.store);
+    msg_add("Blueprint deleted.", 4);
+  }
+}
