@@ -856,7 +856,7 @@ void main_update_controls() {
     add_blueprint();
   }
 
-#if 1
+#if 0
   if (isEdit && IsKeyPressed(KEY_K)) {
     win_mtext_open(
         on_mtext_accept, NULL,
