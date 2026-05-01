@@ -810,7 +810,7 @@ bool json_read_str(json_object* obj, const char* key, char** value) {
 
 void json_write_u64(json_object* obj, const char* key, u64 value) {
   json_object_object_add(obj, key,
-                         json_object_new_string(TextFormat("%llu", value)));
+                         json_object_new_string(TextFormat("%" PRIu64, value)));
 }
 
 /* Returns true if key was present, false otherwise. */

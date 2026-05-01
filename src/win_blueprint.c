@@ -294,7 +294,7 @@ static void draw_t(const char* t, Rectangle r) {
 
 void add_steam_blueprint(const char* folder, u64 id) {
   char bpid[256];
-  snprintf(bpid, sizeof(bpid), "steam:%llu", id);
+  snprintf(bpid, sizeof(bpid), "steam:%" PRIu64, id);
   inject_blueprint_from_folder(&C.store, bpid, folder);
 }
 

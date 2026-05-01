@@ -1,5 +1,7 @@
 #include "blueprint.h"
 
+#include <inttypes.h>
+
 #include "assert.h"
 #include "clipapi.h"
 #include "font.h"
@@ -232,16 +234,17 @@ static void load_steam_author_if_applicable(Blueprint* bp) {
 
 static void reset_bp_fields(Blueprint* bp) {
   free(bp->lvl);
-  bp->lvl = NULL;
   free(bp->name);
-  bp->name = NULL;
   free(bp->desc);
-  bp->desc = NULL;
   free(bp->folder);
-  bp->folder = NULL;
   free(bp->steam_author_name);
-  bp->steam_author_name = NULL;
   if (bp->thumbnail.id) UnloadTexture(bp->thumbnail);
+  bp->lvl = NULL;
+  bp->name = NULL;
+  bp->desc = NULL;
+  bp->folder = NULL;
+  bp->steam_author_name = NULL;
+  bp->thumbnail = (Texture2D){0};
 }
 
 void inject_blueprint_from_folder(BlueprintStore* store, const char* id,
@@ -369,7 +372,7 @@ void blueprint_store_load(BlueprintStore* store) {
 char* gen_bp_id(Blueprint* bp) {
   char out[100];
   if (bp->steam_id) {
-    snprintf(out, sizeof(out), "steam:%llu", bp->steam_id);
+    snprintf(out, sizeof(out), "steam:%" PRIu64, bp->steam_id);
     return clone_string(out);
   }
   char* f = os_path_basename(bp->folder);

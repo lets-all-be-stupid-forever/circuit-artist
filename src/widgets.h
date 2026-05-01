@@ -136,6 +136,28 @@ void label_set_text(Label* l, const char* txt);
 void label_draw(Label* l);
 void label_draw_centered(Label* l);
 
+// LineEdit — single-line text editor with selection, clipboard, key repeat.
+#define LINEEDIT_BUFSIZE 256
+
+typedef struct {
+  Rectangle hitbox;
+  char buf[LINEEDIT_BUFSIZE];
+  int len;
+  int cursor;     // byte offset [0..len]
+  int sel_anchor; // -1 = no selection; otherwise the other end of selection
+  float alive;    // cursor blink timer
+  bool focused;   // whether widget is receiving input
+  bool dragging;  // true while LMB held for drag-select
+  int scroll_x;   // horizontal scroll offset in screen pixels
+} LineEdit;
+
+void lineedit_init(LineEdit* e);
+void lineedit_set_text(LineEdit* e, const char* txt);
+const char* lineedit_get_text(LineEdit* e);
+void lineedit_set_focus(LineEdit* e, bool focused);
+bool lineedit_update(LineEdit* e);
+void lineedit_draw(LineEdit* e);
+
 // MultiLineEdit - editable multi-line text widget with cursor, selection,
 // scroll
 #define MLE_BUFSIZE 4096
@@ -154,12 +176,15 @@ typedef struct {
   int text_w;      // usable text width in unscaled pixels (for word wrap)
   bool dragging;   // true while left mouse button held for drag-select
   bool readonly;   // if true, editing is disabled but selection still works
+  bool focused;    // whether widget is receiving input
+  int pad;         // padding from each border in unscaled pixels
 } MultiLineEdit;
 
 void mle_init(MultiLineEdit* m);
 void mle_set_box(MultiLineEdit* m, Rectangle box);
 void mle_set_text(MultiLineEdit* m, const char* txt);
 const char* mle_get_text(MultiLineEdit* m);
+void mle_set_focus(MultiLineEdit* m, bool focused);
 bool mle_update(MultiLineEdit* m);
 void mle_draw(MultiLineEdit* m);
 

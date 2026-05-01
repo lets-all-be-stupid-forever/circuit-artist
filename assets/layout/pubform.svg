@@ -1,14 +1,12 @@
-<svg width="1049" height="581" viewBox="0 0 1049 581" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="1137" height="604" viewBox="0 0 1137 604" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="pubform">
-<rect width="1049" height="581" fill="white"/>
-<rect id="tb_title" x="549" y="106" width="389" height="37" fill="#D9D9D9"/>
-<rect id="lab_desc" x="549" y="153" width="389" height="37" fill="#D9D9D9"/>
-<rect id="lab_title" x="549" y="61" width="389" height="37" fill="#D9D9D9"/>
-<rect id="tb_desc" x="549" y="200" width="389" height="165" fill="#D9D9D9"/>
-<rect id="btn_cancel" x="778" y="507" width="160" height="44" fill="#D9D9D9"/>
-<rect id="btn_submit" x="549" y="507" width="160" height="44" fill="#D9D9D9"/>
-<rect id="btn_edit_title" x="957" y="108" width="34" height="34" fill="#D9D9D9"/>
-<rect id="btn_edit_desc" x="957" y="200" width="34" height="34" fill="#D9D9D9"/>
-<rect id="rect_preview" x="13" y="61" width="512" height="512" fill="#D9D9D9"/>
+<rect width="1137" height="604" fill="white"/>
+<rect id="tb_title" x="569" y="104" width="537" height="37" fill="#D9D9D9"/>
+<rect id="lab_desc" x="569" y="151" width="389" height="37" fill="#D9D9D9"/>
+<rect id="lab_title" x="569" y="59" width="389" height="37" fill="#D9D9D9"/>
+<rect id="tb_desc" x="569" y="198" width="536" height="211" fill="#D9D9D9"/>
+<rect id="btn_cancel" x="886" y="527" width="220" height="44" fill="#D9D9D9"/>
+<rect id="btn_submit" x="569" y="527" width="220" height="44" fill="#D9D9D9"/>
+<rect id="rect_preview" x="33" y="59" width="512" height="512" fill="#D9D9D9"/>
 </g>
 </svg>

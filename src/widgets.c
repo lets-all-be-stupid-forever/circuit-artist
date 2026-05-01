@@ -210,6 +210,7 @@ void scroll_update(Scroll* s, float h, Vector2 mouse) {
   s->hit = false;
   if (h < s->content.height) {
     s->hidden = true;
+    s->value = 0;
     return;
   } else {
     s->hidden = false;
@@ -845,6 +846,320 @@ void label_draw(Label* l) {
   rlPopMatrix();
 }
 
+// ---- LineEdit ----
+
+static int le_x_of(LineEdit* e, int pos) {
+  if (pos <= 0) return 0;
+  static char tmp[LINEEDIT_BUFSIZE];
+  memcpy(tmp, e->buf, pos);
+  tmp[pos] = '\0';
+  return (int)get_rendered_text_size(tmp).x;
+}
+
+static int le_pos_from_x(LineEdit* e, int target_x) {
+  int best = 0;
+  int best_dist = abs(target_x);
+  static char tmp[LINEEDIT_BUFSIZE];
+  for (int pos = 1; pos <= e->len; pos++) {
+    memcpy(tmp, e->buf, pos);
+    tmp[pos] = '\0';
+    int x = (int)get_rendered_text_size(tmp).x;
+    int dist = abs(x - target_x);
+    if (dist <= best_dist) {
+      best = pos;
+      best_dist = dist;
+    } else {
+      break;
+    }
+  }
+  return best;
+}
+
+static void le_delete_selection(LineEdit* e) {
+  if (e->sel_anchor < 0) return;
+  int s_min = min_int(e->cursor, e->sel_anchor);
+  int s_max = max_int(e->cursor, e->sel_anchor);
+  memmove(e->buf + s_min, e->buf + s_max, e->len - s_max + 1);
+  e->len -= (s_max - s_min);
+  e->cursor = s_min;
+  e->sel_anchor = -1;
+  e->alive = 0;
+}
+
+static void le_scroll_to_cursor(LineEdit* e) {
+  int s = ui_get_scale();
+  int pad = 4;
+  int cx = le_x_of(e, e->cursor) * s;
+  int visible_w = (int)e->hitbox.width - 2 * pad * s;
+  if (visible_w < 0) visible_w = 0;
+  if (cx < e->scroll_x) e->scroll_x = cx;
+  if (cx > e->scroll_x + visible_w) e->scroll_x = cx - visible_w;
+  if (e->scroll_x < 0) e->scroll_x = 0;
+}
+
+void lineedit_init(LineEdit* e) {
+  *e = (LineEdit){0};
+  e->sel_anchor = -1;
+}
+
+void lineedit_set_text(LineEdit* e, const char* txt) {
+  if (!txt) txt = "";
+  int n = (int)strlen(txt);
+  if (n >= LINEEDIT_BUFSIZE) n = LINEEDIT_BUFSIZE - 1;
+  memcpy(e->buf, txt, n);
+  e->buf[n] = '\0';
+  e->len = n;
+  e->cursor = n;
+  e->sel_anchor = -1;
+  e->alive = 0;
+  e->scroll_x = 0;
+}
+
+const char* lineedit_get_text(LineEdit* e) { return e->buf; }
+
+void lineedit_set_focus(LineEdit* e, bool focused) {
+  e->focused = focused;
+  if (!focused) e->sel_anchor = -1;
+}
+
+bool lineedit_update(LineEdit* e) {
+  float dt = (float)ui_get_frame_time();
+  e->alive += dt;
+
+  Vector2 mouse = GetMousePosition();
+  int s = ui_get_scale();
+  int pad = 4;
+  bool hit = CheckCollisionPointRec(mouse, e->hitbox) && ui_get_hit_count() == 0;
+
+  if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) e->dragging = false;
+
+  if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !hit) {
+    lineedit_set_focus(e, false);
+  }
+
+  if (hit) {
+    ui_inc_hit_count();
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+      lineedit_set_focus(e, true);
+      int mx = (int)(mouse.x - e->hitbox.x - pad * s + e->scroll_x) / s;
+      int clicked = le_pos_from_x(e, mx);
+      bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+      if (shift) {
+        if (e->sel_anchor < 0) e->sel_anchor = e->cursor;
+        e->cursor = clicked;
+      } else {
+        e->cursor = clicked;
+        e->sel_anchor = -1;
+        e->dragging = true;
+      }
+      e->alive = 0;
+    }
+  }
+
+  if (e->dragging && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+    int mx = (int)(mouse.x - e->hitbox.x - pad * s + e->scroll_x) / s;
+    int hovered = le_pos_from_x(e, mx);
+    if (hovered != e->cursor) {
+      if (e->sel_anchor < 0) e->sel_anchor = e->cursor;
+      e->cursor = hovered;
+      e->alive = 0;
+    }
+  }
+
+  if (!e->focused) {
+    le_scroll_to_cursor(e);
+    return false;
+  }
+
+  bool ret = false;
+  bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
+  bool ctrl = is_control_down();
+
+  if (ctrl && IsKeyPressed(KEY_A)) {
+    e->sel_anchor = 0;
+    e->cursor = e->len;
+    e->alive = 0;
+  }
+
+  if (ctrl && IsKeyPressed(KEY_C) && e->sel_anchor >= 0) {
+    int s_min = min_int(e->cursor, e->sel_anchor);
+    int s_max = max_int(e->cursor, e->sel_anchor);
+    static char tmp[LINEEDIT_BUFSIZE];
+    int n = s_max - s_min;
+    memcpy(tmp, e->buf + s_min, n);
+    tmp[n] = '\0';
+    SetClipboardText(tmp);
+  }
+
+  if (ctrl && IsKeyPressed(KEY_X) && e->sel_anchor >= 0) {
+    int s_min = min_int(e->cursor, e->sel_anchor);
+    int s_max = max_int(e->cursor, e->sel_anchor);
+    static char tmp[LINEEDIT_BUFSIZE];
+    int n = s_max - s_min;
+    memcpy(tmp, e->buf + s_min, n);
+    tmp[n] = '\0';
+    SetClipboardText(tmp);
+    le_delete_selection(e);
+    ret = true;
+  }
+
+  if (ctrl && IsKeyPressed(KEY_V)) {
+    const char* cb = GetClipboardText();
+    if (cb && *cb) {
+      if (e->sel_anchor >= 0) le_delete_selection(e);
+      static char tmp[LINEEDIT_BUFSIZE];
+      int j = 0;
+      for (const char* p = cb; *p && j < LINEEDIT_BUFSIZE - 1; p++) {
+        if (*p != '\n' && *p != '\r') tmp[j++] = *p;
+      }
+      tmp[j] = '\0';
+      int n = j;
+      if (e->len + n < LINEEDIT_BUFSIZE) {
+        memmove(e->buf + e->cursor + n, e->buf + e->cursor,
+                e->len - e->cursor + 1);
+        memcpy(e->buf + e->cursor, tmp, n);
+        e->len += n;
+        e->cursor += n;
+        e->alive = 0;
+        ret = true;
+      }
+    }
+  }
+
+  if (!ctrl) {
+    int key = GetCharPressed();
+    while (key > 0) {
+      if (key >= 32 && key <= 126 && e->len < LINEEDIT_BUFSIZE - 1) {
+        if (e->sel_anchor >= 0) le_delete_selection(e);
+        memmove(e->buf + e->cursor + 1, e->buf + e->cursor,
+                e->len - e->cursor + 1);
+        e->buf[e->cursor] = (char)key;
+        e->cursor++;
+        e->len++;
+        e->alive = 0;
+        ret = true;
+      }
+      key = GetCharPressed();
+    }
+  }
+
+  if (IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE)) {
+    if (e->sel_anchor >= 0) {
+      le_delete_selection(e);
+    } else if (e->cursor > 0) {
+      memmove(e->buf + e->cursor - 1, e->buf + e->cursor,
+              e->len - e->cursor + 1);
+      e->cursor--;
+      e->len--;
+      e->alive = 0;
+    }
+    ret = true;
+  }
+
+  if (IsKeyPressed(KEY_DELETE) || IsKeyPressedRepeat(KEY_DELETE)) {
+    if (e->sel_anchor >= 0) {
+      le_delete_selection(e);
+    } else if (e->cursor < e->len) {
+      memmove(e->buf + e->cursor, e->buf + e->cursor + 1, e->len - e->cursor);
+      e->len--;
+      e->alive = 0;
+    }
+    ret = true;
+  }
+
+  if (IsKeyPressed(KEY_LEFT) || IsKeyPressedRepeat(KEY_LEFT)) {
+    if (!shift && e->sel_anchor >= 0) {
+      e->cursor = min_int(e->cursor, e->sel_anchor);
+      e->sel_anchor = -1;
+    } else {
+      if (shift && e->sel_anchor < 0) e->sel_anchor = e->cursor;
+      if (e->cursor > 0) e->cursor--;
+      if (!shift) e->sel_anchor = -1;
+    }
+    e->alive = 0;
+  }
+
+  if (IsKeyPressed(KEY_RIGHT) || IsKeyPressedRepeat(KEY_RIGHT)) {
+    if (!shift && e->sel_anchor >= 0) {
+      e->cursor = max_int(e->cursor, e->sel_anchor);
+      e->sel_anchor = -1;
+    } else {
+      if (shift && e->sel_anchor < 0) e->sel_anchor = e->cursor;
+      if (e->cursor < e->len) e->cursor++;
+      if (!shift) e->sel_anchor = -1;
+    }
+    e->alive = 0;
+  }
+
+  if (IsKeyPressed(KEY_HOME)) {
+    if (shift && e->sel_anchor < 0) e->sel_anchor = e->cursor;
+    e->cursor = 0;
+    if (!shift) e->sel_anchor = -1;
+    e->alive = 0;
+  }
+
+  if (IsKeyPressed(KEY_END)) {
+    if (shift && e->sel_anchor < 0) e->sel_anchor = e->cursor;
+    e->cursor = e->len;
+    if (!shift) e->sel_anchor = -1;
+    e->alive = 0;
+  }
+
+  le_scroll_to_cursor(e);
+  return ret;
+}
+
+void lineedit_draw(LineEdit* e) {
+  int s = ui_get_scale();
+  int lh = get_font_line_height();
+  int pad = 4;  // unscaled left/right padding
+
+  Rectangle box = e->hitbox;
+  int text_y = ((int)box.height / s - lh) / 2;
+
+  // Background + border
+  DrawRectangleRec(box, (Color){0, 0, 0, 150});
+  if (e->focused) {
+    int bw = s;
+    Color border = {160, 160, 220, 255};
+    DrawRectangle((int)box.x, (int)box.y, (int)box.width, bw, border);
+    DrawRectangle((int)box.x, (int)box.y + (int)box.height - bw, (int)box.width,
+                  bw, border);
+    DrawRectangle((int)box.x, (int)box.y, bw, (int)box.height, border);
+    DrawRectangle((int)box.x + (int)box.width - bw, (int)box.y, bw,
+                  (int)box.height, border);
+  }
+
+  BeginScissorMode((int)box.x + pad * s, (int)box.y,
+                   (int)box.width - 2 * pad * s, (int)box.height);
+  rlPushMatrix();
+  rlTranslatef(box.x + pad * s - e->scroll_x, box.y, 0);
+  rlScalef(s, s, 1);
+
+  // Selection highlight
+  if (e->sel_anchor >= 0) {
+    int s_min = min_int(e->cursor, e->sel_anchor);
+    int s_max = max_int(e->cursor, e->sel_anchor);
+    int x0 = le_x_of(e, s_min);
+    int x1 = le_x_of(e, s_max);
+    Color sel_col = get_lut_color(COLOR_ORANGE);
+    DrawRectangle(x0, text_y, x1 - x0, lh, sel_col);
+  }
+
+  font_draw_texture(e->buf, 0, text_y, WHITE);
+
+  if (e->focused) {
+    int cx = le_x_of(e, e->cursor);
+    int blink = ((int)(3.0f * e->alive)) % 2;
+    if (blink == 0) {
+      DrawRectangle(cx, text_y, 1, lh, WHITE);
+    }
+  }
+
+  rlPopMatrix();
+  EndScissorMode();
+}
+
 // ---- MultiLineEdit ----
 
 // Module-level line index (one MLE active at a time is fine for this game)
@@ -987,17 +1302,22 @@ static void mle_scroll_to_cursor(MultiLineEdit* m) {
   int s = ui_get_scale();
   int lh = get_font_line_height();
   int lh_total = (lh + 2) * s;
+  int pad_s = m->pad * s;
   int cl = mle_line_of(m->cursor);
   int top = cl * lh_total;
   int bot = top + lh_total;
   int view_h = (int)m->hitbox.height;
-  if (top < m->scroll.value) m->scroll.value = top;
-  if (bot > m->scroll.value + view_h) m->scroll.value = bot - view_h;
+  // screen_y of line = box.y + pad_s - scroll + top
+  // keep it inside [box.y, box.y + view_h]
+  if (m->scroll.value > top + pad_s) m->scroll.value = top;
+  if (m->scroll.value < pad_s + bot - view_h) m->scroll.value = pad_s + bot - view_h;
+  if (m->scroll.value < 0) m->scroll.value = 0;
 }
 
 void mle_init(MultiLineEdit* m) {
   *m = (MultiLineEdit){0};
   m->sel_anchor = -1;
+  m->pad = 4;
   scroll_init(&m->scroll);
 }
 
@@ -1007,7 +1327,7 @@ void mle_set_box(MultiLineEdit* m, Rectangle box) {
   int s = ui_get_scale();
   // Usable width: subtract scrollbar (24px screen) and left+right pad (4+4
   // unscaled)
-  m->text_w = (int)(box.width - 24) / s - 4 - 4;
+  m->text_w = (int)(box.width - 24) / s - 2 * m->pad;
 }
 
 void mle_set_text(MultiLineEdit* m, const char* txt) {
@@ -1027,9 +1347,15 @@ void mle_set_text(MultiLineEdit* m, const char* txt) {
 
 const char* mle_get_text(MultiLineEdit* m) { return m->buf; }
 
+void mle_set_focus(MultiLineEdit* m, bool focused) {
+  m->focused = focused;
+  if (!focused) m->sel_anchor = -1;
+}
+
 bool mle_update(MultiLineEdit* m) {
   float dt = (float)ui_get_frame_time();
   m->alive += dt;
+  int prev_cursor = m->cursor;
 
   mle_build_lines(m);
   m->line_count = s_mle_line_count;
@@ -1037,22 +1363,29 @@ bool mle_update(MultiLineEdit* m) {
   int s = ui_get_scale();
   int lh = get_font_line_height();
   int lh_total = (lh + 2) * s;
-  m->content_h = s_mle_line_count * lh_total;
+  m->content_h = s_mle_line_count * lh_total + 2 * m->pad * s;
 
   Vector2 mouse = GetMousePosition();
   scroll_update(&m->scroll, m->content_h, mouse);
 
   bool hit_content = CheckCollisionPointRec(mouse, m->hitbox) && !m->scroll.hit;
+  bool hit_box = CheckCollisionPointRec(mouse, m->hitbox);
+
   if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
     m->dragging = false;
+  }
+
+  if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !hit_box) {
+    mle_set_focus(m, false);
   }
 
   if (hit_content) {
     ui_inc_hit_count();
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+      mle_set_focus(m, true);
       bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
-      int mx = (int)((mouse.x - m->hitbox.x) / s) - 4;
-      int my = (int)((mouse.y - m->hitbox.y + m->scroll.value) / s);
+      int mx = (int)((mouse.x - m->hitbox.x - m->pad * s) / s);
+      int my = (int)((mouse.y - m->hitbox.y - m->pad * s + m->scroll.value) / s);
       int li = my / (lh + 2);
       if (li < 0) li = 0;
       if (li >= s_mle_line_count) li = s_mle_line_count - 1;
@@ -1061,8 +1394,8 @@ bool mle_update(MultiLineEdit* m) {
         if (m->sel_anchor < 0) m->sel_anchor = m->cursor;
         m->cursor = clicked;
       } else {
-        m->sel_anchor = clicked;
         m->cursor = clicked;
+        m->sel_anchor = -1;
         m->dragging = true;
       }
       m->alive = 0;
@@ -1077,10 +1410,13 @@ bool mle_update(MultiLineEdit* m) {
     if (li >= s_mle_line_count) li = s_mle_line_count - 1;
     int hovered = mle_pos_from_x(m, li, mx);
     if (hovered != m->cursor) {
+      if (m->sel_anchor < 0) m->sel_anchor = m->cursor;
       m->cursor = hovered;
       m->alive = 0;
     }
   }
+
+  if (!m->focused) return false;
 
   bool ret = false;
   bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
@@ -1151,17 +1487,6 @@ bool mle_update(MultiLineEdit* m) {
       }
       key = GetCharPressed();
     }
-  }
-
-  // Tab (insert 4 spaces)
-  if (!m->readonly && IsKeyPressed(KEY_TAB) && m->len + 4 < MLE_BUFSIZE) {
-    if (m->sel_anchor >= 0) mle_delete_selection(m);
-    memmove(m->buf + m->cursor + 4, m->buf + m->cursor, m->len - m->cursor + 1);
-    memset(m->buf + m->cursor, ' ', 4);
-    m->cursor += 4;
-    m->len += 4;
-    m->alive = 0;
-    ret = true;
   }
 
   // Enter (insert newline)
@@ -1275,7 +1600,7 @@ bool mle_update(MultiLineEdit* m) {
     m->alive = 0;
   }
 
-  mle_scroll_to_cursor(m);
+  if (m->cursor != prev_cursor) mle_scroll_to_cursor(m);
   return ret;
 }
 
@@ -1283,7 +1608,6 @@ void mle_draw(MultiLineEdit* m) {
   int s = ui_get_scale();
   int lh = get_font_line_height();
   int lh_total = lh + 2;  // unscaled spacing
-  int pad = 4;            // left text padding (unscaled)
 
   mle_build_lines(m);
 
@@ -1295,11 +1619,22 @@ void mle_draw(MultiLineEdit* m) {
   int cursor_line = mle_line_of(m->cursor);
 
   Rectangle box = m->hitbox;
+
+  DrawRectangleRec(box, (Color){0, 0, 0, 150});
+  if (m->focused) {
+    int bw = ui_get_scale();
+    Color border = {160, 160, 220, 255};
+    DrawRectangle((int)box.x, (int)box.y, (int)box.width, bw, border);
+    DrawRectangle((int)box.x, (int)box.y + (int)box.height - bw, (int)box.width, bw, border);
+    DrawRectangle((int)box.x, (int)box.y, bw, (int)box.height, border);
+    DrawRectangle((int)box.x + (int)box.width - bw, (int)box.y, bw, (int)box.height, border);
+  }
+
   BeginScissorMode((int)box.x, (int)box.y, (int)box.width, (int)box.height);
   rlPushMatrix();
   rlTranslatef(box.x, box.y, 0);
-  DrawRectangle(0, 0, (int)box.width, (int)box.height, (Color){0, 0, 0, 150});
-  rlTranslatef(0, -(float)m->scroll.value, 0);
+  DrawRectangle(0, 0, (int)box.width, (int)box.height, (Color){0, 0, 0, 0});
+  rlTranslatef(m->pad * s, m->pad * s - m->scroll.value, 0);
   rlScalef(s, s, 1);
 
   static char tmp[MLE_BUFSIZE];
@@ -1338,7 +1673,7 @@ void mle_draw(MultiLineEdit* m) {
           xend = (int)get_rendered_text_size(tmp).x;
         }
         Color sel_col = get_lut_color(COLOR_ORANGE);
-        DrawRectangle(pad + xstart, y, xend - xstart, lh, sel_col);
+        DrawRectangle(xstart, y, xend - xstart, lh, sel_col);
       }
     }
 
@@ -1346,14 +1681,14 @@ void mle_draw(MultiLineEdit* m) {
     int n = line_end - line_start;
     memcpy(tmp, m->buf + line_start, n);
     tmp[n] = '\0';
-    font_draw_texture(tmp, pad, y, WHITE);
+    font_draw_texture(tmp, 0, y, WHITE);
 
     // Draw cursor
-    if (i == cursor_line) {
+    if (i == cursor_line && m->focused) {
       int col = m->cursor - line_start;
       memcpy(tmp, m->buf + line_start, col);
       tmp[col] = '\0';
-      int cx = pad + (int)get_rendered_text_size(tmp).x;
+      int cx = (int)get_rendered_text_size(tmp).x;
       int blink = ((int)(3.0f * m->alive)) % 2;
       if (blink == 0) {
         DrawRectangle(cx, y, 1, lh, WHITE);

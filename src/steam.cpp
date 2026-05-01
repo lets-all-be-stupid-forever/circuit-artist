@@ -85,7 +85,7 @@ void process_item_ingress(u64 id) {
 void SteamSubscriptionListener::OnSubscribed(
     RemoteStoragePublishedFileSubscribed_t* cb) {
   if (cb->m_nAppID != C.app_id) return;
-  printf("[steam] subscribed: %llu\n",
+  printf("[steam] subscribed: %" PRIu64 "\n",
          (unsigned long long)cb->m_nPublishedFileId);
   uint32 s = SteamAPI_ISteamUGC_GetItemState(C.ugc, cb->m_nPublishedFileId);
   bool installed = (s & k_EItemStateInstalled);
@@ -128,7 +128,7 @@ void SteamSubscriptionListener::OnDownloaded(DownloadItemResult_t* cb) {
 
 void SteamSubscriptionListener::OnInstalled(ItemInstalled_t* cb) {
   if (cb->m_unAppID != C.app_id) return;
-  printf("[steam] installed: %llu\n",
+  printf("[steam] installed: %" PRIu64 "\n",
          (unsigned long long)cb->m_nPublishedFileId);
   process_item_ingress(cb->m_nPublishedFileId);
 }
@@ -266,7 +266,7 @@ const char* steam_err_to_str(EResult s) {
 void steam_open_overlay_item(u64 file_id) {
 #ifdef WITH_STEAM
   char url[512];
-  snprintf(url, sizeof(url), "steam://url/CommunityFilePage/%llu", file_id);
+  snprintf(url, sizeof(url), "steam://url/CommunityFilePage/%" PRIu64, file_id);
   SteamAPI_ISteamFriends_ActivateGameOverlayToWebPage(
       SteamAPI_SteamFriends(), url,
       k_EActivateGameOverlayToWebPageMode_Default);

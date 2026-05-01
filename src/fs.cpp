@@ -5,6 +5,7 @@ extern "C" {
 #include "utils.h"
 };
 
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <string>
