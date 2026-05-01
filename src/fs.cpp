@@ -55,14 +55,6 @@ char* checkmodpath(const char* root, const char* rpath) {
   return clone_string(can.string().c_str());
 }
 
-char* checkmodpath2(const char* root, const char* caller, const char* rpath) {
-  // TODO
-  // There are 2 possible candidates for the file path:
-  // 1. Relative to root
-  // 2. Relative to the folder of caller file (must still be within root)
-  return NULL;
-}
-
 char* os_path_basename(const char* fname) {
   if (!fname) return nullptr;
 

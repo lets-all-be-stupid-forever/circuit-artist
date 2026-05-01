@@ -143,7 +143,6 @@ void ui_init() {
   // Added this black rectangle here so the screen first appears as a black
   // window rather than a black window with a white square in the center
   // (windows) before window is maximized.
-  // TODO: put a propper splash screen eventually?
   DrawRectangle(0, 0, 2000, 2000, BLACK);
   EndDrawing();
   SetWindowState(FLAG_WINDOW_MAXIMIZED);

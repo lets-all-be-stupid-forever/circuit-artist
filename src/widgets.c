@@ -839,7 +839,7 @@ void label_draw(Label* l) {
   int th = l->hitbox.height;
   int lh = get_font_line_height();
   int offy = (th - lh) / 4;
-  int offx = 4;
+  int offx = 0;
   int s = 2;
   rlScalef(s, s, 1);
   font_draw_texture_outlined(l->txt, offx, offy, WHITE, BLACK);
@@ -929,7 +929,8 @@ bool lineedit_update(LineEdit* e) {
   Vector2 mouse = GetMousePosition();
   int s = ui_get_scale();
   int pad = 4;
-  bool hit = CheckCollisionPointRec(mouse, e->hitbox) && ui_get_hit_count() == 0;
+  bool hit =
+      CheckCollisionPointRec(mouse, e->hitbox) && ui_get_hit_count() == 0;
 
   if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) e->dragging = false;
 
@@ -1310,7 +1311,8 @@ static void mle_scroll_to_cursor(MultiLineEdit* m) {
   // screen_y of line = box.y + pad_s - scroll + top
   // keep it inside [box.y, box.y + view_h]
   if (m->scroll.value > top + pad_s) m->scroll.value = top;
-  if (m->scroll.value < pad_s + bot - view_h) m->scroll.value = pad_s + bot - view_h;
+  if (m->scroll.value < pad_s + bot - view_h)
+    m->scroll.value = pad_s + bot - view_h;
   if (m->scroll.value < 0) m->scroll.value = 0;
 }
 
@@ -1385,7 +1387,8 @@ bool mle_update(MultiLineEdit* m) {
       mle_set_focus(m, true);
       bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
       int mx = (int)((mouse.x - m->hitbox.x - m->pad * s) / s);
-      int my = (int)((mouse.y - m->hitbox.y - m->pad * s + m->scroll.value) / s);
+      int my =
+          (int)((mouse.y - m->hitbox.y - m->pad * s + m->scroll.value) / s);
       int li = my / (lh + 2);
       if (li < 0) li = 0;
       if (li >= s_mle_line_count) li = s_mle_line_count - 1;
@@ -1625,9 +1628,11 @@ void mle_draw(MultiLineEdit* m) {
     int bw = ui_get_scale();
     Color border = {160, 160, 220, 255};
     DrawRectangle((int)box.x, (int)box.y, (int)box.width, bw, border);
-    DrawRectangle((int)box.x, (int)box.y + (int)box.height - bw, (int)box.width, bw, border);
+    DrawRectangle((int)box.x, (int)box.y + (int)box.height - bw, (int)box.width,
+                  bw, border);
     DrawRectangle((int)box.x, (int)box.y, bw, (int)box.height, border);
-    DrawRectangle((int)box.x + (int)box.width - bw, (int)box.y, bw, (int)box.height, border);
+    DrawRectangle((int)box.x + (int)box.width - bw, (int)box.y, bw,
+                  (int)box.height, border);
   }
 
   BeginScissorMode((int)box.x, (int)box.y, (int)box.width, (int)box.height);

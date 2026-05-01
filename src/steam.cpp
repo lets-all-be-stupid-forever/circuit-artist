@@ -397,7 +397,6 @@ struct SteamUploadContext {
     } else {
       return true;
     }
-    // TODO
     return false;
   }
 };

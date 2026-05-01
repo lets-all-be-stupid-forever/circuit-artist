@@ -8,7 +8,6 @@ extern "C" {
 #endif
 
 char* checkmodpath(const char* root, const char* path);
-char* checkmodpath2(const char* root, const char* caller, const char* path);
 char* abs_path(const char* path);  // malloc'd, caller must free()
 char* os_path_basename(const char* fname);
 bool os_path_exists(const char* path);

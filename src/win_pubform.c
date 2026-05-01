@@ -19,6 +19,7 @@ static struct {
   Btn btn_cancel;
   MultiLineEdit tb_desc;
   LineEdit tb_title;
+  Textbox tb_legal;
   void (*on_cancel)();
   double upload_counter;
   char* thumb_path;
@@ -38,12 +39,13 @@ static void update_layout() {
   mle_set_box(&C.tb_desc, layout_rect(l, "tb_desc"));
   // textbox_set_box(&C.tb_title, layout_rect(l, "tb_title"));
   C.tb_title.hitbox = layout_rect(l, "tb_title");
+  textbox_set_box(&C.tb_legal, layout_rect(l, "tb_legal"));
 }
 
 void win_pubform_init() {
   C.layout = easy_load_layout("pubform");
   label_set_text(&C.lab_desc, "Description");
-  label_set_text(&C.lab_title, "Steam Name");
+  label_set_text(&C.lab_title, "Title");
   lineedit_init(&C.tb_title);
   mle_init(&C.tb_desc);
 }
@@ -89,7 +91,7 @@ static bool progress_update(void* ctx) {
 }
 
 static void launch_publish() {
-  win_progress_set_text("Uploading");
+  win_progress_set_text("Uploading to Steam");
   C.upload_counter = 0;
   ProgressCtx pc = {0};
   char* tags[2] = {"blueprint", NULL};
@@ -103,6 +105,11 @@ static void launch_publish() {
 
 void win_pubform_update() {
   update_layout();
+  textbox_update(&C.tb_legal);
+  textbox_set_content(&C.tb_legal,
+                      "By submitting this blueprint, you agree to the `Steam "
+                      "Workshop terms of service.`",
+                      NULL);
   bool key_escape = IsKeyPressed(KEY_ESCAPE);
   mle_update(&C.tb_desc);
   lineedit_update(&C.tb_title);
@@ -139,6 +146,7 @@ void win_pubform_draw() {
   mle_draw(&C.tb_desc);
   label_draw(&C.lab_desc);
   label_draw(&C.lab_title);
+  textbox_draw(&C.tb_legal);
 
   if (C.thumb_tex.width > 0) {
     Rectangle src = {
