@@ -56,9 +56,10 @@ static void init_env_path(const char** path, const char* name) {
 /// The caller must free the returned C-String
 char* get_asset_path(const char* path) {
   // XXX: should this just return a pointer to a static buffer?
-  char* buf = malloc(strlen(C.asset_path) + 1 + strlen(path) + 1);
+  size_t len = strlen(C.asset_path) + 1 + strlen(path) + 1;
+  char* buf = malloc(len);
 
-  sprintf(buf, "%s/%s", C.asset_path, path);
+  snprintf(buf, len, "%s/%s", C.asset_path, path);
 
   return buf;
 }

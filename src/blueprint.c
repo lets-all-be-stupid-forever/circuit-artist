@@ -28,10 +28,7 @@ typedef struct {
   LBItem* items;
 } LegendBuilder;
 
-void lb_init(LegendBuilder* lb) {
-  *lb = (LegendBuilder){0};
-  // TODO
-}
+void lb_init(LegendBuilder* lb) { *lb = (LegendBuilder){0}; }
 
 void lb_add_line(LegendBuilder* lb, const char* txt, int pad, Color k) {
   LBItem item = {.txt = clone_string(txt), .c = k, .pad = pad};
@@ -233,6 +230,20 @@ static void load_steam_author_if_applicable(Blueprint* bp) {
   };
 }
 
+static void reset_bp_fields(Blueprint* bp) {
+  free(bp->lvl);
+  bp->lvl = NULL;
+  free(bp->name);
+  bp->name = NULL;
+  free(bp->desc);
+  bp->desc = NULL;
+  free(bp->folder);
+  bp->folder = NULL;
+  free(bp->steam_author_name);
+  bp->steam_author_name = NULL;
+  if (bp->thumbnail.id) UnloadTexture(bp->thumbnail);
+}
+
 void inject_blueprint_from_folder(BlueprintStore* store, const char* id,
                                   const char* folder) {
   char meta_path[1024];
@@ -246,6 +257,7 @@ void inject_blueprint_from_folder(BlueprintStore* store, const char* id,
   }
   Blueprint* bp = find_or_create_bp(store, id);
   if (bp) {
+    reset_bp_fields(bp);
     json_read_str(meta, "lvl", &bp->lvl);
     json_read_str(meta, "name", &bp->name);
     json_read_str(meta, "desc", &bp->desc);
@@ -282,13 +294,7 @@ static void register_local_blueprints(BlueprintStore* store) {
 
 static void blueprint_destroy(Blueprint* bp) {
   if (!bp) return;
-  free(bp->id);
-  free(bp->name);
-  free(bp->desc);
-  free(bp->lvl);
-  free(bp->folder);
-  free(bp->steam_author_name);
-  UnloadTexture(bp->thumbnail);
+  reset_bp_fields(bp);
   free(bp);
 }
 
@@ -444,6 +450,7 @@ int blueprint_create(BlueprintStore* store, int nl, Image* imgs, Image full) {
   bp->height = imgs[0].height;
   char* id = clone_string(randid());
   bp->folder = abs_path(get_data_path(TextFormat("blueprints_v2/%s", id)));
+  bp->id = clone_string(TextFormat("local:%s", id));
   free(id);
   store->blueprints[ibp] = bp;
 
