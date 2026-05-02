@@ -38,6 +38,7 @@ static struct {
   Btn page_slots[NUM_PAGES];
   Btn fixed_slots[NUM_FIXED];
   Btn btn_close;
+  Btn btn_detail;
   Btn btn_editpage;
   Btn btn_steam;
   int sel;
@@ -75,6 +76,7 @@ static void update_layout() {
   C.pages_cap.hitbox = layout_rect(l, "pages_cap");
   C.btn_editpage.hitbox = layout_rect(l, "btn_pages");
   C.btn_steam.hitbox = layout_rect(l, "btn_steam");
+  C.btn_detail.hitbox = layout_rect(l, "btn_detail");
   C.slots_cap.hitbox = layout_rect(l, "slots_cap");
   C.staging_cap.hitbox = layout_rect(l, "staging_cap");
   Rectangle slots = layout_rect(l, "slots");
@@ -208,6 +210,12 @@ void win_blueprint_update() {
   if (btn_update(&C.btn_close) || (key_escape && C.sel == -1) || key_q) {
     ui_winpop();
     blueprint_store_save(&C.store);
+    return;
+  }
+
+  C.btn_detail.disabled = C.sel == -1;
+  if (btn_update(&C.btn_detail)) {
+    win_bpdetail_open(get_blueprint(&C.store, C.sel), &C.store, C.sel);
     return;
   }
 
@@ -404,10 +412,18 @@ void win_blueprint_draw() {
   btn_draw_icon(&C.btn_editpage, 2, sprites, rect_editpage);
 
   btn_draw_text(&C.btn_close, 2, "CLOSE");
+  btn_draw_text(&C.btn_detail, 2, "DETAILS");
   btn_draw_text(&C.btn_steam, 2, "BROWSE WORKSHOP");
 
   if (ui_get_window() == WINDOW_BLUEPRINT) {
     btn_draw_legend(&C.btn_editpage, 2, "Edit page icons");
+    btn_draw_legend(
+        &C.btn_steam, 2,
+        "Open steam overlay to browse for community blueprints\n"
+        "Subscribed blueprints will automatically appear in the inventory");
+    btn_draw_legend(&C.btn_detail, 2,
+                    "Open Blueprint details\n(you can also click a second time "
+                    "on the blueprint)");
     for (int i = 0; i < NUM_FIXED; i++) {
       draw_slot_hover_leg(&C.fixed_slots[i], get_fixed_blueprint_idx(store, i));
     }

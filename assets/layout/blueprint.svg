@@ -12,6 +12,7 @@
 <rect id="btn_workshop" x="31" y="64" width="34" height="34" fill="#D9D9D9"/>
 <rect id="btn_update" x="72" y="64" width="34" height="34" fill="#D9D9D9"/>
 <rect id="btn_steam" x="31" y="615" width="270" height="32" fill="#D9D9D9"/>
+<rect id="btn_detail" x="514" y="615" width="270" height="32" fill="#D9D9D9"/>
 </g>
 <defs>
 <pattern id="pattern0_22_134" patternContentUnits="objectBoundingBox" width="1" height="1">
