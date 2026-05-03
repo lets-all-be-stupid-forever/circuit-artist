@@ -11,6 +11,7 @@
 #include "steam.h"
 #include "ui.h"
 #include "utils.h"
+#include "wdialog.h"
 #include "win_pubform.h"
 #include "wmain.h"
 
@@ -309,6 +310,16 @@ static void publish_level() {
   free(folder);
 }
 
+static void on_confirm_unsubscribe(int r) {
+  if (r != 0) return;
+  CustomLevelDef* lvl = get_selected_level();
+  u64 item = extract_item_from_id(lvl->id);
+  steam_unsubscribe_item(item);
+  lvl->unsubscribed = true;
+  rebuild_listbox_items();
+  select_first_item();
+}
+
 static void update_level_buttons() {
   C.btn_open_steam.disabled = (C.page != PAGE_WORKSHOP) || C.sel == -1;
   C.btn_unsubscribe.disabled = (C.page != PAGE_WORKSHOP) || C.sel == -1;
@@ -321,11 +332,8 @@ static void update_level_buttons() {
 
   if (btn_update(&C.btn_unsubscribe)) {
     CustomLevelDef* lvl = get_selected_level();
-    u64 item = extract_item_from_id(lvl->id);
-    steam_unsubscribe_item(item);
-    lvl->unsubscribed = true;
-    rebuild_listbox_items();
-    select_first_item();
+    dialog_open(TextFormat("Unsubscribe from level \"%s\"?", lvl->name),
+                "Unsubscribe", "Cancel", NULL, on_confirm_unsubscribe);
   }
   if (btn_update(&C.btn_open_steam)) {
     u64 item = extract_item_from_id(get_selected_level()->id);
@@ -356,8 +364,27 @@ void win_customlvl_update() {
   sol_update(&C.sol);
 }
 
+static const char* get_level_prefix(CustomLevelDef* lvl) {
+  switch (lvl->type) {
+    case CUSTOM_LEVEL_LOCAL:
+      return "[local]";
+    case CUSTOM_LEVEL_STEAM:
+      return "[workshop]";
+    case CUSTOM_LEVEL_OFFICIAL:
+      return "[official]";
+    case CUSTOM_LEVEL_UNK:
+      return "[???]";
+  }
+}
+
+static const char* make_win_title() {
+  CustomLevelDef* lvl = get_selected_level();
+  if (!lvl) return "CUSTOM LEVELS";
+  return lvl->name;
+}
+
 void win_customlvl_draw() {
-  draw_win(C.modal, "CUSTOM LEVELS");
+  draw_win(C.modal, make_win_title());
   textbox_draw(&C.tb);
   listbox_draw(&C.lb, C.sel);
   btn_draw_text_primary(&C.btn_choose, ui_get_scale(), "SELECT LEVEL");

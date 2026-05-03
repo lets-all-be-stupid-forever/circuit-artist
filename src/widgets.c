@@ -1345,7 +1345,7 @@ void mle_set_text(MultiLineEdit* m, const char* txt) {
   memcpy(m->buf, txt, n);
   m->buf[n] = '\0';
   m->len = n;
-  m->cursor = n;
+  m->cursor = 0;
   m->sel_anchor = -1;
   m->alive = 0;
   mle_build_lines(m);
