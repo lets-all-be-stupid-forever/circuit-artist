@@ -17,17 +17,17 @@ AddCampaignLevel({
     },
     {
       title=T.mux_2_1_schema,
-      img="mux1.png",
+      img="wiki/imgs/mux1.png",
       scale=4,
     },
     {
       title=T.mux_2_1_impl,
-      img="mux2.png",
+      img="wiki/imgs/mux2.png",
       scale=4,
     },
     {
       title=T.mux_2_1_analogy,
-      img="mux3.png",
+      img="wiki/imgs/mux3.png",
       scale=4,
     },
   }
@@ -92,17 +92,17 @@ AddCampaignLevel({
     },
     {
       title=T.demux_1_2_demux,
-      img='demux1.png',
+      img='wiki/imgs/demux1.png',
       scale=4,
     },
     {
       title=T.demux_1_2_demux2,
-      img='demux2.png',
+      img='wiki/imgs/demux2.png',
       scale=4,
     },
     {
       title=T.demux_1_2_analogy3,
-      img='demux3.png',
+      img='wiki/imgs/demux3.png',
       scale=4,
     },
   }

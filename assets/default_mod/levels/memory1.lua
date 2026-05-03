@@ -32,17 +32,17 @@ AddCampaignLevel({
     {
       title=T.dlatch_symbol_title,
       scale=4,
-      img='wiki/mem2.png',
+      img='wiki/imgs/mem2.png',
     },
     {
       title=T.dlatch_truthtable_title,
       scale=4,
-      img='wiki/mem3.png',
+      img='wiki/imgs/mem3.png',
     },
     {
       title=T.dlatch_impl_title,
       scale=4,
-      img='wiki/mem4.png',
+      img='wiki/imgs/mem4.png',
     },
   }
 })

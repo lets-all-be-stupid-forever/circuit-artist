@@ -1141,7 +1141,7 @@ a=1, s=1 --> Y0 = 0, Y1 = 1
 A DEMUX can be implemented as follows:
 !img:wiki/imgs/demux2.png
 You can also create DEMUXes with more outputs by combining DEMUXes with fewer outputs:
-!img:wiki/imgs/demux4.png
+!img:levels/imgs/demux4.png
 ]]
 
 T.wiki_srlatch_name ="SR Latch"
