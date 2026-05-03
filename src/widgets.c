@@ -132,10 +132,10 @@ void listbox_draw(Listbox* l, int selected) {
   bg.a = 20;
   Rectangle box = l->hitbox;
   BeginScissorMode(box.x, box.y, box.width, box.height);
+  Color c = {0, 0, 0, 150};
+  DrawRectangle(box.x, box.y, box.width * s, box.height * s, c);
   rlPushMatrix();
   rlTranslatef(box.x, box.y - l->scroll.value, 0);
-  Color c = {0, 0, 0, 150};
-  DrawRectangle(0, 0, box.width * s, box.height * s, c);
   for (int i = 0; i < arrlen(l->rows); i++) {
     ListboxRow* row = &l->rows[i];
     int row_h = row->hitbox_r.height;

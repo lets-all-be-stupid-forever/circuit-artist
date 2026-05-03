@@ -117,9 +117,9 @@ typedef struct GameRegistry {
   lua_State* L;
 
   /* Custom Levels */
-  CustomLevelDef* workshop_custom_levels;
-  CustomLevelDef* local_custom_levels;
-  CustomLevelDef* official_custom_levels;
+  CustomLevelDef** workshop_custom_levels;
+  CustomLevelDef** local_custom_levels;
+  CustomLevelDef** official_custom_levels;
 } GameRegistry;
 
 GameRegistry* create_game_registry();

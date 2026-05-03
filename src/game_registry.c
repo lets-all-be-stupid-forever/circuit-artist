@@ -636,14 +636,14 @@ static void register_custom_levels(GameRegistry* r) {
   /* Official custom */
   FilePathList dirs = LoadDirectoryFiles(official_root);
   for (int i = 0; i < dirs.count; i++) {
-    char id[256];
-    CustomLevelDef ldef = {0};
     const char* folder = dirs.paths[i];
     if (!DirectoryExists(folder)) continue;
+    char id[256];
+    CustomLevelDef* ldef = calloc(1, sizeof(CustomLevelDef));
     char* folder_name = os_path_basename(folder);
     snprintf(id, sizeof(id), "official:%s", folder_name);
-    load_custom_level(folder, id, &ldef);
-    ldef.type = CUSTOM_LEVEL_OFFICIAL;
+    load_custom_level(folder, id, ldef);
+    ldef->type = CUSTOM_LEVEL_OFFICIAL;
     arrput(r->official_custom_levels, ldef);
     free(folder_name);
   }
@@ -653,17 +653,16 @@ static void register_custom_levels(GameRegistry* r) {
   /* Local custom */
   char* local_root = abs_path(get_data_path("local_levels"));
   ensure_dir(local_root);
-
   dirs = LoadDirectoryFiles(local_root);
   for (int i = 0; i < dirs.count; i++) {
-    char id[256];
-    CustomLevelDef ldef = {0};
     const char* folder = dirs.paths[i];
     if (!DirectoryExists(folder)) continue;
+    char id[256];
+    CustomLevelDef* ldef = calloc(1, sizeof(CustomLevelDef));
     char* folder_name = os_path_basename(folder);
     snprintf(id, sizeof(id), "local:%s", folder_name);
-    load_custom_level(folder, id, &ldef);
-    ldef.type = CUSTOM_LEVEL_LOCAL;
+    load_custom_level(folder, id, ldef);
+    ldef->type = CUSTOM_LEVEL_LOCAL;
     arrput(r->local_custom_levels, ldef);
     free(folder_name);
   }
@@ -719,7 +718,7 @@ u64 extract_item_from_id(const char* id) {
 CustomLevelDef* find_steam_level(GameRegistry* r, u64 steam_id) {
   int n = arrlen(r->workshop_custom_levels);
   for (int i = 0; i < n; i++) {
-    CustomLevelDef* l = &r->workshop_custom_levels[i];
+    CustomLevelDef* l = r->workshop_custom_levels[i];
     if (extract_item_from_id(l->id) == steam_id) {
       return l;
     }
@@ -739,11 +738,11 @@ void add_steam_level_from_folder(GameRegistry* r, const char* folder,
   bool ok = load_steam_metadata(folder, &meta);
 
   char id[256];
-  CustomLevelDef ldef = {0};
+  CustomLevelDef* ldef = calloc(1, sizeof(CustomLevelDef));
   snprintf(id, sizeof(id), "steam:%" PRIu64, steam_id);
-  load_custom_level(folder, id, &ldef);
-  ldef.type = CUSTOM_LEVEL_STEAM;
-  ldef.steam_author = clone_string(meta.author_name);
+  load_custom_level(folder, id, ldef);
+  ldef->type = CUSTOM_LEVEL_STEAM;
+  ldef->steam_author = clone_string(meta.author_name);
   arrput(r->workshop_custom_levels, ldef);
   unload_steam_meta(&meta);
 }

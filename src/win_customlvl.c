@@ -113,7 +113,7 @@ static void update_layout() {
   sol_update_layout(&C.sol, l);
 }
 
-static CustomLevelDef* get_page_original_levels() {
+static CustomLevelDef** get_page_original_levels() {
   switch (C.page) {
     case PAGE_OFFICIAL:
       return C.r->official_custom_levels;
@@ -138,11 +138,12 @@ static int compare_level(const void* a, const void* b) {
 }
 
 static void rebuild_listbox_items() {
+  C.sel = -1;
   arrsetlen(C.levels, 0);
-  CustomLevelDef* orig_levels = get_page_original_levels();
+  CustomLevelDef** orig_levels = get_page_original_levels();
   int no = arrlen(orig_levels);
   for (int i = 0; i < no; i++) {
-    CustomLevelDef* l = &orig_levels[i];
+    CustomLevelDef* l = orig_levels[i];
     if (l->unsubscribed) continue;
     arrput(C.levels, l);
   }
