@@ -315,7 +315,7 @@ void main_load_campaign_level(LevelDef* ldef) {
   if (!s.ok) {
     handle_kernel_error(s);
   } else {
-    msg_add("Campaign level loaded", 5);
+    msg_add("Campaign level loaded", 2);
   }
 }
 
@@ -326,7 +326,7 @@ void main_load_custom_level(CustomLevelDef* ldef) {
   if (!s.ok) {
     handle_kernel_error(s);
   } else {
-    msg_add("Custom level loaded", 5);
+    msg_add("Custom level loaded", 2);
   }
 }
 
@@ -337,7 +337,7 @@ void main_load_file_level(const char* fname) {
   if (!s.ok) {
     handle_kernel_error(s);
   } else {
-    msg_add("Custom file level loaded", 5);
+    msg_add("Custom file level loaded", 2);
   }
 }
 
@@ -403,13 +403,7 @@ void main_init(GameRegistry* registry) {
   main_update_title();
   main_update_widgets();
   sim_dry_run(registry);
-
-  LevelDef* ldef = registry->group_order[0]->levels[0];
-  on_select_level(ldef);
-  // temporary
-  // load_file_level("../examples/script_example1.lua");
-  // load_file_level("../examples/simple_clock.lua");
-  // load_file_level("../examples/example_multifile.lua");
+  main_load_custom_level(find_sandbox_custom_level());
 }
 
 static void simu_play_sounds() {

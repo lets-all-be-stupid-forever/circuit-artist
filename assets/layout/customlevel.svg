@@ -9,6 +9,7 @@
 <rect id="btn_file" x="92" y="208" width="36" height="34" fill="#D9D9D9"/>
 <rect id="btn_howto" x="577" y="505" width="36" height="34" fill="#D9D9D9"/>
 <rect id="btn_local_folder" x="92" y="505" width="36" height="34" fill="#D9D9D9"/>
+<rect id="btn_refresh" x="52" y="505" width="36" height="34" fill="#D9D9D9"/>
 <rect id="btn_open_steam" x="501" y="545" width="34" height="34" fill="#C27D7D"/>
 <rect id="btn_unsubscribe" x="539" y="545" width="34" height="34" fill="#C27D7D"/>
 <rect id="btn_level_folder" x="501" y="505" width="34" height="34" fill="#C27D7D"/>

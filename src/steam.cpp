@@ -70,12 +70,6 @@ static bool folder_is_blueprint(const char* folder) {
   return ok;
 }
 
-static bool folder_is_level(const char* folder) {
-  bool ok = true;
-  ok = ok && os_path_exists(TextFormat("%s/desc.txt", folder));
-  return ok;
-}
-
 void process_item_ingress(u64 id) {
   uint32 state = C.ugc->GetItemState(id);
   bool subscribed = (state & k_EItemStateSubscribed);

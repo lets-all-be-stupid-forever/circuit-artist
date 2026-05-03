@@ -657,6 +657,7 @@ static void register_custom_levels(GameRegistry* r) {
   for (int i = 0; i < dirs.count; i++) {
     const char* folder = dirs.paths[i];
     if (!DirectoryExists(folder)) continue;
+    if (!folder_is_level(folder)) continue;
     char id[256];
     CustomLevelDef* ldef = calloc(1, sizeof(CustomLevelDef));
     char* folder_name = os_path_basename(folder);
@@ -753,4 +754,11 @@ char* get_custom_levels_folder() {
 
 const char* get_custom_level_kernel_path(CustomLevelDef* ldef) {
   return TextFormat("%s/kernel.lua", ldef->folder);
+}
+
+bool folder_is_level(const char* folder) {
+  bool ok = true;
+  ok = ok && os_path_exists(TextFormat("%s/desc.txt", folder));
+  ok = ok && os_path_exists(TextFormat("%s/kernel.lua", folder));
+  return ok;
 }

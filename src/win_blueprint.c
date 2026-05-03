@@ -194,6 +194,7 @@ static void update_page_slot(Btn* b, Vector2 mouse, int sidx) {
     }
   }
 }
+
 static void on_confirm_delete(int r) {
   if (r != 0) return;
   blueprint_store_rm(&C.store, C.sel);

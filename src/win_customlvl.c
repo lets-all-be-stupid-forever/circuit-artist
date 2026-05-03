@@ -414,6 +414,7 @@ void win_customlvl_draw() {
 
   btn_draw_icon(&C.btn_local_folder, ui_get_scale(), sprites, rect_open);
   btn_draw_icon(&C.btn_level_folder, ui_get_scale(), sprites, rect_open);
+
   // sol_draw(&C.sol);
 
   if (ui_get_window() == WINDOW_CUSTOM_LEVEL) {
@@ -423,8 +424,8 @@ void win_customlvl_draw() {
                     "Official custom levels of the game");
     btn_draw_legend(&C.btn_page_local, ui_get_scale(),
                     "Local custom levels located in the local_levels/ "
-                    "folder.\nThese levels "
-                    "can be published to Steam Workshop.");
+                    "folder\n(These levels "
+                    "can be published to Steam Workshop)");
     btn_draw_legend(&C.btn_browse_levels, ui_get_scale(),
                     "Browse community levels in Steam Workshop");
     btn_draw_legend(&C.btn_open_steam, ui_get_scale(),
@@ -435,7 +436,7 @@ void win_customlvl_draw() {
                     "Levels subscribed on Steam Workshop");
     btn_draw_legend(&C.btn_unsubscribe, ui_get_scale(), "Unsubscribe");
     btn_draw_legend(&C.btn_file, ui_get_scale(),
-                    "Select custom level from local files");
+                    "Load local lua file\n(This mode has no sandbox)");
 
     btn_draw_legend(&C.btn_local_folder, ui_get_scale(),
                     "Open folder containing your local custom levels");
@@ -459,4 +460,8 @@ void win_customlvl_draw() {
 
 void notify_installed_steam_level(const char* folder, u64 item) {
   add_steam_level_from_folder(C.r, folder, item);
+}
+
+CustomLevelDef* find_sandbox_custom_level() {
+  return C.r->official_custom_levels[0];
 }

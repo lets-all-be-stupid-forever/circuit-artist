@@ -141,6 +141,7 @@ TutorialItem* find_wiki_from_id(GameRegistry* r, const char* item_id);
 u64 extract_item_from_id(const char* id);
 char* get_custom_levels_folder();
 const char* get_custom_level_kernel_path(CustomLevelDef* ldef);
+bool folder_is_level(const char* folder);
 
 #if defined(__cplusplus)
 }

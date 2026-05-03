@@ -1,5 +1,4 @@
 ## Title: Sandbox
-## Kernel: kernel.lua
 
 `SANDBOX`
 

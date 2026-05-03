@@ -12,7 +12,6 @@ end
 
 Import 'locale/en.lua'
 ----------------------------------------------------
-Import 'levels/custom.lua'
 Import 'levels/basics1.lua'
 Import 'levels/sevseg1.lua'
 Import 'levels/routing1.lua'
