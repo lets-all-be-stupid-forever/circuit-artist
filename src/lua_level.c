@@ -309,9 +309,7 @@ static int lua_Import(lua_State* L) {
     free(checked_path);
     return luaL_error(L, "Import: couldn't find file '%s'", path);
   }
-  lua_getglobal(L, "debug");
-  lua_getfield(L, -1, "traceback");
-  lua_remove(L, -2);
+  lua_pushcfunction(L, lua_error_handler);
   int handler_idx = lua_gettop(L);
   int top_before = handler_idx;
   if (luaL_loadfile(L, full_path) != LUA_OK) {
@@ -877,6 +875,26 @@ static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
     lua_setglobal(L, "dofile");
     lua_pushnil(L);
     lua_setglobal(L, "loadfile");
+    lua_pushnil(L);
+    lua_setglobal(L, "debug");
+
+    // Also clear package.loaded so scripts can't recover io/os via
+    // package.loaded.io / package.loaded.os, and remove package.loadlib which
+    // can load arbitrary native shared libraries even without require()
+    lua_getglobal(L, "package");
+    if (lua_istable(L, -1)) {
+      lua_getfield(L, -1, "loaded");
+      if (lua_istable(L, -1)) {
+        lua_pushnil(L);
+        lua_setfield(L, -2, "io");
+        lua_pushnil(L);
+        lua_setfield(L, -2, "os");
+      }
+      lua_pop(L, 1);  // loaded
+      lua_pushnil(L);
+      lua_setfield(L, -2, "loadlib");
+    }
+    lua_pop(L, 1);  // package
   }
 
   /* Basic */

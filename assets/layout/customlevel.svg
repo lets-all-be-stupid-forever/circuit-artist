@@ -1,14 +1,15 @@
 <svg width="1100" height="647" viewBox="0 0 1100 647" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="customlevel">
 <rect width="1100" height="647" fill="white"/>
-<rect id="lb_level" x="190" y="70" width="339" height="501" fill="#D9D9D9"/>
+<rect id="lb_level" x="190" y="70" width="339" height="507" fill="#D9D9D9"/>
 <rect id="tb_desc" x="546" y="70" width="525" height="422" fill="#D9D9D9"/>
 <rect id="btn_official" x="23" y="70" width="150" height="34" fill="#D9D9D9"/>
-<rect id="btn_local" x="23" y="113" width="110" height="34" fill="#D9D9D9"/>
+<rect id="btn_local" x="61" y="113" width="112" height="34" fill="#D9D9D9"/>
 <rect id="btn_workshop" x="23" y="156" width="150" height="34" fill="#D9D9D9"/>
-<rect id="btn_browse_levels" x="23" y="537" width="150" height="34" fill="#D9D9D9"/>
+<rect id="btn_browse_levels" x="23" y="543" width="150" height="34" fill="#D9D9D9"/>
 <rect id="btn_file" x="137" y="202" width="36" height="34" fill="#D9D9D9"/>
-<rect id="btn_local_folder" x="137" y="113" width="36" height="34" fill="#D9D9D9"/>
+<rect id="btn_howto" x="618" y="507" width="36" height="34" fill="#D9D9D9"/>
+<rect id="btn_local_folder" x="23" y="113" width="36" height="34" fill="#D9D9D9"/>
 <rect id="btn_open_steam" x="546" y="543" width="34" height="34" fill="#C27D7D"/>
 <rect id="btn_unsubscribe" x="582" y="543" width="34" height="34" fill="#C27D7D"/>
 <rect id="btn_level_folder" x="546" y="507" width="34" height="34" fill="#C27D7D"/>

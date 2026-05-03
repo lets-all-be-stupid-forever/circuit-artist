@@ -44,14 +44,21 @@ bool is_subpath(const fs::path& path, const fs::path& base) {
 char* checkmodpath(const char* root, const char* rpath) {
   fs::path r = fs::path(root);
   fs::path p = r / rpath;
-  //   std::cout << "r=" << r << std::endl;
-  //   std::cout << "p=" << p << std::endl;
-  //   std::cout << "rc=" << fs::canonical(r) << std::endl;
-  //   std::cout << "pc=" << fs::canonical(p) << std::endl;
   if (!is_subpath(p, r)) {
     return NULL;
   }
   fs::path can = fs::weakly_canonical(p);
+  // If the path exists, resolve symlinks and re-check: a symlink inside the
+  // mod folder could otherwise point outside the root and bypass the check above
+  if (fs::exists(can)) {
+    try {
+      if (!is_subpath(fs::canonical(can), fs::canonical(r))) {
+        return NULL;
+      }
+    } catch (...) {
+      return NULL;
+    }
+  }
   return clone_string(can.string().c_str());
 }
 
