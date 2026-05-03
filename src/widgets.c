@@ -89,6 +89,12 @@ void listbox_update(Listbox* l) {
     for (int i = 0; i < arrlen(l->rows); i++) {
       Rectangle hitbox = l->rows[i].hitbox_r;
       bool hit = CheckCollisionPointRec(rmouse, hitbox);
+      l->rows[i].hitbox_g = (Rectangle){
+          hitbox.x + l->hitbox.x,
+          hitbox.y + l->hitbox.y - sy,
+          hitbox.width,
+          hitbox.height,
+      };
       if (hit) {
         l->row_hit = i;
         break;

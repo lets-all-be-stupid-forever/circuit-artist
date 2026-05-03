@@ -356,7 +356,7 @@ void blueprint_store_load(BlueprintStore* store) {
 
   // Step 2: Scan actual folders and fill in (or add) blueprints.
   register_local_blueprints(store);
-  steam_load_blueprints();
+  steam_load_blueprints_and_levels();
 
   // Step 3: Remove stubs that were never matched to a real folder
   // (thumbnail.id == 0 means no texture was loaded).
@@ -559,9 +559,7 @@ static void migrate_v1_to_v2(BlueprintStore* store) {
 }
 
 static void ensure_blueprints_folder_exists(BlueprintStore* store) {
-  if (!DirectoryExists(get_data_path("blueprints_v2"))) {
-    MakeDirectory(get_data_path("blueprints_v2"));
-  }
+  ensure_dir(get_data_path("blueprints_v2"));
 }
 
 void blueprint_store_init(BlueprintStore* store) {

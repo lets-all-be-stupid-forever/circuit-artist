@@ -43,7 +43,8 @@ typedef struct {
 typedef struct {
   PinGroup* pg;   /* Circuit interface */
   LevelDef* ldef; /* Paths */
-  Mod* mod;       /* The mod this level belongs to */
+  CustomLevelDef* cldef;
+  Mod* mod; /* The mod this level belongs to */
   bool error;
   msgpack_sbuffer sbuf;
   msgpack_packer pk;
@@ -202,10 +203,18 @@ int read_table_floats(lua_State* L, int idx, int n, float* values) {
 static Rectangle lua_checkrectangle(lua_State* L, int idx) {
   luaL_checktype(L, idx, LUA_TTABLE);
   Rectangle r;
-  lua_rawgeti(L, idx, 1); r.x      = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
-  lua_rawgeti(L, idx, 2); r.y      = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
-  lua_rawgeti(L, idx, 3); r.width  = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
-  lua_rawgeti(L, idx, 4); r.height = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
+  lua_rawgeti(L, idx, 1);
+  r.x = (float)luaL_checknumber(L, -1);
+  lua_pop(L, 1);
+  lua_rawgeti(L, idx, 2);
+  r.y = (float)luaL_checknumber(L, -1);
+  lua_pop(L, 1);
+  lua_rawgeti(L, idx, 3);
+  r.width = (float)luaL_checknumber(L, -1);
+  lua_pop(L, 1);
+  lua_rawgeti(L, idx, 4);
+  r.height = (float)luaL_checknumber(L, -1);
+  lua_pop(L, 1);
   return r;
 }
 
@@ -213,8 +222,12 @@ static Rectangle lua_checkrectangle(lua_State* L, int idx) {
 static Vector2 lua_checkvector2(lua_State* L, int idx) {
   luaL_checktype(L, idx, LUA_TTABLE);
   Vector2 v;
-  lua_rawgeti(L, idx, 1); v.x = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
-  lua_rawgeti(L, idx, 2); v.y = (float)luaL_checknumber(L, -1); lua_pop(L, 1);
+  lua_rawgeti(L, idx, 1);
+  v.x = (float)luaL_checknumber(L, -1);
+  lua_pop(L, 1);
+  lua_rawgeti(L, idx, 2);
+  v.y = (float)luaL_checknumber(L, -1);
+  lua_pop(L, 1);
   return v;
 }
 
@@ -268,10 +281,10 @@ static int lua_DrawRectangle(lua_State* L) {
 
 static int lua_DrawRectanglePro(lua_State* L) {
   // DrawRectanglePro({x,y,w,h}, {ox,oy}, rot, {r,g,b,a})
-  Rectangle rec  = lua_checkrectangle(L, 1);
-  Vector2   orig = lua_checkvector2(L, 2);
-  float     rot  = (float)luaL_checknumber(L, 3);
-  Color     c    = lua_checkcolor(L, 4);
+  Rectangle rec = lua_checkrectangle(L, 1);
+  Vector2 orig = lua_checkvector2(L, 2);
+  float rot = (float)luaL_checknumber(L, 3);
+  Color c = lua_checkcolor(L, 4);
   DrawRectanglePro(rec, orig, rot, c);
   return 0;
 }
@@ -281,8 +294,12 @@ static int lua_Import(lua_State* L) {
   const char* path = luaL_checkstring(L, 1);
   const char* full_path = path;
   char* checked_path = NULL;
-  if (lvl->ldef) {
-    checked_path = checkmodpath(lvl->ldef->mod->root, path);
+  if (lvl->cldef || lvl->ldef) {
+    if (lvl->cldef) {
+      checked_path = checkmodpath(lvl->cldef->folder, path);
+    } else {
+      checked_path = checkmodpath(lvl->ldef->mod->root, path);
+    }
     if (!checked_path) {
       return luaL_error(L, "Import: invalid path '%s'", path);
     }
@@ -322,8 +339,12 @@ static int lua_LoadTexture(lua_State* L) {
   const char* path = luaL_checkstring(L, 1);
   const char* full_path = path;
   char* checked_path = NULL;
-  if (lvl->ldef) {
-    checked_path = checkmodpath(lvl->ldef->mod->root, path);
+  if (lvl->cldef || lvl->ldef) {
+    if (lvl->cldef) {
+      checked_path = checkmodpath(lvl->cldef->folder, path);
+    } else {
+      checked_path = checkmodpath(lvl->ldef->mod->root, path);
+    }
     if (!checked_path) {
       return luaL_error(L, "LoadTexture: invalid path '%s'", path);
     }
@@ -340,11 +361,11 @@ static int lua_LoadTexture(lua_State* L) {
 static int lua_DrawTexturePro(lua_State* L) {
   // DrawTexturePro(tex, {sx,sy,sw,sh}, {dx,dy,dw,dh}, {ox,oy}, rot, {r,g,b,a})
   Texture2D* tex = luaL_checkudata(L, 1, TEXTURE_MT);
-  Rectangle  src  = lua_checkrectangle(L, 2);
-  Rectangle  dst  = lua_checkrectangle(L, 3);
-  Vector2    orig = lua_checkvector2(L, 4);
-  float      rot  = (float)luaL_checknumber(L, 5);
-  Color      c    = lua_checkcolor(L, 6);
+  Rectangle src = lua_checkrectangle(L, 2);
+  Rectangle dst = lua_checkrectangle(L, 3);
+  Vector2 orig = lua_checkvector2(L, 4);
+  float rot = (float)luaL_checknumber(L, 5);
+  Color c = lua_checkcolor(L, 6);
   DrawTexturePro(*tex, src, dst, orig, rot, c);
   return 0;
 }
@@ -903,42 +924,58 @@ static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
   return status_ok();
 }
 
-Status lua_level_create(LevelAPI* api, LevelDef* ldef) {
-  LuaLevel* lvl = calloc(1, sizeof(LuaLevel));
+Status lua_load_kernel(LuaLevel* lvl, const char* kernel) {
+  Status status = init_level_lua(lvl, false);  // Campaign level
+  if (!status.ok) return status;
+  msgpack_sbuffer_init(&lvl->sbuf);
+  msgpack_packer_init(&lvl->pk, &lvl->sbuf, msgpack_sbuffer_write);
+  printf("Loading %s ...\n", kernel);
+  if (luaL_loadfile(lvl->L, kernel) != LUA_OK) {
+    return status_lua_error(lvl->L);
+  }
+  lua_pushcfunction(lvl->L, lua_error_handler);
+  lua_insert(lvl->L, -2);  // Move error handler below the loaded chunk
+  if (lua_pcall(lvl->L, 0, 0, -2) != LUA_OK) {
+    Status s = status_lua_error(lvl->L);
+    lua_pop(lvl->L, 1);  // Pop error handler
+    return s;
+  }
+  lua_pop(lvl->L, 1);  // Pop error handler
+  return lua_call_global(lvl->L, "_Setup", 0, 0);
+}
+
+static void init_level_api(LevelAPI* api) {
   *api = (LevelAPI){0};
-  api->u = lvl;
   api->start = lua_level_start;
   api->update = lua_level_update;
   api->fw = NULL;
   api->bw = NULL;
   api->draw = lua_level_draw;
   api->destroy = lua_level_destroy;
-
-  lvl->ldef = ldef;
-  lvl->api = api;
-  Status status = init_level_lua(lvl, false);  // Campaign level
-  if (!status.ok) return status;
-  msgpack_sbuffer_init(&lvl->sbuf);
-  msgpack_packer_init(&lvl->pk, &lvl->sbuf, msgpack_sbuffer_write);
-  if (ldef) {
-    printf("Loading %s ...\n", ldef->kernel);
-    if (luaL_loadfile(lvl->L, ldef->kernel) != LUA_OK) {
-      return status_lua_error(lvl->L);
-    }
-    lua_pushcfunction(lvl->L, lua_error_handler);
-    lua_insert(lvl->L, -2);  // Move error handler below the loaded chunk
-    if (lua_pcall(lvl->L, 0, 0, -2) != LUA_OK) {
-      Status s = status_lua_error(lvl->L);
-      lua_pop(lvl->L, 1);  // Pop error handler
-      return s;
-    }
-    lua_pop(lvl->L, 1);  // Pop error handler
-  }
-
-  return lua_call_global(lvl->L, "_Setup", 0, 0);
 }
 
-Status lua_level_create_custom(LevelAPI* api, const char* kernel_fname) {
+Status lua_level_create_custom(LevelAPI* api, CustomLevelDef* ldef) {
+  LuaLevel* lvl = calloc(1, sizeof(LuaLevel));
+  init_level_api(api);
+  api->u = lvl;
+  lvl->cldef = ldef;
+  lvl->api = api;
+  char* kernel = clone_string(get_custom_level_kernel_path(ldef));
+  Status ret = lua_load_kernel(lvl, kernel);
+  free(kernel);
+  return ret;
+}
+
+Status lua_level_create_campaign(LevelAPI* api, LevelDef* ldef) {
+  LuaLevel* lvl = calloc(1, sizeof(LuaLevel));
+  init_level_api(api);
+  api->u = lvl;
+  lvl->ldef = ldef;
+  lvl->api = api;
+  return lua_load_kernel(lvl, ldef->kernel);
+}
+
+Status lua_level_create_custom_file(LevelAPI* api, const char* kernel_fname) {
   LuaLevel* lvl = calloc(1, sizeof(LuaLevel));
   *api = (LevelAPI){0};
   api->u = lvl;

@@ -21,7 +21,6 @@
 #include "win_bpdetail.h"
 #include "win_msg.h"
 #include "win_mtext.h"
-#include "win_pubform.h"
 #include "wmain.h"
 #include "wtext.h"
 

@@ -94,6 +94,7 @@ SET(ca_src
   src/shaders.c
   src/sim.c
   src/steam.cpp
+  src/toc.c
   src/tex.c
   src/win_wiki.c
   src/ui.c
@@ -106,10 +107,11 @@ SET(ca_src
   src/win_level.c
   src/win_msg.c
   src/win_blueprint.c
-  src/wire_graph.c
   src/win_pubform.c
+  src/win_customlvl.c
   src/win_progress.c
   src/win_bpdetail.c
+  src/wire_graph.c
   src/wmain.c
   src/wnumber.c
   src/wtext.c

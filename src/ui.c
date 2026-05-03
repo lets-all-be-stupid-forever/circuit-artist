@@ -27,6 +27,7 @@
 #include "win_blueprint.h"
 #include "win_bpdetail.h"
 #include "win_campaign.h"
+#include "win_customlvl.h"
 #include "win_level.h"
 #include "win_msg.h"
 #include "win_mtext.h"
@@ -155,6 +156,7 @@ void ui_init() {
   win_campaign_init(C.registry);
   about_init();
   win_mtext_init();
+  win_customlvl_init(C.registry);
   win_blueprint_init();
   profiler_init();
   modal_init();
@@ -324,6 +326,7 @@ void ui_update_frame() {
   if (update_window == WINDOW_PUBFORM) win_pubform_update();
   if (update_window == WINDOW_PROGRESS) win_progress_update();
   if (update_window == WINDOW_BPDETAIL) win_bpdetail_update();
+  if (update_window == WINDOW_CUSTOM_LEVEL) win_customlvl_update();
   profiler_tac();
 
   // We stop the app here if should_close is flagged.
@@ -351,6 +354,7 @@ void ui_update_frame() {
     if (window == WINDOW_PUBFORM) win_pubform_draw();
     if (window == WINDOW_PROGRESS) win_progress_draw();
     if (window == WINDOW_BPDETAIL) win_bpdetail_draw();
+    if (window == WINDOW_CUSTOM_LEVEL) win_customlvl_draw();
   }
   ui_draw_mouse();
   profiler_tac();

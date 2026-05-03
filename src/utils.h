@@ -120,6 +120,8 @@ typedef struct {
 bool load_steam_metadata(const char* folder, SteamMeta* meta);
 void unload_steam_meta(SteamMeta* meta);
 void remove_steam_metadata(const char* folder);
+void open_file_explorer(const char* folder);
+void ensure_dir(const char* folder);
 
 #if defined(__cplusplus)
 }

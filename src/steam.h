@@ -3,6 +3,7 @@
 #include "blueprint.h"
 #include "common.h"
 #include "game_registry.h"
+#include "win_pubform.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -29,7 +30,7 @@ void steam_open_overlay_item(u64 file_id);
 #endif
 
 void steam_open_overlay_blueprints();
-void steam_load_blueprints();
+void steam_load_blueprints_and_levels();
 void* steam_upload_item(const char* folder, const char* chg_notes,
                         const char* title, const char* desc,
                         const char* thumb_path, int ntags, const char** tags);
@@ -37,6 +38,7 @@ void* steam_upload_item(const char* folder, const char* chg_notes,
 /* Returns true when it's over */
 bool steam_upload_update(void* ctx);
 void steam_upload_free(void* ctx);
+void steam_browse_workshop_levels();
 
 #if defined(__cplusplus)
 }

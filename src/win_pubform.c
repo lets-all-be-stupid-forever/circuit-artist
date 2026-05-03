@@ -2,6 +2,7 @@
 
 #include "fs.h"
 #include "layout.h"
+#include "stb_ds.h"
 #include "steam.h"
 #include "ui.h"
 #include "utils.h"
@@ -24,6 +25,7 @@ static struct {
   double upload_counter;
   char* thumb_path;
   char* folder;
+  char** tags;
   Texture2D thumb_tex;
 } C = {0};
 
@@ -57,6 +59,11 @@ static void reset_fields() {
     C.thumb_path = NULL;
     C.thumb_tex = (Texture2D){0};
   }
+  int nt = arrlen(C.tags);
+  for (int i = 0; i < nt; i++) {
+    free(C.tags[i]);
+  }
+  arrsetlen(C.tags, 0);
   free(C.folder);
   C.folder = NULL;
 }
@@ -73,6 +80,10 @@ static void set_thumb_path(const char* path) {
 void win_pubform_open(PubformParams params) {
   ui_winpush(WINDOW_PUBFORM);
   reset_fields();
+  for (int i = 0; i < params.num_tags; i++) {
+    arrput(C.tags, clone_string(params.tags[i]));
+  }
+
   mle_set_text(&C.tb_desc, params.default_desc);
   lineedit_set_text(&C.tb_title, params.default_title);
   lineedit_set_focus(&C.tb_title, true);
@@ -94,11 +105,10 @@ static void launch_publish() {
   win_progress_set_text("Uploading to Steam");
   C.upload_counter = 0;
   ProgressCtx pc = {0};
-  char* tags[2] = {"blueprint", NULL};
-
+  int nt = arrlen(C.tags);
   pc.ctx = steam_upload_item(
       C.folder, "Change note", lineedit_get_text(&C.tb_title),
-      mle_get_text(&C.tb_desc), C.thumb_path, 1, (const char**)tags);
+      mle_get_text(&C.tb_desc), C.thumb_path, nt, (const char**)C.tags);
   pc.update = progress_update;
   win_progress_open(pc);
 }
@@ -107,7 +117,7 @@ void win_pubform_update() {
   update_layout();
   textbox_update(&C.tb_legal);
   textbox_set_content(&C.tb_legal,
-                      "By submitting this blueprint, you agree to the `Steam "
+                      "By submitting this item, you agree to the `Steam "
                       "Workshop terms of service.`",
                       NULL);
   bool key_escape = IsKeyPressed(KEY_ESCAPE);

@@ -5,6 +5,7 @@
 #include <lualib.h>
 #include <msgpack.h>
 
+#include "errno.h"
 #include "fs.h"
 #include "json.h"
 #include "paths.h"
@@ -12,6 +13,7 @@
 #include "stb_ds.h"
 #include "stdlib.h"
 #include "steam.h"
+#include "toc.h"
 #include "ui.h"
 #include "utils.h"
 #include "wmain.h"
@@ -605,6 +607,70 @@ static void init_default_mod(GameRegistry* r) {
   free(default_mod_path);
 }
 
+static void load_custom_level(const char* folder, const char* id,
+                              CustomLevelDef* ldef) {
+  char* desc_txt = LoadFileText(TextFormat("%s/desc.txt", folder));
+  Toc toc = {0};
+  toc_init(&toc);
+  const char* body = NULL;
+  int ntk = toc_parse(desc_txt, &toc, &body);
+  ldef->desc = clone_string(body);
+  for (int i = 0; i < ntk; i++) {
+    const char* key = toc.entries[i].key;
+    const char* val = toc.entries[i].value;
+    if (strcmp(key, "Title") == 0) {
+      if (ldef->name) free(ldef->name);
+      ldef->name = clone_string(val);
+    }
+  }
+  toc_free(&toc);
+  if (!ldef->name) ldef->name = clone_string("Unknown");
+  UnloadFileText(desc_txt);
+  load_text_sprites(folder, ldef->desc, &ldef->desc_imgs);
+  ldef->folder = clone_string(folder);
+  ldef->id = clone_string(id);
+}
+
+static void register_custom_levels(GameRegistry* r) {
+  char* official_root = get_asset_path("custom_levels");
+  /* Official custom */
+  FilePathList dirs = LoadDirectoryFiles(official_root);
+  for (int i = 0; i < dirs.count; i++) {
+    char id[256];
+    CustomLevelDef ldef = {0};
+    const char* folder = dirs.paths[i];
+    if (!DirectoryExists(folder)) continue;
+    char* folder_name = os_path_basename(folder);
+    snprintf(id, sizeof(id), "official:%s", folder_name);
+    load_custom_level(folder, id, &ldef);
+    ldef.type = CUSTOM_LEVEL_OFFICIAL;
+    arrput(r->official_custom_levels, ldef);
+    free(folder_name);
+  }
+  UnloadDirectoryFiles(dirs);
+  free(official_root);
+
+  /* Local custom */
+  char* local_root = abs_path(get_data_path("local_levels"));
+  ensure_dir(local_root);
+
+  dirs = LoadDirectoryFiles(local_root);
+  for (int i = 0; i < dirs.count; i++) {
+    char id[256];
+    CustomLevelDef ldef = {0};
+    const char* folder = dirs.paths[i];
+    if (!DirectoryExists(folder)) continue;
+    char* folder_name = os_path_basename(folder);
+    snprintf(id, sizeof(id), "local:%s", folder_name);
+    load_custom_level(folder, id, &ldef);
+    ldef.type = CUSTOM_LEVEL_LOCAL;
+    arrput(r->local_custom_levels, ldef);
+    free(folder_name);
+  }
+  UnloadDirectoryFiles(dirs);
+  free(local_root);
+}
+
 static void init_local_mods(GameRegistry* r) {
   char* mods_path = clone_string(get_data_path("mods"));
   if (!DirectoryExists(mods_path)) {
@@ -631,5 +697,61 @@ static void init_local_mods(GameRegistry* r) {
  */
 void init_mods(GameRegistry* r) {
   init_default_mod(r);
+  register_custom_levels(r);
   //  init_local_mods(r);
+}
+
+u64 extract_item_from_id(const char* id) {
+  const char* colon = strchr(id, ':');
+  if (!colon) return 0;
+
+  errno = 0;
+  char* end;
+  unsigned long long val = strtoull(colon + 1, &end, 10);
+
+  if (end == colon + 1) abort();  // no digits parsed
+  if (errno != 0) abort();        // overflow/underflow
+  if (*end != '\0') abort();      // extra junk after number
+
+  return (u64)val;
+}
+
+CustomLevelDef* find_steam_level(GameRegistry* r, u64 steam_id) {
+  int n = arrlen(r->workshop_custom_levels);
+  for (int i = 0; i < n; i++) {
+    CustomLevelDef* l = &r->workshop_custom_levels[i];
+    if (extract_item_from_id(l->id) == steam_id) {
+      return l;
+    }
+  }
+  return NULL;
+}
+
+void add_steam_level_from_folder(GameRegistry* r, const char* folder,
+                                 u64 steam_id) {
+  CustomLevelDef* l = find_steam_level(r, steam_id);
+  if (l) {
+    // TODO: Update existing level
+    l->unsubscribed = false;
+    return;
+  }
+  SteamMeta meta = {0};
+  bool ok = load_steam_metadata(folder, &meta);
+
+  char id[256];
+  CustomLevelDef ldef = {0};
+  snprintf(id, sizeof(id), "steam:%" PRIu64, steam_id);
+  load_custom_level(folder, id, &ldef);
+  ldef.type = CUSTOM_LEVEL_STEAM;
+  ldef.steam_author = clone_string(meta.author_name);
+  arrput(r->workshop_custom_levels, ldef);
+  unload_steam_meta(&meta);
+}
+
+char* get_custom_levels_folder() {
+  return abs_path(get_data_path("local_levels"));
+}
+
+const char* get_custom_level_kernel_path(CustomLevelDef* ldef) {
+  return TextFormat("%s/kernel.lua", ldef->folder);
 }

@@ -143,12 +143,12 @@ typedef struct {
   Rectangle hitbox;
   char buf[LINEEDIT_BUFSIZE];
   int len;
-  int cursor;     // byte offset [0..len]
-  int sel_anchor; // -1 = no selection; otherwise the other end of selection
-  float alive;    // cursor blink timer
-  bool focused;   // whether widget is receiving input
-  bool dragging;  // true while LMB held for drag-select
-  int scroll_x;   // horizontal scroll offset in screen pixels
+  int cursor;      // byte offset [0..len]
+  int sel_anchor;  // -1 = no selection; otherwise the other end of selection
+  float alive;     // cursor blink timer
+  bool focused;    // whether widget is receiving input
+  bool dragging;   // true while LMB held for drag-select
+  int scroll_x;    // horizontal scroll offset in screen pixels
 } LineEdit;
 
 void lineedit_init(LineEdit* e);

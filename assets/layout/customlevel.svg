@@ -1,0 +1,26 @@
+<svg width="1100" height="647" viewBox="0 0 1100 647" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="customlevel">
+<rect width="1100" height="647" fill="white"/>
+<rect id="lb_level" x="190" y="70" width="339" height="501" fill="#D9D9D9"/>
+<rect id="tb_desc" x="546" y="70" width="525" height="422" fill="#D9D9D9"/>
+<rect id="btn_official" x="23" y="70" width="150" height="34" fill="#D9D9D9"/>
+<rect id="btn_local" x="23" y="113" width="110" height="34" fill="#D9D9D9"/>
+<rect id="btn_workshop" x="23" y="156" width="150" height="34" fill="#D9D9D9"/>
+<rect id="btn_browse_levels" x="23" y="537" width="150" height="34" fill="#D9D9D9"/>
+<rect id="btn_file" x="137" y="202" width="36" height="34" fill="#D9D9D9"/>
+<rect id="btn_local_folder" x="137" y="113" width="36" height="34" fill="#D9D9D9"/>
+<rect id="btn_open_steam" x="546" y="543" width="34" height="34" fill="#C27D7D"/>
+<rect id="btn_unsubscribe" x="582" y="543" width="34" height="34" fill="#C27D7D"/>
+<rect id="btn_level_folder" x="546" y="507" width="34" height="34" fill="#C27D7D"/>
+<rect id="btn_publish" x="582" y="507" width="34" height="34" fill="#C56767"/>
+<rect id="btn_choose" x="605" y="600" width="230" height="34" fill="#D9D9D9"/>
+<rect id="btn_close" x="841" y="600" width="230" height="34" fill="#D9D9D9"/>
+<rect id="btn_browse_sol" x="1037" y="524" width="34" height="34" fill="#D9D9D9"/>
+<rect id="sol1" x="717" y="511" width="64" height="64" fill="#D9D9D9"/>
+<rect id="sol2" x="787" y="511" width="64" height="64" fill="#D9D9D9"/>
+<rect id="sol3" x="857" y="511" width="64" height="64" fill="#D9D9D9"/>
+<rect id="sol4" x="927" y="511" width="64" height="64" fill="#D9D9D9"/>
+<rect id="btn_sol_nxt" x="997" y="511" width="32" height="64" fill="#D9D9D9"/>
+<rect id="btn_sol_prv" x="679" y="511" width="32" height="64" fill="#D9D9D9"/>
+</g>
+</svg>

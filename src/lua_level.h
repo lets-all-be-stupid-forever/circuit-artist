@@ -9,7 +9,8 @@
 #include "status.h"
 #include "stdbool.h"
 
-Status lua_level_create(LevelAPI* lvl, LevelDef* ldef);
-Status lua_level_create_custom(LevelAPI* api, const char* kernel_fname);
+Status lua_level_create_campaign(LevelAPI* lvl, LevelDef* ldef);
+Status lua_level_create_custom(LevelAPI* lvl, CustomLevelDef* ldef);
+Status lua_level_create_custom_file(LevelAPI* api, const char* kernel_fname);
 
 #endif

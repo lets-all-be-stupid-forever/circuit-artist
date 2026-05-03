@@ -32,6 +32,11 @@ void main_stop_simu();
 Paint* main_get_paint();
 bool is_circuit_sound_on();
 bool is_paint_sound_on();
+void main_select_custom_level(CustomLevelDef* c);
+bool custom_level_open_file();
+void main_load_campaign_level(LevelDef* ldef);
+void main_load_custom_level(CustomLevelDef* ldef);
+void main_load_file_level(const char* fname);
 
 typedef struct {
   bool done;

@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "fs.h"
+
 #define PROGRESS_FILE "save_1_1.json"
 
 static struct {
@@ -55,13 +57,7 @@ static void init_env_path(const char** path, const char* name) {
 
 /// The caller must free the returned C-String
 char* get_asset_path(const char* path) {
-  // XXX: should this just return a pointer to a static buffer?
-  size_t len = strlen(C.asset_path) + 1 + strlen(path) + 1;
-  char* buf = malloc(len);
-
-  snprintf(buf, len, "%s/%s", C.asset_path, path);
-
-  return buf;
+  return abs_path(TextFormat("%s/%s", C.asset_path, path));
 }
 
 Sound load_sound_asset(const char* asset) {

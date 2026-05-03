@@ -1,0 +1,17 @@
+## Title: Sandbox
+## Kernel: kernel.lua
+
+`SANDBOX`
+
+!img:sandbox1.png
+
+Sandbox mode with a clock that triggers when circuit is idle.
+
+No objective.
+
+!hl
+`Inputs`
+
+The `clock` input allows you to create synchronous circuits. It triggers `on` or `off` when the circuit gets idle (it won't update in a constant rate).
+
+The `power_on_reset` input allows you to initialize memory when applicable. It stays on (`1`) for the 2 first clock cycles, then it becomes off (`0`) for the rest of the simulation.

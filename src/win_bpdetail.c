@@ -99,7 +99,11 @@ static void do_publish() {
   UnloadImage(full);
   PubformParams p = {0};
   char* folder = abs_path(bp->folder);
+  char* tags[2] = {"blueprint", NULL};
+  p.type = STEAM_ITEM_BLUEPRINT;
   p.folder = folder;
+  p.num_tags = 1;
+  p.tags = (const char**)tags;
   p.default_title = bp->name ? bp->name : "My Blueprint";
   p.default_desc = bp->desc ? bp->desc : "";
   p.default_thumbnail_path = thumb_path_abs;

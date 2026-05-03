@@ -62,6 +62,7 @@
 #define rect_sel_open ((Rectangle){464, 16, 13, 13})
 #define rect_sel_save ((Rectangle){464, 0, 13, 13})
 #define rect_inspect_wire ((Rectangle){80, 32, 13, 13})
+#define rect_lua ((Rectangle){128, 32, 13, 13})
 
 // Clock speed icons
 #define rect_hz0 ((Rectangle){352, 16, 13, 13})

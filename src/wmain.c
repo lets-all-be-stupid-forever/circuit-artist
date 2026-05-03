@@ -31,6 +31,7 @@
 #include "wdialog.h"
 #include "widgets.h"
 #include "win_blueprint.h"
+#include "win_customlvl.h"
 #include "win_level.h"
 #include "win_msg.h"
 #include "win_mtext.h"
@@ -136,6 +137,7 @@ static struct {
   Rectangle energy_rect;
   Callback dialog_callback;
   LevelDef* ldef;
+  CustomLevelDef* cldef;
   char* level_file;
   LevelAPI api;
   Blueprint* bp;
@@ -291,22 +293,36 @@ static void handle_kernel_error(Status s) {
   C.kernel_error_msg = s.err_msg;
   show_kernel_error();
 }
-
 static void reset_kernel_error() {
   if (C.kernel_error_msg) free(C.kernel_error_msg);
   C.kernel_error_msg = NULL;
   C.kernel_error = false;
 }
 
-static void load_file_level(const char* fname) {
-  char* new_name = clone_string(fname);
+static void reset_level() {
   if (C.level_file) free(C.level_file);
   C.level_file = NULL;
   C.ldef = NULL;
-  C.level_file = new_name;
+  C.cldef = NULL;
   level_api_destroy(&C.api);
   reset_kernel_error();
-  Status s = lua_level_create_custom(&C.api, C.level_file);
+}
+
+void main_load_campaign_level(LevelDef* ldef) {
+  reset_level();
+  C.ldef = ldef;
+  Status s = lua_level_create_campaign(&C.api, ldef);
+  if (!s.ok) {
+    handle_kernel_error(s);
+  } else {
+    msg_add("Campaign level loaded", 5);
+  }
+}
+
+void main_load_custom_level(CustomLevelDef* ldef) {
+  reset_level();
+  C.cldef = ldef;
+  Status s = lua_level_create_custom(&C.api, ldef);
   if (!s.ok) {
     handle_kernel_error(s);
   } else {
@@ -314,23 +330,24 @@ static void load_file_level(const char* fname) {
   }
 }
 
-static void reload_level() {
-  if (!C.level_file) return;
-  load_file_level(C.level_file);
-}
-
-static void on_select_level(LevelDef* ldef) {
-  if (ldef == C.ldef) return;
-  if (C.level_file) free(C.level_file);
-  C.level_file = NULL;
-  C.ldef = ldef;
-  level_api_destroy(&C.api);
-  reset_kernel_error();
-  Status s = lua_level_create(&C.api, ldef);
+void main_load_file_level(const char* fname) {
+  reset_level();
+  C.level_file = clone_string(fname);
+  Status s = lua_level_create_custom_file(&C.api, C.level_file);
   if (!s.ok) {
     handle_kernel_error(s);
+  } else {
+    msg_add("Custom file level loaded", 5);
   }
 }
+
+static void reload_level() {
+  if (C.level_file) main_load_file_level(C.level_file);
+  if (C.cldef) main_load_custom_level(C.cldef);
+  if (C.ldef) main_load_campaign_level(C.ldef);
+}
+
+static void on_select_level(LevelDef* ldef) { main_load_campaign_level(ldef); }
 
 void main_init(GameRegistry* registry) {
   srand(time(NULL));
@@ -963,19 +980,24 @@ static void toggle_always_on_top() {
 
 static void toggle_sim_show_t() { C.sim_show_t = !C.sim_show_t; }
 
-static void custom_level_open() {
+static void custom_level_open_win() { win_customlvl_open(C.cldef); }
+
+bool custom_level_open_file() {
   on_modal_before_open();
   ModalResult mr = modal_open_file_lua(NULL);
   on_modal_after_open();
   if (mr.ok) {
-    load_file_level(mr.fPath);
+    main_load_file_level(mr.fPath);
     free(mr.fPath);
+    return true;
   } else if (mr.cancel) {
+    return false;
   } else {
     char txt[500];
     snprintf(txt, sizeof(txt), "ERROR: %s\n", mr.errMsg);
     msg_add(txt, MSG_DURATION);
   }
+  return false;
 }
 
 void main_update_hud() {
@@ -1028,7 +1050,7 @@ void main_update_hud() {
 
   if (btn_update(&C.btn_level_campaign))
     win_level_open(C.ldef, on_select_level);
-  if (btn_update(&C.btn_level_custom)) custom_level_open();
+  if (btn_update(&C.btn_level_custom)) custom_level_open_win();
   if (btn_update(&C.btn_wiki)) win_wiki_open();
   if (btn_update(&C.btn_blueprint)) win_blueprint_open();
 
@@ -1227,10 +1249,10 @@ void main_draw() {
 
     btn_draw_legend(
         &C.btn_level_custom, bscale,
-        "Select custom level from local files\nPress (F5) to "
+        "Load a Custom Level\nPress (F5) to "
         "quickly reload script\n"
         "Check game's blog website, wiki or examples folder in game's "
-        "folder for instructions\n"
+        "folder for instructions on how to create custom levels \n"
         "www.circuitartistgame.com");
     btn_draw_legend(&C.btn_level_campaign, bscale, "Select campaign level");
     btn_draw_legend(&C.btn_wiki, bscale, "Wiki");

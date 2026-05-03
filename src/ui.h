@@ -35,6 +35,7 @@ typedef enum {
   WINDOW_PUBFORM,
   WINDOW_PROGRESS,
   WINDOW_BPDETAIL,
+  WINDOW_CUSTOM_LEVEL,
 } WindowEnum;
 
 void ui_init();

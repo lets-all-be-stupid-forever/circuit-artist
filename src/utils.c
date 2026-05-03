@@ -862,9 +862,7 @@ static char* temp_folder = NULL;
 static void ensure_temp_folder_exists() {
   if (!temp_folder) {
     char* path = abs_path(get_data_path("temp"));
-    if (!DirectoryExists(path)) {
-      MakeDirectory(path);
-    }
+    ensure_dir(path);
     temp_folder = path;
   }
 }
@@ -943,3 +941,26 @@ void unload_steam_meta(SteamMeta* m) {
   }
   *m = (SteamMeta){0};
 }
+
+void open_file_explorer(const char* folder) {
+#if defined(_WIN32)
+  char cmd[512];
+  snprintf(cmd, sizeof(cmd), "explorer \"%s\"", folder);
+  system(cmd);
+#elif defined(__APPLE__)
+  char cmd[512];
+  snprintf(cmd, sizeof(cmd), "open \"%s\"", folder);
+  system(cmd);
+#else  // Linux
+  char cmd[512];
+  snprintf(cmd, sizeof(cmd), "xdg-open \"%s\"", folder);
+  system(cmd);
+#endif
+}
+
+void ensure_dir(const char* folder) {
+  if (!DirectoryExists(folder)) {
+    MakeDirectory(folder);
+  }
+}
+

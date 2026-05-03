@@ -6,8 +6,10 @@
 #include <string>
 #include <vector>
 
+#include "fs.h"
 #include "utils.h"
 #include "win_blueprint.h"
+#include "win_customlvl.h"
 
 #ifdef WITH_STEAM
 #include "steam/steam_api_flat.h"
@@ -60,6 +62,20 @@ static bool meta_has_tag(SteamMeta* m, const char* tag) {
   return false;
 }
 
+static bool folder_is_blueprint(const char* folder) {
+  bool ok = true;
+  ok = ok && os_path_exists(TextFormat("%s/full.png", folder));
+  ok = ok && os_path_exists(TextFormat("%s/meta.json", folder));
+  ok = ok && os_path_exists(TextFormat("%s/thumb.png", folder));
+  return ok;
+}
+
+static bool folder_is_level(const char* folder) {
+  bool ok = true;
+  ok = ok && os_path_exists(TextFormat("%s/desc.txt", folder));
+  return ok;
+}
+
 void process_item_ingress(u64 id) {
   uint32 state = C.ugc->GetItemState(id);
   bool subscribed = (state & k_EItemStateSubscribed);
@@ -74,8 +90,10 @@ void process_item_ingress(u64 id) {
     SteamMeta meta = {0};
     ok = load_steam_metadata(folder, &meta);
     if (ok) {
-      if (meta_has_tag(&meta, "blueprint")) {
+      if (folder_is_blueprint(folder)) {
         add_steam_blueprint(folder, id);
+      } else if (folder_is_level(folder)) {
+        notify_installed_steam_level(folder, id);
       }
       unload_steam_meta(&meta);
     }
@@ -437,7 +455,7 @@ void steam_upload_free(void* ctx) {
 #endif
 }
 
-void steam_load_blueprints() {
+void steam_load_blueprints_and_levels() {
 #ifdef WITH_STEAM
   bool include_locally_disabled = false;
   uint32 count =
@@ -465,6 +483,18 @@ void steam_open_overlay_blueprints() {
   snprintf(url, sizeof(url),
            "https://steamcommunity.com/workshop/browse/"
            "?appid=%u&requiredtags%%5B%%5D=blueprint",
+           C.app_id);
+  SteamFriends()->ActivateGameOverlayToWebPage(
+      url, k_EActivateGameOverlayToWebPageMode_Default);
+#endif
+}
+
+void steam_browse_workshop_levels() {
+#ifdef WITH_STEAM
+  char url[256];
+  snprintf(url, sizeof(url),
+           "https://steamcommunity.com/workshop/browse/"
+           "?appid=%u&requiredtags%%5B%%5D=level",
            C.app_id);
   SteamFriends()->ActivateGameOverlayToWebPage(
       url, k_EActivateGameOverlayToWebPageMode_Default);
