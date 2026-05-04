@@ -964,3 +964,14 @@ void ensure_dir(const char* folder) {
   }
 }
 
+
+const char* pretty_number(int n) {
+  static char buf[32];
+  if (n >= 1000000)
+    snprintf(buf, sizeof(buf), "%.1fM", n / 1000000.0f);
+  else if (n >= 1000)
+    snprintf(buf, sizeof(buf), "%.1fK", n / 1000.0f);
+  else
+    snprintf(buf, sizeof(buf), "%d", n);
+  return buf;
+}

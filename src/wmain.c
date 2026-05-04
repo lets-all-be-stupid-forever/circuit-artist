@@ -9,6 +9,7 @@
 #include "blueprint.h"
 #include "colors.h"
 #include "common.h"
+#include "discord_integration.h"
 #include "font.h"
 #include "img.h"
 #include "json.h"
@@ -168,9 +169,27 @@ static void main_open_file_modal();
 static RectangleInt main_get_target_region();
 static void main_open_selection();
 static void main_save_selection();
+static char* main_get_filename();
 static int main_get_simu_mode() { return C.mode; }
 static bool main_is_simulation_on() {
   return main_get_simu_mode() == MODE_SIMU;
+}
+
+static int s_last_num_nands = 0;
+
+static void discord_refresh() {
+  const char* fname = GetFileName(main_get_filename());
+  const char* level_name = NULL;
+  if (C.ldef)
+    level_name = C.ldef->name;
+  else if (C.cldef)
+    level_name = C.cldef->name;
+
+  if (C.mode == MODE_EDIT) {
+    discord_set_editing(fname, level_name, s_last_num_nands);
+  } else {
+    discord_set_simulating(fname, level_name, s_last_num_nands);
+  }
 }
 
 static bool main_can_rewind() { return C.api.bw != NULL; }
@@ -274,6 +293,7 @@ void main_stop_simu() {
   C.time_open = false;
   C.rewind_pressed = false;
   C.forward_pressed = false;
+  discord_refresh();
 }
 
 static void show_kernel_error() {
@@ -317,6 +337,7 @@ void main_load_campaign_level(LevelDef* ldef) {
   } else {
     msg_add("Campaign level loaded", 2);
   }
+  discord_refresh();
 }
 
 void main_load_custom_level(CustomLevelDef* ldef) {
@@ -328,6 +349,7 @@ void main_load_custom_level(CustomLevelDef* ldef) {
   } else {
     msg_add("Custom level loaded", 2);
   }
+  discord_refresh();
 }
 
 void main_load_file_level(const char* fname) {
@@ -404,6 +426,8 @@ void main_init(GameRegistry* registry) {
   main_update_widgets();
   sim_dry_run(registry);
   main_load_custom_level(find_sandbox_custom_level());
+  discord_init();
+  discord_refresh();
 }
 
 static void simu_play_sounds() {
@@ -504,6 +528,7 @@ static void on_mtext_accept(void* ctx, const char* txt) {
 }
 
 void main_update() {
+  discord_run_callbacks();
   main_update_viewport();
   C.rewind_pressed = false;
   C.forward_pressed = false;
@@ -697,15 +722,18 @@ void main_start_simu() {
     return;
   }
 
+  s_last_num_nands = arrlen(C.sim.pg.nands);
   C.hsim = wrap_sim(&C.sim);
   C.simu_target_steps = 0;
   C.pix_toggle = -1;
   if (sim_has_errors(&C.sim)) {
     play_sound_oops();
     C.mode = MODE_ERROR;
+    discord_refresh();
     return;
   }
   C.mode = MODE_SIMU;
+  discord_refresh();
 }
 
 static void main_toggle_simu() {
@@ -1658,8 +1686,10 @@ void main_draw_status_bar() {
   const char* line = NULL;
   if (C.ldef) {
     line = TextFormat("[level] (campaign) %s", C.ldef->name);
+  } else if (C.cldef) {
+    line = TextFormat("[level] (custom) %s", C.cldef->name);
   } else {
-    line = TextFormat("[level] (custom) %s", GetFileName(C.level_file));
+    line = TextFormat("[level] (file) %s", GetFileName(C.level_file));
   }
   font_draw_texture_outlined(line, xc, yc8, tc, bg);
 
@@ -1824,6 +1854,7 @@ void main_new_file() {
 }
 
 void main_destroy() {
+  discord_shutdown();
   paint_destroy(&C.ca);
   if (C.fname) {
     free(C.fname);

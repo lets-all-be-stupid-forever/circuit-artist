@@ -48,6 +48,11 @@ add_subdirectory(third_party/json-c)
 add_subdirectory(third_party/msgpack-c)
 add_compile_definitions(CLIP_ENABLE_IMAGE=1)
 
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CLANG_FORMAT_CMD "" CACHE STRING "" FORCE)
+add_subdirectory(third_party/discord-rpc-3.4.0)
+unset(CLANG_FORMAT_CMD CACHE)
+
 IF(APPLE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_compile_options(-fsanitize=address)
   add_link_options(-fsanitize=address)
@@ -56,6 +61,7 @@ ENDIF()
 set(CMAKE_C_STANDARD 11)
 
 SET(ca_src
+  src/discord_integration.cpp
   src/brush.c
   src/buffer.c
   src/blueprint.c
@@ -150,6 +156,7 @@ target_include_directories(calib PRIVATE
   third_party/msgpack-c/include
   third_party/raylib/src
   third_party/raylib/src/external
+  third_party/discord-rpc-3.4.0/include
   )
 
 # shlwapi is only for win32
@@ -167,7 +174,8 @@ target_link_libraries(calib
   ${steam_libs}
   lualib
   msgpack-c
-  json-c)
+  json-c
+  discord-rpc)
 
 add_executable(ca src/main.c)
 target_link_libraries(ca calib)
@@ -192,6 +200,7 @@ target_include_directories(calib_demo PRIVATE
   third_party/msgpack-c/include
   third_party/raylib/src
   third_party/raylib/src/external
+  third_party/discord-rpc-3.4.0/include
   )
 
 target_compile_definitions(calib_demo PRIVATE DEMO_VERSION=1)
@@ -205,7 +214,8 @@ target_link_libraries(calib_demo
   ${steam_libs}
   lualib
   msgpack-c
-  json-c)
+  json-c
+  discord-rpc)
 
 # Demo executable
 add_executable(ca_demo src/main.c)

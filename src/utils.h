@@ -54,6 +54,8 @@ ParsedLayout parse_layout2(const char* fname);
 bool fuzzy_match_simple(const char* target, const char* query);
 int fuzzy_score(const char* target, const char* query);
 
+const char* pretty_number(int n);
+
 // File utilities
 char** find_png_files(const char* folder_path);
 char* extract_filename_no_ext(const char* filepath);
