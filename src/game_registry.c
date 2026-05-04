@@ -657,6 +657,7 @@ static void register_custom_levels(GameRegistry* r) {
   for (int i = 0; i < dirs.count; i++) {
     const char* folder = dirs.paths[i];
     if (!DirectoryExists(folder)) continue;
+    /* Won't load levels that don't */
     if (!folder_is_level(folder)) continue;
     char id[256];
     CustomLevelDef* ldef = calloc(1, sizeof(CustomLevelDef));

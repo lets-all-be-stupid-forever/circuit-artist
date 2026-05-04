@@ -8,6 +8,7 @@
 #include "assert.h"
 #include "font.h"
 #include "fs.h"
+#include "paths.h"
 #include "game_registry.h"
 #include "json.h"
 #include "log.h"
@@ -289,19 +290,42 @@ static int lua_DrawRectanglePro(lua_State* L) {
   return 0;
 }
 
+// Tries root/path and root/path.lua; returns a malloc'd resolved path on hit,
+// NULL if neither exists or if the path would escape root.
+static char* import_try_resolve(const char* root, const char* path) {
+  char* checked = checkmodpath(root, path);
+  if (checked && FileExists(checked)) return checked;
+  free(checked);
+
+  size_t len = strlen(path);
+  if (len >= 4 && strcmp(path + len - 4, ".lua") == 0) return NULL;
+
+  char* with_ext = malloc(len + 5);
+  memcpy(with_ext, path, len);
+  memcpy(with_ext + len, ".lua", 5);
+  checked = checkmodpath(root, with_ext);
+  free(with_ext);
+  if (checked && FileExists(checked)) return checked;
+  free(checked);
+  return NULL;
+}
+
 static int lua_Import(lua_State* L) {
   LuaLevel* lvl = lua_getlevel(L);
   const char* path = luaL_checkstring(L, 1);
   const char* full_path = path;
   char* checked_path = NULL;
   if (lvl->cldef || lvl->ldef) {
-    if (lvl->cldef) {
-      checked_path = checkmodpath(lvl->cldef->folder, path);
-    } else {
-      checked_path = checkmodpath(lvl->ldef->mod->root, path);
+    const char* folder =
+        lvl->cldef ? lvl->cldef->folder : lvl->ldef->mod->root;
+    checked_path = import_try_resolve(folder, path);
+    if (!checked_path) {
+      char* shared_root = get_asset_path("lua_shared");
+      checked_path = import_try_resolve(shared_root, path);
+      free(shared_root);
     }
     if (!checked_path) {
-      return luaL_error(L, "Import: invalid path '%s'", path);
+      return luaL_error(L, "Import: couldn't find '%s'", path);
     }
     full_path = checked_path;
   }

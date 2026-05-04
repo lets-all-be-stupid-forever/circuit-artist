@@ -13,6 +13,7 @@
 #include "utils.h"
 #include "wdialog.h"
 #include "win_pubform.h"
+#include "win_wiki.h"
 #include "wmain.h"
 
 typedef enum {
@@ -46,6 +47,7 @@ static struct {
   Btn btn_local_folder;
 
   Btn btn_publish;
+  Btn btn_wiki;
   Btn btn_open_steam;
   Btn btn_unsubscribe;
   Btn btn_browse_levels;
@@ -108,6 +110,7 @@ static void update_layout() {
 
   C.btn_level_folder.hitbox = layout_rect(l, "btn_level_folder");
   C.btn_local_folder.hitbox = layout_rect(l, "btn_local_folder");
+  C.btn_wiki.hitbox = layout_rect(l, "btn_wiki");
 
   C.lab_author.hitbox = layout_rect(l, "lab_author");
   // C.lab_name.hitbox = layout_rect(l, "lab_name");
@@ -235,6 +238,9 @@ void win_customlvl_open(CustomLevelDef* ldef) {
   }
 }
 static void update_page_buttons() {
+  if (btn_update(&C.btn_wiki)) {
+    win_wiki_open_on_item("customlevel");
+  }
   if (btn_update(&C.btn_page_local)) {
     set_page(PAGE_LOCAL);
   }
@@ -403,6 +409,7 @@ void win_customlvl_draw() {
   btn_draw_icon(&C.btn_publish, ui_get_scale(), sprites, rect_publish);
   btn_draw_icon(&C.btn_open_steam, ui_get_scale(), sprites, rect_steam);
   btn_draw_icon(&C.btn_unsubscribe, ui_get_scale(), sprites, rect_trash);
+  btn_draw_icon(&C.btn_wiki, ui_get_scale(), sprites, rect_book);
 
   label_draw(&C.lab_author);
   // label_draw(&C.lab_name);
@@ -419,6 +426,7 @@ void win_customlvl_draw() {
 
   if (ui_get_window() == WINDOW_CUSTOM_LEVEL) {
     //     sol_draw_leg(&C.sol);
+    btn_draw_legend(&C.btn_wiki, ui_get_scale(), "Open wiki for custom level");
 
     btn_draw_legend(&C.btn_page_official, ui_get_scale(),
                     "Official custom levels of the game");
