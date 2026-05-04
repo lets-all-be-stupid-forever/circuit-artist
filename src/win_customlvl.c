@@ -238,6 +238,7 @@ void win_customlvl_open(CustomLevelDef* ldef) {
   }
 }
 static void update_page_buttons() {
+  C.btn_page_workshop.disabled = !is_steam_on();
   if (btn_update(&C.btn_wiki)) {
     win_wiki_open_on_item("customlevel");
   }

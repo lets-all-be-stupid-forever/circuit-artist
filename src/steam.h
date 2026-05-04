@@ -24,11 +24,11 @@ void SteamRefreshAchievement();
 int steam_get_stats(const char* name);
 void steam_set_stats(const char* name, int v);
 void steam_store_stats();
-bool steam_unsubscribe_item(u64 id);
-void steam_open_overlay_item(u64 file_id);
 
 #endif
 
+void steam_open_overlay_item(u64 file_id);
+bool steam_unsubscribe_item(u64 id);
 void steam_open_overlay_blueprints();
 void steam_load_blueprints_and_levels();
 void* steam_upload_item(const char* folder, const char* chg_notes,
