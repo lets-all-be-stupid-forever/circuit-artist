@@ -472,5 +472,12 @@ void notify_installed_steam_level(const char* folder, u64 item) {
 }
 
 CustomLevelDef* find_sandbox_custom_level() {
+  int n = arrlen(C.r->official_custom_levels);
+  for (int i = 0; i < n; i++) {
+    CustomLevelDef* l = C.r->official_custom_levels[i];
+    if (strcmp(l->id, "official:sandbox") == 0) {
+      return l;
+    }
+  }
   return C.r->official_custom_levels[0];
 }
