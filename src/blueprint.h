@@ -31,6 +31,10 @@ typedef struct {
    * */
   char* id;
   char* folder; /* Absolute path folder location*/
+
+  char* linked_level_id; /* The level this blueprint is linked to */
+  bool solved_level;     /* 0 = unsolved, 1 = solved */
+
   int width;
   int height;
   int layers;
@@ -61,7 +65,8 @@ void blueprint_set_desc(Blueprint* bp, const char* new_desc);
 
 void inject_blueprint_from_folder(BlueprintStore* store, const char* id,
                                   const char* folder);
-int blueprint_create(BlueprintStore* store, int nl, Image* imgs, Image full);
+int blueprint_create(BlueprintStore* store, int nl, Image* imgs, Image full,
+                     const char* lvl);
 void blueprint_store_swap(BlueprintStore* store, int i0, int i1);
 void blueprint_store_init(BlueprintStore* store);
 void blueprint_store_load(BlueprintStore* store);
@@ -72,6 +77,10 @@ void blueprint_draw_leg(Btn* b, Blueprint* s, int scale);
 void blueprint_update_thumbnail(Blueprint* s, int nl, Image* imgs);
 bool blueprint_can_delete(Blueprint* s);
 void blueprint_copy_to_clipboard(Blueprint* s);
+void blueprint_link_to_level(Blueprint* bp, const char* id, bool solved);
+void add_steam_blueprint(const char* folder, u64 id);
+void get_linked_blueprints(Blueprint*** sols, const char* id);
+int find_bp_index(BlueprintStore* store, Blueprint* bp);
 
 #if defined(__cplusplus)
 }

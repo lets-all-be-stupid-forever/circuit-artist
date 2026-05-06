@@ -183,6 +183,8 @@ typedef struct Sim {
   bool pause_requested; /* pausing from within simulation */
   int64_t update_interval;
   int base_tps;
+  bool complete; /* Activats on complete */
+
 } Sim;
 
 Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,
@@ -209,6 +211,7 @@ void sim_state_step_patch(SimState* state, Buffer patch);
 bool sim_state_has_work(SimState* state);
 int sim_state_get_max_tick(SimState* state);
 float sim_get_pixel_dist(Sim* sim, int pix);
+void sim_notify_level_complete(Sim* sim);
 
 /* These are the 3 most important functions of state management. */
 void patch_builder_update_nandstate(Sim* sim, PatchBuilder* builder,

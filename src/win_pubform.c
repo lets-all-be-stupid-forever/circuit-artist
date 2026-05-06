@@ -26,6 +26,7 @@ static struct {
   char* thumb_path;
   char* folder;
   char** tags;
+  char** kvtags;
   Texture2D thumb_tex;
 } C = {0};
 
@@ -83,7 +84,10 @@ void win_pubform_open(PubformParams params) {
   for (int i = 0; i < params.num_tags; i++) {
     arrput(C.tags, clone_string(params.tags[i]));
   }
-
+  for (int i = 0; i < params.num_kvtags; i++) {
+    arrput(C.kvtags, clone_string(params.kv_tags[2 * i + 0]));
+    arrput(C.kvtags, clone_string(params.kv_tags[2 * i + 1]));
+  }
   mle_set_text(&C.tb_desc, params.default_desc);
   lineedit_set_text(&C.tb_title, params.default_title);
   lineedit_set_focus(&C.tb_title, true);
@@ -106,9 +110,11 @@ static void launch_publish() {
   C.upload_counter = 0;
   ProgressCtx pc = {0};
   int nt = arrlen(C.tags);
-  pc.ctx = steam_upload_item(
-      C.folder, "Change note", lineedit_get_text(&C.tb_title),
-      mle_get_text(&C.tb_desc), C.thumb_path, nt, (const char**)C.tags);
+  int nkvt = arrlen(C.kvtags) / 2;
+  pc.ctx =
+      steam_upload_item(C.folder, "Change note", lineedit_get_text(&C.tb_title),
+                        mle_get_text(&C.tb_desc), C.thumb_path, nt,
+                        (const char**)C.tags, nkvt, (const char**)C.kvtags);
   pc.update = progress_update;
   win_progress_open(pc);
 }

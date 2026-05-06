@@ -61,8 +61,8 @@ static void set_sel(int topic, int item) {
   }
 }
 
-void win_wiki_init(GameRegistry* r) {
-  C.registry = r;
+void win_wiki_init() {
+  C.registry = getreg();
   C.layout = easy_load_layout("wiki");
   C.topic_sel = -1;
   C.item_sel = -1;

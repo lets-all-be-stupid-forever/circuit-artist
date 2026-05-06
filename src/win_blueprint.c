@@ -10,6 +10,7 @@
 #include "msg.h"
 #include "paths.h"
 #include "sound.h"
+#include "stb_ds.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "steam.h"
@@ -21,6 +22,7 @@
 #include "win_bpdetail.h"
 #include "win_msg.h"
 #include "win_mtext.h"
+#include "win_workshop.h"
 #include "wmain.h"
 #include "wtext.h"
 
@@ -31,7 +33,6 @@ static struct {
   Label staging_cap;
   Label slots_cap;
   Rectangle modal;
-  BlueprintStore store;
   // Blueprint* blueprints[TOTAL_BLUEPRINTS];
   Btn slots[PAGESIZE];
   Btn page_slots[NUM_PAGES];
@@ -43,10 +44,11 @@ static struct {
   int sel;
   int apage; /* active page */
   bool editpage;
+  BlueprintStore* store;
 } C = {0};
 
 static int get_slot_blueprint_idx(int i) {
-  return get_page_slot_blueprint_idx(&C.store, C.apage, i);
+  return get_page_slot_blueprint_idx(C.store, C.apage, i);
 }
 
 static void fix_slot_layout(Btn* buttons, int x0, int y0, int rows, int cols) {
@@ -95,8 +97,8 @@ static void update_labels() {
 }
 
 void win_blueprint_init() {
+  C.store = &getreg()->store;
   C.layout = easy_load_layout("blueprint");
-  blueprint_store_init(&C.store);
   update_labels();
 }
 
@@ -115,23 +117,23 @@ static void gotopage_of(int ibp) {
 }
 
 static void on_rename_accept(void* ctx, const char* txt) {
-  if (C.sel != -1 && get_blueprint(&C.store, C.sel)) {
-    blueprint_rename(get_blueprint(&C.store, C.sel), txt);
+  if (C.sel != -1 && get_blueprint(C.store, C.sel)) {
+    blueprint_rename(get_blueprint(C.store, C.sel), txt);
   }
 }
 
 static void use_blueprint(int ibp) {
-  blueprint_paste(get_blueprint(&C.store, ibp));
+  blueprint_paste(get_blueprint(C.store, ibp));
   play_sound_click();
   ui_winpop();
-  blueprint_store_save(&C.store);
+  blueprint_store_save(C.store);
   return;
 }
 
 static void update_slot(Btn* b, Vector2 mouse, int sidx) {
   b->hover = rect_hover(b->hitbox, mouse);
   bool isfixed = sidx < NUM_FIXED;
-  BlueprintStore* store = &C.store;
+  BlueprintStore* store = C.store;
   if (b->hover) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
       if (get_blueprint(store, sidx)) {
@@ -145,7 +147,7 @@ static void update_slot(Btn* b, Vector2 mouse, int sidx) {
       bool empty = get_blueprint(store, sidx) == NULL;
       if (C.sel != -1) {
         if (sidx == C.sel) {
-          win_bpdetail_open(get_blueprint(store, sidx), store, sidx);
+          win_bpdetail_open(get_blueprint(store, sidx), BPDETAIL_PASTE);
           C.sel = -1;
           play_sound_click();
           return;
@@ -197,8 +199,8 @@ static void update_page_slot(Btn* b, Vector2 mouse, int sidx) {
 
 static void on_confirm_delete(int r) {
   if (r != 0) return;
-  blueprint_store_rm(&C.store, C.sel);
-  blueprint_store_save(&C.store);
+  blueprint_store_rm(C.store, C.sel);
+  blueprint_store_save(C.store);
   msg_add("Blueprint deleted.", 4);
   C.sel = -1;
 }
@@ -209,13 +211,13 @@ void win_blueprint_update() {
   bool key_q = IsKeyPressed(KEY_Q);
   if (btn_update(&C.btn_close) || (key_escape && C.sel == -1) || key_q) {
     ui_winpop();
-    blueprint_store_save(&C.store);
+    blueprint_store_save(C.store);
     return;
   }
 
   C.btn_detail.disabled = C.sel == -1;
   if (btn_update(&C.btn_detail)) {
-    win_bpdetail_open(get_blueprint(&C.store, C.sel), &C.store, C.sel);
+    win_bpdetail_open(get_blueprint(C.store, C.sel), BPDETAIL_PASTE);
     return;
   }
 
@@ -226,11 +228,11 @@ void win_blueprint_update() {
 
   if (C.sel != -1) {
     if (IsKeyPressed(KEY_R)) {
-      blueprint_rot(get_blueprint(&C.store, C.sel));
+      blueprint_rot(get_blueprint(C.store, C.sel));
       return;
     }
     if (IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE)) {
-      Blueprint* s = get_blueprint(&C.store, C.sel);
+      Blueprint* s = get_blueprint(C.store, C.sel);
       if (!blueprint_can_delete(s)) {
         win_msg_open_text("Blueprint can't be deleted while being editted.",
                           NULL);
@@ -246,13 +248,13 @@ void win_blueprint_update() {
     }
     if (IsKeyPressed(KEY_F2)) {
       text_modal_open(on_rename_accept, NULL,
-                      get_blueprint(&C.store, C.sel)->name);
+                      get_blueprint(C.store, C.sel)->name);
       return;
     }
   }
   C.btn_steam.disabled = !is_steam_on();
   if (btn_update(&C.btn_steam)) {
-    steam_open_overlay_blueprints();
+    win_workshop_open(NULL);
     return;
   }
 
@@ -270,11 +272,11 @@ void win_blueprint_update() {
     update_slot(&C.slots[i], mouse, get_slot_blueprint_idx(i));
   }
   for (int i = 0; i < NUM_FIXED; i++) {
-    update_slot(&C.fixed_slots[i], mouse, get_fixed_blueprint_idx(&C.store, i));
+    update_slot(&C.fixed_slots[i], mouse, get_fixed_blueprint_idx(C.store, i));
   }
   for (int i = 0; i < NUM_PAGES; i++) {
     update_page_slot(&C.page_slots[i], mouse,
-                     get_page_blueprint_idx(&C.store, i));
+                     get_page_blueprint_idx(C.store, i));
   }
   update_labels();
 }
@@ -285,7 +287,7 @@ static void draw_sel_item() {
 
   rlPushMatrix();
   rlTranslatef(mouse.x, mouse.y + 15, 0);
-  Blueprint* s = get_blueprint(&C.store, C.sel);
+  Blueprint* s = get_blueprint(C.store, C.sel);
   Color c = WHITE;
   c.a = 200;
   DrawTexture(s->thumbnail, 0, 0, c);
@@ -300,19 +302,13 @@ static void draw_t(const char* t, Rectangle r) {
   rlPopMatrix();
 }
 
-void add_steam_blueprint(const char* folder, u64 id) {
-  char bpid[256];
-  snprintf(bpid, sizeof(bpid), "steam:%" PRIu64, id);
-  inject_blueprint_from_folder(&C.store, bpid, folder);
-}
-
 void draw_slot(Btn* b, int sidx) {
-  blueprint_draw(b, get_blueprint(&C.store, sidx), 1);
+  blueprint_draw(b, get_blueprint(C.store, sidx), 1);
 }
 
 static void draw_slot_hover(Btn* b, int sidx) {
   bool hover = b->hover;
-  Blueprint* s = get_blueprint(&C.store, sidx);
+  Blueprint* s = get_blueprint(C.store, sidx);
   if (hover) {
     Rectangle r = b->hitbox;
     Rectangle r2 = {r.x - 2, r.y - 2, r.width + 4, r.height + 4};
@@ -324,7 +320,7 @@ static void draw_slot_hover(Btn* b, int sidx) {
 
 static void draw_slot_hover_leg(Btn* b, int sidx) {
   bool hover = b->hover;
-  Blueprint* s = C.store.blueprints[sidx];
+  Blueprint* s = C.store->blueprints[sidx];
   if (!s) return;
   blueprint_draw_leg(b, s, 1);
 }
@@ -362,7 +358,7 @@ void win_blueprint_draw() {
     draw_slot_sel(&C.slots[i], get_slot_blueprint_idx(i));
   }
 
-  BlueprintStore* store = &C.store;
+  BlueprintStore* store = C.store;
   /* Fixed slots */
   for (int i = 0; i < NUM_FIXED; i++) {
     draw_slot(&C.fixed_slots[i], get_fixed_blueprint_idx(store, i));
@@ -433,8 +429,9 @@ void win_blueprint_draw() {
   }
 }
 
-int blueprint_create_and_open(int nl, Image* imgs, Image full) {
-  int ibp = blueprint_create(&C.store, nl, imgs, full);
+int blueprint_create_and_open(int nl, Image* imgs, Image full,
+                              const char* lvl) {
+  int ibp = blueprint_create(C.store, nl, imgs, full, lvl);
   if (ibp == -1) {
     return -1;
   }

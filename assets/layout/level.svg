@@ -24,18 +24,17 @@
 <rect id="medal_9" x="488" y="562" width="40" height="34" fill="#D9D9D9"/>
 <rect id="medal_10" x="488" y="598" width="40" height="34" fill="#D9D9D9"/>
 <rect id="medal_11" x="488" y="634" width="40" height="34" fill="#D9D9D9"/>
-<rect id="levelbox" x="600" y="328" width="580" height="220" fill="#D9D9D9"/>
-<rect id="campbox" x="604" y="98" width="576" height="144" fill="#D9D9D9"/>
+<rect id="levelbox" x="600" y="76" width="580" height="472" fill="#D9D9D9"/>
 <rect id="btn_select" x="712" y="656" width="230" height="34" fill="#D9D9D9"/>
 <rect id="btn_close" x="948" y="656" width="230" height="34" fill="#D9D9D9"/>
-<rect id="extra1" x="600" y="580" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra2" x="640" y="580" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra3" x="680" y="580" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra4" x="720" y="580" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra5" x="758" y="580" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra6" x="798" y="580" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra7" x="836" y="580" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra8" x="876" y="580" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra1" x="600" y="556" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra2" x="640" y="556" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra3" x="680" y="556" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra4" x="720" y="556" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra5" x="600" y="594" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra6" x="640" y="594" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra7" x="680" y="594" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra8" x="720" y="594" width="34" height="34" fill="#D9D9D9"/>
 <rect id="camp1" x="56" y="76" width="90" height="80" fill="#D9D9D9"/>
 <rect id="campmed1" x="60" y="80" width="40" height="40" fill="#E8B7B7"/>
 <rect id="camp2" x="150" y="76" width="90" height="80" fill="#D9D9D9"/>
@@ -56,8 +55,13 @@
 <rect id="campmed9" x="342" y="168" width="40" height="40" fill="#EBB1B1"/>
 <rect id="camp10" x="432" y="164" width="90" height="80" fill="#D9D9D9"/>
 <rect id="campmed10" x="436" y="168" width="40" height="40" fill="#EBB1B1"/>
-<rect id="camptitle" x="604" y="46" width="576" height="23" fill="#D9D9D9"/>
-<rect id="leveltitle" x="600" y="277" width="580" height="23" fill="#D9D9D9"/>
+<rect id="btn_browse_sol" x="1144" y="571" width="34" height="34" fill="#D9D9D9"/>
+<rect id="sol1" x="824" y="558" width="64" height="64" fill="#D9D9D9"/>
+<rect id="sol2" x="894" y="558" width="64" height="64" fill="#D9D9D9"/>
+<rect id="sol3" x="964" y="558" width="64" height="64" fill="#D9D9D9"/>
+<rect id="sol4" x="1034" y="558" width="64" height="64" fill="#D9D9D9"/>
+<rect id="btn_sol_nxt" x="1104" y="558" width="32" height="64" fill="#D9D9D9"/>
+<rect id="btn_sol_prv" x="786" y="558" width="32" height="64" fill="#D9D9D9"/>
 </g>
 <defs>
 <pattern id="pattern0_7_214" patternContentUnits="objectBoundingBox" width="1" height="1">

@@ -100,10 +100,28 @@ bool str_match(const char* a, const char* b);
 bool json_read_str(json_object* obj, const char* key, char** value);
 bool json_read_u64(json_object* obj, const char* key, u64* value);
 bool json_read_int(json_object* obj, const char* key, int* value);
+bool json_read_bool(json_object* obj, const char* key, bool* value);
 void json_write_u64(json_object* obj, const char* key, u64 value);
 void json_write_str(json_object* obj, const char* key, const char* value);
 void json_write_int(json_object* obj, const char* key, i32 value);
+void json_write_bool(json_object* obj, const char* key, bool value);
+
 const char* get_temp_folder();
+
+typedef struct {
+  char* txt;
+  Color c;
+  int pad;
+} LBItem;
+
+typedef struct {
+  LBItem* items;
+} LegendBuilder;
+
+void lb_init(LegendBuilder* lb);
+void lb_add_line(LegendBuilder* lb, const char* txt, int pad, Color c);
+void lb_render(LegendBuilder* lb, Rectangle hitbox);
+void unload_lb(LegendBuilder* lb);
 
 u64 str2u64(const char* s);
 

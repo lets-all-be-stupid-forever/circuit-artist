@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "fs.h"
+#include "stb_ds.h"
 #include "utils.h"
 #include "win_blueprint.h"
 #include "win_customlvl.h"
@@ -295,6 +296,8 @@ struct SteamUploadContext {
   std::string folder;
   std::string chg_notes;
   std::vector<std::string> tags;
+  std::vector<std::string> kv_keys;
+  std::vector<std::string> kv_vals;
   SteamAPICall_t api_call;
   UGCUpdateHandle_t handle;
   bool create_pending = false;
@@ -345,26 +348,33 @@ struct SteamUploadContext {
     }
 
     std::vector<const char*> s_tags;
-    for (int i = 0; i < tags.size(); i++) {
+    for (size_t i = 0; i < tags.size(); i++) {
       s_tags.push_back(tags[i].c_str());
     }
-    // if (!title.empty()) {
+
     SteamParamStringArray_t p_tags = {0};
     p_tags.m_ppStrings = s_tags.data();
     p_tags.m_nNumStrings = s_tags.size();
     bool allow_admin_tags = false;
     SteamAPI_ISteamUGC_SetItemTags(C.ugc, handle, &p_tags, allow_admin_tags);
-    // SteamAPI_ISteamUGC_RemoveAllItemKeyValueTags(C.ugc, handle);
-    // for (int i = 0; i < p.num_kv_tags; i++) {
-    //   SteamAPI_ISteamUGC_AddItemKeyValueTag(C.ugc, c->handle, p.kv_keys[i],
-    //                                         p.kv_values[i]);
-    // }
+
+    std::vector<const char*> s_kv_keys, s_kv_vals;
+    for (size_t i = 0; i < kv_keys.size(); i++) {
+      s_kv_keys.push_back(kv_keys[i].c_str());
+      s_kv_vals.push_back(kv_vals[i].c_str());
+    }
+    SteamAPI_ISteamUGC_RemoveAllItemKeyValueTags(C.ugc, handle);
+    for (size_t i = 0; i < s_kv_keys.size(); i++) {
+      SteamAPI_ISteamUGC_AddItemKeyValueTag(C.ugc, handle, s_kv_keys[i],
+                                            s_kv_vals[i]);
+    }
+
     SteamAPI_ISteamUGC_SetItemVisibility(
         C.ugc, handle, k_ERemoteStoragePublishedFileVisibilityPublic);
-    //    }
 
     save_steam_metadata(folder.c_str(), C.my_id, C.my_name.c_str(),
-                        s_tags.size(), s_tags.data(), 0, NULL, NULL);
+                        s_tags.size(), s_tags.data(), s_kv_keys.size(),
+                        s_kv_keys.data(), s_kv_vals.data());
 
     api_call =
         SteamAPI_ISteamUGC_SubmitItemUpdate(C.ugc, handle, chg_notes.c_str());
@@ -416,7 +426,8 @@ struct SteamUploadContext {
 
 void* steam_upload_item(const char* folder, const char* chg_notes,
                         const char* title, const char* desc,
-                        const char* thumb_path, int ntags, const char** tags) {
+                        const char* thumb_path, int ntags, const char** tags,
+                        int nkvtags, const char** kvtags) {
 #ifdef WITH_STEAM
   SteamUploadContext* ctx = new SteamUploadContext();
   if (title) ctx->title = title;
@@ -425,6 +436,10 @@ void* steam_upload_item(const char* folder, const char* chg_notes,
   if (thumb_path) ctx->thumbnail_path = thumb_path;
   for (int i = 0; i < ntags; i++) {
     ctx->tags.push_back(tags[i]);
+  }
+  for (int i = 0; i < nkvtags; i++) {
+    ctx->kv_keys.push_back(kvtags[2 * i + 0]);
+    ctx->kv_vals.push_back(kvtags[2 * i + 1]);
   }
   ctx->folder = folder;
   ctx->LaunchCreateItem();
@@ -493,4 +508,376 @@ void steam_browse_workshop_levels() {
   SteamFriends()->ActivateGameOverlayToWebPage(
       url, k_EActivateGameOverlayToWebPageMode_Default);
 #endif
+}
+
+#if 1
+void steam_open_overlay_solutions(const char* level_id) {
+#ifdef WITH_STEAM
+  char url[512];
+  snprintf(url, sizeof(url),
+           "https://steamcommunity.com/workshop/browse/"
+           "?appid=%u&requiredtags%%5B%%5D=blueprint&searchtext=%s",
+           C.app_id, level_id ? level_id : "");
+  SteamFriends()->ActivateGameOverlayToWebPage(
+      url, k_EActivateGameOverlayToWebPageMode_Default);
+#endif
+}
+#endif
+
+#if 0
+void steam_open_overlay_browse_solutions(const char* level_id) {
+#ifdef WITH_STEAM
+  if (!level_id) return;
+  /* Build a per-level tag matching the one the publisher stamps on the
+   * blueprint: "sol_<level_id>" with ':' → '_'. The overlay browse URL only
+   * filters on plain tags, not KV tags, so we rely on this dedicated tag to
+   * narrow results to the current level. */
+  char sol_tag[256];
+  int n = snprintf(sol_tag, sizeof(sol_tag), "sol_%s", level_id);
+  if (n < 0) return;
+  for (int i = 0; sol_tag[i]; i++) {
+    if (sol_tag[i] == ':') sol_tag[i] = '_';
+  }
+
+  char url[512];
+  snprintf(url, sizeof(url),
+           "https://steamcommunity.com/workshop/browse/"
+           "?appid=%u&requiredtags%%5B%%5D=%s",
+           C.app_id, sol_tag);
+  SteamAPI_ISteamFriends_ActivateGameOverlayToWebPage(
+      SteamAPI_SteamFriends(), url,
+      k_EActivateGameOverlayToWebPageMode_Default);
+#endif
+}
+#endif
+
+typedef struct {
+  bool done;
+  bool failed;
+  bool canceled;
+  UGCQueryHandle_t handle;
+  SteamAPICall_t api_call;
+  SteamUGCQueryCompleted_t result;
+  int page;
+} SteamQueryCall;
+
+static SteamQueryCall* begin_query(int page, WorkshopSortMode sort) {
+  static const EUGCQuery sort_map[] = {
+      k_EUGCQuery_RankedByTrend,           // WORKSHOP_SORT_TRENDING
+      k_EUGCQuery_RankedByPublicationDate, // WORKSHOP_SORT_RECENT
+      k_EUGCQuery_RankedByVote,            // WORKSHOP_SORT_VOTES
+      k_EUGCQuery_RankedByTextSearch,      // WORKSHOP_SORT_TEXT
+  };
+  SteamQueryCall* c = (SteamQueryCall*)calloc(1, sizeof(SteamQueryCall));
+  c->handle = SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(
+      C.ugc, sort_map[sort], k_EUGCMatchingUGCType_Items_ReadyToUse,
+      0, C.app_id, page);
+  SteamAPI_ISteamUGC_SetAllowCachedResponse(C.ugc, c->handle, 0);
+  SteamAPI_ISteamUGC_SetReturnMetadata(C.ugc, c->handle, true);
+  SteamAPI_ISteamUGC_AddRequiredTag(C.ugc, c->handle, "blueprint");
+  c->page = page;
+  return c;
+}
+
+void* steam_query_call_all(const char* search_text, int page, WorkshopSortMode sort) {
+  SteamQueryCall* c = begin_query(page, sort);
+  if (search_text && search_text[0]) {
+    SteamAPI_ISteamUGC_SetSearchText(C.ugc, c->handle, search_text);
+  }
+  c->api_call = SteamAPI_ISteamUGC_SendQueryUGCRequest(C.ugc, c->handle);
+  return c;
+}
+
+void* steam_query_solution(const char* level_id, int page, WorkshopSortMode sort) {
+  SteamQueryCall* c = begin_query(page, sort);
+  SteamAPI_ISteamUGC_AddRequiredTag(C.ugc, c->handle, "solution");
+  SteamAPI_ISteamUGC_AddRequiredKeyValueTag(C.ugc, c->handle, "solution_to", level_id);
+  c->api_call = SteamAPI_ISteamUGC_SendQueryUGCRequest(C.ugc, c->handle);
+  return c;
+}
+
+void* steam_query_subscribed(int page) {
+  SteamQueryCall* c = (SteamQueryCall*)calloc(1, sizeof(SteamQueryCall));
+  c->handle = SteamAPI_ISteamUGC_CreateQueryUserUGCRequest(
+      C.ugc, C.my_id,
+      k_EUserUGCList_Subscribed,
+      k_EUGCMatchingUGCType_Items_ReadyToUse,
+      k_EUserUGCListSortOrder_SubscriptionDateDesc,
+      C.app_id, C.app_id, page);
+  SteamAPI_ISteamUGC_SetReturnMetadata(C.ugc, c->handle, true);
+  SteamAPI_ISteamUGC_AddRequiredTag(C.ugc, c->handle, "blueprint");
+  c->api_call = SteamAPI_ISteamUGC_SendQueryUGCRequest(C.ugc, c->handle);
+  c->page = page;
+  return c;
+}
+
+void* steam_query_my_uploads(int page) {
+  SteamQueryCall* c = (SteamQueryCall*)calloc(1, sizeof(SteamQueryCall));
+  c->handle = SteamAPI_ISteamUGC_CreateQueryUserUGCRequest(
+      C.ugc, C.my_id,
+      k_EUserUGCList_Published,
+      k_EUGCMatchingUGCType_Items_ReadyToUse,
+      k_EUserUGCListSortOrder_CreationOrderDesc,
+      C.app_id, C.app_id, page);
+  SteamAPI_ISteamUGC_SetReturnMetadata(C.ugc, c->handle, true);
+  SteamAPI_ISteamUGC_AddRequiredTag(C.ugc, c->handle, "blueprint");
+  c->api_call = SteamAPI_ISteamUGC_SendQueryUGCRequest(C.ugc, c->handle);
+  c->page = page;
+  return c;
+}
+
+bool steam_query_update(void* ctx, QueryResult* r) {
+  SteamQueryCall* c = (SteamQueryCall*)ctx;
+
+  if (c->canceled) {
+    r->ok = false;
+    return true;
+  }
+
+  // Already cancelled or completed
+  if (c->done || c->handle == k_UGCQueryHandleInvalid) {
+    r->ok = false;
+    return true;
+  }
+
+  c->done = SteamAPI_ISteamUtils_GetAPICallResult(
+      SteamAPI_SteamUtils(), c->api_call, &c->result, sizeof(c->result),
+      3401,  // SteamUGCQueryCompleted_t_k_iCallback
+      &c->failed);
+
+  if (!c->done) {
+    return false;
+  }
+
+  if (c->failed || c->result.m_eResult != k_EResultOK) {
+    printf("API failure!! err: %s\n", steam_err_to_str(c->result.m_eResult));
+    SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(C.ugc, c->handle);
+    c->handle = k_UGCQueryHandleInvalid;
+    r->ok = false;
+    return true;
+  }
+
+  uint32 count = c->result.m_unNumResultsReturned;
+  uint32 total = c->result.m_unTotalMatchingResults;  // for pagination
+  *r = (QueryResult){0};
+  r->ok = true;
+  r->page_size = 50;
+  r->total = total;
+  r->page = c->page;
+  r->num_items = count;
+  for (uint32 i = 0; i < count; i++) {
+    QueryResultItem q = {0};
+    // Get basic details
+    SteamUGCDetails_t details;
+    SteamAPI_ISteamUGC_GetQueryUGCResult(C.ugc, c->handle, i, &details);
+    q.title = clone_string(details.m_rgchTitle);
+    q.owner_id = details.m_ulSteamIDOwner;
+    q.votes_down = details.m_unVotesDown;
+    q.votes_up = details.m_unVotesUp;
+    q.file_id = details.m_nPublishedFileId;
+    // Get preview image URL for the thumbnail
+    char url[256];
+    SteamAPI_ISteamUGC_GetQueryUGCPreviewURL(C.ugc, c->handle, i, url,
+                                             sizeof(url));
+    q.url = clone_string(url);
+    q.desc = clone_string(details.m_rgchDescription);
+    q.author_name = clone_string(SteamFriends()->GetFriendPersonaName(details.m_ulSteamIDOwner));
+    arrput(r->items, q);
+  }
+  SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(C.ugc, c->handle);
+  c->handle = k_UGCQueryHandleInvalid;
+  return true;
+}
+
+void steam_query_call_cancel(void* ctx) {
+  SteamQueryCall* c = (SteamQueryCall*)ctx;
+
+  if (c->canceled || c->done || c->failed) {
+    return;
+  }
+
+  if (c->handle != k_UGCQueryHandleInvalid) {
+    SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(C.ugc, c->handle);
+    c->handle = k_UGCQueryHandleInvalid;
+  }
+
+  // Optionally mark as done so callers stop polling
+  c->done = true;
+  c->failed = false;
+  c->canceled = true;
+}
+
+void steam_query_destroy(void* ctx) {
+  if (!ctx) return;
+  SteamQueryCall* c = (SteamQueryCall*)ctx;
+  steam_query_call_cancel(c);
+  free(c);
+}
+
+void unload_query_results(QueryResult* r) {
+  if (!r) return;
+  for (int i = 0; i < arrlen(r->items); i++) {
+    free(r->items[i].title);
+    free(r->items[i].url);
+    free(r->items[i].desc);
+    free(r->items[i].author_name);
+  }
+  arrfree(r->items);
+  *r = (QueryResult){0};
+}
+
+typedef struct {
+  HTTPRequestHandle request;
+  SteamAPICall_t api_call;
+  HTTPRequestCompleted_t result;
+  bool done;
+  bool failed;
+  char url[1024];
+} SteamHttpCall;
+
+void* steam_http_call(const char* url) {
+  SteamHttpCall* c = (SteamHttpCall*)calloc(1, sizeof(SteamHttpCall));
+  snprintf(c->url, sizeof(c->url), "%s", url);
+  ISteamHTTP* http = SteamAPI_SteamHTTP();
+  c->request =
+      SteamAPI_ISteamHTTP_CreateHTTPRequest(http, k_EHTTPMethodGET, url);
+  SteamAPI_ISteamHTTP_SendHTTPRequest(http, c->request, &c->api_call);
+  return c;
+}
+
+static Image steam_http_get_data_as_image(SteamHttpCall* c, uint32 body_size,
+                                          uint8* body) {
+  const char* ext = NULL;
+  ISteamHTTP* http = SteamAPI_SteamHTTP();
+  uint32 header_size = 0;
+  if (SteamAPI_ISteamHTTP_GetHTTPResponseHeaderSize(
+          http, c->request, "Content-Type", &header_size) &&
+      header_size > 0 && header_size < 128) {
+    char content_type[128] = {0};
+    SteamAPI_ISteamHTTP_GetHTTPResponseHeaderValue(
+        http, c->request, "Content-Type", (uint8*)content_type, header_size);
+    if (strstr(content_type, "jpeg") || strstr(content_type, "jpg")) {
+      ext = ".jpg";
+    } else if (strstr(content_type, "png")) {
+      ext = ".png";
+    }
+  }
+  if (!ext) return (Image){0};
+  return LoadImageFromMemory(ext, body, (int)body_size);
+}
+
+bool steam_http_update(void* ctx, Image* img) {
+  SteamHttpCall* c = (SteamHttpCall*)ctx;
+
+  // Already done or cancelled
+  if (c->done || c->request == INVALID_HTTPREQUEST_HANDLE) {
+    *img = (Image){0};
+    return true;
+  }
+
+  c->done = SteamAPI_ISteamUtils_GetAPICallResult(
+      SteamAPI_SteamUtils(), c->api_call, &c->result, sizeof(c->result),
+      2101,  // HTTPRequestCompleted_t::k_iCallback
+      &c->failed);
+  if (!c->done) {
+    // pending
+    return false;
+  }
+  if (c->failed || !c->result.m_bRequestSuccessful) {
+    SteamAPI_ISteamHTTP_ReleaseHTTPRequest(SteamAPI_SteamHTTP(), c->request);
+    c->request = INVALID_HTTPREQUEST_HANDLE;
+    *img = (Image){0};
+    return true;
+  }
+
+  uint32 body_size = 0;
+
+  ISteamHTTP* http = SteamAPI_SteamHTTP();
+  SteamAPI_ISteamHTTP_GetHTTPResponseBodySize(http, c->request, &body_size);
+
+  uint8* body = (uint8*)malloc(body_size);
+  SteamAPI_ISteamHTTP_GetHTTPResponseBodyData(http, c->request, body,
+                                              body_size);
+  *img = steam_http_get_data_as_image(c, body_size, body);
+  free(body);
+  SteamAPI_ISteamHTTP_ReleaseHTTPRequest(SteamAPI_SteamHTTP(), c->request);
+  c->request = INVALID_HTTPREQUEST_HANDLE;
+  return true;
+}
+
+void steam_http_cancel(void* ctx) {
+  SteamHttpCall* c = (SteamHttpCall*)ctx;
+  if (!c || c->done) return;
+  if (c->request != INVALID_HTTPREQUEST_HANDLE) {
+    // Unlike UGC, this actually aborts the in-flight request
+    SteamAPI_ISteamHTTP_ReleaseHTTPRequest(SteamAPI_SteamHTTP(), c->request);
+    c->request = INVALID_HTTPREQUEST_HANDLE;
+  }
+  c->done = true;
+  c->failed = true;
+}
+
+void steam_http_destroy(void* ctx) {
+  SteamHttpCall* c = (SteamHttpCall*)ctx;
+  if (!c) return;
+  steam_http_cancel(c);
+  free(c);
+}
+
+// const uint8_t* steam_http_get_data(struct SteamHttpCall* c,
+//                                    uint32_t* out_size) {
+//   if (out_size) *out_size = c->body_size;
+//   return c->body;
+// }
+
+void steam_subscribe_item(u64 id) {
+  SteamAPI_ISteamUGC_SubscribeItem(C.ugc, id);
+}
+
+u32 steam_item_state(u64 id) {
+  int32 state = SteamAPI_ISteamUGC_GetItemState(C.ugc, id);
+
+  u32 out = 0;
+  if (state == k_EItemStateNone) {
+    // Not subscribed, not known locally
+    out = ITEM_STATE_NONE;
+  }
+  if (state & k_EItemStateSubscribed) {
+    // User is subscribed
+    out = out | ITEM_STATE_SUBSCRIBED;
+  }
+  if (state & k_EItemStateInstalled) {
+    // Downloaded and installed locally
+    out = out | ITEM_STATE_INSTALLED;
+  }
+  if (state & k_EItemStateDownloading) {
+    // Currently downloading
+    out = out | ITEM_STATE_DOWNLOADING;
+  }
+  if (state & k_EItemStateDownloadPending) {
+    // Queued for download
+    out = out | ITEM_STATE_DOWNLOADPENDING;
+  }
+  if (state & k_EItemStateNeedsUpdate) {
+    // Installed but an update is available
+    out = out | ITEM_STATE_NEEDSUPDATE;
+  }
+  return out;
+}
+
+typedef struct {
+  uint64 key;
+  bool value;
+} SteamRequestedEntry;
+
+static SteamRequestedEntry* s_requested = NULL;
+
+const char* steam_get_author_name(u64 steam_id) {
+  if (hmgeti(s_requested, steam_id) < 0) {
+    SteamAPI_ISteamFriends_RequestUserInformation(
+        SteamAPI_SteamFriends(), steam_id, true);
+    hmput(s_requested, steam_id, true);
+  }
+  return SteamAPI_ISteamFriends_GetFriendPersonaName(
+      SteamAPI_SteamFriends(), steam_id);
 }

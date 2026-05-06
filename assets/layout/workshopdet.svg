@@ -1,0 +1,10 @@
+<svg width="699" height="647" viewBox="0 0 699 647" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="workshopdet">
+<rect width="699" height="647" fill="white"/>
+<rect id="preview" x="35" y="80" width="256" height="256" fill="#D9D9D9"/>
+<rect id="desc" x="311" y="80" width="253" height="487" fill="#D9D9D9"/>
+<rect id="author" x="35" y="346" width="260" height="36" fill="#D9D9D9"/>
+<rect id="btn_subscribe" x="60" y="597" width="220" height="40" fill="#D9D9D9"/>
+<rect id="btn_close" x="328" y="597" width="220" height="40" fill="#D9D9D9"/>
+</g>
+</svg>

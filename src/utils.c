@@ -23,6 +23,7 @@
 
 // Does the same as strdup().
 char* clone_string(const char* str) {
+  if (!str) return NULL;
   size_t len = strlen(str) + 1;
   char* p = (char*)malloc(len);
   memmove(p, str, len);
@@ -964,7 +965,6 @@ void ensure_dir(const char* folder) {
   }
 }
 
-
 const char* pretty_number(int n) {
   static char buf[32];
   if (n >= 1000000)
@@ -974,4 +974,67 @@ const char* pretty_number(int n) {
   else
     snprintf(buf, sizeof(buf), "%d", n);
   return buf;
+}
+
+bool json_read_bool(json_object* obj, const char* key, bool* value) {
+  json_object* obj2 = NULL;
+  json_object_object_get_ex(obj, key, &obj2);
+  if (!obj2) return false;
+  *value = json_object_get_boolean(obj2);
+  return true;
+}
+
+void json_write_bool(json_object* obj, const char* key, bool value) {
+  json_object_object_add(obj, key, json_object_new_boolean(value));
+}
+
+void lb_init(LegendBuilder* lb) { *lb = (LegendBuilder){0}; }
+
+void lb_add_line(LegendBuilder* lb, const char* txt, int pad, Color c) {
+  LBItem item = {.txt = clone_string(txt), .c = c, .pad = pad};
+  arrput(lb->items, item);
+}
+
+void lb_render(LegendBuilder* lb, Rectangle hitbox) {
+  int w = -1;
+  int lh = 20;
+  int ni = arrlen(lb->items);
+  int dbot = 10;
+  int h = 0;
+  for (int i = 0; i < ni; i++) {
+    h += lh + 2 * lb->items[i].pad;
+    const char* txt = lb->items[i].txt;
+    int ww = get_rendered_text_size(txt).x;
+    w = w > ww ? w : ww;
+  }
+  int th = h + dbot;
+  w = 2 * w + 10;
+
+  int y1 = hitbox.y;
+  int xm = hitbox.x + hitbox.width / 2;
+  int x0 = xm - w / 2;
+  int y0 = y1 - th;
+
+  Color bg = BLACK;
+  bg.a = 225;
+  rlPushMatrix();
+  rlTranslatef(x0, y0 - 6, 0);
+  DrawRectangle(0, 0, w, th, bg);
+  rlScalef(2, 2, 1);
+  for (int i = 0; i < ni; i++) {
+    const char* txt = lb->items[i].txt;
+    int ww = get_rendered_text_size(txt).x;
+    int pad = lb->items[i].pad;
+    int cx = (w / 2 - ww) / 2;
+    int cy = 2 + pad / 2;
+    font_draw_texture(txt, cx, cy, lb->items[i].c);
+    rlTranslatef(0, lh / 2 + pad, 0);
+  }
+  rlPopMatrix();
+}
+
+void unload_lb(LegendBuilder* lb) {
+  int n = arrlen(lb->items);
+  for (int i = 0; i < n; i++) free(lb->items[i].txt);
+  arrfree(lb->items);
 }

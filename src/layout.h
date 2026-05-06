@@ -3,6 +3,10 @@
 #include "raylib.h"
 #include "widgets.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 typedef struct {
   struct {
     char* key;
@@ -16,5 +20,9 @@ void layout_update_offset(Layout* l);
 Rectangle layout_rect(Layout* l, const char* id);
 void layout_free(Layout* l);
 Layout* easy_load_layout(const char* win_name);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

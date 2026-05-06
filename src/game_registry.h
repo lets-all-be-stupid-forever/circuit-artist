@@ -2,6 +2,7 @@
 #define CA_GAME_REGISTRY_H
 #include <lua.h>
 
+#include "blueprint.h"
 #include "common.h"
 
 #if defined(__cplusplus)
@@ -115,6 +116,7 @@ typedef struct GameRegistry {
   LevelGroup** group_order;
   Mod** mods;
   lua_State* L;
+  BlueprintStore store;
 
   /* Custom Levels */
   CustomLevelDef** workshop_custom_levels;
@@ -122,8 +124,11 @@ typedef struct GameRegistry {
   CustomLevelDef** official_custom_levels;
 } GameRegistry;
 
-GameRegistry* create_game_registry();
+void init_game_registry();
+GameRegistry* getreg();
+
 void init_mods(GameRegistry* r);
+
 LevelDef* get_level_by_id(GameRegistry* r, const char* level_id);
 LevelGroup* get_group_by_id(GameRegistry* r, const char* group_id);
 void dispatch_level_complete(LevelDef* ldef);
@@ -142,6 +147,9 @@ u64 extract_item_from_id(const char* id);
 char* get_custom_levels_folder();
 const char* get_custom_level_kernel_path(CustomLevelDef* ldef);
 bool folder_is_level(const char* folder);
+CustomLevelDef* find_custom_level_by_id(GameRegistry* r, const char* id);
+
+const char* get_level_name_by_id(const char* id);
 
 #if defined(__cplusplus)
 }

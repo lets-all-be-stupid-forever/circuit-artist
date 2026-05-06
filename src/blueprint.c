@@ -19,70 +19,6 @@
 #define BLUEPRINT_FILE_1_1 "blueprints_1_1.json"
 #define BLUEPRINT_FILE_v2 "blueprints_v2.json"
 
-typedef struct {
-  char* txt;
-  Color c;
-  int pad;
-} LBItem;
-
-typedef struct {
-  // token = line + color, maybe image too
-  LBItem* items;
-} LegendBuilder;
-
-void lb_init(LegendBuilder* lb) { *lb = (LegendBuilder){0}; }
-
-void lb_add_line(LegendBuilder* lb, const char* txt, int pad, Color k) {
-  LBItem item = {.txt = clone_string(txt), .c = k, .pad = pad};
-  arrput(lb->items, item);
-}
-
-void lb_render(LegendBuilder* lb, Rectangle hitbox) {
-  int w = -1;
-  int lh = 20;
-  int ni = arrlen(lb->items);
-  int dbot = 10;
-  int h = 0;
-  for (int i = 0; i < ni; i++) {
-    h += lh + 2 * lb->items[i].pad;
-    const char* txt = lb->items[i].txt;
-    int ww = get_rendered_text_size(txt).x;
-    w = w > ww ? w : ww;
-  }
-  int th = h + dbot;
-  w = 2 * w + 10;
-
-  int y1 = hitbox.y;
-  int xm = hitbox.x + hitbox.width / 2;
-  int x0 = xm - w / 2;
-  int y0 = y1 - th;
-
-  Color bg = BLACK;
-  bg.a = 225;
-  rlPushMatrix();
-  rlTranslatef(x0, y0 - 6, 0);
-  DrawRectangle(0, 0, w, th, bg);
-  rlScalef(2, 2, 1);
-  for (int i = 0; i < ni; i++) {
-    const char* txt = lb->items[i].txt;
-    int ww = get_rendered_text_size(txt).x;
-    int pad = lb->items[i].pad;
-    int cx = (w / 2 - ww) / 2;
-    int cy = 2 + pad / 2;
-    font_draw_texture(txt, cx, cy, lb->items[i].c);
-    rlTranslatef(0, lh / 2 + pad, 0);
-  }
-  rlPopMatrix();
-}
-
-void unload_lb(LegendBuilder* lb) {
-  int n = arrlen(lb->items);
-  for (int i = 0; i < n; i++) {
-    free(lb->items[i].txt);
-  }
-  arrfree(lb->items);
-}
-
 void blueprint_draw_leg(Btn* b, Blueprint* s, int scale) {
   if (!b->hover) return;
   const char* hover_name = s->name;
@@ -92,10 +28,24 @@ void blueprint_draw_leg(Btn* b, Blueprint* s, int scale) {
   int k = 100;
   Color c2 = {k, k, k, 255};
   lb_init(&lb);
-  lb_add_line(&lb, hover_name, 4, WHITE);
+
+  Color name_color = WHITE;
+
+  if (s->linked_level_id) {
+    name_color = SKYBLUE;
+    if (s->solved_level) name_color = GREEN;
+  }
+
+  lb_add_line(&lb, hover_name, 4, name_color);
   // lb_add_line(&lb, TextFormat("w: %d h: %d", s->width, s->height), 2, c2);
   if (s->steam_author_name) {
     lb_add_line(&lb, TextFormat("by %s", s->steam_author_name), 2, c2);
+  }
+  if (s->linked_level_id) {
+    const char* name = get_level_name_by_id(s->linked_level_id);
+    if (name) {
+      lb_add_line(&lb, TextFormat("Lvl: %s", name), 2, c2);
+    }
   }
   // if (s->steam_id == 0) {
   //   const char* folder = &s->id[6];
@@ -125,7 +75,7 @@ static void add_bp_from_img_asset(BlueprintStore* store, const char* asset) {
   int nl = 0;
   Image tmp[MAX_LAYERS] = {0};
   image_decode_layers(img, &nl, tmp);
-  blueprint_create(store, nl, tmp, img);
+  blueprint_create(store, nl, tmp, img, NULL);
   for (int i = 0; i < nl; i++) {
     UnloadImage(tmp[i]);
   }
@@ -247,6 +197,17 @@ static void reset_bp_fields(Blueprint* bp) {
   bp->thumbnail = (Texture2D){0};
 }
 
+void remove_local_link_if_steam_bp(Blueprint* bp) {
+  /* Workshop blueprints can't match a local level */
+  if (bp->steam_id != 0 && bp->linked_level_id) {
+    if (starts_with(bp->linked_level_id, "local:")) {
+      free(bp->linked_level_id);
+      bp->linked_level_id = NULL;
+      bp->solved_level = false;
+    }
+  }
+}
+
 void inject_blueprint_from_folder(BlueprintStore* store, const char* id,
                                   const char* folder) {
   char meta_path[1024];
@@ -267,10 +228,15 @@ void inject_blueprint_from_folder(BlueprintStore* store, const char* id,
     json_read_int(meta, "width", &bp->width);
     json_read_int(meta, "height", &bp->height);
     json_read_int(meta, "layers", &bp->layers);
+    json_read_str(meta, "linked_level_id", &bp->linked_level_id);
+    if (bp->linked_level_id) {
+      json_read_bool(meta, "solved_level", &bp->solved_level);
+    }
     bp->folder = clone_string(folder);
     bp->thumbnail = LoadTexture(thumb_path);
     extract_steam_id_from_id(bp);
     load_steam_author_if_applicable(bp);
+    remove_local_link_if_steam_bp(bp);
   }
   json_object_put(meta);
 }
@@ -422,6 +388,10 @@ void blueprint_save_meta(Blueprint* s) {
   json_write_int(meta, "width", s->width);
   json_write_int(meta, "height", s->height);
   json_write_int(meta, "layers", s->layers);
+  if (s->linked_level_id) {
+    json_write_str(meta, "linked_level_id", s->linked_level_id);
+    json_write_bool(meta, "solved_level", s->solved_level);
+  }
   if (s->lvl) {
     json_write_str(meta, "lvl", s->lvl);
   }
@@ -438,12 +408,13 @@ const char* blueprint_fname_thumbnail(Blueprint* s) {
   return TextFormat("%s/thumb.png", s->folder);
 }
 
-int blueprint_create(BlueprintStore* store, int nl, Image* imgs, Image full) {
+int blueprint_create(BlueprintStore* store, int nl, Image* imgs, Image full,
+                     const char* lvl) {
   int ibp = find_first_available_slot(store, 0);
   if (ibp == -1) return -1;
   assert(!store->blueprints[ibp]);
 
-  Image thumb = gen_thumbnail(nl, imgs, 64, 64, false);
+  Image thumb = gen_thumbnail(nl, imgs, 64, 64, true);
   Blueprint* bp = calloc(1, sizeof(Blueprint));
   bp->name = clone_string("My Blueprint");
   bp->steam_id = 0;
@@ -454,6 +425,13 @@ int blueprint_create(BlueprintStore* store, int nl, Image* imgs, Image full) {
   char* id = clone_string(randid());
   bp->folder = abs_path(get_data_path(TextFormat("blueprints_v2/%s", id)));
   bp->id = clone_string(TextFormat("local:%s", id));
+  if (lvl) {
+    bp->linked_level_id = clone_string(lvl);
+    bp->solved_level = true;
+  } else {
+    bp->linked_level_id = NULL;
+    bp->solved_level = false;
+  }
   free(id);
   store->blueprints[ibp] = bp;
 
@@ -651,11 +629,32 @@ void blueprint_draw(Btn* b, Blueprint* s, int scale) {
                      WHITE);
       rlPopMatrix();
     }
+    if (s->linked_level_id) {
+      rlPushMatrix();
+      rlTranslatef(x, y, 0);
+      Color clr = {0, 0, 255, 30};
+      DrawRectangle(0, 0, tw, th, clr);
+      rlTranslatef(tw - 14, 0, 0);
+      Texture sprites = ui_get_sprites();
+      Rectangle sprite_dst = {0, 0, 14, 14};
+      DrawTexturePro(sprites, s->solved_level ? rect_medal : rect_link,
+                     sprite_dst, (Vector2){2, 2}, 0, WHITE);
+      rlPopMatrix();
+    }
+  } else {
+#if 0
+    Texture2D sprites = ui_get_sprites();
+    Color c = {255, 255, 255, 50};
+    c = GRAY;
+    c.a = 255;
+    DrawTexturePro(sprites, (Rectangle){720, 320, 32, 32}, slot,
+                   (Vector2){0, 0}, 0, c);
+#endif
   }
 }
 
 void blueprint_update_thumbnail(Blueprint* bp, int nl, Image* imgs) {
-  Image thumb = gen_thumbnail(nl, imgs, 64, 64, false);
+  Image thumb = gen_thumbnail(nl, imgs, 64, 64, true);
   ExportImage(thumb, blueprint_fname_thumbnail(bp));
   if (bp->thumbnail.width > 0) UnloadTexture(bp->thumbnail);
   bp->thumbnail = LoadTextureFromImage(thumb);
@@ -670,4 +669,44 @@ void blueprint_copy_to_clipboard(Blueprint* s) {
   Image img = LoadImage(blueprint_fname_full(s));
   image_to_clipboard(img);
   UnloadImage(img);
+}
+
+/* Updates link to level and saves blueprint metadata */
+void blueprint_link_to_level(Blueprint* bp, const char* id, bool solved) {
+  free(bp->linked_level_id);
+  bp->linked_level_id = NULL;
+  bp->solved_level = false;
+  if (id) {
+    bp->linked_level_id = clone_string(id);
+    bp->solved_level = solved;
+  }
+  blueprint_save_meta(bp);
+}
+
+void add_steam_blueprint(const char* folder, u64 id) {
+  char bpid[256];
+  snprintf(bpid, sizeof(bpid), "steam:%" PRIu64, id);
+  inject_blueprint_from_folder(&getreg()->store, bpid, folder);
+}
+
+void get_linked_blueprints(Blueprint*** sols, const char* id) {
+  arrsetlen(*sols, 0);
+  BlueprintStore* store = &getreg()->store;
+  int nbp = store->nbp;
+  for (int i = 0; i < nbp; i++) {
+    Blueprint* bp = store->blueprints[i];
+    if ((bp) && bp->linked_level_id && strcmp(bp->linked_level_id, id) == 0) {
+      arrput(*sols, bp);
+    }
+  }
+}
+
+int find_bp_index(BlueprintStore* store, Blueprint* bp) {
+  int nbp = store->nbp;
+  for (int i = 0; i < nbp; i++) {
+    if (store->blueprints[i] == bp) {
+      return i;
+    }
+  }
+  return -1;
 }

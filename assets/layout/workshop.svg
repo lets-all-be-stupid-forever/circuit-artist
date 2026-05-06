@@ -1,0 +1,20 @@
+<svg width="1049" height="686" viewBox="0 0 1049 686" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="workshop">
+<rect width="1049" height="686" fill="white"/>
+<rect id="text" x="25" y="61" width="522" height="34" fill="#D9D9D9"/>
+<rect id="showing" x="345" y="632" width="128" height="34" fill="#D9D9D9"/>
+<rect id="rects" x="25" y="108" width="768" height="512" fill="#D9D9D9"/>
+<rect id="btn_next" x="537" y="629" width="256" height="34" fill="#D9D9D9"/>
+<rect id="btn_prev" x="25" y="632" width="256" height="34" fill="#D9D9D9"/>
+<rect id="btn_text" x="559" y="61" width="234" height="34" fill="#D9D9D9"/>
+<rect id="btn_trending" x="814" y="108" width="210" height="34" fill="#D9D9D9"/>
+<rect id="btn_subscribed" x="814" y="260" width="210" height="34" fill="#D9D9D9"/>
+<rect id="oo" x="814" y="222" width="210" height="34" fill="#D9D9D9"/>
+<rect id="oo_2" x="814" y="336" width="210" height="34" fill="#D9D9D9"/>
+<rect id="btn_myuploads" x="814" y="298" width="210" height="34" fill="#D9D9D9"/>
+<rect id="btn_votes" x="814" y="146" width="210" height="34" fill="#D9D9D9"/>
+<rect id="btn_recent" x="814" y="184" width="210" height="34" fill="#D9D9D9"/>
+<rect id="btn_steam" x="814" y="374" width="210" height="34" fill="#D9D9D9"/>
+<rect id="btn_close" x="815" y="629" width="209" height="34" fill="#D9D9D9"/>
+</g>
+</svg>

@@ -5,6 +5,7 @@
 #include "game_registry.h"
 #include "layout.h"
 #include "paths.h"
+#include "sol_widget.h"
 #include "stb_ds.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -21,13 +22,6 @@ typedef enum {
   PAGE_LOCAL = 1,
   PAGE_WORKSHOP = 2,
 } Page;
-
-typedef struct {
-  Btn sol[4];
-  Btn btn_prv;
-  Btn btn_nxt;
-  Btn btn_browse;
-} SolWidget;
 
 static struct {
   Page page;
@@ -61,35 +55,6 @@ static struct {
   SolWidget sol;
 } C = {0};
 
-void sol_update_layout(SolWidget* s, Layout* l) {
-  s->btn_prv.hitbox = layout_rect(l, "btn_sol_prv");
-  s->btn_nxt.hitbox = layout_rect(l, "btn_sol_nxt");
-  s->btn_browse.hitbox = layout_rect(l, "btn_browse_sol");
-  s->sol[0].hitbox = layout_rect(l, "sol1");
-  s->sol[1].hitbox = layout_rect(l, "sol2");
-  s->sol[2].hitbox = layout_rect(l, "sol3");
-  s->sol[3].hitbox = layout_rect(l, "sol4");
-}
-
-void sol_draw(SolWidget* s) {
-  Color bg = {0, 0, 0, 150};
-  DrawRectangleRec(s->sol[0].hitbox, bg);
-  DrawRectangleRec(s->sol[1].hitbox, bg);
-  DrawRectangleRec(s->sol[2].hitbox, bg);
-  DrawRectangleRec(s->sol[3].hitbox, bg);
-  DrawRectangleRec(s->btn_nxt.hitbox, bg);
-  DrawRectangleRec(s->btn_prv.hitbox, bg);
-  DrawRectangleRec(s->btn_browse.hitbox, bg);
-}
-
-void sol_draw_leg(SolWidget* s) {
-  // TODO
-}
-
-void sol_update(SolWidget* s) {
-  // TODO
-}
-
 static void update_layout() {
   layout_update_offset(C.layout);
   Layout* l = C.layout;
@@ -114,7 +79,7 @@ static void update_layout() {
 
   C.lab_author.hitbox = layout_rect(l, "lab_author");
   // C.lab_name.hitbox = layout_rect(l, "lab_name");
-  sol_update_layout(&C.sol, l);
+  sol_widget_update_layout(&C.sol, l);
 }
 
 static CustomLevelDef** get_page_original_levels() {
@@ -167,11 +132,13 @@ static void set_sel(int s) {
     textbox_set_content(&C.tb, "", NULL);
     label_set_text(&C.lab_author, "");
     // label_set_text(&C.lab_name, "");
+    sol_widget_set_level_id(&C.sol, NULL);
   } else {
     CustomLevelDef* ldef = get_level(s);
     textbox_set_content(&C.tb, ldef->desc, ldef->desc_imgs);
     // label_set_text(&C.lab_name, ldef->name);
     label_set_text(&C.lab_author, "");
+    sol_widget_set_level_id(&C.sol, ldef->id);
   }
   C.sel = s;
 }
@@ -190,9 +157,10 @@ static void set_page(Page page) {
   select_first_item();
 }
 
-void win_customlvl_init(GameRegistry* r) {
-  C.r = r;
+void win_customlvl_init() {
+  C.r = getreg();
   C.layout = easy_load_layout("customlevel");
+  sol_widget_init(&C.sol);
   textbox_init(&C.tb);
   listbox_init(&C.lb);
   C.lb.row_pad = 2;
@@ -368,7 +336,7 @@ void win_customlvl_update() {
   textbox_update(&C.tb);
   update_page_buttons();
   update_level_buttons();
-  sol_update(&C.sol);
+  sol_widget_update(&C.sol);
 }
 
 static const char* get_level_prefix(CustomLevelDef* lvl) {
@@ -423,10 +391,10 @@ void win_customlvl_draw() {
   btn_draw_icon(&C.btn_local_folder, ui_get_scale(), sprites, rect_open);
   btn_draw_icon(&C.btn_level_folder, ui_get_scale(), sprites, rect_open);
 
-  // sol_draw(&C.sol);
+  sol_widget_draw(&C.sol);
 
   if (ui_get_window() == WINDOW_CUSTOM_LEVEL) {
-    //     sol_draw_leg(&C.sol);
+    sol_widget_draw_leg(&C.sol);
     btn_draw_legend(&C.btn_wiki, ui_get_scale(), "Open wiki for custom level");
 
     btn_draw_legend(&C.btn_page_official, ui_get_scale(),

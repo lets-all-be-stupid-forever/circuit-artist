@@ -1,6 +1,7 @@
 #include "win_bpdetail.h"
 
 #include "assert.h"
+#include "stdio.h"
 #include "blueprint.h"
 #include "common.h"
 #include "fs.h"
@@ -38,10 +39,14 @@ static struct {
   Label lab_author;
   Label lab_props;
   Label lab_name;
+  Label lab_level;
   Blueprint* bp;
   BlueprintStore* store;
   bool delete_on_close;
   int idx;
+  BPDetailMainAction main_action;
+  const char* txt_use;
+  const char* txt_use_leg;
   // Rectangle sep;
 } C = {0};
 
@@ -62,22 +67,46 @@ static void update_layout() {
   C.lab_author.hitbox = layout_rect(C.layout, "author");
   C.lab_name.hitbox = layout_rect(C.layout, "name");
   C.lab_props.hitbox = layout_rect(C.layout, "props");
+  C.lab_level.hitbox = layout_rect(C.layout, "level");
 }
 
-void win_bpdetail_open(Blueprint* bp, BlueprintStore* store, int idx) {
-  if (!C.layout) {
-    C.layout = easy_load_layout("bpdetail");
+void win_bpdetail_init() {
+  C.layout = easy_load_layout("bpdetail");
+  C.store = &getreg()->store;
+}
+
+static void update_txt() {
+  switch (C.main_action) {
+    case BPDETAIL_PASTE: {
+      C.txt_use = "PASTE";
+      C.txt_use_leg = "Paste blueprint (ENTER or RIGHT CLICK in inventory)";
+      break;
+    }
+    case BPDETAIL_LOADWLEVEL: {
+      C.txt_use = "LOAD WITH LEVEL";
+      C.txt_use_leg = "Loads blueprint as main image and loads linked level";
+      break;
+    }
   }
+}
+
+void win_bpdetail_open(Blueprint* bp, BPDetailMainAction main_action) {
+  C.main_action = main_action;
   C.bp = bp;
-  C.store = store;
-  C.idx = idx;
+  C.idx = find_bp_index(C.store, bp);
   update_layout();
+  update_txt();
   ui_winpush(WINDOW_BPDETAIL);
   // label_set_text(&C.lab_name, bp->name);
   label_set_text(&C.lab_author,
                  bp->steam_author_name ? bp->steam_author_name : "");
-  label_set_text(&C.lab_props,
-                 TextFormat("w: %d h: %d", bp->width, bp->height));
+  if (bp->linked_level_id) {
+    label_set_text(&C.lab_level, get_level_name_by_id(bp->linked_level_id));
+  } else {
+    label_set_text(&C.lab_level, "");
+  }
+  // label_set_text(&C.lab_props,
+  //                TextFormat("w: %d h: %d", bp->width, bp->height));
 }
 
 static void on_rename_accept(void* ctx, const char* txt) {
@@ -99,14 +128,27 @@ static void do_publish() {
   UnloadImage(full);
   PubformParams p = {0};
   char* folder = abs_path(bp->folder);
-  char* tags[2] = {"blueprint", NULL};
+  bool is_solution = bp->solved_level && bp->linked_level_id &&
+                     !starts_with(bp->linked_level_id, "local:");
+
+  const char* tags_plain[] = {"blueprint"};
+  const char* tags_solution[] = {"blueprint", "solution"};
   p.type = STEAM_ITEM_BLUEPRINT;
   p.folder = folder;
-  p.num_tags = 1;
-  p.tags = (const char**)tags;
   p.default_title = bp->name ? bp->name : "My Blueprint";
   p.default_desc = bp->desc ? bp->desc : "";
   p.default_thumbnail_path = thumb_path_abs;
+  const char* kv_tags[] = {"solution_to", bp->linked_level_id};
+  if (is_solution) {
+    p.tags = tags_solution;
+    p.num_tags = 2;
+    p.kv_tags = kv_tags;
+    p.num_kvtags = 1;
+  } else {
+    p.tags = tags_plain;
+    p.num_tags = 1;
+  }
+
   win_pubform_open(p);
   free(thumb_path_abs);
   free(folder);
@@ -119,6 +161,23 @@ static void on_open_bp() {
 }
 
 static void blueprint_edit() { main_ask_for_save_and_proceed(on_open_bp); }
+
+static void run_main_action() {
+  switch (C.main_action) {
+    case BPDETAIL_PASTE: {
+      blueprint_paste(C.bp);
+      play_sound_click();
+      ui_winpop();
+      ui_winpop();
+      blueprint_store_save(C.store);
+      break;
+    }
+    case BPDETAIL_LOADWLEVEL: {
+      blueprint_edit();
+      break;
+    }
+  }
+}
 
 void win_bpdetail_update() {
   update_layout();
@@ -139,11 +198,7 @@ void win_bpdetail_update() {
   }
 
   if (IsKeyPressed(KEY_ENTER)) {
-    blueprint_paste(C.bp);
-    play_sound_click();
-    ui_winpop();
-    ui_winpop();
-    blueprint_store_save(C.store);
+    run_main_action();
     return;
   }
 
@@ -163,11 +218,7 @@ void win_bpdetail_update() {
   }
 
   if (btn_update(&C.btn_use)) {
-    blueprint_paste(C.bp);
-    play_sound_click();
-    ui_winpop();
-    ui_winpop();
-    blueprint_store_save(C.store);
+    run_main_action();
     return;
   }
 
@@ -221,7 +272,7 @@ void win_bpdetail_draw() {
   label_set_text(&C.lab_name, C.bp->name ? C.bp->name : "(Unnamed)");
   Texture sprites = ui_get_sprites();
   // drawbg(C.sep);
-  btn_draw_text_primary(&C.btn_use, 2, "PASTE");
+  btn_draw_text_primary(&C.btn_use, 2, C.txt_use);
   btn_draw_text(&C.btn_close, 2, "CLOSE");
   btn_draw_icon(&C.btn_edit_title, 2, sprites, rect_rename);
   btn_draw_icon(&C.btn_delete, 2, sprites, rect_trash);
@@ -232,9 +283,11 @@ void win_bpdetail_draw() {
 
   drawbg(C.lab_name.hitbox);
   drawbg(C.lab_author.hitbox);
+  drawbg(C.lab_level.hitbox);
   // drawbg(C.lab_props.hitbox);
   label_draw_centered(&C.lab_name);
   label_draw_centered(&C.lab_author);
+  label_draw_centered(&C.lab_level);
   // label_draw_centered(&C.lab_props);
 
   Blueprint* bp = C.bp;
@@ -244,8 +297,7 @@ void win_bpdetail_draw() {
   btn_draw_icon(&C.btn_rotate, 2, sprites, rect_rot);
 
   if (ui_get_window() == WINDOW_BPDETAIL) {
-    btn_draw_legend(&C.btn_use, 2,
-                    "Paste blueprint (ENTER or RIGHT CLICK in inventory)");
+    btn_draw_legend(&C.btn_use, 2, C.txt_use_leg);
     btn_draw_legend(&C.btn_rotate, 2, "Rotate thumbnail (R)");
     btn_draw_legend(&C.btn_copy, 2, "Copy blueprint's image to clipboard");
     btn_draw_legend(&C.btn_delete, 2, "Delete blueprint");

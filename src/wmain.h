@@ -13,7 +13,7 @@
 typedef void (*Callback)();
 
 // Main screen.
-void main_init(GameRegistry* registry);
+void main_init();
 void main_open();
 void main_update();
 void main_draw();

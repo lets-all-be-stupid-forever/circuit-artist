@@ -37,6 +37,7 @@
 #include "win_msg.h"
 #include "win_mtext.h"
 #include "win_wiki.h"
+#include "win_workshop.h"
 #include "wnumber.h"
 #include "wtext.h"
 
@@ -46,6 +47,7 @@ static struct {
   RTex2D
       level_overlay_tex; /* Image overlay where the level stuff can draw to. */
   v2 target_pos;
+  GameRegistry* r;
   Rectangle color_btn[64];
   Rectangle fg_color_rect;
   Color palette[64];
@@ -100,6 +102,7 @@ static struct {
   // speed buttons
   Btn btn_clockopt[6];
   Btn btn_sim_show_t;
+  Btn btn_sim_soladd;
 
   Sim sim;
   HSim hsim;
@@ -220,6 +223,18 @@ static void on_post_image_save(bool saveas) {
       imgs[i] = C.ca.h.buffer[i];
     }
     blueprint_update_thumbnail(C.bp, nl, imgs);
+    // Now does the linking.
+    const char* id = NULL;
+    if (C.ldef) {
+      id = C.ldef->id;
+    } else if (C.cldef) {
+      id = C.cldef->id;
+    }
+    bool solved = false;
+    if (C.mode == MODE_SIMU && C.sim.complete) {
+      solved = true;
+    }
+    blueprint_link_to_level(C.bp, id, solved);
     msg_add("Blueprint Saved.", MSG_DURATION);
   } else {
     msg_add("Image Saved.", MSG_DURATION);
@@ -363,6 +378,21 @@ void main_load_file_level(const char* fname) {
   }
 }
 
+void main_load_by_level_id(const char* id) {
+  if (!id) return;
+  if (starts_with(id, "campaign:")) {
+    LevelDef* ldef = get_level_by_id(C.r, id);
+    if (ldef) {
+      main_load_campaign_level(ldef);
+    }
+  } else {
+    CustomLevelDef* ldef = find_custom_level_by_id(C.r, id);
+    if (ldef) {
+      main_load_custom_level(ldef);
+    }
+  }
+}
+
 static void reload_level() {
   if (C.level_file) main_load_file_level(C.level_file);
   if (C.cldef) main_load_custom_level(C.cldef);
@@ -371,7 +401,7 @@ static void reload_level() {
 
 static void on_select_level(LevelDef* ldef) { main_load_campaign_level(ldef); }
 
-void main_init(GameRegistry* registry) {
+void main_init() {
   srand(time(NULL));
   C.kernel_error = false;
   C.use_neon = true;
@@ -424,7 +454,8 @@ void main_init(GameRegistry* registry) {
   main_update_viewport();
   main_update_title();
   main_update_widgets();
-  sim_dry_run(registry);
+  C.r = getreg();
+  sim_dry_run(C.r);
   main_load_custom_level(find_sandbox_custom_level());
   discord_init();
   discord_refresh();
@@ -745,6 +776,40 @@ static void main_toggle_simu() {
   }
 }
 
+static const char* get_level_id() {
+  if (C.ldef) {
+    return C.ldef->id;
+  } else if (C.cldef) {
+    return C.cldef->id;
+  } else {
+    return NULL;
+  }
+}
+
+static void add_blueprint_as_solution() {
+  if (!get_level_id()) return;
+  main_stop_simu();
+  Image full = paint_export_buf(&C.ca);
+  int nl = hist_get_num_layers(&C.ca.h);
+  const char* lvl_id = get_level_id();
+  int ibp = blueprint_create_and_open(nl, C.ca.h.buffer, full, lvl_id);
+
+  if (ibp >= 0) {
+    Blueprint* bp = get_blueprint(&C.r->store, ibp);
+    char* name = clone_string(
+        TextFormat("Solution to %s", get_level_name_by_id(lvl_id)));
+    blueprint_rename(bp, name);
+    free(name);
+  }
+  if (ibp == -1) {
+    msg_add(
+        "INVENTORY FULL: Failed to create blueprint. Please open inventory "
+        "space.",
+        3);
+  }
+  UnloadImage(full);
+}
+
 static void add_blueprint() {
   if (!paint_get_has_selection(&C.ca)) {
     return;
@@ -752,7 +817,7 @@ static void add_blueprint() {
 
   Image full = paint_export_sel(&C.ca);
   int nl = hist_get_num_layers_sel(&C.ca.h);
-  int ibp = blueprint_create_and_open(nl, C.ca.h.selbuffer, full);
+  int ibp = blueprint_create_and_open(nl, C.ca.h.selbuffer, full, NULL);
   if (ibp == -1) {
     msg_add(
         "INVENTORY FULL: Failed to create blueprint. Please open inventory "
@@ -894,6 +959,12 @@ void main_update_controls() {
   if (isEdit && IsKeyPressed(KEY_U) && paint_get_has_selection(&C.ca)) {
     add_blueprint();
   }
+#if 1
+  if (isEdit && IsKeyPressed(KEY_K)) {
+    win_workshop_open(NULL);
+  }
+
+#endif
 
 #if 0
   if (isEdit && IsKeyPressed(KEY_K)) {
@@ -1083,6 +1154,7 @@ void main_update_hud() {
   if (btn_update(&C.btn_clockopt[4])) C.clock_speed = 4;
   if (btn_update(&C.btn_clockopt[5])) C.clock_speed = 5;
   if (btn_update(&C.btn_sim_show_t)) toggle_sim_show_t();
+  if (btn_update(&C.btn_sim_soladd)) add_blueprint_as_solution();
 
   Vector2 pos = GetMousePosition();
   if (rect_hover(C.fg_color_rect, pos)) {
@@ -1097,6 +1169,12 @@ void main_update_hud() {
       }
     }
   }
+}
+
+static void draw_complete_badge() {
+  Texture sprites = ui_get_sprites();
+  Rectangle tgt = {200, 200, 100, 100};
+  DrawTexturePro(sprites, rect_medal, tgt, (Vector2){0, 0}, 0, WHITE);
 }
 
 void main_draw() {
@@ -1118,6 +1196,13 @@ void main_draw() {
   };
   draw_default_tiled_frame(inner_content);
   main_draw_status_bar();
+
+  if (C.mode == MODE_SIMU) {
+    bool complete = C.sim.complete;
+    if (complete) {
+      // draw_complete_badge();
+    }
+  }
 
   if (C.time_open) {
     RectangleInt reg = main_get_target_region();
@@ -1182,6 +1267,7 @@ void main_draw() {
   btn_draw_icon(&C.btn_clockopt[4], bscale, sprites, rect_hz64);
   btn_draw_icon(&C.btn_clockopt[5], bscale, sprites, rect_hz1k);
   btn_draw_icon(&C.btn_sim_show_t, bscale, sprites, rect_inspect_wire);
+  btn_draw_icon(&C.btn_sim_soladd, bscale, sprites, rect_soladd);
 
   int mode = main_get_simu_mode();
   bool simu_on = mode == MODE_SIMU || mode == MODE_ERROR;
@@ -1296,6 +1382,8 @@ void main_draw() {
     btn_draw_legend(
         &C.btn_sim_show_t, bscale,
         "Show stats on cursor\n`T` = Time it takes to propagate to pixel");
+    btn_draw_legend(&C.btn_sim_soladd, bscale,
+                    "Create a solution blueprint from image");
 
     if (!C.kernel_error) {
       btn_draw_legend(
@@ -1381,6 +1469,11 @@ static Rectangle rgrow(int p, Rectangle r) {
   r.width += 2 * p;
   r.height += 2 * p;
   return r;
+}
+
+static bool can_save_as_solution() {
+  bool has_lvl = get_level_id() != NULL;
+  return (C.mode == MODE_SIMU) && C.sim.complete && has_lvl;
 }
 
 void main_update_layout() {
@@ -1483,6 +1576,7 @@ void main_update_layout() {
     int yy = by5 + C.btn_clockopt[5].hitbox.height;
     yy += 4 * s;
     C.btn_sim_show_t.hitbox = (Rectangle){bx0, yy, bw, bh};
+    C.btn_sim_soladd.hitbox = (Rectangle){bx1, yy, bw, bh};
 
     int cy = (sh - 2 * 18 - 2) * s;
     int cx = 4 * s + 35 * s + 4 * s;
@@ -1826,6 +1920,9 @@ void main_update_widgets() {
   C.btn_sim_show_t.toggled = C.sim_show_t;
   C.btn_sim_show_t.hidden = C.mode != MODE_SIMU;
 
+  C.btn_sim_soladd.hidden = C.mode != MODE_SIMU;
+  C.btn_sim_soladd.disabled = !can_save_as_solution();
+
   int nl = paint_get_num_layers(&C.ca);
   C.btn_layer_pop.disabled = ned || (nl == 1);
   C.btn_layer_push.disabled =
@@ -1878,6 +1975,9 @@ static void main_load_image_from_path_ex(const char* path, bool keep_file) {
 void main_load_blueprint(Blueprint* bp) {
   bool keep_filename = bp->steam_id == 0;
   main_load_image_from_path_ex(blueprint_fname_full(bp), keep_filename);
+  if (bp->linked_level_id) {
+    main_load_by_level_id(bp->linked_level_id);
+  }
   main_update(); /* To refresh the canva's content */
   if (keep_filename) {
     win_msg_open_text(

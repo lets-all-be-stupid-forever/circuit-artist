@@ -2,6 +2,10 @@
 #define WIDGETS_H
 #include "common.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 // Scroll widget.
 typedef struct {
   Rectangle content;
@@ -187,5 +191,9 @@ const char* mle_get_text(MultiLineEdit* m);
 void mle_set_focus(MultiLineEdit* m, bool focused);
 bool mle_update(MultiLineEdit* m);
 void mle_draw(MultiLineEdit* m);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

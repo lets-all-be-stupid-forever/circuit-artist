@@ -18,6 +18,8 @@
 #include "utils.h"
 #include "wmain.h"
 
+static GameRegistry* _r = NULL;
+
 typedef struct {
   GameRegistry* registry;
   Mod* mod;
@@ -145,7 +147,7 @@ static int lua_AddLevel(lua_State* L) {
   if (!lua_isstring(L, -1)) {
     return luaL_error(L, "id field must be a string");
   }
-  ldef->id = clone_string(lua_tostring(L, -1));
+  ldef->id = clone_string(TextFormat("campaign:%s", lua_tostring(L, -1)));
   lua_pop(L, 1);
   if (get_level_by_id(r, ldef->id)) {
     return luaL_error(L, "Level with id '%s' already exists", ldef->id);
@@ -172,7 +174,7 @@ static int lua_AddLevel(lua_State* L) {
       lua_rawgeti(L, -1, i);
       const char* id = lua_tostring(L, -1);
       assert(id);
-      LevelDef* ldef_dep = get_level_by_id(r, id);
+      LevelDef* ldef_dep = get_level_by_id(r, TextFormat("campaign:%s", id));
       arrput(ldef->deps, ldef_dep);
       lua_pop(L, 1);
     }
@@ -329,7 +331,9 @@ static Mod* init_mod_from_folder(GameRegistry* r, const char* mod_path) {
 }
 
 LevelDef* get_level_by_id(GameRegistry* r, const char* level_id) {
-  return shget(r->levels, level_id);
+  int i = shgeti(r->levels, level_id);
+  if (i == -1) return NULL;
+  return r->levels[i].value;
 }
 
 static int find_topic_by_id(GameRegistry* r, const char* topic_id) {
@@ -397,7 +401,7 @@ static int lua_AddWikiItem(lua_State* L) {
   return 0;
 }
 
-GameRegistry* create_game_registry() {
+static GameRegistry* create_game_registry() {
   GameRegistry* r = calloc(1, sizeof(GameRegistry));
   lua_State* L = luaL_newstate();
   if (!L) {
@@ -414,6 +418,12 @@ GameRegistry* create_game_registry() {
   lua_register(L, "Import", lua_Import);
   r->L = L;
   return r;
+}
+
+void init_game_registry() {
+  _r = create_game_registry();
+  init_mods(_r);
+  load_progress(_r);
 }
 
 LevelGroup* get_group_by_id(GameRegistry* r, const char* group_id) {
@@ -439,7 +449,8 @@ void steam_stat_sync(GameRegistry* r) {
         comp_here++;
       }
     }
-    const char* name = TextFormat("%s_progress", g->id);
+    const char* name =
+        TextFormat("%s_progress", g->id); /* Progress is by group! */
     int comp_there = steam_get_stats(name);
     /* Don't update if the local progress is inferior. */
     if (comp_there < comp_here) {
@@ -519,7 +530,9 @@ void save_progress(GameRegistry* r) {
   int nl = shlen(r->levels);
   for (int i = 0; i < nl; i++) {
     complete = json_object_new_boolean(r->levels[i].value->complete);
-    json_object_object_add(levels, r->levels[i].value->id, complete);
+    // Removes the campaign: prefix in the id
+    const char* id = &r->levels[i].value->id[9];
+    json_object_object_add(levels, id, complete);
   }
   json_object_object_add(root, "levels", levels);
   if (json_object_to_file_ext(get_progress_path(), root,
@@ -545,7 +558,9 @@ void load_progress(GameRegistry* r) {
     int nl = shlen(r->levels);
     for (int i = 0; i < nl; i++) {
       LevelDef* ldef = r->levels[i].value;
-      if (json_object_object_get_ex(levels, ldef->id, &complete)) {
+      // Removes the campaign: prefix
+      const char* id = &ldef->id[9];
+      if (json_object_object_get_ex(levels, id, &complete)) {
         ldef->complete = json_object_get_boolean(complete);
       }
     }
@@ -700,6 +715,7 @@ void init_mods(GameRegistry* r) {
   init_default_mod(r);
   register_custom_levels(r);
   //  init_local_mods(r);
+  blueprint_store_init(&r->store);
 }
 
 u64 extract_item_from_id(const char* id) {
@@ -763,3 +779,48 @@ bool folder_is_level(const char* folder) {
   ok = ok && os_path_exists(TextFormat("%s/kernel.lua", folder));
   return ok;
 }
+
+CustomLevelDef* find_custom_level_by_id(GameRegistry* r, const char* id) {
+  if (starts_with(id, "steam:")) {
+    int n = arrlen(r->workshop_custom_levels);
+    for (int i = 0; i < arrlen(r->workshop_custom_levels); i++) {
+      CustomLevelDef* l = r->workshop_custom_levels[i];
+      if (strcmp(id, l->id) == 0) {
+        return l;
+      }
+    }
+  }
+  if (starts_with(id, "local:")) {
+    int n = arrlen(r->local_custom_levels);
+    for (int i = 0; i < arrlen(r->local_custom_levels); i++) {
+      CustomLevelDef* l = r->local_custom_levels[i];
+      if (strcmp(id, l->id) == 0) {
+        return l;
+      }
+    }
+  }
+  if (starts_with(id, "official:")) {
+    int n = arrlen(r->official_custom_levels);
+    for (int i = 0; i < arrlen(r->official_custom_levels); i++) {
+      CustomLevelDef* l = r->official_custom_levels[i];
+      if (strcmp(id, l->id) == 0) {
+        return l;
+      }
+    }
+  }
+  return NULL;
+}
+
+const char* get_level_name_by_id(const char* id) {
+  if (starts_with(id, "campaign:")) {
+    LevelDef* lvl = get_level_by_id(_r, id);
+    if (!lvl) return "(unknown)";
+    return lvl->name;
+  } else {
+    CustomLevelDef* lvl = find_custom_level_by_id(_r, id);
+    if (!lvl) return "(unknown)";
+    return lvl->name;
+  }
+}
+
+GameRegistry* getreg() { return _r; }

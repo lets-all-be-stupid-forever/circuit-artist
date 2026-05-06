@@ -17,6 +17,8 @@ typedef struct {
   const char* default_thumbnail_path;
   int num_tags;
   const char** tags;
+  int num_kvtags;
+  const char** kv_tags; /* [key1, val1, key2, val2, ...]*/
 } PubformParams;
 
 void win_pubform_init();

@@ -26,7 +26,6 @@
 #include "wdialog.h"
 #include "win_blueprint.h"
 #include "win_bpdetail.h"
-#include "win_campaign.h"
 #include "win_customlvl.h"
 #include "win_level.h"
 #include "win_msg.h"
@@ -34,6 +33,8 @@
 #include "win_progress.h"
 #include "win_pubform.h"
 #include "win_wiki.h"
+#include "win_workshop.h"
+#include "win_workshopdet.h"
 #include "wmain.h"
 #include "wnumber.h"
 #include "wtext.h"
@@ -75,6 +76,8 @@ static void flush_win_cmd() {
       WindowEnum we = C.window[arrlen(C.window) - 1];
       if (we == WINDOW_PUBFORM) win_pubform_on_close();
       if (we == WINDOW_BPDETAIL) win_bpdetail_on_close();
+      if (we == WINDOW_WORKSHOP) win_workshop_on_close();
+      if (we == WINDOW_WORKSHOPDET) win_workshopdet_on_close();
       arrpop(C.window);
     }
   }
@@ -131,10 +134,7 @@ void ui_init() {
   SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
   InitWindow(screen_width, screen_height, "Circuit Artist");
   InitAudioDevice();
-  C.registry = create_game_registry();
-
-  init_mods(C.registry);
-  load_progress(C.registry);
+  init_game_registry();
   sound_init();
 
   load_art_font_asset("imgs/font5x7.png");
@@ -153,18 +153,20 @@ void ui_init() {
   msg_init();
   win_pubform_init();
   win_progress_init();
-  win_campaign_init(C.registry);
   about_init();
   win_mtext_init();
-  win_customlvl_init(C.registry);
+  win_customlvl_init();
   win_blueprint_init();
   profiler_init();
   modal_init();
-  win_wiki_init(C.registry);
+  win_wiki_init();
   shaders_init();
-  win_level_init(C.registry);
-  main_init(C.registry);
+  win_level_init();
+  main_init();
+  win_workshop_init();
+  win_workshopdet_init();
   main_open();
+  win_bpdetail_init();
   flush_win_cmd();
 }
 
@@ -320,13 +322,14 @@ void ui_update_frame() {
   if (update_window == WINDOW_LOG) win_log_update();
   if (update_window == WINDOW_WIKI) win_wiki_update();
   if (update_window == WINDOW_LEVEL) win_level_update();
-  if (update_window == WINDOW_CAMPAIGN) win_campaign_update();
   if (update_window == WINDOW_MSG) win_msg_update();
   if (update_window == WINDOW_MTEXT) win_mtext_update();
   if (update_window == WINDOW_PUBFORM) win_pubform_update();
   if (update_window == WINDOW_PROGRESS) win_progress_update();
   if (update_window == WINDOW_BPDETAIL) win_bpdetail_update();
   if (update_window == WINDOW_CUSTOM_LEVEL) win_customlvl_update();
+  if (update_window == WINDOW_WORKSHOP) win_workshop_update();
+  if (update_window == WINDOW_WORKSHOPDET) win_workshopdet_update();
   profiler_tac();
 
   // We stop the app here if should_close is flagged.
@@ -347,7 +350,6 @@ void ui_update_frame() {
     if (window == WINDOW_LOG) win_log_draw();
     if (window == WINDOW_WIKI) win_wiki_draw();
     if (window == WINDOW_LEVEL) win_level_draw();
-    if (window == WINDOW_CAMPAIGN) win_campaign_draw();
     if (window == WINDOW_BLUEPRINT) win_blueprint_draw();
     if (window == WINDOW_MSG) win_msg_draw();
     if (window == WINDOW_MTEXT) win_mtext_draw();
@@ -355,6 +357,8 @@ void ui_update_frame() {
     if (window == WINDOW_PROGRESS) win_progress_draw();
     if (window == WINDOW_BPDETAIL) win_bpdetail_draw();
     if (window == WINDOW_CUSTOM_LEVEL) win_customlvl_draw();
+    if (window == WINDOW_WORKSHOP) win_workshop_draw();
+    if (window == WINDOW_WORKSHOPDET) win_workshopdet_draw();
   }
   ui_draw_mouse();
   profiler_tac();

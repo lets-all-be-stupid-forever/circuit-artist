@@ -74,6 +74,10 @@
 #define rect_hz64 ((Rectangle){368, 16, 13, 13})
 #define rect_hz1k ((Rectangle){384, 16, 13, 13})
 #define rect_medal ((Rectangle){560, 0, 13, 13})
+#define rect_link ((Rectangle){80, 64, 13, 13})
+
+#define rect_left ((Rectangle){48, 80, 13, 13})
+#define rect_right ((Rectangle){64, 80, 13, 13})
 
 // Simulation mode
 #define rect_simu_over ((Rectangle){512, 0, 13, 13})
@@ -86,6 +90,7 @@
 #define rect_fill ((Rectangle){144, 0 * 0, 13, 13})
 #define rect_line_sep ((Rectangle){480, 16, 13, 13})
 #define rect_line_sep_r ((Rectangle){496, 16, 13, 13})
+#define rect_soladd ((Rectangle){80, 80, 13, 13})
 
 // minimap icon
 #define rect_map ((Rectangle){448, 0, 13, 13})

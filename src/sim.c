@@ -526,6 +526,7 @@ Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,
   *sim = (Sim){0};
   bool debug = false;
   sim->base_tps = 240;
+  sim->complete = false;
   Status status = status_ok();
   sim->api = api;
   double start = GetTime();
@@ -1654,3 +1655,7 @@ void sim_dry_run(GameRegistry* r) {
 #undef SETPIXEL
 }
 
+void sim_notify_level_complete(Sim* sim) {
+  if (sim->complete) return;
+  sim->complete = true;
+}

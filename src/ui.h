@@ -5,6 +5,10 @@
 #include "raylib.h"
 #include "stdbool.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 typedef enum {
   MOUSE_ARROW,
   MOUSE_PEN,
@@ -29,13 +33,14 @@ typedef enum {
   WINDOW_WIKI,
   WINDOW_LOG,
   WINDOW_LEVEL,
-  WINDOW_CAMPAIGN,
   WINDOW_BLUEPRINT,
   WINDOW_MTEXT,
   WINDOW_PUBFORM,
   WINDOW_PROGRESS,
   WINDOW_BPDETAIL,
   WINDOW_CUSTOM_LEVEL,
+  WINDOW_WORKSHOP,
+  WINDOW_WORKSHOPDET,
 } WindowEnum;
 
 void ui_init();
@@ -58,5 +63,9 @@ void ui_crash(const char* err);
 double ui_get_frame_time();
 void ui_handle_lua_error(lua_State* L);
 bool ui_is_demo();
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

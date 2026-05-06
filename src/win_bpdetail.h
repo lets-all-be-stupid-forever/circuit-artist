@@ -3,7 +3,13 @@
 
 #include "blueprint.h"
 
-void win_bpdetail_open(Blueprint* bp, BlueprintStore* store, int idx);
+typedef enum {
+  BPDETAIL_PASTE,
+  BPDETAIL_LOADWLEVEL,
+} BPDetailMainAction;
+
+void win_bpdetail_init();
+void win_bpdetail_open(Blueprint* bp, BPDetailMainAction main_action);
 void win_bpdetail_update();
 void win_bpdetail_draw();
 void win_bpdetail_on_close();

@@ -8,10 +8,10 @@
 #include "assert.h"
 #include "font.h"
 #include "fs.h"
-#include "paths.h"
 #include "game_registry.h"
 #include "json.h"
 #include "log.h"
+#include "paths.h"
 #include "raylib.h"
 #include "rlgl.h"
 #include "sim.h"
@@ -316,8 +316,7 @@ static int lua_Import(lua_State* L) {
   const char* full_path = path;
   char* checked_path = NULL;
   if (lvl->cldef || lvl->ldef) {
-    const char* folder =
-        lvl->cldef ? lvl->cldef->folder : lvl->ldef->mod->root;
+    const char* folder = lvl->cldef ? lvl->cldef->folder : lvl->ldef->mod->root;
     checked_path = import_try_resolve(folder, path);
     if (!checked_path) {
       char* shared_root = get_asset_path("lua_shared");
@@ -420,6 +419,7 @@ static int lua_pget(lua_State* L) {
 static int lua_notify_level_complete(lua_State* L) {
   LuaLevel* lvl = lua_getlevel(L);
   Sim* sim = lvl->sim;
+  sim_notify_level_complete(sim);
   /* Ldef exists if it's a campaign level */
   if (lvl->ldef) {
     dispatch_level_complete(lvl->ldef);

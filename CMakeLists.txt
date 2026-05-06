@@ -106,10 +106,10 @@ SET(ca_src
   src/ui.c
   src/uigraph.c
   src/utils.c
+  src/sol_widget.c
   src/wabout.c
   src/wdialog.c
   src/widgets.c
-  src/win_campaign.c
   src/win_level.c
   src/win_msg.c
   src/win_blueprint.c
@@ -122,6 +122,8 @@ SET(ca_src
   src/wnumber.c
   src/wtext.c
   src/win_mtext.c
+  src/win_workshop.c
+  src/win_workshopdet.c
   third_party/clip/clip.cpp
   third_party/clip/image.cpp
   third_party/raylib/src/external/glad.h

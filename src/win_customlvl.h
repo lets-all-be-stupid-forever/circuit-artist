@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-void win_customlvl_init(GameRegistry* r);
+void win_customlvl_init();
 void win_customlvl_open(CustomLevelDef* ldef);
 void win_customlvl_update();
 void win_customlvl_draw();
