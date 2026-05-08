@@ -1,3 +1,8 @@
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#pragma warning(disable : 4267)  // size_t to int
+#endif
+
 #include "steam.h"
 
 #include <stdio.h>
@@ -677,7 +682,7 @@ bool steam_query_update(void* ctx, QueryResult* r) {
 
   uint32 count = c->result.m_unNumResultsReturned;
   uint32 total = c->result.m_unTotalMatchingResults;  // for pagination
-  *r = (QueryResult){0};
+  *r = QueryResult{};
   r->ok = true;
   r->page_size = 50;
   r->total = total;
@@ -750,7 +755,7 @@ void unload_query_results(QueryResult* r) {
     free(r->items[i].author_name);
   }
   arrfree(r->items);
-  *r = (QueryResult){0};
+  *r = QueryResult{};
 #endif
 }
 
@@ -797,9 +802,9 @@ static Image steam_http_get_data_as_image(SteamHttpCall* c, uint32 body_size,
       ext = ".png";
     }
   }
-  if (!ext) return (Image){0};
+  if (!ext) return Image{};
   return LoadImageFromMemory(ext, body, (int)body_size);
-  return (Image){0};
+  return Image{};
 }
 #endif
 
@@ -809,7 +814,7 @@ bool steam_http_update(void* ctx, Image* img) {
 
   // Already done or cancelled
   if (c->done || c->request == INVALID_HTTPREQUEST_HANDLE) {
-    *img = (Image){0};
+    *img = Image{};
     return true;
   }
 
@@ -824,7 +829,7 @@ bool steam_http_update(void* ctx, Image* img) {
   if (c->failed || !c->result.m_bRequestSuccessful) {
     SteamAPI_ISteamHTTP_ReleaseHTTPRequest(SteamAPI_SteamHTTP(), c->request);
     c->request = INVALID_HTTPREQUEST_HANDLE;
-    *img = (Image){0};
+    *img = Image{};
     return true;
   }
 
