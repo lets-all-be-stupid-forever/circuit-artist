@@ -959,7 +959,7 @@ void main_update_controls() {
   if (isEdit && IsKeyPressed(KEY_U) && paint_get_has_selection(&C.ca)) {
     add_blueprint();
   }
-#if 1
+#if 0
   if (isEdit && IsKeyPressed(KEY_K)) {
     win_workshop_open(NULL);
   }

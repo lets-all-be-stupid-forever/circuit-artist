@@ -551,6 +551,7 @@ void steam_open_overlay_browse_solutions(const char* level_id) {
 }
 #endif
 
+#ifdef WITH_STEAM
 typedef struct {
   bool done;
   bool failed;
@@ -563,70 +564,87 @@ typedef struct {
 
 static SteamQueryCall* begin_query(int page, WorkshopSortMode sort) {
   static const EUGCQuery sort_map[] = {
-      k_EUGCQuery_RankedByTrend,           // WORKSHOP_SORT_TRENDING
-      k_EUGCQuery_RankedByPublicationDate, // WORKSHOP_SORT_RECENT
-      k_EUGCQuery_RankedByVote,            // WORKSHOP_SORT_VOTES
-      k_EUGCQuery_RankedByTextSearch,      // WORKSHOP_SORT_TEXT
+      k_EUGCQuery_RankedByTrend,            // WORKSHOP_SORT_TRENDING
+      k_EUGCQuery_RankedByPublicationDate,  // WORKSHOP_SORT_RECENT
+      k_EUGCQuery_RankedByVote,             // WORKSHOP_SORT_VOTES
+      k_EUGCQuery_RankedByTextSearch,       // WORKSHOP_SORT_TEXT
   };
   SteamQueryCall* c = (SteamQueryCall*)calloc(1, sizeof(SteamQueryCall));
   c->handle = SteamAPI_ISteamUGC_CreateQueryAllUGCRequestPage(
-      C.ugc, sort_map[sort], k_EUGCMatchingUGCType_Items_ReadyToUse,
-      0, C.app_id, page);
+      C.ugc, sort_map[sort], k_EUGCMatchingUGCType_Items_ReadyToUse, 0,
+      C.app_id, page);
   SteamAPI_ISteamUGC_SetAllowCachedResponse(C.ugc, c->handle, 0);
   SteamAPI_ISteamUGC_SetReturnMetadata(C.ugc, c->handle, true);
   SteamAPI_ISteamUGC_AddRequiredTag(C.ugc, c->handle, "blueprint");
   c->page = page;
   return c;
 }
+#endif
 
-void* steam_query_call_all(const char* search_text, int page, WorkshopSortMode sort) {
+void* steam_query_call_all(const char* search_text, int page,
+                           WorkshopSortMode sort) {
+#ifdef WITH_STEAM
   SteamQueryCall* c = begin_query(page, sort);
   if (search_text && search_text[0]) {
     SteamAPI_ISteamUGC_SetSearchText(C.ugc, c->handle, search_text);
   }
   c->api_call = SteamAPI_ISteamUGC_SendQueryUGCRequest(C.ugc, c->handle);
   return c;
+#else
+  return NULL;
+#endif
 }
 
-void* steam_query_solution(const char* level_id, int page, WorkshopSortMode sort) {
+void* steam_query_solution(const char* level_id, int page,
+                           WorkshopSortMode sort) {
+#ifdef WITH_STEAM
   SteamQueryCall* c = begin_query(page, sort);
   SteamAPI_ISteamUGC_AddRequiredTag(C.ugc, c->handle, "solution");
-  SteamAPI_ISteamUGC_AddRequiredKeyValueTag(C.ugc, c->handle, "solution_to", level_id);
+  SteamAPI_ISteamUGC_AddRequiredKeyValueTag(C.ugc, c->handle, "solution_to",
+                                            level_id);
   c->api_call = SteamAPI_ISteamUGC_SendQueryUGCRequest(C.ugc, c->handle);
   return c;
+#else
+  return NULL;
+#endif
 }
 
 void* steam_query_subscribed(int page) {
+#ifdef WITH_STEAM
   SteamQueryCall* c = (SteamQueryCall*)calloc(1, sizeof(SteamQueryCall));
   c->handle = SteamAPI_ISteamUGC_CreateQueryUserUGCRequest(
-      C.ugc, C.my_id,
-      k_EUserUGCList_Subscribed,
+      C.ugc, C.my_id, k_EUserUGCList_Subscribed,
       k_EUGCMatchingUGCType_Items_ReadyToUse,
-      k_EUserUGCListSortOrder_SubscriptionDateDesc,
-      C.app_id, C.app_id, page);
+      k_EUserUGCListSortOrder_SubscriptionDateDesc, C.app_id, C.app_id, page);
   SteamAPI_ISteamUGC_SetReturnMetadata(C.ugc, c->handle, true);
   SteamAPI_ISteamUGC_AddRequiredTag(C.ugc, c->handle, "blueprint");
   c->api_call = SteamAPI_ISteamUGC_SendQueryUGCRequest(C.ugc, c->handle);
   c->page = page;
   return c;
+#else
+  return NULL;
+#endif
 }
 
 void* steam_query_my_uploads(int page) {
+#ifdef WITH_STEAM
   SteamQueryCall* c = (SteamQueryCall*)calloc(1, sizeof(SteamQueryCall));
   c->handle = SteamAPI_ISteamUGC_CreateQueryUserUGCRequest(
-      C.ugc, C.my_id,
-      k_EUserUGCList_Published,
+      C.ugc, C.my_id, k_EUserUGCList_Published,
       k_EUGCMatchingUGCType_Items_ReadyToUse,
-      k_EUserUGCListSortOrder_CreationOrderDesc,
-      C.app_id, C.app_id, page);
+      k_EUserUGCListSortOrder_CreationOrderDesc, C.app_id, C.app_id, page);
   SteamAPI_ISteamUGC_SetReturnMetadata(C.ugc, c->handle, true);
   SteamAPI_ISteamUGC_AddRequiredTag(C.ugc, c->handle, "blueprint");
   c->api_call = SteamAPI_ISteamUGC_SendQueryUGCRequest(C.ugc, c->handle);
   c->page = page;
   return c;
+#else
+  return NULL;
+#endif
 }
 
 bool steam_query_update(void* ctx, QueryResult* r) {
+#ifdef WITH_STEAM
   SteamQueryCall* c = (SteamQueryCall*)ctx;
 
   if (c->canceled) {
@@ -681,15 +699,20 @@ bool steam_query_update(void* ctx, QueryResult* r) {
                                              sizeof(url));
     q.url = clone_string(url);
     q.desc = clone_string(details.m_rgchDescription);
-    q.author_name = clone_string(SteamFriends()->GetFriendPersonaName(details.m_ulSteamIDOwner));
+    q.author_name = clone_string(
+        SteamFriends()->GetFriendPersonaName(details.m_ulSteamIDOwner));
     arrput(r->items, q);
   }
   SteamAPI_ISteamUGC_ReleaseQueryUGCRequest(C.ugc, c->handle);
   c->handle = k_UGCQueryHandleInvalid;
   return true;
+#else
+  return false;
+#endif
 }
 
 void steam_query_call_cancel(void* ctx) {
+#ifdef WITH_STEAM
   SteamQueryCall* c = (SteamQueryCall*)ctx;
 
   if (c->canceled || c->done || c->failed) {
@@ -705,16 +728,20 @@ void steam_query_call_cancel(void* ctx) {
   c->done = true;
   c->failed = false;
   c->canceled = true;
+#endif
 }
 
 void steam_query_destroy(void* ctx) {
+#ifdef WITH_STEAM
   if (!ctx) return;
   SteamQueryCall* c = (SteamQueryCall*)ctx;
   steam_query_call_cancel(c);
   free(c);
+#endif
 }
 
 void unload_query_results(QueryResult* r) {
+#ifdef WITH_STEAM
   if (!r) return;
   for (int i = 0; i < arrlen(r->items); i++) {
     free(r->items[i].title);
@@ -724,8 +751,10 @@ void unload_query_results(QueryResult* r) {
   }
   arrfree(r->items);
   *r = (QueryResult){0};
+#endif
 }
 
+#ifdef WITH_STEAM
 typedef struct {
   HTTPRequestHandle request;
   SteamAPICall_t api_call;
@@ -734,8 +763,10 @@ typedef struct {
   bool failed;
   char url[1024];
 } SteamHttpCall;
+#endif
 
 void* steam_http_call(const char* url) {
+#ifdef WITH_STEAM
   SteamHttpCall* c = (SteamHttpCall*)calloc(1, sizeof(SteamHttpCall));
   snprintf(c->url, sizeof(c->url), "%s", url);
   ISteamHTTP* http = SteamAPI_SteamHTTP();
@@ -743,8 +774,12 @@ void* steam_http_call(const char* url) {
       SteamAPI_ISteamHTTP_CreateHTTPRequest(http, k_EHTTPMethodGET, url);
   SteamAPI_ISteamHTTP_SendHTTPRequest(http, c->request, &c->api_call);
   return c;
+#else
+  return NULL;
+#endif
 }
 
+#ifdef WITH_STEAM
 static Image steam_http_get_data_as_image(SteamHttpCall* c, uint32 body_size,
                                           uint8* body) {
   const char* ext = NULL;
@@ -764,9 +799,12 @@ static Image steam_http_get_data_as_image(SteamHttpCall* c, uint32 body_size,
   }
   if (!ext) return (Image){0};
   return LoadImageFromMemory(ext, body, (int)body_size);
+  return (Image){0};
 }
+#endif
 
 bool steam_http_update(void* ctx, Image* img) {
+#ifdef WITH_STEAM
   SteamHttpCall* c = (SteamHttpCall*)ctx;
 
   // Already done or cancelled
@@ -803,9 +841,13 @@ bool steam_http_update(void* ctx, Image* img) {
   SteamAPI_ISteamHTTP_ReleaseHTTPRequest(SteamAPI_SteamHTTP(), c->request);
   c->request = INVALID_HTTPREQUEST_HANDLE;
   return true;
+#else
+  return false;
+#endif
 }
 
 void steam_http_cancel(void* ctx) {
+#ifdef WITH_STEAM
   SteamHttpCall* c = (SteamHttpCall*)ctx;
   if (!c || c->done) return;
   if (c->request != INVALID_HTTPREQUEST_HANDLE) {
@@ -815,13 +857,16 @@ void steam_http_cancel(void* ctx) {
   }
   c->done = true;
   c->failed = true;
+#endif
 }
 
 void steam_http_destroy(void* ctx) {
+#ifdef WITH_STEAM
   SteamHttpCall* c = (SteamHttpCall*)ctx;
   if (!c) return;
   steam_http_cancel(c);
   free(c);
+#endif
 }
 
 // const uint8_t* steam_http_get_data(struct SteamHttpCall* c,
@@ -831,10 +876,13 @@ void steam_http_destroy(void* ctx) {
 // }
 
 void steam_subscribe_item(u64 id) {
+#ifdef WITH_STEAM
   SteamAPI_ISteamUGC_SubscribeItem(C.ugc, id);
+#endif
 }
 
 u32 steam_item_state(u64 id) {
+#ifdef WITH_STEAM
   int32 state = SteamAPI_ISteamUGC_GetItemState(C.ugc, id);
 
   u32 out = 0;
@@ -863,21 +911,30 @@ u32 steam_item_state(u64 id) {
     out = out | ITEM_STATE_NEEDSUPDATE;
   }
   return out;
+#else
+  return 0;
+#endif
 }
 
+#ifdef WITH_STEAM
 typedef struct {
   uint64 key;
   bool value;
 } SteamRequestedEntry;
 
 static SteamRequestedEntry* s_requested = NULL;
+#endif
 
 const char* steam_get_author_name(u64 steam_id) {
+#ifdef WITH_STEAM
   if (hmgeti(s_requested, steam_id) < 0) {
-    SteamAPI_ISteamFriends_RequestUserInformation(
-        SteamAPI_SteamFriends(), steam_id, true);
+    SteamAPI_ISteamFriends_RequestUserInformation(SteamAPI_SteamFriends(),
+                                                  steam_id, true);
     hmput(s_requested, steam_id, true);
   }
-  return SteamAPI_ISteamFriends_GetFriendPersonaName(
-      SteamAPI_SteamFriends(), steam_id);
+  return SteamAPI_ISteamFriends_GetFriendPersonaName(SteamAPI_SteamFriends(),
+                                                     steam_id);
+#else
+  return NULL;
+#endif
 }

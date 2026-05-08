@@ -2,6 +2,7 @@
 
 #include "font.h"
 #include "game_registry.h"
+#include "rlgl.h"
 #include "layout.h"
 #include "stb_ds.h"
 #include "stdio.h"
@@ -376,6 +377,17 @@ void win_workshop_draw() {
       if (C.opts[i].hover) {
         DrawTexturePro(sprites, (Rectangle){304, 208, 32, 32}, r, (Vector2){0},
                        0, WHITE);
+        if (state & ITEM_STATE_SUBSCRIBED) {
+          const char* txt = "subscribed";
+          v2 sz = get_rendered_text_size(txt);
+          float tx = r.x + (r.width - sz.x * 2) / 2;
+          float ty = r.y + (r.height - sz.y * 2) / 2;
+          rlPushMatrix();
+          rlTranslatef(tx, ty, 0);
+          rlScalef(2, 2, 1);
+          font_draw_texture_outlined(txt, 0, 0, GREEN, BLACK);
+          rlPopMatrix();
+        }
       }
     }
   }
