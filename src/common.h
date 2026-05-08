@@ -16,6 +16,12 @@
 
 #define MAX_LAYERS 3
 
+#define CA_WHITE ((Color){248, 255, 203, 255})
+#define CA_ORANGE ((Color){187, 131, 11, 255})
+#define CA_GRAYDARK ((Color){108, 108, 63, 255})
+#define CA_GRAY ((Color){187, 194, 156, 255})
+#define CA_BLACK ((Color){19, 21, 26, 255})
+
 #define COLOR_EQ(u, v) \
   (((u).r == (v).r) && ((u).g == (v).g) && ((u).b == (v).b) && ((u).a == (v).a))
 

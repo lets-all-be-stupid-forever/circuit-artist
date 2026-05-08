@@ -65,6 +65,11 @@ static void reset_fields() {
     free(C.tags[i]);
   }
   arrsetlen(C.tags, 0);
+  int nkvt = arrlen(C.kvtags);
+  for (int i = 0; i < nkvt; i++) {
+    free(C.kvtags[i]);
+  }
+  arrsetlen(C.kvtags, 0);
   free(C.folder);
   C.folder = NULL;
 }

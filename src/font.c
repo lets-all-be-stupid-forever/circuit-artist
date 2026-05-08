@@ -308,7 +308,7 @@ static void font_draw_texture2(const char* txt, int len, int x, int y,
     }
     if (c == '`') {
       if (COLOR_EQ(*color, normal)) {
-        Color c1 = get_lut_color(COLOR_BG0);
+        Color c1 = CA_ORANGE;
         *color = c1;
       } else {
         *color = normal;

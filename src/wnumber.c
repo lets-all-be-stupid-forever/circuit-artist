@@ -102,7 +102,7 @@ void number_modal_draw() {
 
   rlTranslatef(-tx / 2, 0, 0);
   font_draw_texture(cap, 1, 1, BLACK);
-  font_draw_texture(cap, 0, 0, WHITE);
+  font_draw_texture(cap, 0, 0, CA_WHITE);
   rlTranslatef(tx / 2, 0, 0);
 
   rlTranslatef(0, 20, 0);
@@ -110,11 +110,11 @@ void number_modal_draw() {
   tx = get_rendered_text_size(C.txt).x;
   rlTranslatef(-tx / 2, 0, 0);
   font_draw_texture(C.txt, 1, 1, BLACK);
-  font_draw_texture(C.txt, 0, 0, WHITE);
+  font_draw_texture(C.txt, 0, 0, CA_WHITE);
   if (cursor_type == 0) {
     rlTranslatef(tx + 1, 0, 0);
     DrawRectangle(0, 0, 1 + 1, 7 + 1, BLACK);
-    DrawRectangle(0, 0, 1, 7, WHITE);
+    DrawRectangle(0, 0, 1, 7, CA_WHITE);
   }
   rlPopMatrix();
 

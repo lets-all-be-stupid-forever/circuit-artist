@@ -99,6 +99,9 @@ void win_msg_update() {
 
 void win_msg_draw() {
   draw_win(C.modal, NULL);
+  Color c = {0, 0, 0, 150};
+  DrawRectangleRec(C.modal, c);
+
   int x = C.inner_modal.x;
   int y = C.inner_modal.y;
   // Color c = BLACK;
@@ -109,7 +112,7 @@ void win_msg_draw() {
     int s = C.scale;
     rlTranslatef(x, y, 0);
     rlScalef(s, s, 1);
-    DrawTexture(C.tex, 0, 0, WHITE);
+    DrawTexture(C.tex, 0, 0, CA_WHITE);
     rlPopMatrix();
   } else {
     textbox_draw(&C.tb);

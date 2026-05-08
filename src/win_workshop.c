@@ -2,8 +2,8 @@
 
 #include "font.h"
 #include "game_registry.h"
-#include "rlgl.h"
 #include "layout.h"
+#include "rlgl.h"
 #include "stb_ds.h"
 #include "stdio.h"
 #include "steam.h"
@@ -376,7 +376,7 @@ void win_workshop_draw() {
                      bc);
       if (C.opts[i].hover) {
         DrawTexturePro(sprites, (Rectangle){304, 208, 32, 32}, r, (Vector2){0},
-                       0, WHITE);
+                       0, CA_WHITE);
         if (state & ITEM_STATE_SUBSCRIBED) {
           const char* txt = "subscribed";
           v2 sz = get_rendered_text_size(txt);
@@ -385,7 +385,7 @@ void win_workshop_draw() {
           rlPushMatrix();
           rlTranslatef(tx, ty, 0);
           rlScalef(2, 2, 1);
-          font_draw_texture_outlined(txt, 0, 0, GREEN, BLACK);
+          font_draw_texture_outlined(txt, 0, 0, CA_ORANGE, BLACK);
           rlPopMatrix();
         }
       }
@@ -401,10 +401,10 @@ void win_workshop_draw() {
     Color dim = {k, k, k, 255};
     LegendBuilder lb = {0};
     lb_init(&lb);
-    lb_add_line(&lb, item->title ? item->title : "", 4, WHITE);
+    lb_add_line(&lb, item->title ? item->title : "", 4, CA_WHITE);
     const char* author = steam_get_author_name(item->owner_id);
     if (author && author[0]) {
-      lb_add_line(&lb, TextFormat("by %s", author), 2, dim);
+      lb_add_line(&lb, TextFormat("by %s", author), 2, CA_GRAYDARK);
     }
     lb_render(&lb, C.opts[i].hitbox);
     unload_lb(&lb);

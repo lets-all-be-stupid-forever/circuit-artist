@@ -105,7 +105,7 @@ void listbox_update(Listbox* l) {
 
 static void draw_row(int row_w, int row_h, ListboxRow* row, bool sel) {
   Color bg = BLANK;
-  Color fg = WHITE;
+  Color fg = CA_WHITE;
   if (sel) {
     bg = get_lut_color(COLOR_ORANGE);
     fg = BLACK;
@@ -127,7 +127,7 @@ static void draw_row(int row_w, int row_h, ListboxRow* row, bool sel) {
 }
 
 void listbox_draw(Listbox* l, int selected) {
-  Color bg = WHITE;
+  Color bg = CA_WHITE;
   int s = ui_get_scale();
   bg.a = 20;
   Rectangle box = l->hitbox;
@@ -301,9 +301,9 @@ void textbox_calc_height(Textbox* t) {
   t->text_w =
       (t->box.width - t->scroll.scroll_rect.width - 2 * t->text_x) / scale;
   int th;
-  draw_text_box_advanced(t->text, (Rectangle){0, 0, t->text_w, 0}, WHITE,
+  draw_text_box_advanced(t->text, (Rectangle){0, 0, t->text_w, 0}, CA_WHITE,
                          t->sprites, &th);
-  t->height = 2 * th;
+  t->height = 2 * th + 8 * scale;
 
   scroll_reset_value(&t->scroll);
 }
@@ -328,15 +328,14 @@ void textbox_update(Textbox* t) {
 void textbox_draw(Textbox* t) {
   Rectangle box = t->box;
   int s = ui_get_scale();
-  BeginScissorMode(box.x, box.y, box.width, box.height);
+  int pad = 4 * s;
+  DrawRectangle(box.x, box.y, box.width, box.height, t->bg);
+  BeginScissorMode(box.x, box.y + pad, box.width, box.height - 2 * pad);
   rlPushMatrix();
-  rlTranslatef(box.x, box.y, 0);
-  DrawRectangle(0, 0, box.width, t->box.height, t->bg);
-  rlTranslatef(t->text_x, -t->scroll.value, 0);
+  rlTranslatef(box.x + t->text_x, box.y + pad - t->scroll.value, 0);
   rlScalef(s, s, 1);
-  draw_text_box_advanced(t->text, (Rectangle){0, 0, t->text_w, 0}, WHITE,
+  draw_text_box_advanced(t->text, (Rectangle){0, 0, t->text_w, 0}, CA_WHITE,
                          t->sprites, NULL);
-
   rlPopMatrix();
   EndScissorMode();
   scroll_draw(&t->scroll);
@@ -540,15 +539,14 @@ void btn_draw_icon(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
 // Draws the legend of the button. Needs to be called separately from the button
 // itself.
 void btn_draw_legend(Btn* b, int ui_scale, const char* text) {
-  Color k = {21, 11, 3, 255};
+  Color bgc = {0, 0, 0, 150};
   if (b->hidden) return;
   Vector2 pos = GetMousePosition();
   bool hover = CheckCollisionPointRec(pos, b->hitbox);
   if (hover) {
     int x = pos.x + 16;
     int y = pos.y + 16;
-    Color kk = get_lut_color(COLOR_BG0);
-    Color fc = get_lut_color(COLOR_FC0);
+    Color fc = CA_WHITE;  // get_lut_color(COLOR_FC0);
     x = (x / ui_scale) * ui_scale;
     y = (y / ui_scale) * ui_scale;
     int s = 2;
@@ -566,7 +564,7 @@ void btn_draw_legend(Btn* b, int ui_scale, const char* text) {
     DrawRectangle(area.x - s, area.y - s, area.width + 2 * s,
                   area.height + 2 * s, BLACK);
     draw_bg(area);
-    // DrawRectangleRec(area, k);
+    DrawRectangleRec(area, bgc);
     rlPushMatrix();
     rlScalef(ui_scale, ui_scale, 1);
     y = y / ui_scale + 4;
@@ -803,14 +801,14 @@ void editbox_draw(Editbox* b) {
 
   // Draw full text
   font_draw_texture(b->txt, 1, 1, BLACK);
-  font_draw_texture(b->txt, 0, 0, WHITE);
+  font_draw_texture(b->txt, 0, 0, CA_WHITE);
 
   // Draw cursor at cursor_pos
   int cursor_type = ((int)(3 * b->alive)) % 2;
   if (cursor_type == 0) {
     rlTranslatef(cursor_x + 1, 0, 0);
     DrawRectangle(0, 0, 1 + 1, 7 + 1, BLACK);
-    DrawRectangle(0, 0, 1, 7, WHITE);
+    DrawRectangle(0, 0, 1, 7, CA_WHITE);
   }
   rlPopMatrix();
 }
@@ -835,7 +833,7 @@ void label_draw_centered(Label* l) {
   int s = 2;
   rlScalef(s, s, 1);
   font_draw_texture(l->txt, offx + 1, offy + 1, BLACK);
-  font_draw_texture(l->txt, offx, offy, WHITE);
+  font_draw_texture(l->txt, offx, offy, CA_WHITE);
   rlPopMatrix();
 }
 
@@ -848,7 +846,7 @@ void label_draw(Label* l) {
   int offx = 0;
   int s = 2;
   rlScalef(s, s, 1);
-  font_draw_texture_outlined(l->txt, offx, offy, WHITE, BLACK);
+  font_draw_texture_outlined(l->txt, offx, offy, CA_WHITE, BLACK);
   rlPopMatrix();
 }
 
@@ -1128,7 +1126,7 @@ void lineedit_draw(LineEdit* e) {
   DrawRectangleRec(box, (Color){0, 0, 0, 150});
   if (e->focused) {
     int bw = s;
-    Color border = {160, 160, 220, 255};
+    Color border = CA_ORANGE;  // {160, 160, 220, 255};
     DrawRectangle((int)box.x, (int)box.y, (int)box.width, bw, border);
     DrawRectangle((int)box.x, (int)box.y + (int)box.height - bw, (int)box.width,
                   bw, border);
@@ -1153,13 +1151,13 @@ void lineedit_draw(LineEdit* e) {
     DrawRectangle(x0, text_y, x1 - x0, lh, sel_col);
   }
 
-  font_draw_texture(e->buf, 0, text_y, WHITE);
+  font_draw_texture(e->buf, 0, text_y, CA_WHITE);
 
   if (e->focused) {
     int cx = le_x_of(e, e->cursor);
     int blink = ((int)(3.0f * e->alive)) % 2;
     if (blink == 0) {
-      DrawRectangle(cx, text_y, 1, lh, WHITE);
+      DrawRectangle(cx, text_y, 1, lh, CA_WHITE);
     }
   }
 
@@ -1632,7 +1630,7 @@ void mle_draw(MultiLineEdit* m) {
   DrawRectangleRec(box, (Color){0, 0, 0, 150});
   if (m->focused) {
     int bw = ui_get_scale();
-    Color border = {160, 160, 220, 255};
+    Color border = CA_ORANGE;  //{160, 160, 220, 255};
     DrawRectangle((int)box.x, (int)box.y, (int)box.width, bw, border);
     DrawRectangle((int)box.x, (int)box.y + (int)box.height - bw, (int)box.width,
                   bw, border);
@@ -1692,7 +1690,7 @@ void mle_draw(MultiLineEdit* m) {
     int n = line_end - line_start;
     memcpy(tmp, m->buf + line_start, n);
     tmp[n] = '\0';
-    font_draw_texture(tmp, 0, y, WHITE);
+    font_draw_texture(tmp, 0, y, CA_WHITE);
 
     // Draw cursor
     if (i == cursor_line && m->focused) {
@@ -1702,7 +1700,7 @@ void mle_draw(MultiLineEdit* m) {
       int cx = (int)get_rendered_text_size(tmp).x;
       int blink = ((int)(3.0f * m->alive)) % 2;
       if (blink == 0) {
-        DrawRectangle(cx, y, 1, lh, WHITE);
+        DrawRectangle(cx, y, 1, lh, CA_WHITE);
       }
     }
   }

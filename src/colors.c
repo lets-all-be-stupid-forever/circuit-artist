@@ -8,7 +8,7 @@ Color get_lut_color(ColorLut c) {
     case COLOR_BTN1:
       return GetColor(0xBBC29CFF);
     case COLOR_BTN2:
-      return GetColor(0xF8FFCBFF);  // lighter
+      return GetColor(0xF8FFCBFF);  // lighter (ca whyte)
     case COLOR_ORANGE:
     case COLOR_BG0:
       return GetColor(0xBB830BFF);  // ORANGE

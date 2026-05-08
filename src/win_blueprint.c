@@ -288,17 +288,9 @@ static void draw_sel_item() {
   rlPushMatrix();
   rlTranslatef(mouse.x, mouse.y + 15, 0);
   Blueprint* s = get_blueprint(C.store, C.sel);
-  Color c = WHITE;
+  Color c = CA_WHITE;
   c.a = 200;
   DrawTexture(s->thumbnail, 0, 0, c);
-  rlPopMatrix();
-}
-
-static void draw_t(const char* t, Rectangle r) {
-  rlPushMatrix();
-  rlTranslatef(r.x, r.y - 24, 0);
-  rlScalef(2, 2, 1);
-  font_draw_texture(t, 0, 0, WHITE);
   rlPopMatrix();
 }
 
@@ -312,7 +304,7 @@ static void draw_slot_hover(Btn* b, int sidx) {
   if (hover) {
     Rectangle r = b->hitbox;
     Rectangle r2 = {r.x - 2, r.y - 2, r.width + 4, r.height + 4};
-    Color c = WHITE;
+    Color c = CA_WHITE;
     c.a = 100;
     DrawRectangleLinesEx(r2, 2, c);
   }

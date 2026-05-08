@@ -234,7 +234,18 @@ static void on_post_image_save(bool saveas) {
     if (C.mode == MODE_SIMU && C.sim.complete) {
       solved = true;
     }
+    bool was_solved = C.bp->solved_level;
+    bool had_link = C.bp->linked_level_id != NULL;
     blueprint_link_to_level(C.bp, id, solved);
+    if (id && !had_link) {
+      msg_add(TextFormat("Blueprint linked to level: %s.",
+                         get_level_name_by_id(id)),
+              MSG_DURATION);
+    } else if (id && !was_solved && solved) {
+      msg_add(TextFormat("Blueprint marked as solution for: %s.",
+                         get_level_name_by_id(id)),
+              MSG_DURATION);
+    }
     msg_add("Blueprint Saved.", MSG_DURATION);
   } else {
     msg_add("Image Saved.", MSG_DURATION);
@@ -429,7 +440,7 @@ void main_init() {
   C.palette[16] = GetColor(0x111111FF);
   C.palette[17] = GetColor(0x333333FF);
 
-  C.num_colors = 18;
+  C.num_colors = 20;
   load_palette_asset("imgs/pal.png");
   int s = ui_get_scale();
   C.header_size = 24 * s;
@@ -1174,7 +1185,7 @@ void main_update_hud() {
 static void draw_complete_badge() {
   Texture sprites = ui_get_sprites();
   Rectangle tgt = {200, 200, 100, 100};
-  DrawTexturePro(sprites, rect_medal, tgt, (Vector2){0, 0}, 0, WHITE);
+  DrawTexturePro(sprites, rect_medal, tgt, (Vector2){0, 0}, 0, CA_WHITE);
 }
 
 void main_draw() {
@@ -1711,13 +1722,13 @@ void main_draw_error_message(const char* msg) {
   int dy = (th - lh) / 2;
   int pad = 10;
   DrawRectangle(0, 0, tw + 2 * pad, th + 2 * pad, RED);
-  draw_text_box(msg, (Rectangle){pad, pad + dy, 1000, 0}, WHITE, NULL);
+  draw_text_box(msg, (Rectangle){pad, pad + dy, 1000, 0}, CA_WHITE, NULL);
   rlPopMatrix();
 }
 
 void main_draw_status_bar() {
   int ui_scale = ui_get_scale();
-  Color tc = WHITE;
+  Color tc = CA_WHITE;
   int num_lines = 7;
   int yc1 = (C.target_pos.y + C.img_target_tex.texture.height) / ui_scale -
             19 * num_lines;
@@ -1810,12 +1821,12 @@ void main_draw_mouse_extra() {
     rlPushMatrix();
     rlTranslatef(pos.x + 8 * s, pos.y + 8 * s, 0);
     rlScalef(s, s, 1);
-    font_draw_texture(txt, 0, 0, (just_changed ? YELLOW : WHITE));
+    font_draw_texture(txt, 0, 0, (just_changed ? YELLOW : CA_WHITE));
     int sep = paint_get_line_sep(&C.ca);
     if (sep != 1) {
       rlTranslatef(0, 10, 0);
       snprintf(txt, sizeof(txt), "s=%d", sep);
-      font_draw_texture(txt, 0, 0, WHITE);
+      font_draw_texture(txt, 0, 0, CA_WHITE);
     }
     rlPopMatrix();
   }
@@ -1826,7 +1837,7 @@ void main_draw_mouse_extra() {
     rlTranslatef(pos.x + 8 * s, pos.y + 8 * s, 0);
     rlScalef(s, s, 1);
     Color msg_color = BLANK;
-    if (C.mouse_msg_type == 0) msg_color = WHITE;
+    if (C.mouse_msg_type == 0) msg_color = CA_WHITE;
     if (C.mouse_msg_type == 1) msg_color = RED;
     font_draw_texture_outlined(C.mouse_msg, 0, 0, msg_color, BLACK);
     rlPopMatrix();

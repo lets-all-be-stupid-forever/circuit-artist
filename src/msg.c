@@ -22,7 +22,8 @@ static struct {
 void msg_init() { C.clear_permanent = false; }
 
 // Adds a message that will expire within `duration` seconds.
-// If msgDuration is negative, the message is permanent until msg_clear_permanent() is called.
+// If msgDuration is negative, the message is permanent until
+// msg_clear_permanent() is called.
 void msg_add(const char* msg_txt, float msgDuration) {
   msg_t* m = malloc(sizeof(msg_t));
   m->txt = clone_string(msg_txt);
@@ -43,7 +44,7 @@ void msg_draw() {
   int s = 2;
   int dh = 24;
   float now = GetTime();
-  Color r = get_lut_color(COLOR_BTN2);
+  Color r = CA_WHITE;
   Color r2 = r;
   r2.a = 255 * 0.3;
   while (m) {

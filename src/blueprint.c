@@ -26,14 +26,14 @@ void blueprint_draw_leg(Btn* b, Blueprint* s, int scale) {
   LegendBuilder lb = {0};
   char line[256];
   int k = 100;
-  Color c2 = {k, k, k, 255};
+  Color c2 = CA_GRAYDARK;  //{k, k, k, 255};
   lb_init(&lb);
 
-  Color name_color = WHITE;
+  Color name_color = CA_WHITE;
 
   if (s->linked_level_id) {
-    name_color = SKYBLUE;
-    if (s->solved_level) name_color = GREEN;
+    name_color = CA_WHITE;
+    if (s->solved_level) name_color = CA_WHITE;
   }
 
   lb_add_line(&lb, hover_name, 4, name_color);
@@ -626,7 +626,7 @@ void blueprint_draw(Btn* b, Blueprint* s, int scale) {
       DrawRectangle(0, 0, tw, th, clr);
       Rectangle sprite_dst = {0, 0, 14, 14};
       DrawTexturePro(sprites, rect_steam_big, sprite_dst, (Vector2){2, 2}, 0,
-                     WHITE);
+                     CA_WHITE);
       rlPopMatrix();
     }
     if (s->linked_level_id) {
@@ -634,11 +634,12 @@ void blueprint_draw(Btn* b, Blueprint* s, int scale) {
       rlTranslatef(x, y, 0);
       Color clr = {0, 0, 255, 30};
       DrawRectangle(0, 0, tw, th, clr);
+      // rlTranslatef(tw - 14, 0, 0);
       rlTranslatef(tw - 14, 0, 0);
       Texture sprites = ui_get_sprites();
       Rectangle sprite_dst = {0, 0, 14, 14};
       DrawTexturePro(sprites, s->solved_level ? rect_medal : rect_link,
-                     sprite_dst, (Vector2){2, 2}, 0, WHITE);
+                     sprite_dst, (Vector2){2, 2}, 0, CA_WHITE);
       rlPopMatrix();
     }
   } else {

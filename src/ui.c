@@ -189,7 +189,7 @@ static void ui_error_mode() {
   ClearBackground(DARKBLUE);
   rlPushMatrix();
   rlScalef(2, 2, 1);
-  draw_text_box(C.lua_error, (Rectangle){20, 20, 400, 0}, WHITE, NULL);
+  draw_text_box(C.lua_error, (Rectangle){20, 20, 400, 0}, CA_WHITE, NULL);
   rlPopMatrix();
   EndDrawing();
 }
@@ -442,7 +442,7 @@ void ui_draw_mouse() {
       .height = 32 * s,
   };
   DrawTexturePro(C.sprites, source, target, (Vector2){.x = 0, .y = 0}, 0.0f,
-                 WHITE);
+                 CA_WHITE);
 }
 
 bool ui_get_should_close() { return C.should_close; }

@@ -251,7 +251,7 @@ static void draw_title(Rectangle modal, const char* title) {
   Color k = {21, 11, 3, 255};
   DrawRectangle(0, 0, modal.width, s * th, k);
   rlScalef(s, s, 1);
-  font_draw_texture(title, offx, offy, WHITE);
+  font_draw_texture(title, offx, offy, CA_WHITE);
   rlPopMatrix();
 }
 

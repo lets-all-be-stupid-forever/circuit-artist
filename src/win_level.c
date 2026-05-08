@@ -282,6 +282,7 @@ static void draw_camp_legend() {
       DrawRectangle(area.x - s, area.y - s, area.width + 2 * s,
                     area.height + 2 * s, BLACK);
       draw_bg(area);
+      DrawRectangleRec(area, (Color){0, 0, 0, 150});
 
       rlPushMatrix();
       rlTranslatef(x0, y0, 0);
@@ -290,11 +291,11 @@ static void draw_camp_legend() {
       // DrawRectangleRec(area, bg);
       int pad = 20;
       rlTranslatef(0, 4, 0);
-      draw_text_box_advanced(TextFormat("%s\n------------------------", title),
-                             (Rectangle){pad, 0, 300 - 2 * pad, 0}, WHITE, NULL,
-                             NULL);
+      draw_text_box_advanced(TextFormat("%s\n", title),
+                             (Rectangle){pad, 0, 300 - 2 * pad, 0}, CA_ORANGE,
+                             NULL, NULL);
       draw_text_box_advanced(desc, (Rectangle){pad, 20, 300 - 2 * pad, 0},
-                             WHITE, NULL, NULL);
+                             CA_WHITE, NULL, NULL);
       rlPopMatrix();
     }
   }
