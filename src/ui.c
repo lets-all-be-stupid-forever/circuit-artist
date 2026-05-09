@@ -10,6 +10,7 @@
 #include "common.h"
 #include "font.h"
 #include "game_registry.h"
+#include "i18n.h"
 #include "log.h"
 #include "modal.h"
 #include "msg.h"
@@ -32,6 +33,7 @@
 #include "win_mtext.h"
 #include "win_progress.h"
 #include "win_pubform.h"
+#include "win_settings.h"
 #include "win_wiki.h"
 #include "win_workshop.h"
 #include "win_workshopdet.h"
@@ -135,6 +137,7 @@ void ui_init() {
   InitWindow(screen_width, screen_height, "Circuit Artist");
   InitAudioDevice();
   init_game_registry();
+  init_i18n();
   sound_init();
 
   load_art_font_asset("imgs/font5x7.png");
@@ -167,6 +170,7 @@ void ui_init() {
   win_workshopdet_init();
   main_open();
   win_bpdetail_init();
+  win_settings_init();
   flush_win_cmd();
 }
 
@@ -330,6 +334,7 @@ void ui_update_frame() {
   if (update_window == WINDOW_CUSTOM_LEVEL) win_customlvl_update();
   if (update_window == WINDOW_WORKSHOP) win_workshop_update();
   if (update_window == WINDOW_WORKSHOPDET) win_workshopdet_update();
+  if (update_window == WINDOW_SETTINGS) win_settings_update();
   profiler_tac();
 
   // We stop the app here if should_close is flagged.
@@ -359,6 +364,7 @@ void ui_update_frame() {
     if (window == WINDOW_CUSTOM_LEVEL) win_customlvl_draw();
     if (window == WINDOW_WORKSHOP) win_workshop_draw();
     if (window == WINDOW_WORKSHOPDET) win_workshopdet_draw();
+    if (window == WINDOW_SETTINGS) win_settings_draw();
   }
   ui_draw_mouse();
   profiler_tac();

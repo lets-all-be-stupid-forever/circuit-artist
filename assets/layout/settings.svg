@@ -1,0 +1,11 @@
+<svg width="516" height="295" viewBox="0 0 516 295" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="settings">
+<rect width="516" height="295" fill="white"/>
+<rect id="always_on_top" x="30" y="54" width="456" height="34" fill="#D9D9D9"/>
+<rect id="neon" x="30" y="96" width="456" height="34" fill="#D9D9D9"/>
+<rect id="paint_sound" x="30" y="138" width="456" height="34" fill="#D9D9D9"/>
+<rect id="simu_sound" x="30" y="180" width="456" height="34" fill="#D9D9D9"/>
+<rect id="btn_close" x="358" y="248" width="128" height="34" fill="#D9D9D9"/>
+<rect id="btn_about" x="30" y="248" width="34" height="34" fill="#D9D9D9"/>
+</g>
+</svg>

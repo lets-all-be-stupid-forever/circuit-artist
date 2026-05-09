@@ -18,6 +18,11 @@
 #include "utils.h"
 #include "wmain.h"
 
+#define KEY_ALWAYS_ON_TOP "always_on_top"
+#define KEY_SIMU_NEON "simu_neon"
+#define KEY_SIMU_SOUND "simu_sound"
+#define KEY_PAINT_SOUND "paint_sound"
+
 static GameRegistry* _r = NULL;
 
 typedef struct {
@@ -423,7 +428,7 @@ static GameRegistry* create_game_registry() {
 void init_game_registry() {
   _r = create_game_registry();
   init_mods(_r);
-  load_progress(_r);
+  load_progress();
 }
 
 LevelGroup* get_group_by_id(GameRegistry* r, const char* group_id) {
@@ -511,30 +516,54 @@ void dispatch_level_complete(LevelDef* ldef) {
     ldef->complete = true;
     play_sound_level_complete();
     update_levels_completion(ldef->group->registry);
-    save_progress(ldef->group->registry);
+    save_progress();
   }
 }
 
-void save_progress(GameRegistry* r) {
+static void json_read_config(json_object* root) {
+  json_object* cfg;
+  if (json_object_object_get_ex(root, "config", &cfg)) {
+    json_read_bool(cfg, KEY_SIMU_NEON, &_r->cfg.simu_neon);
+    json_read_bool(cfg, KEY_SIMU_SOUND, &_r->cfg.simu_sound);
+    json_read_bool(cfg, KEY_PAINT_SOUND, &_r->cfg.paint_sound);
+    json_read_bool(cfg, KEY_ALWAYS_ON_TOP, &_r->cfg.always_on_top);
+  }
+}
+
+static void json_write_config(json_object* root) {
+  json_object* cfg = json_object_new_object();
+  json_write_bool(cfg, KEY_SIMU_SOUND, _r->cfg.simu_sound);
+  json_write_bool(cfg, KEY_SIMU_NEON, _r->cfg.simu_neon);
+  json_write_bool(cfg, KEY_PAINT_SOUND, _r->cfg.paint_sound);
+  json_write_bool(cfg, KEY_ALWAYS_ON_TOP, _r->cfg.always_on_top);
+  json_object_object_add(root, "config", cfg);
+}
+
+static void json_write_levels(json_object* root) {
   json_object *items, *item, *str;
   json_object* complete;
   json_object* levels;
+  levels = json_object_new_object();
+  int nl = shlen(_r->levels);
+  for (int i = 0; i < nl; i++) {
+    complete = json_object_new_boolean(_r->levels[i].value->complete);
+    // Removes the campaign: prefix in the id
+    const char* id = &_r->levels[i].value->id[9];
+    json_object_object_add(levels, id, complete);
+  }
+  json_object_object_add(root, "levels", levels);
+}
+
+void save_progress() {
+  GameRegistry* r = _r;
   json_object* root = json_object_new_object();
   if (!root) {
     ui_crash("Couldn't create save file.");
     return;
   }
   json_object_object_add(root, "version", json_object_new_int(0));
-
-  levels = json_object_new_object();
-  int nl = shlen(r->levels);
-  for (int i = 0; i < nl; i++) {
-    complete = json_object_new_boolean(r->levels[i].value->complete);
-    // Removes the campaign: prefix in the id
-    const char* id = &r->levels[i].value->id[9];
-    json_object_object_add(levels, id, complete);
-  }
-  json_object_object_add(root, "levels", levels);
+  json_write_config(root);
+  json_write_levels(root);
   if (json_object_to_file_ext(get_progress_path(), root,
                               JSON_C_TO_STRING_PRETTY) < 0) {
     fprintf(stderr, "Error writing to file\n");
@@ -545,28 +574,36 @@ void save_progress(GameRegistry* r) {
   json_object_put(root);
 }
 
-void load_progress(GameRegistry* r) {
+static void json_read_levels(json_object* root) {
+  json_object* levels;
+  if (json_object_object_get_ex(root, "levels", &levels)) {
+    int nl = shlen(_r->levels);
+    for (int i = 0; i < nl; i++) {
+      LevelDef* ldef = _r->levels[i].value;
+      // Removes the campaign: prefix
+      const char* id = &ldef->id[9];
+      json_read_bool(levels, id, &ldef->complete);
+    }
+  }
+}
+
+void load_progress() {
+  // Default values
+  _r->cfg = (GameConfig){0};
+  _r->cfg.paint_sound = true;
+  _r->cfg.simu_neon = true;
+  _r->cfg.simu_sound = true;
+  _r->cfg.always_on_top = false;
+
   if (!FileExists(get_progress_path())) {
     return;
   }
 
-  json_object* levels;
-  json_object* complete;
   json_object* root = json_object_from_file(get_progress_path());
   assert(root);
-  if (json_object_object_get_ex(root, "levels", &levels)) {
-    int nl = shlen(r->levels);
-    for (int i = 0; i < nl; i++) {
-      LevelDef* ldef = r->levels[i].value;
-      // Removes the campaign: prefix
-      const char* id = &ldef->id[9];
-      if (json_object_object_get_ex(levels, id, &complete)) {
-        ldef->complete = json_object_get_boolean(complete);
-      }
-    }
-  }
+  json_read_config(root);
   json_object_put(root);
-  update_levels_completion(r);
+  update_levels_completion(_r);
 }
 
 void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
@@ -824,3 +861,17 @@ const char* get_level_name_by_id(const char* id) {
 }
 
 GameRegistry* getreg() { return _r; }
+
+bool is_paint_sound_on() { return _r->cfg.paint_sound; }
+bool is_circuit_sound_on() { return _r->cfg.simu_sound; }
+bool is_circuit_neon_on() { return _r->cfg.simu_neon; }
+bool is_always_on_top() { return _r->cfg.always_on_top; }
+
+void on_always_on_top_change() {
+  if (is_always_on_top()) {
+    SetWindowState(FLAG_WINDOW_TOPMOST);
+  } else {
+    ClearWindowState(FLAG_WINDOW_TOPMOST);
+  }
+}
+

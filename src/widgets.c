@@ -1709,3 +1709,61 @@ void mle_draw(MultiLineEdit* m) {
   EndScissorMode();
   scroll_draw(&m->scroll);
 }
+
+static void draw_checkbox(Rectangle r, bool toggled, bool pressed) {
+  rlPushMatrix();
+  rlTranslatef(r.x, r.y, 0);
+  rlScalef(2, 2, 1);
+  int ww = r.width / 2;
+  int hh = r.height / 2;
+  NPatchInfo patch_normal = {.source = {528, 96, 5, 5},
+                             .left = 2,
+                             .top = 2,
+                             .right = 2,
+                             .bottom = 2,
+                             .layout = NPATCH_NINE_PATCH};
+  NPatchInfo patch_pressed = {.source = {528 + 5, 96, 5, 5},
+                              .left = 2,
+                              .top = 2,
+                              .right = 2,
+                              .bottom = 2,
+                              .layout = NPATCH_NINE_PATCH};
+
+  Rectangle dest = {0, 0, ww, hh};
+  Texture sprites = ui_get_sprites();
+  DrawTextureNPatch(sprites, pressed ? patch_pressed : patch_normal, dest,
+                    (Vector2){0, 0}, 0, WHITE);
+
+  if (toggled) {
+    int cx = (ww - 13) / 2;
+    int cy = (hh - 13) / 2;
+    DrawTextureRec(sprites, rect_check, (Vector2){cx, cy}, BLACK);
+  }
+  rlPopMatrix();
+}
+
+void btn_draw_checkbox(Btn* b) {
+  if (b->hidden) return;
+  draw_checkbox(b->hitbox, b->toggled, b->pressed);
+}
+
+void btn_draw_checkbox_text(Btn* b, const char* txt) {
+  int h = b->hitbox.height;
+  if (b->hover) {
+    Color bg = {0, 0, 0, 150};
+    DrawRectangleRec(b->hitbox, bg);
+  }
+  Rectangle r_box = {b->hitbox.x, b->hitbox.y, h, h};
+  draw_checkbox(r_box, b->toggled, b->pressed);
+  int sep = 8;
+  Rectangle r_lab = {b->hitbox.x + h + sep, b->hitbox.y, h, h};
+
+  int lh = get_font_line_height();
+  int yy = (h - 2 * lh) / 2;
+
+  rlPushMatrix();
+  rlTranslatef(r_lab.x, r_lab.y + yy, 0);
+  rlScalef(2, 2, 1);
+  font_draw_texture(txt, 0, 0, CA_WHITE);
+  rlPopMatrix();
+}

@@ -61,6 +61,7 @@
 #define rect_steam ((Rectangle){112, 48, 13, 13})
 #define rect_steam_big ((Rectangle){112, 64, 28, 28})
 #define rect_copy ((Rectangle){112, 32, 13, 13})
+#define rect_check ((Rectangle){96, 64, 13, 13})
 
 #define rect_eye_on ((Rectangle){272, 16, 13, 13})
 #define rect_eye_off ((Rectangle){256, 16, 13, 13})

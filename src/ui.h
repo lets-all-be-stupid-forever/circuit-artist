@@ -41,6 +41,7 @@ typedef enum {
   WINDOW_CUSTOM_LEVEL,
   WINDOW_WORKSHOP,
   WINDOW_WORKSHOPDET,
+  WINDOW_SETTINGS,
 } WindowEnum;
 
 void ui_init();

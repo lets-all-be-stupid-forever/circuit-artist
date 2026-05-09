@@ -81,6 +81,7 @@ SET(ca_src
   src/layout.c
   src/lua_level.c
   src/level_api.c
+  src/i18n.c
   src/log.c
   src/modal.c
   src/msg.c
@@ -117,6 +118,7 @@ SET(ca_src
   src/win_customlvl.c
   src/win_progress.c
   src/win_bpdetail.c
+  src/win_settings.c
   src/wire_graph.c
   src/wmain.c
   src/wnumber.c

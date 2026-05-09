@@ -11,6 +11,7 @@
 #include "common.h"
 #include "discord_integration.h"
 #include "font.h"
+#include "i18n.h"
 #include "img.h"
 #include "json.h"
 #include "log.h"
@@ -36,6 +37,7 @@
 #include "win_level.h"
 #include "win_msg.h"
 #include "win_mtext.h"
+#include "win_settings.h"
 #include "win_wiki.h"
 #include "win_workshop.h"
 #include "wnumber.h"
@@ -61,13 +63,8 @@ static struct {
   Btn btn_open;
   Btn btn_save;
   Btn btn_saveas;
-  Btn btn_about;
   Btn btn_exit;
 
-  Btn btn_sound;
-  Btn btn_sound_paint;
-  Btn btn_neon;
-  Btn btn_always_on_top;
   Btn btn_wiki;
   Btn btn_pause;
   Btn btn_rewind;
@@ -87,6 +84,7 @@ static struct {
   Btn btn_rotate;
   Btn btn_fill;
   Btn btn_fliph;
+  Btn btn_settings;
   Btn btn_flipv;
   Btn btn_sel_open;
   Btn btn_sel_save;
@@ -106,7 +104,6 @@ static struct {
 
   Sim sim;
   HSim hsim;
-  bool use_neon;
   bool rewind_pressed;
   bool forward_pressed;
   bool paused;
@@ -117,10 +114,7 @@ static struct {
   Texture2D sidepanel_tex;
   bool looping;
   float base_volume;
-  bool always_on_top;
 
-  bool mute;
-  bool muted_paint;
   int clock_speed;
 
   bool time_open;
@@ -198,12 +192,13 @@ static void discord_refresh() {
 static bool main_can_rewind() { return C.api.bw != NULL; }
 
 static void on_modal_before_open() {
-  if (C.always_on_top) {
+  if (is_always_on_top()) {
     ClearWindowState(FLAG_WINDOW_TOPMOST);
   }
 }
+
 static void on_modal_after_open() {
-  if (C.always_on_top) {
+  if (is_always_on_top()) {
     SetWindowState(FLAG_WINDOW_TOPMOST);
   }
 }
@@ -415,10 +410,8 @@ static void on_select_level(LevelDef* ldef) { main_load_campaign_level(ldef); }
 void main_init() {
   srand(time(NULL));
   C.kernel_error = false;
-  C.use_neon = true;
 
   C.base_volume = .2f;
-  C.muted_paint = false;
   win_log_init();
   C.clock_speed = 2;
   C.palette[0] = WHITE;
@@ -644,7 +637,7 @@ void main_update() {
       }
     }
     Tex* rendered = sim_render_v2(&C.sim, tw, th, C.ca.cam, frame_steps,
-                                  slack_steps, hide_mask, C.use_neon);
+                                  slack_steps, hide_mask, is_circuit_neon_on());
     profiler_tac();
     BeginTextureMode(C.img_target_tex);
     ClearBackground(PURPLE);
@@ -1069,18 +1062,6 @@ void main_save_selection() {
 }
 
 static void toggle_simu_pause() { C.paused = !C.paused; }
-static void toggle_sound() { C.mute = !C.mute; }
-static void toggle_neon() { C.use_neon = !C.use_neon; }
-static void toggle_sound_paint() { C.muted_paint = !C.muted_paint; }
-
-static void toggle_always_on_top() {
-  C.always_on_top = !C.always_on_top;
-  if (C.always_on_top) {
-    SetWindowState(FLAG_WINDOW_TOPMOST);
-  } else {
-    ClearWindowState(FLAG_WINDOW_TOPMOST);
-  }
-}
 
 static void toggle_sim_show_t() { C.sim_show_t = !C.sim_show_t; }
 
@@ -1108,14 +1089,10 @@ void main_update_hud() {
   Paint* ca = &C.ca;
   if (btn_update(&C.btn_new)) on_new_click();
   if (btn_update(&C.btn_open)) on_open_click();
+  if (btn_update(&C.btn_settings)) win_settings_open();
   if (btn_update(&C.btn_save)) main_on_save_click(false);
   if (btn_update(&C.btn_saveas)) main_on_save_click(true);
-  if (btn_update(&C.btn_about)) easy_about_open();
   if (btn_update(&C.btn_exit)) ui_set_close_requested();
-  if (btn_update(&C.btn_sound)) toggle_sound();
-  if (btn_update(&C.btn_neon)) toggle_neon();
-  if (btn_update(&C.btn_sound_paint)) toggle_sound_paint();
-  if (btn_update(&C.btn_always_on_top)) toggle_always_on_top();
 
   if (btn_update(&C.btn_layer_pop)) paint_layer_pop(&C.ca);
   if (btn_update(&C.btn_layer_push)) paint_layer_push(&C.ca);
@@ -1260,16 +1237,8 @@ void main_draw() {
   btn_draw_icon(&C.btn_open, bscale, sprites, rect_open);
   btn_draw_icon(&C.btn_save, bscale, sprites, rect_save);
   btn_draw_icon(&C.btn_saveas, bscale, sprites, rect_saveas);
-  btn_draw_icon(&C.btn_about, bscale, sprites, rect_info);
+  btn_draw_icon(&C.btn_settings, bscale, sprites, rect_settings);
   btn_draw_icon(&C.btn_exit, bscale, sprites, rect_exit);
-
-  btn_draw_text(&C.btn_sound, bscale,
-                TextFormat("Circuit Sound %s", C.mute ? "Off" : "On"));
-  btn_draw_text(&C.btn_neon, bscale,
-                TextFormat("Neon %s", C.use_neon ? "On" : "Off"));
-  btn_draw_text(&C.btn_sound_paint, bscale,
-                TextFormat("Paint Sound %s", C.muted_paint ? "Off" : "On"));
-  btn_draw_text(&C.btn_always_on_top, bscale, "Always on Top");
 
   btn_draw_icon(&C.btn_clockopt[0], bscale, sprites, rect_hz0);
   btn_draw_icon(&C.btn_clockopt[1], bscale, sprites, rect_hz1);
@@ -1325,14 +1294,9 @@ void main_draw() {
 
   // We only draw the legends if this window is the active window.
   if (ui_get_window() == WINDOW_MAIN) {
+    btn_draw_legend(&C.btn_settings, bscale, T.main_settings_leg);
     btn_draw_legend(&C.btn_new, bscale, "New Image (CTRL+N)");
-
-    if (ui_is_demo()) {
-      btn_draw_legend(&C.btn_open, bscale,
-                      "Load Image \n`(Not Available in Demo)`");
-    } else {
-      btn_draw_legend(&C.btn_open, bscale, "Load Image (CTRL+O)");
-    }
+    btn_draw_legend(&C.btn_open, bscale, "Load Image (CTRL+O)");
 
     btn_draw_legend(&C.btn_save, bscale, "Save Image (CTRL+S)");
     btn_draw_legend(&C.btn_saveas, bscale, "Save Image As .. ");
@@ -1340,7 +1304,6 @@ void main_draw() {
     btn_draw_legend(&C.btn_blueprint, bscale,
                     "Open Blueprints Window (Q)\nOpens even if selection tool "
                     "is not active.");
-    btn_draw_legend(&C.btn_about, bscale, "About Circuit Artist");
     btn_draw_legend(&C.btn_exit, bscale, "Exit");
 
     btn_draw_legend(&C.btn_layer_push, bscale, "Add Top Layer (max 3)");
@@ -1375,11 +1338,6 @@ void main_draw() {
         "www.circuitartistgame.com");
     btn_draw_legend(&C.btn_level_campaign, bscale, "Select campaign level");
     btn_draw_legend(&C.btn_wiki, bscale, "Wiki");
-    btn_draw_legend(&C.btn_sound, bscale, "Toggle simulation sound");
-    btn_draw_legend(&C.btn_neon, bscale,
-                    "Toggle neon (glow) during simulation");
-    btn_draw_legend(&C.btn_sound_paint, bscale, "Toggle paint sound");
-    btn_draw_legend(&C.btn_always_on_top, bscale, "Toggle Always On Top");
     btn_draw_legend(&C.btn_sel_open, bscale, "Load Selection from Image");
     btn_draw_legend(&C.btn_sel_save, bscale, "Save Selection as Image");
     btn_draw_legend(&C.btn_blueprint_add, bscale, "Create blueprint (U)");
@@ -1514,7 +1472,7 @@ void main_update_layout() {
     C.btn_open.hitbox = (Rectangle){x1, y0, bw, bh};
     C.btn_save.hitbox = (Rectangle){x2, y0, bw, bh};
     C.btn_saveas.hitbox = (Rectangle){x3, y0, bw, bh};
-    C.btn_about.hitbox = (Rectangle){x4, y0, bw, bh};
+    C.btn_settings.hitbox = (Rectangle){x4, y0, bw, bh};
     C.btn_exit.hitbox = (Rectangle){x5, y0, bw, bh};
 
     C.btn_level_campaign.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
@@ -1523,14 +1481,6 @@ void main_update_layout() {
     x7 += C.btn_level_custom.hitbox.width + (17 * s) + 4 * s;
     C.btn_wiki.hitbox = (Rectangle){x7, y0, 4 * bw, bh};
     x7 += C.btn_wiki.hitbox.width + 4 * s;
-    C.btn_sound.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
-    x7 += C.btn_sound.hitbox.width + 4 * s;
-    C.btn_sound_paint.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
-    x7 += C.btn_sound_paint.hitbox.width + 4 * s;
-    C.btn_always_on_top.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
-    x7 += C.btn_always_on_top.hitbox.width + 4 * s;
-    C.btn_neon.hitbox = (Rectangle){x7, y0, 4 * bw, bh};
-    x7 += C.btn_neon.hitbox.width + 4 * s;
   }
 
   int sh = GetScreenHeight() / s;
@@ -1875,10 +1825,6 @@ void main_update_widgets() {
   C.btn_bucket.disabled = ned;
   C.btn_picker.disabled = ned;
 
-  C.btn_sound.toggled = !C.mute;
-  C.btn_neon.toggled = C.use_neon;
-  C.btn_sound_paint.toggled = !C.muted_paint;
-  C.btn_always_on_top.toggled = C.always_on_top;
   C.btn_pause.toggled = C.paused;
   C.btn_rewind.toggled = C.rewind_pressed;
   C.btn_forward.toggled = C.forward_pressed;
@@ -2115,9 +2061,5 @@ void main_paste_file(const char* fname, int rot) {
 }
 
 Paint* main_get_paint() { return &C.ca; }
-
-bool is_circuit_sound_on() { return !C.mute; }
-
-bool is_paint_sound_on() { return !C.muted_paint; }
 
 Blueprint* main_get_editting_blueprint() { return C.bp; }

@@ -99,6 +99,8 @@ void btn_draw_text_primary(Btn* b, int ui_scale, const char* text);
 void btn_draw_legend(Btn* b, int ui_scale, const char* text);
 void btn_draw_icon(Btn* b, int ui_scale, Texture2D tex, Rectangle r);
 void btn_draw_color(Rectangle r, Color c, bool selected, bool disabled);
+void btn_draw_checkbox(Btn* b);
+void btn_draw_checkbox_text(Btn* b, const char* txt);
 bool btn_hover(Btn* b);
 
 typedef struct {

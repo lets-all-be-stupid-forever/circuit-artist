@@ -76,6 +76,13 @@ typedef struct LevelDef {
 } LevelDef;
 
 typedef struct {
+  bool simu_neon;
+  bool simu_sound;
+  bool paint_sound;
+  bool always_on_top;
+} GameConfig;
+
+typedef struct {
   char* key;
   LevelDef* value;
 } LevelDefDict;
@@ -110,6 +117,7 @@ typedef struct {
 } CustomLevelDef;
 
 typedef struct GameRegistry {
+  GameConfig cfg;
   TutorialTopic* topics; /* Tutorial stuff */
   LevelGroupDict* groups;
   LevelDefDict* levels;
@@ -132,8 +140,8 @@ void init_mods(GameRegistry* r);
 LevelDef* get_level_by_id(GameRegistry* r, const char* level_id);
 LevelGroup* get_group_by_id(GameRegistry* r, const char* group_id);
 void dispatch_level_complete(LevelDef* ldef);
-void save_progress(GameRegistry* r);
-void load_progress(GameRegistry* r);
+void save_progress();
+void load_progress();
 void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
                                  const char* name, const char* icon_file);
 void registry_add_tutorial_item(GameRegistry* r, const char* topic_id,
@@ -148,6 +156,12 @@ char* get_custom_levels_folder();
 const char* get_custom_level_kernel_path(CustomLevelDef* ldef);
 bool folder_is_level(const char* folder);
 CustomLevelDef* find_custom_level_by_id(GameRegistry* r, const char* id);
+
+bool is_paint_sound_on();
+bool is_circuit_sound_on();
+bool is_circuit_neon_on();
+bool is_always_on_top();
+void on_always_on_top_change();
 
 const char* get_level_name_by_id(const char* id);
 
