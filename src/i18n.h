@@ -153,7 +153,7 @@ void init_i18n();
 
 extern struct tr_s {
 #define X(x) const char* x;
-  TR_FIELDS(X);
+  TR_FIELDS(X)
 #undef X
 } T;
 
