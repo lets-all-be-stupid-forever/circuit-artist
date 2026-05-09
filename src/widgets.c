@@ -1764,6 +1764,7 @@ void btn_draw_checkbox_text(Btn* b, const char* txt) {
   rlPushMatrix();
   rlTranslatef(r_lab.x, r_lab.y + yy, 0);
   rlScalef(2, 2, 1);
+  font_draw_texture(txt, 1, 1, BLACK);
   font_draw_texture(txt, 0, 0, CA_WHITE);
   rlPopMatrix();
 }

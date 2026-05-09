@@ -66,6 +66,9 @@ static struct {
   Btn btn_exit;
 
   Btn btn_wiki;
+  Btn btn_blueprint;
+  Btn btn_blueprint_add;
+
   Btn btn_pause;
   Btn btn_rewind;
   Btn btn_forward;
@@ -77,7 +80,6 @@ static struct {
   Btn btn_brush;
   Btn btn_text;
   Btn btn_line;
-  Btn btn_blueprint;
   Btn btn_picker;
   Btn btn_bucket;
   Btn btn_marquee;
@@ -88,7 +90,6 @@ static struct {
   Btn btn_flipv;
   Btn btn_sel_open;
   Btn btn_sel_save;
-  Btn btn_blueprint_add;
   Btn btn_line_sep;
   Btn btn_line_sep_r;
 
@@ -1274,7 +1275,8 @@ void main_draw() {
                    color_disabled);
   }
   btn_draw_icon(&C.btn_line, bscale, sprites, rect_line);
-  btn_draw_icon(&C.btn_blueprint, bscale, sprites, rect_blueprint);
+  // btn_draw_icon(&C.btn_blueprint, bscale, sprites, rect_blueprint);
+  btn_draw_text(&C.btn_blueprint, bscale, "Blueprints");
   btn_draw_icon(&C.btn_brush, bscale, sprites, rect_brush);
   btn_draw_icon(&C.btn_picker, bscale, sprites, rect_picker);
   btn_draw_icon(&C.btn_bucket, bscale, sprites, rect_bucket);
@@ -1301,9 +1303,7 @@ void main_draw() {
     btn_draw_legend(&C.btn_save, bscale, "Save Image (CTRL+S)");
     btn_draw_legend(&C.btn_saveas, bscale, "Save Image As .. ");
 
-    btn_draw_legend(&C.btn_blueprint, bscale,
-                    "Open Blueprints Window (Q)\nOpens even if selection tool "
-                    "is not active.");
+    btn_draw_legend(&C.btn_blueprint, bscale, "Open Blueprints Window (Q)");
     btn_draw_legend(&C.btn_exit, bscale, "Exit");
 
     btn_draw_legend(&C.btn_layer_push, bscale, "Add Top Layer (max 3)");
@@ -1338,9 +1338,11 @@ void main_draw() {
         "www.circuitartistgame.com");
     btn_draw_legend(&C.btn_level_campaign, bscale, "Select campaign level");
     btn_draw_legend(&C.btn_wiki, bscale, "Wiki");
+
     btn_draw_legend(&C.btn_sel_open, bscale, "Load Selection from Image");
     btn_draw_legend(&C.btn_sel_save, bscale, "Save Selection as Image");
-    btn_draw_legend(&C.btn_blueprint_add, bscale, "Create blueprint (U)");
+    btn_draw_legend(&C.btn_blueprint_add, bscale,
+                    "Create blueprint from selection (U)");
 
     btn_draw_legend(&C.btn_clockopt[0], bscale, "Speed 1");
     btn_draw_legend(&C.btn_clockopt[1], bscale, "Speed 2");
@@ -1352,7 +1354,8 @@ void main_draw() {
         &C.btn_sim_show_t, bscale,
         "Show stats on cursor\n`T` = Time it takes to propagate to pixel");
     btn_draw_legend(&C.btn_sim_soladd, bscale,
-                    "Create a solution blueprint from image");
+                    "Create a solution blueprint from image\nOnly available "
+                    "once a level is solved");
 
     if (!C.kernel_error) {
       btn_draw_legend(
@@ -1479,8 +1482,17 @@ void main_update_layout() {
     x7 += C.btn_level_campaign.hitbox.width + 1 * s;
     C.btn_level_custom.hitbox = (Rectangle){x7, y0, 6 * bw, bh};
     x7 += C.btn_level_custom.hitbox.width + (17 * s) + 4 * s;
+
+    C.btn_blueprint.hitbox = (Rectangle){x7, y0, 4 * bw, bh};
+    x7 += C.btn_blueprint.hitbox.width + 2 * s;
+    C.btn_blueprint_add.hitbox = (Rectangle){x7, y0, bw, bh};
+    x7 += C.btn_blueprint_add.hitbox.width + 2 * s;
+    C.btn_sim_soladd.hitbox = (Rectangle){x7, y0, bw, bh};
+    x7 += C.btn_sim_soladd.hitbox.width + 4 * s;
+    x7 += 17 * s;
+
     C.btn_wiki.hitbox = (Rectangle){x7, y0, 4 * bw, bh};
-    x7 += C.btn_wiki.hitbox.width + 4 * s;
+    x7 += C.btn_wiki.hitbox.width + 4 * s + 17 * s;
   }
 
   int sh = GetScreenHeight() / s;
@@ -1523,10 +1535,10 @@ void main_update_layout() {
     C.btn_flipv.hitbox = (Rectangle){bx1, by3, bw, bh};
     C.btn_rotate.hitbox = (Rectangle){bx0, by4, bw, bh};
     C.btn_fill.hitbox = (Rectangle){bx1, by4, bw, bh};
-    C.btn_blueprint.hitbox = (Rectangle){bx0, by5b, bw, bh};
-    C.btn_blueprint_add.hitbox = (Rectangle){bx1, by5b, bw, bh};
-    C.btn_sel_open.hitbox = (Rectangle){bx0, by5b + 18 * s + 4 * s, bw, bh};
-    C.btn_sel_save.hitbox = (Rectangle){bx1, by5b + 18 * s + 4 * s, bw, bh};
+    // C.btn_blueprint.hitbox = (Rectangle){bx0, by5b, bw, bh};
+    // C.btn_blueprint_add.hitbox = (Rectangle){bx1, by5b, bw, bh};
+    C.btn_sel_open.hitbox = (Rectangle){bx0, by5b, bw, bh};
+    C.btn_sel_save.hitbox = (Rectangle){bx1, by5b, bw, bh};
 
     C.btn_clockopt[0].hitbox = (Rectangle){bx0, by3, bw, bh};
     C.btn_clockopt[1].hitbox = (Rectangle){bx1, by3, bw, bh};
@@ -1537,7 +1549,7 @@ void main_update_layout() {
     int yy = by5 + C.btn_clockopt[5].hitbox.height;
     yy += 4 * s;
     C.btn_sim_show_t.hitbox = (Rectangle){bx0, yy, bw, bh};
-    C.btn_sim_soladd.hitbox = (Rectangle){bx1, yy, bw, bh};
+    // C.btn_sim_soladd.hitbox = (Rectangle){bx1, yy, bw, bh};
 
     int cy = (sh - 2 * 18 - 2) * s;
     int cx = 4 * s + 35 * s + 4 * s;
@@ -1862,8 +1874,8 @@ void main_update_widgets() {
   C.btn_line_sep_r.hidden = (tool != TOOL_LINE) || ned;
   C.btn_sel_open.hidden = (tool != TOOL_SEL) || ned;
   C.btn_sel_save.hidden = (tool != TOOL_SEL) || ned;
-  C.btn_blueprint_add.hidden = (tool != TOOL_SEL) || ned;
-  C.btn_blueprint.hidden = (tool != TOOL_SEL) || ned;
+  // C.btn_blueprint_add.hidden = (tool != TOOL_SEL) || ned;
+  // C.btn_blueprint.hidden = (tool != TOOL_SEL) || ned;
 
   for (int i = 0; i < MAX_LAYERS; i++) {
     C.btn_layer[i].disabled = ned;
@@ -1877,8 +1889,8 @@ void main_update_widgets() {
   C.btn_sim_show_t.toggled = C.sim_show_t;
   C.btn_sim_show_t.hidden = C.mode != MODE_SIMU;
 
-  C.btn_sim_soladd.hidden = C.mode != MODE_SIMU;
-  C.btn_sim_soladd.disabled = !can_save_as_solution();
+  // C.btn_sim_soladd.hidden = C.mode != MODE_SIMU;
+  C.btn_sim_soladd.disabled = C.mode != MODE_SIMU || !can_save_as_solution();
 
   int nl = paint_get_num_layers(&C.ca);
   C.btn_layer_pop.disabled = ned || (nl == 1);
