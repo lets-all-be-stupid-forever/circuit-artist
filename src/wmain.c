@@ -205,8 +205,11 @@ static void on_modal_after_open() {
 }
 
 static void unlink_bp() {
+  if (C.bp) {
+    win_msg_open_text("Image is no longer associated with the blueprint.",
+                      NULL);
+  }
   C.bp = NULL;
-  win_msg_open_text("Image is no longer associated with the blueprint.", NULL);
 }
 
 /* called after an image has been saved */
