@@ -471,6 +471,7 @@ void steam_upload_free(void* ctx) {
 
 void steam_load_blueprints_and_levels() {
 #ifdef WITH_STEAM
+  if (!C.loaded) return;
   bool include_locally_disabled = false;
   uint32 count =
       SteamAPI_ISteamUGC_GetNumSubscribedItems(C.ugc, include_locally_disabled);

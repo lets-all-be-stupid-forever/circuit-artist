@@ -602,6 +602,7 @@ void load_progress() {
   json_object* root = json_object_from_file(get_progress_path());
   assert(root);
   json_read_config(root);
+  json_read_levels(root);
   json_object_put(root);
   update_levels_completion(_r);
 }

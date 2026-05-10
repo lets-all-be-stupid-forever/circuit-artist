@@ -37,7 +37,7 @@ void discord_init(void) {
   handlers.disconnected = on_disconnected;
   handlers.errored = on_errored;
 
-  Discord_Initialize(DISCORD_APP_ID, &handlers, 1, NULL);
+  Discord_Initialize(DISCORD_APP_ID, &handlers, 0, NULL);
 }
 
 void discord_shutdown(void) { Discord_Shutdown(); }
