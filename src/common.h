@@ -6,7 +6,9 @@
 #include <string.h>
 
 #define GL_INT 0x1404
+#ifndef M_PI
 #define M_PI 3.141592653589793
+#endif
 
 #define SIM_MAX_QUEUE_DELAY (8000)
 #define SIM_MAX_WIRE_DELAY (6000)
