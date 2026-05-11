@@ -605,6 +605,7 @@ void load_progress() {
   json_read_levels(root);
   json_object_put(root);
   update_levels_completion(_r);
+  on_always_on_top_change();
 }
 
 void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
