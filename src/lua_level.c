@@ -9,6 +9,7 @@
 #include "font.h"
 #include "fs.h"
 #include "game_registry.h"
+#include "i18n.h"
 #include "json.h"
 #include "log.h"
 #include "paths.h"
@@ -20,6 +21,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include "ui.h"
+#include "uifont.h"
 #include "utils.h"
 #include "widgets.h"
 
@@ -419,7 +421,9 @@ static int lua_pget(lua_State* L) {
 static int lua_notify_level_complete(lua_State* L) {
   LuaLevel* lvl = lua_getlevel(L);
   Sim* sim = lvl->sim;
-  sim_notify_level_complete(sim);
+  /* Only open completion the first time. */
+  // bool should_open = !sim->complete;
+  sim_set_complete(sim);
   /* Ldef exists if it's a campaign level */
   if (lvl->ldef) {
     dispatch_level_complete(lvl->ldef);
@@ -526,9 +530,9 @@ int l_print(lua_State* L) {
       WHITE,
       BLANK,
   };
-  int w = get_rendered_text_size(text).x;
+  int w = uifont_text_size(text).x;
   if (c != 2) {
-    font_draw_texture(text, x, y, lut[c]);
+    uifont_draw_texture(text, x, y, lut[c]);
   }
   lua_pushinteger(L, w);
   return 1;
@@ -564,8 +568,13 @@ int lua_rlScalef(lua_State* L) {
 
 int lua_MeasureText(lua_State* L) {
   const char* text = luaL_checkstring(L, 1);
-  int x = get_rendered_text_size(text).x;
+  int x = uifont_text_size(text).x;
   lua_pushinteger(L, x);
+  return 1;
+}
+
+int lua_LineHeight(lua_State* L) {
+  lua_pushinteger(L, uifont_line_height());
   return 1;
 }
 
@@ -591,7 +600,7 @@ int lua_DrawTextBox(lua_State* L) {
       0,
   };
   if (text) {
-    draw_text_box_advanced(text, rect, c, NULL, NULL);
+    uifont_draw_text_box_advanced(text, rect, c, NULL, NULL);
   }
   return 0;
 }
@@ -609,7 +618,7 @@ int lua_DrawText(lua_State* L) {
   int y = (float)luaL_checknumber(L, i++);
   Color c = lua_checkcolor(L, i++);
   if (text) {
-    font_draw_texture(text, x, y, c);
+    uifont_draw_texture(text, x, y, c);
   }
   return 0;
 }
@@ -629,7 +638,7 @@ int lua_DrawFont(lua_State* L) {
   int g = (float)luaL_checknumber(L, i++);
   int b = (float)luaL_checknumber(L, i++);
   int a = (float)luaL_checknumber(L, i++);
-  font_draw_texture(text, x, y, (Color){r, g, b, a});
+  uifont_draw_texture(text, x, y, (Color){r, g, b, a});
   return 0;
 }
 
@@ -845,6 +854,13 @@ static Status lua_level_bw(void* u, Buffer buf) {
   return status_ok();
 }
 
+static int lua_SetWarmupCycles(lua_State* L) {
+  LuaLevel* lvl = lua_getlevel(L);
+  i64 warmup_cycles = luaL_checkinteger(L, 1);
+  lvl->api->warmup_cycles = warmup_cycles;
+  return 0;
+}
+
 static int lua_EnableRewind(lua_State* L) {
   LuaLevel* lvl = lua_getlevel(L);
 
@@ -930,6 +946,7 @@ static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
   lua_register(L, "SetUpdateInterval", lua_SetUpdateInterval);
   lua_register(L, "SetBaseTPS", lua_SetBaseTPS);
   lua_register(L, "EnableRewind", lua_EnableRewind);
+  lua_register(L, "SetWarmupCycles", lua_SetWarmupCycles);
 
   /* Port position constants */
   lua_pushinteger(L, 0);
@@ -939,6 +956,7 @@ static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
 
   /* Drawing */
   lua_register(L, "MeasureText", lua_MeasureText);
+  lua_register(L, "LineHeight", lua_LineHeight);
   lua_register(L, "DrawText", lua_DrawText);
   lua_register(L, "DrawTextBox", lua_DrawTextBox);
   lua_register(L, "DrawRectangle", lua_DrawRectangle);
@@ -948,6 +966,7 @@ static Status init_level_lua(LuaLevel* lvl, bool is_custom) {
   lua_register(L, "rlPopMatrix", lua_rlPopMatrix);
 
   lua_register(L, "Import", lua_Import);
+  i18n_register_lua(L);
   lua_register(L, "DrawRectanglePro", lua_DrawRectanglePro);
   lua_register(L, "DrawTexturePro", lua_DrawTexturePro);
   lua_register(L, "DrawFont", lua_DrawFont);

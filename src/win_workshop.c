@@ -2,12 +2,14 @@
 
 #include "font.h"
 #include "game_registry.h"
+#include "i18n.h"
 #include "layout.h"
 #include "rlgl.h"
 #include "stb_ds.h"
 #include "stdio.h"
 #include "steam.h"
 #include "ui.h"
+#include "uifont.h"
 #include "utils.h"
 #include "widgets.h"
 #include "win_workshopdet.h"
@@ -50,8 +52,6 @@ static struct {
   WorkshopSortMode sort_mode;
   char* level_id;  // NULL = generic search, non-NULL = solutions for level
 } C = {0};
-
-static const char* sort_labels[] = {"TRENDING", "RECENT", "VOTES"};
 
 static QueryResultItem* get_cached_item(int i) {
   if (i < 0 || i >= C.num_cached) return NULL;
@@ -306,32 +306,33 @@ void win_workshop_update() {
 void win_workshop_draw() {
   const char* title;
   if (C.level_id) {
-    title = TextFormat("WORKSHOP - SOLUTION BLUEPRINTS FOR %s",
+    title = TextFormat(T.workshop_title_solutions,
                        get_level_name_by_id(C.level_id));
   } else {
-    title = "WORKSHOP - BLUEPRINTS";
+    title = T.workshop_title;
   }
   draw_win(C.modal, title);
-  Texture2D sprites = ui_get_sprites();
-  btn_draw_icon(&C.btn_nxt, 2, sprites, rect_right);
-  btn_draw_icon(&C.btn_prv, 2, sprites, rect_left);
+  btn_draw_icon(&C.btn_nxt, rect_right);
+  btn_draw_icon(&C.btn_prv, rect_left);
 
+  const char* sort_labels[] = {T.workshop_sort_trending, T.workshop_sort_recent,
+                               T.workshop_sort_votes};
   bool workshop_mode_draw = C.display_mode == DISPLAY_WORKSHOP;
   for (int i = 0; i < 3; i++) {
     C.btn_sort[i].toggled =
         workshop_mode_draw &&
         C.sort_mode ==
             (WorkshopSortMode)i;  // not toggled for WORKSHOP_SORT_TEXT
-    btn_draw_text(&C.btn_sort[i], 2, sort_labels[i]);
+    btn_draw_text(&C.btn_sort[i], sort_labels[i]);
   }
   C.btn_subscribed.toggled = C.display_mode == DISPLAY_SUBSCRIBED;
   C.btn_myuploads.toggled = C.display_mode == DISPLAY_MY_UPLOADS;
-  btn_draw_text(&C.btn_close, 2, "CLOSE");
-  btn_draw_text(&C.btn_steam, 2, "BROWSE ON STEAM");
-  btn_draw_text(&C.btn_subscribed, 2, "SUBSCRIBED");
-  btn_draw_text(&C.btn_myuploads, 2, "MY UPLOADS");
+  btn_draw_text(&C.btn_close, T.close);
+  btn_draw_text(&C.btn_steam, T.workshop_browse_steam);
+  btn_draw_text(&C.btn_subscribed, T.workshop_subscribed);
+  btn_draw_text(&C.btn_myuploads, T.workshop_my_uploads);
   lineedit_draw(&C.edit);
-  btn_draw_text(&C.btn_text, 2, "SEARCH");
+  btn_draw_text(&C.btn_text, T.workshop_search);
 
   int num_pages = get_num_ui_pages();
   bool no_results = arrlen(C.cached_pages) > 0 && num_pages == 0;
@@ -346,14 +347,15 @@ void win_workshop_draw() {
   label_draw_centered(&C.lbl_showing);
 
   if (arrlen(C.cached_pages) == 0) {
-    label_set_text(&C.lbl_no_results, "Fetching...");
+    label_set_text(&C.lbl_no_results, T.workshop_fetching);
     label_draw_centered(&C.lbl_no_results);
   } else if (no_results) {
-    label_set_text(&C.lbl_no_results, "No results");
+    label_set_text(&C.lbl_no_results, T.workshop_no_results);
     label_draw_centered(&C.lbl_no_results);
   }
 
   int start = C.ui_page * NUM_SLOTS;
+  Texture sprites = ui_get_sprites();
   for (int i = 0; i < NUM_SLOTS; i++) {
     Rectangle r = C.opts[i].hitbox;
     QueryResultItem* item = get_cached_item(start + i);
@@ -378,15 +380,11 @@ void win_workshop_draw() {
         DrawTexturePro(sprites, (Rectangle){304, 208, 32, 32}, r, (Vector2){0},
                        0, CA_WHITE);
         if (state & ITEM_STATE_SUBSCRIBED) {
-          const char* txt = "subscribed";
-          v2 sz = get_rendered_text_size(txt);
-          float tx = r.x + (r.width - sz.x * 2) / 2;
-          float ty = r.y + (r.height - sz.y * 2) / 2;
-          rlPushMatrix();
-          rlTranslatef(tx, ty, 0);
-          rlScalef(2, 2, 1);
-          font_draw_texture_outlined(txt, 0, 0, CA_ORANGE, BLACK);
-          rlPopMatrix();
+          const char* txt = T.workshop_subscribed_overlay;
+          v2 sz = uifont_text_size(txt);
+          float tx = r.x + (r.width - sz.x) / 2;
+          float ty = r.y + (r.height - sz.y) / 2;
+          uifont_draw_texture_outlined(txt, tx, ty, CA_ORANGE, BLACK);
         }
       }
     }
@@ -404,7 +402,7 @@ void win_workshop_draw() {
     lb_add_line(&lb, item->title ? item->title : "", 4, CA_WHITE);
     const char* author = steam_get_author_name(item->owner_id);
     if (author && author[0]) {
-      lb_add_line(&lb, TextFormat("by %s", author), 2, CA_GRAYDARK);
+      lb_add_line(&lb, TextFormat(T.by_author, author), 2, CA_GRAYDARK);
     }
     lb_render(&lb, C.opts[i].hitbox);
     unload_lb(&lb);

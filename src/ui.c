@@ -16,19 +16,23 @@
 #include "msg.h"
 #include "paths.h"
 #include "profiler.h"
+#include "script.h"
 #include "shaders.h"
 #include "sound.h"
 #include "stb_ds.h"
 #include "stdio.h"
 #include "steam.h"
 #include "ui.h"
+#include "uifont.h"
 #include "utils.h"
 #include "wabout.h"
 #include "wdialog.h"
 #include "win_blueprint.h"
 #include "win_bpdetail.h"
+#include "win_campaign.h"
 #include "win_customlvl.h"
 #include "win_level.h"
+#include "win_main.h"
 #include "win_msg.h"
 #include "win_mtext.h"
 #include "win_progress.h"
@@ -37,7 +41,6 @@
 #include "win_wiki.h"
 #include "win_workshop.h"
 #include "win_workshopdet.h"
-#include "wmain.h"
 #include "wnumber.h"
 #include "wtext.h"
 
@@ -133,14 +136,15 @@ void ui_init() {
   int screen_width = 640 * 2;
   int screen_height = 320 * 2;
   // SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-  SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+  SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
   InitWindow(screen_width, screen_height, "Circuit Artist");
   InitAudioDevice();
-  init_game_registry();
   init_i18n();
+  init_game_registry();
   sound_init();
 
   load_art_font_asset("imgs/font5x7.png");
+  uifont_load();
 
   if (C.lua_error) return;
   BeginDrawing();
@@ -152,11 +156,13 @@ void ui_init() {
   SetWindowState(FLAG_WINDOW_MAXIMIZED);
   C.img_sprites = load_image_asset("imgs/sprite4.png");
   C.sprites = LoadTextureFromImage(C.img_sprites);
+  widgets_init();
   HideCursor();
   msg_init();
   win_pubform_init();
   win_progress_init();
   about_init();
+  text_modal_init();
   win_mtext_init();
   win_customlvl_init();
   win_blueprint_init();
@@ -165,17 +171,20 @@ void ui_init() {
   win_wiki_init();
   shaders_init();
   win_level_init();
-  main_init();
+  win_main_init();
   win_workshop_init();
   win_workshopdet_init();
-  main_open();
+  win_main_open();
   win_bpdetail_init();
+  win_campaign_init();
+  win_msg_init();
   win_settings_init();
   flush_win_cmd();
 }
 
 void ui_destroy() {
-  main_destroy();
+  uifont_unload();
+  win_main_destroy();
   modal_destroy();
 #ifdef WITH_STEAM
   SteamShutdown();
@@ -299,7 +308,7 @@ void ui_update_frame() {
 
   if (C.close_requested) {
     C.close_requested = false;
-    main_ask_for_save_and_proceed(ui_close);
+    win_main_ask_for_save_and_proceed(ui_close);
   }
 
 #ifdef WITH_STEAM
@@ -316,11 +325,14 @@ void ui_update_frame() {
   int update_window = ui_get_window();
   ui_update_debug();
   profiler_tic("GameUpdate");
-  // script_update();
+#ifdef CA_DEV
+  script_update();
+#endif
+  msg_update();
   if (update_window == WINDOW_TEXT) text_modal_update();
   if (update_window == WINDOW_NUMBER) number_modal_update();
   if (update_window == WINDOW_BLUEPRINT) win_blueprint_update();
-  if (update_window == WINDOW_MAIN) main_update();
+  if (update_window == WINDOW_MAIN) win_main_update();
   if (update_window == WINDOW_ABOUT) about_update();
   if (update_window == WINDOW_DIALOG) dialog_update();
   if (update_window == WINDOW_LOG) win_log_update();
@@ -335,6 +347,7 @@ void ui_update_frame() {
   if (update_window == WINDOW_WORKSHOP) win_workshop_update();
   if (update_window == WINDOW_WORKSHOPDET) win_workshopdet_update();
   if (update_window == WINDOW_SETTINGS) win_settings_update();
+  if (update_window == WINDOW_CAMPAIGN) win_campaign_update();
   profiler_tac();
 
   // We stop the app here if should_close is flagged.
@@ -347,7 +360,7 @@ void ui_update_frame() {
   profiler_tic("GameDraw");
   for (int i = 0; i < arrlen(C.window); i++) {
     WindowEnum window = C.window[i];
-    if (window == WINDOW_MAIN) main_draw();
+    if (window == WINDOW_MAIN) win_main_draw();
     if (window == WINDOW_TEXT) text_modal_draw();
     if (window == WINDOW_NUMBER) number_modal_draw();
     if (window == WINDOW_ABOUT) about_draw();
@@ -365,7 +378,9 @@ void ui_update_frame() {
     if (window == WINDOW_WORKSHOP) win_workshop_draw();
     if (window == WINDOW_WORKSHOPDET) win_workshopdet_draw();
     if (window == WINDOW_SETTINGS) win_settings_draw();
+    if (window == WINDOW_CAMPAIGN) win_campaign_draw();
   }
+  msg_draw();
   ui_draw_mouse();
   profiler_tac();
   if (C.debug) {

@@ -148,3 +148,12 @@ Layout* easy_load_layout(const char* win_name) {
   free(layout_path);
   return layout;
 }
+
+Rectangle layout_rectb(Layout* l, const char* id) {
+  Rectangle r = layout_rect(l, id);
+  r.x -= 2;
+  r.y -= 2;
+  r.width += 4;
+  r.height += 4;
+  return r;
+}

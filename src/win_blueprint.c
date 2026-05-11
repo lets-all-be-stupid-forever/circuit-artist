@@ -4,6 +4,7 @@
 #include "blueprint.h"
 #include "font.h"
 #include "fs.h"
+#include "i18n.h"
 #include "img.h"
 #include "json.h"
 #include "layout.h"
@@ -20,10 +21,10 @@
 #include "wdialog.h"
 #include "widgets.h"
 #include "win_bpdetail.h"
+#include "win_main.h"
 #include "win_msg.h"
 #include "win_mtext.h"
 #include "win_workshop.h"
-#include "wmain.h"
 #include "wtext.h"
 
 /* Blueprints are mapped as: (i) () Staging, (MxNinventory) (N pages) */
@@ -37,6 +38,10 @@ static struct {
   Btn slots[PAGESIZE];
   Btn page_slots[NUM_PAGES];
   Btn fixed_slots[NUM_FIXED];
+
+  Rectangle r_slots;
+  Rectangle r_pages;
+  Rectangle r_staging;
   Btn btn_close;
   Btn btn_detail;
   Btn btn_editpage;
@@ -73,27 +78,27 @@ static void update_layout() {
   Layout* l = C.layout;
   layout_update_offset(l);
   C.modal = layout_rect(l, "window");
-  C.btn_close.hitbox = layout_rect(l, "btn_close");
-  C.pages_cap.hitbox = layout_rect(l, "pages_cap");
-  C.btn_editpage.hitbox = layout_rect(l, "btn_pages");
-  C.btn_steam.hitbox = layout_rect(l, "btn_steam");
-  C.btn_detail.hitbox = layout_rect(l, "btn_detail");
+  C.btn_close.hitbox = layout_rectb(l, "btn_close");
+  C.pages_cap.hitbox = layout_rectb(l, "pages_cap");
+  C.btn_editpage.hitbox = layout_rectb(l, "btn_pages");
+  C.btn_steam.hitbox = layout_rectb(l, "btn_steam");
+  C.btn_detail.hitbox = layout_rectb(l, "btn_detail");
   C.slots_cap.hitbox = layout_rect(l, "slots_cap");
   C.staging_cap.hitbox = layout_rect(l, "staging_cap");
-  Rectangle slots = layout_rect(l, "slots");
-  Rectangle staging = layout_rect(l, "staging");
-  Rectangle pages = layout_rect(l, "pages");
+  C.r_slots = layout_rect(l, "slots");
+  C.r_staging = layout_rect(l, "staging");
+  C.r_pages = layout_rect(l, "pages");
   int rows = 7;
   int cols = 15;
-  fix_slot_layout(C.slots, slots.x, slots.y, rows, cols);
-  fix_slot_layout(C.fixed_slots, staging.x, staging.y, rows, 2);
-  fix_slot_layout(C.page_slots, pages.x, pages.y, 1, cols);
+  fix_slot_layout(C.slots, C.r_slots.x, C.r_slots.y, rows, cols);
+  fix_slot_layout(C.fixed_slots, C.r_staging.x, C.r_staging.y, rows, 2);
+  fix_slot_layout(C.page_slots, C.r_pages.x, C.r_pages.y, 1, cols);
 }
 
 static void update_labels() {
-  label_set_text(&C.pages_cap, C.editpage ? "Pages (editing)" : "Pages");
-  label_set_text(&C.slots_cap, "Inventory");
-  label_set_text(&C.staging_cap, "Fixed Slots");
+  label_set_text(&C.pages_cap, C.editpage ? T.bp_pages_editing : T.bp_pages);
+  label_set_text(&C.slots_cap, T.bp_inventory);
+  label_set_text(&C.staging_cap, T.bp_fixed_slots);
 }
 
 void win_blueprint_init() {
@@ -201,7 +206,7 @@ static void on_confirm_delete(int r) {
   if (r != 0) return;
   blueprint_store_rm(C.store, C.sel);
   blueprint_store_save(C.store);
-  msg_add("Blueprint deleted.", 4);
+  msg_add(T.bp_blueprint_deleted, 4);
   C.sel = -1;
 }
 
@@ -234,12 +239,11 @@ void win_blueprint_update() {
     if (IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE)) {
       Blueprint* s = get_blueprint(C.store, C.sel);
       if (!blueprint_can_delete(s)) {
-        win_msg_open_text("Blueprint can't be deleted while being editted.",
-                          NULL);
+        win_msg_open_text(T.bp_cant_delete, NULL);
         return;
       }
-      dialog_open(TextFormat("Delete blueprint %s?", s->name), "Delete",
-                  "Cancel", NULL, on_confirm_delete);
+      dialog_open(TextFormat(T.bp_delete_blueprint_confirm, s->name), T.delete,
+                  T.cancel, NULL, on_confirm_delete);
       return;
     }
     if (IsKeyPressed(KEY_ENTER)) {
@@ -330,9 +334,13 @@ static void draw_slot_sel(Btn* b, int sidx) {
 }
 
 void win_blueprint_draw() {
-  draw_win(C.modal, "BLUEPRINTS");
+  draw_win(C.modal, T.bp_title);
 
   Color k = GetColor(0xBB830BFF);
+  draw_frame(C.r_slots);
+  // draw_frame(C.r_pages);
+  draw_frame(C.r_staging);
+
   label_draw(&C.slots_cap);
   label_draw(&C.pages_cap);
   label_draw(&C.staging_cap);
@@ -396,22 +404,16 @@ void win_blueprint_draw() {
     }
   }
 
-  Texture sprites = ui_get_sprites();
-  btn_draw_icon(&C.btn_editpage, 2, sprites, rect_editpage);
+  btn_draw_icon(&C.btn_editpage, rect_editpage);
 
-  btn_draw_text(&C.btn_close, 2, "CLOSE");
-  btn_draw_text(&C.btn_detail, 2, "DETAILS");
-  btn_draw_text(&C.btn_steam, 2, "BROWSE WORKSHOP");
+  btn_draw_text(&C.btn_close, T.close);
+  btn_draw_text(&C.btn_detail, T.bp_details);
+  btn_draw_text(&C.btn_steam, T.bp_browse_workshop);
 
   if (ui_get_window() == WINDOW_BLUEPRINT) {
-    btn_draw_legend(&C.btn_editpage, 2, "Edit page icons");
-    btn_draw_legend(
-        &C.btn_steam, 2,
-        "Open steam overlay to browse for community blueprints\n"
-        "Subscribed blueprints will automatically appear in the inventory");
-    btn_draw_legend(&C.btn_detail, 2,
-                    "Open Blueprint details\n(you can also click a second time "
-                    "on the blueprint)");
+    btn_draw_legend(&C.btn_editpage, T.bp_edit_page_icons_leg);
+    btn_draw_legend(&C.btn_steam, T.bp_workshop_leg);
+    btn_draw_legend(&C.btn_detail, T.bp_detail_leg);
     for (int i = 0; i < NUM_FIXED; i++) {
       draw_slot_hover_leg(&C.fixed_slots[i], get_fixed_blueprint_idx(store, i));
     }

@@ -8,14 +8,44 @@
 
 #include "assert.h"
 #include "colors.h"
-#include "font.h"
 #include "sound.h"
 #include "ui.h"
+#include "uifont.h"
 #include "utils.h"
-#include "wmain.h"
+#include "win_main.h"
+
+#define TEXT_BG ((Color){0, 0, 0, 175})
 
 static inline int min_int(int a, int b) { return a < b ? a : b; }
 static inline int max_int(int a, int b) { return a > b ? a : b; }
+
+void draw_sepv(Rectangle r) {
+  rlPushMatrix();
+  rlTranslatef(r.x, r.y, 0);
+  rlScalef(2, 2, 1);
+  Texture2D sprites = ui_get_sprites();
+  NPatchInfo np = {.source = {512, 171, 2, 5}, 2, 0, 0, 0, NPATCH_NINE_PATCH};
+  Rectangle dest = {0, 0, r.width / 2, r.height / 2};
+  DrawTextureNPatch(sprites, np, dest, (Vector2){0, 0}, 0, WHITE);
+  rlPopMatrix();
+}
+
+void draw_frame(Rectangle r) {
+  rlPushMatrix();
+  rlTranslatef(r.x, r.y, 0);
+  rlScalef(2, 2, 1);
+  Texture2D sprites = ui_get_sprites();
+  NPatchInfo np = {.source = {528, 168, 8, 8}, 3, 3, 3, 3, NPATCH_NINE_PATCH};
+  Rectangle dest = {-3, -3, r.width / 2 + 6, r.height / 2 + 6};
+  DrawTextureNPatch(sprites, np, dest, (Vector2){0, 0}, 0, WHITE);
+  rlPopMatrix();
+}
+
+static struct {
+  Texture ui; /* ui sprites */
+} C = {0};
+
+void widgets_init() { C.ui = ui_get_sprites(); }
 
 bool rect_hover(Rectangle hitbox, Vector2 pos) {
   return CheckCollisionPointRec(pos, hitbox);
@@ -36,7 +66,7 @@ void listbox_add_row_icon(Listbox* l, const char* content, sprite_t sprite) {
   ListboxRow row = {0};
   int w = l->hitbox.width;
   int y = l->height;
-  int row_height = get_font_line_height() + 2 * l->row_pad;
+  int row_height = uifont_line_height() + 2 * l->row_pad;
   row.sprite = sprite;
   row.text_y = l->row_pad;
   row.content = clone_string(content);
@@ -44,7 +74,7 @@ void listbox_add_row_icon(Listbox* l, const char* content, sprite_t sprite) {
       0,
       y,
       w,
-      row_height * 2,
+      row_height,
   };
   l->height += row.hitbox_r.height;
   arrput(l->rows, row);
@@ -56,18 +86,12 @@ void listbox_add_row(Listbox* l, const char* content) {
 
 static void listbox_update_row_sizes(Listbox* l) {
   l->height = 0;
-  int s = 2;
   for (int i = 0; i < arrlen(l->rows); i++) {
     int w = l->hitbox.width;
     int y = l->height;
-    int row_height = get_font_line_height() + 2 * l->row_pad;
+    int row_height = uifont_line_height() + 2 * l->row_pad;
     l->rows[i].text_y = l->row_pad;
-    l->rows[i].hitbox_r = (Rectangle){
-        0,
-        y,
-        w,
-        row_height * s,
-    };
+    l->rows[i].hitbox_r = (Rectangle){0, y, w, row_height};
     l->height += l->rows[i].hitbox_r.height;
   }
 }
@@ -112,41 +136,36 @@ static void draw_row(int row_w, int row_h, ListboxRow* row, bool sel) {
   }
   DrawRectangle(0, 0, row_w, row_h, bg);
   rlPushMatrix();
-  int s = ui_get_scale();
-  rlScalef(s, s, 1);
   if (row->sprite.region.width > 0) {
-    int tw = row->sprite.region.width;
-    int th = row->sprite.region.height;
-    int y = (row_h / 2 - th) / 2;
-    DrawTexture(row->sprite.tex, 2, y, fg);
+    int tw = row->sprite.region.width * 2;
+    int th = row->sprite.region.height * 2;
+    int y = (row_h - th) / 2;
+    Rectangle dst = {2, y, tw, th};
+    DrawTexturePro(row->sprite.tex, row->sprite.region, dst, (Vector2){0, 0}, 0,
+                   fg);
     rlTranslatef(2 + 4 + tw, 0, 0);
   }
   int pad = 2;
-  font_draw_texture(row->content, pad, row->text_y, fg);
+  uifont_draw_texture(row->content, pad, row->text_y, fg);
   rlPopMatrix();
 }
 
 void listbox_draw(Listbox* l, int selected) {
-  Color bg = CA_WHITE;
-  int s = ui_get_scale();
-  bg.a = 20;
   Rectangle box = l->hitbox;
   BeginScissorMode(box.x, box.y, box.width, box.height);
-  Color c = {0, 0, 0, 150};
-  DrawRectangle(box.x, box.y, box.width * s, box.height * s, c);
   rlPushMatrix();
-  rlTranslatef(box.x, box.y - l->scroll.value, 0);
+  rlTranslatef(box.x, box.y, 0);
+  DrawRectangle(0, 0, box.width, box.height, TEXT_BG);
+  rlTranslatef(0, -l->scroll.value, 0);
   for (int i = 0; i < arrlen(l->rows); i++) {
     ListboxRow* row = &l->rows[i];
-    int row_h = row->hitbox_r.height;
-    int row_w = row->hitbox_r.width;
-    draw_row(row_w, row_h, row, selected == i);
+    draw_row(row->hitbox_r.width, row->hitbox_r.height, row, selected == i);
     rlTranslatef(0, row->hitbox_r.height, 0);
   }
   rlPopMatrix();
   scroll_draw(&l->scroll);
   EndScissorMode();
-  // draw_widget_frame(box);
+  draw_frame(box);
 }
 
 // scroll I need: 1. value, some state for hovering: mouse0, value0
@@ -277,9 +296,9 @@ void scroll_draw(Scroll* s) {
     }
     Btn b = {0};
     b.hitbox = s->rect;
-    b.hitbox.width -= 2;
+    // b.hitbox.width -= 2;
     b.pressed = s->down;
-    btn_draw_text(&b, 2, "");
+    btn_draw_text(&b, "");
   }
   rlPopMatrix();
 }
@@ -289,21 +308,19 @@ void textbox_set_bg(Textbox* t, Color bg) { t->bg = bg; }
 void textbox_init(Textbox* t) {
   *t = (Textbox){0};
   // t->bg = BLACK;
-  t->bg = (Color){0, 0, 0, 150};
+  t->bg = TEXT_BG;
   scroll_init(&t->scroll);
 }
 
 void textbox_calc_height(Textbox* t) {
   /* Computes text height and width */
   if (!t->text) return;
-  int scale = ui_get_scale();
-  t->text_x = 12 * scale;
-  t->text_w =
-      (t->box.width - t->scroll.scroll_rect.width - 2 * t->text_x) / scale;
+  t->text_x = 12;
+  t->text_w = t->box.width - t->scroll.scroll_rect.width - 2 * t->text_x;
   int th;
-  draw_text_box_advanced(t->text, (Rectangle){0, 0, t->text_w, 0}, CA_WHITE,
-                         t->sprites, &th);
-  t->height = 2 * th + 8 * scale;
+  uifont_draw_text_box_advanced(t->text, (Rectangle){0, 0, t->text_w, 0},
+                                CA_WHITE, t->sprites, &th);
+  t->height = th;
 
   scroll_reset_value(&t->scroll);
 }
@@ -327,18 +344,17 @@ void textbox_update(Textbox* t) {
 
 void textbox_draw(Textbox* t) {
   Rectangle box = t->box;
-  int s = ui_get_scale();
-  int pad = 4 * s;
-  DrawRectangle(box.x, box.y, box.width, box.height, t->bg);
-  BeginScissorMode(box.x, box.y + pad, box.width, box.height - 2 * pad);
+  BeginScissorMode(box.x, box.y, box.width, box.height);
   rlPushMatrix();
-  rlTranslatef(box.x + t->text_x, box.y + pad - t->scroll.value, 0);
-  rlScalef(s, s, 1);
-  draw_text_box_advanced(t->text, (Rectangle){0, 0, t->text_w, 0}, CA_WHITE,
-                         t->sprites, NULL);
+  rlTranslatef(box.x, box.y, 0);
+  DrawRectangle(0, 0, box.width, box.height, t->bg);
+  rlTranslatef(t->text_x, -t->scroll.value, 0);
+  uifont_draw_text_box_advanced(t->text, (Rectangle){0, 0, t->text_w, 0},
+                                CA_WHITE, t->sprites, NULL);
   rlPopMatrix();
   EndScissorMode();
   scroll_draw(&t->scroll);
+  draw_frame(t->box);
 }
 
 void textbox_destroy(Textbox* t) {
@@ -346,18 +362,24 @@ void textbox_destroy(Textbox* t) {
 }
 
 void textbox_set_box(Textbox* t, Rectangle box) {
+  bool changed = (t->box.x != box.x || t->box.y != box.y ||
+                  t->box.width != box.width || t->box.height != box.height);
   t->box = box;
   scroll_set_content_box(&t->scroll, box, 24);
+  if (changed) textbox_calc_height(t);
 }
 
 // Updates button state. Returns true if button was clicked.
 bool btn_update(Btn* b) {
-  if (b->disabled || b->hidden) return false;
+  b->hover = false;
   Vector2 pos = GetMousePosition();
-  bool hit = CheckCollisionPointRec(pos, b->hitbox) && ui_get_hit_count() == 0;
+  bool hit = CheckCollisionPointRec(pos, b->hitbox) &&
+             ui_get_hit_count() == 0 && !b->hidden;
   if (hit) {
     ui_inc_hit_count();
   }
+  b->hover = hit;
+  if (b->disabled || b->hidden) return false;
 
   if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && hit) {
     b->pressed = true;
@@ -371,188 +393,182 @@ bool btn_update(Btn* b) {
     }
     b->pressed = false;
   }
-  b->hover = hit;
   if (ret) {
     play_sound_click();
   }
   return ret;
 }
 
-// Text button (close button for example).
-void btn_draw_text(Btn* b, int ui_scale, const char* text) {
-  if (b->hidden) return;
-  Vector2 size = get_rendered_text_size(text);
-  int fx = (b->hitbox.x + b->hitbox.width / 2) / ui_scale - size.x / 2;
-  int fy = (b->hitbox.y + b->hitbox.height / 2) / ui_scale - size.y / 2 + 1;
-  if (b->pressed) fy += 1;
-
+static void draw_btn_base_done(Btn* b) {
   int x = b->hitbox.x;
   int y = b->hitbox.y;
   int w = b->hitbox.width;
   int h = b->hitbox.height;
-  int s = ui_scale;
+  rlPushMatrix();
+  rlTranslatef(x, y, 0);
+  rlScalef(2, 2, 1);
+  Texture2D sprites = ui_get_sprites();
+  NPatchInfo np = {.source = {528, 139, 5, 5}, 2, 2, 2, 2, NPATCH_NINE_PATCH};
+  if (b->pressed || b->toggled) {
+    np =
+        (NPatchInfo){.source = {534, 139, 5, 5}, 2, 2, 2, 2, NPATCH_NINE_PATCH};
+  }
+  Rectangle dest = {0, 0, w / 2, h / 2};
+  DrawTextureNPatch(sprites, np, dest, (Vector2){0, 0}, 0, WHITE);
+  rlPopMatrix();
+}
+
+static void draw_btn_base_primary(Btn* b) {
+  int x = b->hitbox.x;
+  int y = b->hitbox.y;
+  int w = b->hitbox.width;
+  int h = b->hitbox.height;
+  rlPushMatrix();
+  rlTranslatef(x, y, 0);
+  rlScalef(2, 2, 1);
+  Texture2D sprites = ui_get_sprites();
+  NPatchInfo np = {.source = {528, 123, 5, 5}, 2, 2, 2, 2, NPATCH_NINE_PATCH};
+  if (b->pressed || b->toggled) {
+    np =
+        (NPatchInfo){.source = {534, 123, 5, 5}, 2, 2, 2, 2, NPATCH_NINE_PATCH};
+  }
+  Rectangle dest = {0, 0, w / 2, h / 2};
+  DrawTextureNPatch(sprites, np, dest, (Vector2){0, 0}, 0, WHITE);
+  rlPopMatrix();
+}
+
+static void draw_btn_base(Btn* b) {
+  int x = b->hitbox.x;
+  int y = b->hitbox.y;
+  int w = b->hitbox.width;
+  int h = b->hitbox.height;
+  rlPushMatrix();
+  rlTranslatef(x, y, 0);
+  rlScalef(2, 2, 1);
+  Texture2D sprites = ui_get_sprites();
+  NPatchInfo np = {.source = {528, 112, 5, 5}, 2, 2, 2, 2, NPATCH_NINE_PATCH};
+  if ((b->pressed || b->toggled) && !b->disabled) {
+    np =
+        (NPatchInfo){.source = {534, 112, 5, 5}, 2, 2, 2, 2, NPATCH_NINE_PATCH};
+  }
+  Rectangle dest = {0, 0, w / 2, h / 2};
+  DrawTextureNPatch(sprites, np, dest, (Vector2){0, 0}, 0, WHITE);
+  rlPopMatrix();
+}
+
+void btn_draw_text(Btn* b, const char* text) {
+  if (b->hidden) return;
+  Vector2 size = uifont_text_size(text);
+  int fx = (b->hitbox.x + b->hitbox.width / 2) - size.x / 2;
+  int fy = (b->hitbox.y + b->hitbox.height / 2) - size.y / 2;
+  if (b->pressed) {
+    // fy += 2;
+  }
+
+  Color c0 = get_lut_color(COLOR_BTN0);
+  Color c2 = get_lut_color(COLOR_BTN2);
+
+  if (b->primary) {
+    draw_btn_base_primary(b);
+  } else if (b->done) {
+    draw_btn_base_done(b);
+  } else {
+    draw_btn_base(b);
+  }
+
+  if (!b->disabled) {
+    if (!b->gradient) {
+      uifont_draw_texture(text, fx, fy, BLACK);
+    } else {
+      uifont_draw_texture(text, fx, fy + 2, BLACK);
+      uifont_draw_texture(text, fx, fy, CA_WHITE);
+    }
+  } else {
+    if (!b->primary) {
+      uifont_draw_texture(text, fx + 1, fy, c2);
+      uifont_draw_texture(text, fx, fy + 1, c2);
+      uifont_draw_texture(text, fx + 1, fy + 1, c2);
+      uifont_draw_texture(text, fx, fy, c0);
+    } else {
+      Color bg = (Color){253, 217, 0, 255};
+      Color fg = (Color){128, 38, 1, 255};
+      uifont_draw_texture(text, fx + 1, fy, bg);
+      uifont_draw_texture(text, fx, fy + 1, bg);
+      uifont_draw_texture(text, fx + 1, fy + 1, bg);
+      uifont_draw_texture(text, fx, fy, fg);
+    }
+  }
+}
+
+void btn_draw_icon2(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
+  if (b->hidden) return;
+  int s = 2;
+  int fx = (b->hitbox.x + b->hitbox.width / 2) - s * source.width / 2;
+  int fy = (b->hitbox.y + b->hitbox.height / 2) - s * source.height / 2;
+  // if (b->pressed) fy += 1;
+  int x = b->hitbox.x;
+  int y = b->hitbox.y;
+  int w = b->hitbox.width;
+  int h = b->hitbox.height;
   Color c0 = get_lut_color(COLOR_BTN0);
   Color c1 = get_lut_color(COLOR_BTN1);
   Color c2 = get_lut_color(COLOR_BTN2);
   Color cbg = get_lut_color(COLOR_BTN_BG);
-  DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
-  DrawRectangle(x, y, w, h, c1);
-  if ((b->pressed || b->toggled) && (!b->disabled)) {
-    DrawRectangle(x, y, w, s, c0);  // TOP
-    DrawRectangle(x, y, s, h, c0);  // LEFT
+  if (b->primary) {
+    draw_btn_base_primary(b);
+  } else if (b->done) {
+    draw_btn_base_done(b);
   } else {
-    DrawRectangle(x, y, w - s, s, c2);
-    DrawRectangle(x, y, s, h - s, c2);
+    draw_btn_base(b);
   }
-  DrawRectangle(x + s, y + h - s, w - s, s, c0);
-  DrawRectangle(x + w - s, y + s, s, h - s, c0);
-
   rlPushMatrix();
-  rlScalef(ui_scale, ui_scale, 1);
-
+  rlTranslatef(fx, fy, 0);
+  rlScalef(s, s, 1);
   if (!b->disabled) {
-    font_draw_texture(text, fx, fy, BLACK);
+    if (!b->gradient) {
+      DrawTextureRec(texture, source, (Vector2){0, 0}, BLACK);
+    } else {
+      DrawTextureRec(texture, source, (Vector2){0, 0 + 1}, BLACK);
+      DrawTextureRec(texture, source, (Vector2){0, 0}, WHITE);
+    }
   } else {
-    font_draw_texture(text, fx + 1, fy, c2);
-    font_draw_texture(text, fx, fy + 1, c2);
-    font_draw_texture(text, fx + 1, fy + 1, c2);
-    font_draw_texture(text, fx, fy, c0);
+    if (!b->primary) {
+      DrawTextureRec(texture, source, (Vector2){0 + 1, 0}, c2);
+      DrawTextureRec(texture, source, (Vector2){0, 0 + 1}, c2);
+      DrawTextureRec(texture, source, (Vector2){0 + 1, 0 + 1}, c2);
+      DrawTextureRec(texture, source, (Vector2){0, 0}, c0);
+    } else {
+      Color bg = (Color){253, 217, 0, 255};
+      Color fg = (Color){128, 38, 1, 255};
+      DrawTextureRec(texture, source, (Vector2){0 + 1, 0}, bg);
+      DrawTextureRec(texture, source, (Vector2){0, 0 + 1}, bg);
+      DrawTextureRec(texture, source, (Vector2){0 + 1, 0 + 1}, bg);
+      DrawTextureRec(texture, source, (Vector2){0, 0}, fg);
+    }
   }
-
   rlPopMatrix();
-  if ((b->pressed || b->toggled) && (!b->disabled)) {
-    Color bl = BLACK;
-    bl.a = 100;
-    DrawRectangle(x, y, w, h, bl);
-  }
-}
-
-void btn_draw_text_primary(Btn* b, int ui_scale, const char* text) {
-  if (b->hidden) return;
-  Vector2 size = get_rendered_text_size(text);
-  int fx = (b->hitbox.x + b->hitbox.width / 2) / ui_scale - size.x / 2;
-  int fy = (b->hitbox.y + b->hitbox.height / 2) / ui_scale - size.y / 2 + 1;
-  if (b->pressed) fy += 1;
-
-  int x = b->hitbox.x;
-  int y = b->hitbox.y;
-  int w = b->hitbox.width;
-  int h = b->hitbox.height;
-  int s = ui_scale;
-  //  0x802601FF Da
-  Color darker = GetColor(0x802601FF);
-  Color bg1 = GetColor(0Xe88038FF);  // GetColor(0XFC6700FF);
-  Color fg = GetColor(0xFDD900FF);
-
-  Color c0 = darker;  // GetColor(0x6C6C53FF);
-  Color c1 = bg1;     // GetColor(0x6C6C53FF);
-  Color c2 = fg;      // GetColor(0x6C6C53FF);
-  Color cbg = get_lut_color(COLOR_BTN_BG);
-  DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
-  DrawRectangle(x, y, w, h, c1);
-  if ((b->pressed || b->toggled) && (!b->disabled)) {
-    DrawRectangle(x, y, w, s, c0);  // TOP
-    DrawRectangle(x, y, s, h, c0);  // LEFT
-  } else {
-    DrawRectangle(x, y, w - s, s, c2);
-    DrawRectangle(x, y, s, h - s, c2);
-  }
-  DrawRectangle(x + s, y + h - s, w - s, s, c0);
-  DrawRectangle(x + w - s, y + s, s, h - s, c0);
-
-  rlPushMatrix();
-  rlScalef(ui_scale, ui_scale, 1);
-
-  if (!b->disabled) {
-    font_draw_texture(text, fx, fy, BLACK);
-  } else {
-    font_draw_texture(text, fx + 1, fy, c2);
-    font_draw_texture(text, fx, fy + 1, c2);
-    font_draw_texture(text, fx + 1, fy + 1, c2);
-    font_draw_texture(text, fx, fy, c0);
-  }
-
-  rlPopMatrix();
-  if ((b->pressed || b->toggled) && (!b->disabled)) {
-    Color bl = BLACK;
-    bl.a = 100;
-    DrawRectangle(x, y, w, h, bl);
-  }
 }
 
 // Icon button: tool buttons and challenge button.
-void btn_draw_icon(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
-  if (b->hidden) return;
-  int fx = (b->hitbox.x + b->hitbox.width / 2) / ui_scale - source.width / 2;
-  int fy = (b->hitbox.y + b->hitbox.height / 2) / ui_scale - source.height / 2;
-  if (b->pressed) fy += 1;
-  int x = b->hitbox.x;
-  int y = b->hitbox.y;
-  int w = b->hitbox.width;
-  int h = b->hitbox.height;
-  int s = ui_scale;
-  Color c0 = get_lut_color(COLOR_BTN0);
-  Color c1 = get_lut_color(COLOR_BTN1);
-  Color c2 = get_lut_color(COLOR_BTN2);
-  Color cbg = get_lut_color(COLOR_BTN_BG);
-  DrawRectangle(x - s, y - s, w + 2 * s, h + 2 * s, cbg);
-
-  if (b->gradient) {
-    Color top = GetColor(0xF4D949FF);
-    Color bottom = GetColor(0x762E10FF);
-    DrawRectangleGradientV(x, y, w, h, top, bottom);
-  } else {
-    DrawRectangle(x, y, w, h, c1);
-  }
-  if ((b->pressed || b->toggled) && (!b->disabled)) {
-    DrawRectangle(x, y, w, s, c0);  // TOP
-    DrawRectangle(x, y, s, h, c0);  // LEFT
-  } else {
-    DrawRectangle(x, y, w - s, s, c2);  // TOP
-    DrawRectangle(x, y, s, h - s, c2);  // LEFT
-  }
-  DrawRectangle(x + s, y + h - s, w - s, s, c0);
-  DrawRectangle(x + w - s, y + s, s, h - s, c0);
-  rlPushMatrix();
-  rlScalef(ui_scale, ui_scale, 1);
-  if (!b->disabled) {
-    if (!b->gradient) {
-      DrawTextureRec(texture, source, (Vector2){fx, fy}, BLACK);
-    } else {
-      DrawTextureRec(texture, source, (Vector2){fx, fy + 1}, BLACK);
-      DrawTextureRec(texture, source, (Vector2){fx, fy}, WHITE);
-    }
-  } else {
-    DrawTextureRec(texture, source, (Vector2){fx + 1, fy}, c2);
-    DrawTextureRec(texture, source, (Vector2){fx, fy + 1}, c2);
-    DrawTextureRec(texture, source, (Vector2){fx + 1, fy + 1}, c2);
-    DrawTextureRec(texture, source, (Vector2){fx, fy}, c0);
-  }
-  rlPopMatrix();
-  if ((b->pressed || b->toggled) && (!b->disabled)) {
-    Color bl = BLACK;
-    bl.a = 100;
-    DrawRectangle(x, y, w, h, bl);
-  }
+void btn_draw_icon(Btn* b, Rectangle source) {
+  btn_draw_icon2(b, 2, C.ui, source);
 }
 
-// Draws the legend of the button. Needs to be called separately from the button
-// itself.
-void btn_draw_legend(Btn* b, int ui_scale, const char* text) {
-  Color bgc = {0, 0, 0, 150};
+// Draws the legend of the button. Needs to be called separately from the
+// button itself.
+void btn_draw_legend(Btn* b, const char* text) {
   if (b->hidden) return;
   Vector2 pos = GetMousePosition();
-  bool hover = CheckCollisionPointRec(pos, b->hitbox);
+  bool hover = b->hover;
   if (hover) {
     int x = pos.x + 16;
     int y = pos.y + 16;
-    Color fc = CA_WHITE;  // get_lut_color(COLOR_FC0);
-    x = (x / ui_scale) * ui_scale;
-    y = (y / ui_scale) * ui_scale;
+    Color fc = CA_WHITE;
     int s = 2;
     int bh, bw;
-    get_draw_text_box_size(text, 500, &bh, &bw);
-    Rectangle area = {x, y, ui_scale * (bw + 6), ui_scale * (bh + 6)};
+    int lw = 900;
+    uifont_get_text_box_size(text, lw, &bh, &bw);
+    Rectangle area = {x, y, bw + 6, bh + 6};
     if (y > GetScreenHeight() / 2) {
       area.y = area.y - area.height - 16 - 8;
       y = area.y;
@@ -564,12 +580,11 @@ void btn_draw_legend(Btn* b, int ui_scale, const char* text) {
     DrawRectangle(area.x - s, area.y - s, area.width + 2 * s,
                   area.height + 2 * s, BLACK);
     draw_bg(area);
-    DrawRectangleRec(area, bgc);
+    DrawRectangleRec(area, TEXT_BG);
     rlPushMatrix();
-    rlScalef(ui_scale, ui_scale, 1);
-    y = y / ui_scale + 4;
-    x = x / ui_scale + 4;
-    draw_text_box(text, (Rectangle){x, y, 500, 0}, fc, NULL);
+    y = y + 4;
+    x = x + 4;
+    uifont_draw_text_box(text, (Rectangle){x, y, lw, 0}, fc, NULL);
     rlPopMatrix();
   }
 }
@@ -785,30 +800,28 @@ bool editbox_update(Editbox* b) {
 }
 
 void editbox_draw(Editbox* b) {
-  int s = ui_get_scale();
   rlPushMatrix();
-  int lh = get_font_line_height();
-  int xx = 2;
+  int lh = uifont_line_height();
+  int xx = 4;
   int yy = (b->hitbox.height - lh) / 2;
   rlTranslatef(b->hitbox.x + xx, b->hitbox.y + yy, 0);
-  rlScalef(s, s, 1);
 
-  // Draw text before cursor
+  // Draw text before cursor (to measure cursor position)
   char temp[256];
   strncpy(temp, b->txt, b->cursor_pos);
   temp[b->cursor_pos] = '\0';
-  int cursor_x = get_rendered_text_size(temp).x;
+  int cursor_x = uifont_text_size(temp).x;
 
   // Draw full text
-  font_draw_texture(b->txt, 1, 1, BLACK);
-  font_draw_texture(b->txt, 0, 0, CA_WHITE);
+  uifont_draw_texture(b->txt, 1, 1, BLACK);
+  uifont_draw_texture(b->txt, 0, 0, CA_WHITE);
 
   // Draw cursor at cursor_pos
   int cursor_type = ((int)(3 * b->alive)) % 2;
   if (cursor_type == 0) {
     rlTranslatef(cursor_x + 1, 0, 0);
-    DrawRectangle(0, 0, 1 + 1, 7 + 1, BLACK);
-    DrawRectangle(0, 0, 1, 7, CA_WHITE);
+    DrawRectangle(0, 0, 2, lh + 1, BLACK);
+    DrawRectangle(0, 0, 1, lh, CA_WHITE);
   }
   rlPopMatrix();
 }
@@ -821,19 +834,32 @@ void label_set_text(Label* l, const char* txt) {
   snprintf(l->txt, sizeof(l->txt), "%s", txt);
 }
 
+void custom_label_draw_centered(Rectangle hitbox, const char* txt, Color c,
+                                Color cshadow) {
+  rlPushMatrix();
+  rlTranslatef(hitbox.x, hitbox.y, 0);
+  int th = hitbox.height;
+  int tw = hitbox.width;
+  int lh = uifont_line_height();
+  int offy = (th - lh) / 2;
+  int wx = uifont_text_size(txt).x;
+  int offx = (tw - wx) / 2;
+  uifont_draw_texture(txt, offx + 1, offy + 1, cshadow);
+  uifont_draw_texture(txt, offx, offy, c);
+  rlPopMatrix();
+}
+
 void label_draw_centered(Label* l) {
   rlPushMatrix();
   rlTranslatef(l->hitbox.x, l->hitbox.y, 0);
   int th = l->hitbox.height;
   int tw = l->hitbox.width;
-  int lh = get_font_line_height();
-  int offy = (th - lh) / 4;
-  int wx = get_rendered_text_size(l->txt).x;
-  int offx = 4 + (tw / 4 - wx / 2);
-  int s = 2;
-  rlScalef(s, s, 1);
-  font_draw_texture(l->txt, offx + 1, offy + 1, BLACK);
-  font_draw_texture(l->txt, offx, offy, CA_WHITE);
+  int lh = uifont_line_height();
+  int offy = (th - lh) / 2;
+  int wx = uifont_text_size(l->txt).x;
+  int offx = (tw - wx) / 2;
+  uifont_draw_texture(l->txt, offx + 1, offy + 1, BLACK);
+  uifont_draw_texture(l->txt, offx, offy, CA_WHITE);
   rlPopMatrix();
 }
 
@@ -841,12 +867,9 @@ void label_draw(Label* l) {
   rlPushMatrix();
   rlTranslatef(l->hitbox.x, l->hitbox.y, 0);
   int th = l->hitbox.height;
-  int lh = get_font_line_height();
-  int offy = (th - lh) / 4;
-  int offx = 0;
-  int s = 2;
-  rlScalef(s, s, 1);
-  font_draw_texture_outlined(l->txt, offx, offy, CA_WHITE, BLACK);
+  int lh = uifont_line_height();
+  int offy = (th - lh) / 2;
+  uifont_draw_texture_outlined(l->txt, 0, offy, CA_WHITE, BLACK);
   rlPopMatrix();
 }
 
@@ -857,7 +880,7 @@ static int le_x_of(LineEdit* e, int pos) {
   static char tmp[LINEEDIT_BUFSIZE];
   memcpy(tmp, e->buf, pos);
   tmp[pos] = '\0';
-  return (int)get_rendered_text_size(tmp).x;
+  return (int)uifont_text_size(tmp).x;
 }
 
 static int le_pos_from_x(LineEdit* e, int target_x) {
@@ -867,7 +890,7 @@ static int le_pos_from_x(LineEdit* e, int target_x) {
   for (int pos = 1; pos <= e->len; pos++) {
     memcpy(tmp, e->buf, pos);
     tmp[pos] = '\0';
-    int x = (int)get_rendered_text_size(tmp).x;
+    int x = (int)uifont_text_size(tmp).x;
     int dist = abs(x - target_x);
     if (dist <= best_dist) {
       best = pos;
@@ -891,10 +914,9 @@ static void le_delete_selection(LineEdit* e) {
 }
 
 static void le_scroll_to_cursor(LineEdit* e) {
-  int s = ui_get_scale();
-  int pad = 4;
-  int cx = le_x_of(e, e->cursor) * s;
-  int visible_w = (int)e->hitbox.width - 2 * pad * s;
+  int pad = 8;
+  int cx = le_x_of(e, e->cursor);
+  int visible_w = (int)e->hitbox.width - 2 * pad;
   if (visible_w < 0) visible_w = 0;
   if (cx < e->scroll_x) e->scroll_x = cx;
   if (cx > e->scroll_x + visible_w) e->scroll_x = cx - visible_w;
@@ -931,8 +953,7 @@ bool lineedit_update(LineEdit* e) {
   e->alive += dt;
 
   Vector2 mouse = GetMousePosition();
-  int s = ui_get_scale();
-  int pad = 4;
+  int pad = 8;
   bool hit =
       CheckCollisionPointRec(mouse, e->hitbox) && ui_get_hit_count() == 0;
 
@@ -946,7 +967,7 @@ bool lineedit_update(LineEdit* e) {
     ui_inc_hit_count();
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       lineedit_set_focus(e, true);
-      int mx = (int)(mouse.x - e->hitbox.x - pad * s + e->scroll_x) / s;
+      int mx = (int)(mouse.x - e->hitbox.x - pad + e->scroll_x);
       int clicked = le_pos_from_x(e, mx);
       bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
       if (shift) {
@@ -962,7 +983,7 @@ bool lineedit_update(LineEdit* e) {
   }
 
   if (e->dragging && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-    int mx = (int)(mouse.x - e->hitbox.x - pad * s + e->scroll_x) / s;
+    int mx = (int)(mouse.x - e->hitbox.x - pad + e->scroll_x);
     int hovered = le_pos_from_x(e, mx);
     if (hovered != e->cursor) {
       if (e->sel_anchor < 0) e->sel_anchor = e->cursor;
@@ -1115,18 +1136,17 @@ bool lineedit_update(LineEdit* e) {
 }
 
 void lineedit_draw(LineEdit* e) {
-  int s = ui_get_scale();
-  int lh = get_font_line_height();
-  int pad = 4;  // unscaled left/right padding
+  int lh = uifont_line_height();
+  int pad = 8;
 
   Rectangle box = e->hitbox;
-  int text_y = ((int)box.height / s - lh) / 2;
+  int text_y = ((int)box.height - lh) / 2;
 
   // Background + border
-  DrawRectangleRec(box, (Color){0, 0, 0, 150});
+  DrawRectangleRec(box, TEXT_BG);
   if (e->focused) {
-    int bw = s;
-    Color border = CA_ORANGE;  // {160, 160, 220, 255};
+    int bw = 2;
+    Color border = CA_ORANGE;
     DrawRectangle((int)box.x, (int)box.y, (int)box.width, bw, border);
     DrawRectangle((int)box.x, (int)box.y + (int)box.height - bw, (int)box.width,
                   bw, border);
@@ -1135,11 +1155,10 @@ void lineedit_draw(LineEdit* e) {
                   (int)box.height, border);
   }
 
-  BeginScissorMode((int)box.x + pad * s, (int)box.y,
-                   (int)box.width - 2 * pad * s, (int)box.height);
+  BeginScissorMode((int)box.x + pad, (int)box.y, (int)box.width - 2 * pad,
+                   (int)box.height);
   rlPushMatrix();
-  rlTranslatef(box.x + pad * s - e->scroll_x, box.y, 0);
-  rlScalef(s, s, 1);
+  rlTranslatef(box.x + pad - e->scroll_x, box.y, 0);
 
   // Selection highlight
   if (e->sel_anchor >= 0) {
@@ -1151,7 +1170,7 @@ void lineedit_draw(LineEdit* e) {
     DrawRectangle(x0, text_y, x1 - x0, lh, sel_col);
   }
 
-  font_draw_texture(e->buf, 0, text_y, CA_WHITE);
+  uifont_draw_texture(e->buf, 0, text_y, CA_WHITE);
 
   if (e->focused) {
     int cx = le_x_of(e, e->cursor);
@@ -1163,6 +1182,7 @@ void lineedit_draw(LineEdit* e) {
 
   rlPopMatrix();
   EndScissorMode();
+  draw_frame(e->hitbox);
 }
 
 // ---- MultiLineEdit ----
@@ -1179,8 +1199,8 @@ static int s_mle_line_count = 0;
 // MleLine.end is the exclusive upper bound of the visual line's content:
 //   - hard newline: end = position of '\n', next line starts at end+1
 //   - word wrap at space: end = position of ' ', next line starts at end+1
-//   - hard wrap (no space): end = first char of next line, next line starts at
-//   end
+//   - hard wrap (no space): end = first char of next line, next line starts
+//   at end
 //   - EOF: end = len
 // Cursor can be at [start .. end] for \n/space/EOF lines,
 // and [start .. end-1] for hard-wrap lines (end belongs to next line).
@@ -1212,7 +1232,7 @@ static void mle_build_lines(MultiLineEdit* m) {
       int n = i - line_start + 1;
       memcpy(tmp, m->buf + line_start, n);
       tmp[n] = '\0';
-      int w = (int)get_rendered_text_size(tmp).x;
+      int w = (int)uifont_text_size(tmp).x;
 
       if (w > text_w) {
         if (last_space >= 0) {
@@ -1257,7 +1277,7 @@ static int mle_line_of(int pos) {
   return s_mle_line_count - 1;
 }
 
-// Returns unscaled x pixel offset of byte `pos` within its line
+// Returns x pixel offset of byte `pos` within its line (screen pixels)
 static int mle_x_of(MultiLineEdit* m, int pos) {
   int li = mle_line_of(pos);
   int start = s_mle_lines[li].start;
@@ -1266,10 +1286,10 @@ static int mle_x_of(MultiLineEdit* m, int pos) {
   static char tmp[MLE_BUFSIZE];
   memcpy(tmp, m->buf + start, n);
   tmp[n] = '\0';
-  return (int)get_rendered_text_size(tmp).x;
+  return (int)uifont_text_size(tmp).x;
 }
 
-// Finds the byte offset in `line_idx` closest to unscaled x `target_x`
+// Finds the byte offset in `line_idx` closest to x `target_x` (screen pixels)
 static int mle_pos_from_x(MultiLineEdit* m, int line_idx, int target_x) {
   int start = s_mle_lines[line_idx].start;
   int end = s_mle_lines[line_idx].end;
@@ -1280,7 +1300,7 @@ static int mle_pos_from_x(MultiLineEdit* m, int line_idx, int target_x) {
     int n = pos - start;
     memcpy(tmp, m->buf + start, n);
     tmp[n] = '\0';
-    int x = (int)get_rendered_text_size(tmp).x;
+    int x = (int)uifont_text_size(tmp).x;
     int dist = abs(x - target_x);
     if (dist <= best_dist) {
       best = pos;
@@ -1304,16 +1324,13 @@ static void mle_delete_selection(MultiLineEdit* m) {
 }
 
 static void mle_scroll_to_cursor(MultiLineEdit* m) {
-  int s = ui_get_scale();
-  int lh = get_font_line_height();
-  int lh_total = (lh + 2) * s;
-  int pad_s = m->pad * s;
+  int lh = uifont_line_height();
+  int lh_total = lh + 2;
+  int pad_s = m->pad;
   int cl = mle_line_of(m->cursor);
   int top = cl * lh_total;
   int bot = top + lh_total;
   int view_h = (int)m->hitbox.height;
-  // screen_y of line = box.y + pad_s - scroll + top
-  // keep it inside [box.y, box.y + view_h]
   if (m->scroll.value > top + pad_s) m->scroll.value = top;
   if (m->scroll.value < pad_s + bot - view_h)
     m->scroll.value = pad_s + bot - view_h;
@@ -1323,17 +1340,14 @@ static void mle_scroll_to_cursor(MultiLineEdit* m) {
 void mle_init(MultiLineEdit* m) {
   *m = (MultiLineEdit){0};
   m->sel_anchor = -1;
-  m->pad = 4;
+  m->pad = 8;
   scroll_init(&m->scroll);
 }
 
 void mle_set_box(MultiLineEdit* m, Rectangle box) {
   m->hitbox = box;
   scroll_set_content_box(&m->scroll, box, 24);
-  int s = ui_get_scale();
-  // Usable width: subtract scrollbar (24px screen) and left+right pad (4+4
-  // unscaled)
-  m->text_w = (int)(box.width - 24) / s - 2 * m->pad;
+  m->text_w = (int)(box.width - 24) - 2 * m->pad;
 }
 
 void mle_set_text(MultiLineEdit* m, const char* txt) {
@@ -1366,10 +1380,9 @@ bool mle_update(MultiLineEdit* m) {
   mle_build_lines(m);
   m->line_count = s_mle_line_count;
 
-  int s = ui_get_scale();
-  int lh = get_font_line_height();
-  int lh_total = (lh + 2) * s;
-  m->content_h = s_mle_line_count * lh_total + 2 * m->pad * s;
+  int lh = uifont_line_height();
+  int lh_total = lh + 2;
+  m->content_h = s_mle_line_count * lh_total + 2 * m->pad;
 
   Vector2 mouse = GetMousePosition();
   scroll_update(&m->scroll, m->content_h, mouse);
@@ -1390,10 +1403,9 @@ bool mle_update(MultiLineEdit* m) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
       mle_set_focus(m, true);
       bool shift = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT);
-      int mx = (int)((mouse.x - m->hitbox.x - m->pad * s) / s);
-      int my =
-          (int)((mouse.y - m->hitbox.y - m->pad * s + m->scroll.value) / s);
-      int li = my / (lh + 2);
+      int mx = (int)(mouse.x - m->hitbox.x - m->pad);
+      int my = (int)(mouse.y - m->hitbox.y - m->pad + m->scroll.value);
+      int li = my / lh_total;
       if (li < 0) li = 0;
       if (li >= s_mle_line_count) li = s_mle_line_count - 1;
       int clicked = mle_pos_from_x(m, li, mx);
@@ -1410,9 +1422,9 @@ bool mle_update(MultiLineEdit* m) {
   }
 
   if (m->dragging && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-    int mx = (int)((mouse.x - m->hitbox.x) / s) - 4;
-    int my = (int)((mouse.y - m->hitbox.y + m->scroll.value) / s);
-    int li = my / (lh + 2);
+    int mx = (int)(mouse.x - m->hitbox.x) - m->pad;
+    int my = (int)(mouse.y - m->hitbox.y + m->scroll.value) - m->pad;
+    int li = my / lh_total;
     if (li < 0) li = 0;
     if (li >= s_mle_line_count) li = s_mle_line_count - 1;
     int hovered = mle_pos_from_x(m, li, mx);
@@ -1612,9 +1624,8 @@ bool mle_update(MultiLineEdit* m) {
 }
 
 void mle_draw(MultiLineEdit* m) {
-  int s = ui_get_scale();
-  int lh = get_font_line_height();
-  int lh_total = lh + 2;  // unscaled spacing
+  int lh = uifont_line_height();
+  int lh_total = lh + 2;
 
   mle_build_lines(m);
 
@@ -1627,10 +1638,10 @@ void mle_draw(MultiLineEdit* m) {
 
   Rectangle box = m->hitbox;
 
-  DrawRectangleRec(box, (Color){0, 0, 0, 150});
+  DrawRectangleRec(box, TEXT_BG);
   if (m->focused) {
-    int bw = ui_get_scale();
-    Color border = CA_ORANGE;  //{160, 160, 220, 255};
+    int bw = 2;
+    Color border = CA_ORANGE;
     DrawRectangle((int)box.x, (int)box.y, (int)box.width, bw, border);
     DrawRectangle((int)box.x, (int)box.y + (int)box.height - bw, (int)box.width,
                   bw, border);
@@ -1642,9 +1653,7 @@ void mle_draw(MultiLineEdit* m) {
   BeginScissorMode((int)box.x, (int)box.y, (int)box.width, (int)box.height);
   rlPushMatrix();
   rlTranslatef(box.x, box.y, 0);
-  DrawRectangle(0, 0, (int)box.width, (int)box.height, (Color){0, 0, 0, 0});
-  rlTranslatef(m->pad * s, m->pad * s - m->scroll.value, 0);
-  rlScalef(s, s, 1);
+  rlTranslatef(m->pad, m->pad - m->scroll.value, 0);
 
   static char tmp[MLE_BUFSIZE];
 
@@ -1655,10 +1664,8 @@ void mle_draw(MultiLineEdit* m) {
 
     // Selection highlight
     if (sel_min >= 0) {
-      // find overlap of [sel_min, sel_max] with [line_start, line_end]
       int hs = max_int(sel_min, line_start);
       int he = min_int(sel_max, line_end);
-      // also highlight '\n' character if selection extends past line_end
       bool extends = sel_max > line_end;
       if (hs <= he || extends) {
         int xstart = 0;
@@ -1666,20 +1673,20 @@ void mle_draw(MultiLineEdit* m) {
           int n = hs - line_start;
           memcpy(tmp, m->buf + line_start, n);
           tmp[n] = '\0';
-          xstart = (int)get_rendered_text_size(tmp).x;
+          xstart = (int)uifont_text_size(tmp).x;
         }
         int xend;
         if (he >= line_end) {
           int n = line_end - line_start;
           memcpy(tmp, m->buf + line_start, n);
           tmp[n] = '\0';
-          xend = (int)get_rendered_text_size(tmp).x;
-          if (extends) xend += 4;  // show newline char selected
+          xend = (int)uifont_text_size(tmp).x;
+          if (extends) xend += 8;  // show newline char selected
         } else {
           int n = he - line_start;
           memcpy(tmp, m->buf + line_start, n);
           tmp[n] = '\0';
-          xend = (int)get_rendered_text_size(tmp).x;
+          xend = (int)uifont_text_size(tmp).x;
         }
         Color sel_col = get_lut_color(COLOR_ORANGE);
         DrawRectangle(xstart, y, xend - xstart, lh, sel_col);
@@ -1690,14 +1697,14 @@ void mle_draw(MultiLineEdit* m) {
     int n = line_end - line_start;
     memcpy(tmp, m->buf + line_start, n);
     tmp[n] = '\0';
-    font_draw_texture(tmp, 0, y, CA_WHITE);
+    uifont_draw_texture(tmp, 0, y, CA_WHITE);
 
     // Draw cursor
     if (i == cursor_line && m->focused) {
       int col = m->cursor - line_start;
       memcpy(tmp, m->buf + line_start, col);
       tmp[col] = '\0';
-      int cx = (int)get_rendered_text_size(tmp).x;
+      int cx = (int)uifont_text_size(tmp).x;
       int blink = ((int)(3.0f * m->alive)) % 2;
       if (blink == 0) {
         DrawRectangle(cx, y, 1, lh, CA_WHITE);
@@ -1708,6 +1715,7 @@ void mle_draw(MultiLineEdit* m) {
   rlPopMatrix();
   EndScissorMode();
   scroll_draw(&m->scroll);
+  draw_frame(m->hitbox);
 }
 
 static void draw_checkbox(Rectangle r, bool toggled, bool pressed) {
@@ -1749,22 +1757,26 @@ void btn_draw_checkbox(Btn* b) {
 
 void btn_draw_checkbox_text(Btn* b, const char* txt) {
   int h = b->hitbox.height;
+  int p = 4;
   if (b->hover) {
-    Color bg = {0, 0, 0, 150};
+    Color bg = TEXT_BG;
     DrawRectangleRec(b->hitbox, bg);
   }
-  Rectangle r_box = {b->hitbox.x, b->hitbox.y, h, h};
+  Rectangle r_box = {b->hitbox.x + p, b->hitbox.y + p, h - 2 * p, h - 2 * p};
   draw_checkbox(r_box, b->toggled, b->pressed);
   int sep = 8;
   Rectangle r_lab = {b->hitbox.x + h + sep, b->hitbox.y, h, h};
 
-  int lh = get_font_line_height();
-  int yy = (h - 2 * lh) / 2;
+  int lh = uifont_line_height();
+  int yy = (h - lh) / 2;
 
   rlPushMatrix();
   rlTranslatef(r_lab.x, r_lab.y + yy, 0);
-  rlScalef(2, 2, 1);
-  font_draw_texture(txt, 1, 1, BLACK);
-  font_draw_texture(txt, 0, 0, CA_WHITE);
+  uifont_draw_texture(txt, 2, 2, BLACK);
+  uifont_draw_texture(txt, 0, 0, CA_WHITE);
   rlPopMatrix();
+}
+
+bool btn_right_click(Btn* b) {
+  return IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && b->hover && !b->disabled;
 }

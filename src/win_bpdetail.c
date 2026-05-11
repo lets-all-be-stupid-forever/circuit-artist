@@ -1,7 +1,7 @@
 #include "win_bpdetail.h"
 
 #include "assert.h"
-#include "stdio.h"
+#include "i18n.h"
 #include "blueprint.h"
 #include "common.h"
 #include "fs.h"
@@ -12,14 +12,15 @@
 #include "raylib.h"
 #include "rlgl.h"
 #include "sound.h"
+#include "stdio.h"
 #include "steam.h"
 #include "ui.h"
 #include "utils.h"
 #include "wdialog.h"
 #include "widgets.h"
+#include "win_main.h"
 #include "win_msg.h"
 #include "win_pubform.h"
-#include "wmain.h"
 #include "wtext.h"
 
 static struct {
@@ -78,13 +79,13 @@ void win_bpdetail_init() {
 static void update_txt() {
   switch (C.main_action) {
     case BPDETAIL_PASTE: {
-      C.txt_use = "PASTE";
-      C.txt_use_leg = "Paste blueprint (ENTER or RIGHT CLICK in inventory)";
+      C.txt_use = T.bpdetail_paste;
+      C.txt_use_leg = T.bpdetail_paste_leg;
       break;
     }
     case BPDETAIL_LOADWLEVEL: {
-      C.txt_use = "LOAD WITH LEVEL";
-      C.txt_use_leg = "Loads blueprint as main image and loads linked level";
+      C.txt_use = T.bpdetail_loadwlevel;
+      C.txt_use_leg = T.bpdetail_loadwlevel_leg;
       break;
     }
   }
@@ -157,10 +158,10 @@ static void do_publish() {
 static void on_open_bp() {
   ui_winpop();
   ui_winpop();
-  main_load_blueprint(C.bp);
+  win_main_load_blueprint(C.bp);
 }
 
-static void blueprint_edit() { main_ask_for_save_and_proceed(on_open_bp); }
+static void blueprint_edit() { win_main_ask_for_save_and_proceed(on_open_bp); }
 
 static void run_main_action() {
   switch (C.main_action) {
@@ -241,13 +242,12 @@ void win_bpdetail_update() {
   if (btn_update(&C.btn_delete)) {
     assert(C.bp);
     if (!blueprint_can_delete(C.bp)) {
-      win_msg_open_text("Blueprint can't be deleted while being editted.",
-                        NULL);
+      win_msg_open_text(T.bp_cant_delete, NULL);
       return;
     }
 
-    dialog_open(TextFormat("Delete blueprint \"%s\"?", C.bp->name), "Delete",
-                "Cancel", NULL, on_confirm_delete);
+    dialog_open(TextFormat(T.bp_delete_blueprint_confirm, C.bp->name), T.delete,
+                T.cancel, NULL, on_confirm_delete);
     return;
   }
 
@@ -268,18 +268,19 @@ static void drawbg(Rectangle r) {
 }
 
 void win_bpdetail_draw() {
-  draw_win(C.modal, "BLUEPRINT");
-  label_set_text(&C.lab_name, C.bp->name ? C.bp->name : "(Unnamed)");
+  draw_win(C.modal, T.bpdetail_title);
+  label_set_text(&C.lab_name, C.bp->name ? C.bp->name : T.bpdetail_unnamed);
   Texture sprites = ui_get_sprites();
   // drawbg(C.sep);
-  btn_draw_text_primary(&C.btn_use, 2, C.txt_use);
-  btn_draw_text(&C.btn_close, 2, "CLOSE");
-  btn_draw_icon(&C.btn_edit_title, 2, sprites, rect_rename);
-  btn_draw_icon(&C.btn_delete, 2, sprites, rect_trash);
-  btn_draw_icon(&C.btn_publish, 2, sprites, rect_publish);
-  btn_draw_icon(&C.btn_open_steam, 2, sprites, rect_steam);
-  btn_draw_icon(&C.btn_load, 2, sprites, rect_open);
-  btn_draw_icon(&C.btn_copy, 2, sprites, rect_copy);
+  C.btn_use.primary = true;
+  btn_draw_text(&C.btn_use, C.txt_use);
+  btn_draw_text(&C.btn_close, T.close);
+  btn_draw_icon(&C.btn_edit_title, rect_rename);
+  btn_draw_icon(&C.btn_delete, rect_trash);
+  btn_draw_icon(&C.btn_publish, rect_publish);
+  btn_draw_icon(&C.btn_open_steam, rect_steam);
+  btn_draw_icon(&C.btn_load, rect_open);
+  btn_draw_icon(&C.btn_copy, rect_copy);
 
   drawbg(C.lab_name.hitbox);
   drawbg(C.lab_author.hitbox);
@@ -294,21 +295,21 @@ void win_bpdetail_draw() {
   if (bp && bp->thumbnail.id) {
     blueprint_draw(&C.btn_thumb, C.bp, 2);
   }
-  btn_draw_icon(&C.btn_rotate, 2, sprites, rect_rot);
+  btn_draw_icon(&C.btn_rotate, rect_rot);
 
   if (ui_get_window() == WINDOW_BPDETAIL) {
-    btn_draw_legend(&C.btn_use, 2, C.txt_use_leg);
-    btn_draw_legend(&C.btn_rotate, 2, "Rotate thumbnail (R)");
-    btn_draw_legend(&C.btn_copy, 2, "Copy blueprint's image to clipboard");
-    btn_draw_legend(&C.btn_delete, 2, "Delete blueprint");
+    btn_draw_legend(&C.btn_use, C.txt_use_leg);
+    btn_draw_legend(&C.btn_rotate, T.bpdetail_rot_leg);
+    btn_draw_legend(&C.btn_copy, T.bpdetail_copy_leg);
+    btn_draw_legend(&C.btn_delete, T.bpdetail_delete_leg);
     if (C.bp->steam_id == 0) {
-      btn_draw_legend(&C.btn_load, 2, "Edit blueprint's image");
+      btn_draw_legend(&C.btn_load, T.bpdetail_edit_leg);
     } else {
-      btn_draw_legend(&C.btn_load, 2, "Load blueprint's image");
+      btn_draw_legend(&C.btn_load, T.bpdetail_load_leg);
     }
-    btn_draw_legend(&C.btn_edit_title, 2, "Rename blueprint (F2)");
-    btn_draw_legend(&C.btn_publish, 2, "Publish on steam workshop");
-    btn_draw_legend(&C.btn_open_steam, 2, "See item's page on workshop");
+    btn_draw_legend(&C.btn_edit_title, T.bpdetail_rename_leg);
+    btn_draw_legend(&C.btn_publish, T.bpdetail_publish_leg);
+    btn_draw_legend(&C.btn_open_steam, T.bpdetail_steam_leg);
   }
 }
 
@@ -317,6 +318,6 @@ void win_bpdetail_on_close() {
     C.delete_on_close = false;
     blueprint_store_rm(C.store, C.idx);
     blueprint_store_save(C.store);
-    msg_add("Blueprint deleted.", 4);
+    msg_add(T.bp_blueprint_deleted, 4);
   }
 }

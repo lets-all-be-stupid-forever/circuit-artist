@@ -2,10 +2,10 @@ Import "shared/comb_level.lua"
 
 easyAddTest({
   cases = {
-    {a=0, b=0, a_nand_b=1, name='0 AND 0 = 0'},
-    {a=1, b=0, a_nand_b=1, name='0 AND 1 = 0'},
-    {a=0, b=1, a_nand_b=1, name='1 AND 0 = 0'},
-    {a=1, b=1, a_nand_b=0, name='1 AND 1 = 1'},
+    {a=0, b=0, a_nand_b=1, name='0 NAND 0 = 0'},
+    {a=1, b=0, a_nand_b=1, name='0 NAND 1 = 0'},
+    {a=0, b=1, a_nand_b=1, name='1 NAND 0 = 0'},
+    {a=1, b=1, a_nand_b=0, name='1 NAND 1 = 1'},
   },
   ports = {
     {name="a", width=1, input=false},

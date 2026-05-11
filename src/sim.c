@@ -3,19 +3,15 @@
 #include <stb_ds.h>
 
 #include "assert.h"
-#include "colors.h"
-#include "font.h"
 #include "graph.h"
+#include "i18n.h"
 #include "img.h"
-#include "log.h"
 #include "math.h"
 #include "msg.h"
-#include "paged_cstack.h"
 #include "pixel_graph.h"
 #include "plot.h"
 #include "profiler.h"
 #include "rlgl.h"
-#include "shaders.h"
 #include "stb_ds.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -306,11 +302,12 @@ static void patch_builder_init(PatchBuilder* patch_builder, double vdd,
   patch_builder->level_patch.size = 0;
   patch_builder->level_patch.data = NULL;
   patch_builder->power_tick_series_patch = 0;
-  patch_builder->energy_per_cycle_series_patch = 0;
-  patch_builder->ticks_per_cycle_series_patch = 0;
+  patch_builder->energy_per_period_series_patch = 0;
+  patch_builder->ticks_per_period_series_patch = 0;
   patch_builder->out_patch = buffer_alloc(100);
   patch_builder->out_patch.size = 0;
   patch_builder->max_tick_patch = 0;
+  patch_builder->max_tick_cycle_patch = 0;
   patch_builder->acc_nrj_patch = 0;
   patch_builder->power_patch = 0;
   patch_builder->total_energy_patch = 0;
@@ -349,6 +346,7 @@ static void sim_state_init(SimState* state, int num_wire, int pulse_size,
   state->pulse_size = pulse_size;
   state->total_energy = 0.0;
   state->cur_tick = 0;
+  state->cur_period_tick = 0;
   state->max_tick = 1;
   /* The visualization uses
    *
@@ -372,8 +370,8 @@ static void sim_state_init(SimState* state, int num_wire, int pulse_size,
 
   // state->ld = ldef;
   series_init(&state->power_tick_series, 600);
-  series_init(&state->energy_per_cycle_series, 100);
-  series_init(&state->ticks_per_cycle_series, 100);
+  series_init(&state->energy_per_period_series, 100);
+  series_init(&state->ticks_per_period_series, 100);
 
   state->active_count = 0;
   state->skt_values = malloc(num_sockets * sizeof(int));
@@ -417,12 +415,132 @@ static void sim_state_init(SimState* state, int num_wire, int pulse_size,
   }
 }
 
+static int sim_get_num_drivers(Sim* sim) { return arrlen(sim->pg.drv); }
+
+static int sim_get_num_sockets(Sim* sim) { return arrlen(sim->pg.skt); }
+
+/* Critical path calculation (WIP)
+ *
+ * The idea is to display an overlay showing the critical path, eventually the
+ * paths with low slack too (maybe Top N with colors).
+ *
+ * OBS:
+ * The algorithm seem to work fine but the visualization is not ready yet,
+ * need to figure out the sub-wire path (wires display from a nand to multiple
+ * nands, on the CP we just want from a nand to the other.
+ * I'll need to refactor / find a workaround on the visu to display arbitrary
+ * paths so I can also use on the longest empirical path.
+ * */
+static void compute_critical_path(Sim* sim) {
+  printf("--> Building wire graph\n");
+
+  int ndrv = sim_get_num_drivers(sim);
+  int nskt = sim_get_num_sockets(sim);
+  int nnand = sim_get_num_nands(sim);
+
+  GraphBuilder gb = {0};
+  int nv = ndrv + nskt + ndrv; /* wrong: e_drv can also have wires */
+  gb_init(&gb, nv);
+  int drv_off = 0;
+  int skt_off = ndrv;
+  int nand_off = ndrv + nskt;
+  // drv index: i
+  // skt index: i + nsdrv
+  // nand index:  i + nsdrv + nskt
+  int* wire_to_skt_off = sim->wg.wire_to_skt_off;
+  SocketDesc* wire_to_skt = sim->wg.wire_to_skt;
+  int* drv_to_wire = sim->wg.drv_to_wire;
+  int* gate_delay = sim->dg.gate_delay;
+  WireProps* wire_props = sim->dg.wprop;
+  /* First pass: computes egress edge count */
+  int* tmp_v;
+  GraphEdge* tmp_edges;
+  for (int idrv = 0; idrv < ndrv; idrv++) {
+    /* The first drivers are nands */
+    /* Fanout */
+    int wire = drv_to_wire[idrv];
+    int idx_drv = idrv + drv_off;
+    if (wire != -1) {
+      int off = wire_to_skt_off[wire];
+      int ns = wire_to_skt_off[wire + 1] - off;
+      for (int j = off; j < off + ns; j++) {
+        int e = wire_to_skt[j].socket;
+        int d = wire_to_skt[j].dt_ticks;
+        gb_add_edge(&gb, idx_drv, e + skt_off, d); /* drv -> skt*/
+      }
+      int max_delay = wire_props[idrv].max_delay;
+      gb_add_edge(&gb, idx_drv, idrv + nand_off, max_delay); /* drv -> skt*/
+      if (idrv < nnand) {
+        int s1 = 2 * idrv + 0;
+        int s2 = 2 * idrv + 1;
+        // printf("delay=%d\n", gate_delay[wire]);
+        gb_add_edge(&gb, s1 + skt_off, idx_drv, gate_delay[wire]);
+        gb_add_edge(&gb, s2 + skt_off, idx_drv, gate_delay[wire]);
+      }
+    }
+  }
+  GraphL g = gb_build_and_dealloc(&gb);
+  printf("nv=%d\n", g.nv);
+  printf("fwd\n");
+  // debug_graphl(&g);
+  //
+  //  printf("bwd\n");
+  //  debug_graphl(&g2);
+
+  int* comp = malloc(nv * sizeof(int));
+  int* compsz = malloc(nv * sizeof(int));
+  int nc = strongly_connected_components(&g, comp, compsz);
+  bool* keep = malloc(nv * sizeof(bool));
+  for (int i = 0; i < nv; i++) {
+    keep[i] = compsz[comp[i]] == 1;
+  }
+  free(comp);
+  free(compsz);
+
+  /* Creating a new graph without the cycles */
+  gb_init(&gb, nv);
+  for (int i = 0; i < nv; i++) {
+    if (!keep[i]) continue;
+    int off = g.ne_off[i];
+    int ne = g.ne_off[i + 1] - off;
+    for (int j = 0; j < ne; j++) {
+      int e = g.edges[j + off].e;
+      int w = g.edges[j + off].w;
+      if (keep[e]) {
+        gb_add_edge(&gb, i, e, w);
+      }
+    }
+  }
+  free(keep);
+  // debug_graphl(&g);
+  GraphL gf = gb_build_and_dealloc(&gb);
+  GraphL g2 = graphl_invert(&gf);
+  graphl_free(&g);
+
+  // Now i compute distances
+  int* AT = calloc(nv, sizeof(int));
+  int* RAT = calloc(nv, sizeof(int));
+  int* prv_AT = calloc(nv, sizeof(int));
+  longest_distance(&gf, &g2, AT, RAT, prv_AT);
+
+#if 0
+  for (int i = 0; i < nv; i++) {
+    /* Slack is RAT - AT : Because we NEED it to arrive at RAT, but it actually
+     * arrives at AT.*/
+    printf("AT[%d] = %d  (s=%d)\n", i, AT[i], RAT[i] - AT[i]);
+  }
+#endif
+
+  graphl_free(&gf);
+  graphl_free(&g2);
+}
+
 static void sim_init_state(Sim* sim) {
   int nw = getnwire(sim);
   sim->pulse_tex = create_pulse_texture(nw);
   int pulse_size = sim->pulse_tex.width * sim->pulse_tex.height;
-  int ndrv = arrlen(sim->pg.drv);
-  int nskt = arrlen(sim->pg.skt);
+  int ndrv = sim_get_num_drivers(sim);
+  int nskt = sim_get_num_sockets(sim);
   sim_state_init(&sim->state, nw, pulse_size, ndrv, nskt);
   sim->state.sim = sim;
   if (!sim_has_errors(sim)) {
@@ -521,25 +639,26 @@ static void sim_check_max_delay(Sim* sim, int max_delay) {
 /*
  * The PinGroup is the pin API for external component(s).
  */
-Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,
-                RenderTexture2D* layers) {
+Status sim_init(Sim* sim, SimParams p) {
   *sim = (Sim){0};
   bool debug = false;
-  sim->base_tps = 240;
   sim->complete = false;
+  sim->base_tps = 240;
+  sim->warmup_cycles = p.warmup_cycles;
+  sim->period_len = 1;
   Status status = status_ok();
-  sim->api = api;
+  sim->api = p.api;
   double start = GetTime();
   sim->poked = false;
   init_spec(&sim->dist_spec);
-  sim->nl = nl;
-  sim->pinbuf = malloc(arrlen(api->pg) * sizeof(PinComm));
-  sim->w = img[0].width;
-  sim->h = img[0].height;
-  pixel_graph_init(&sim->pg, sim->dist_spec, nl, img, api->pg, debug);
+  sim->nl = p.nl;
+  sim->pinbuf = malloc(arrlen(sim->api->pg) * sizeof(PinComm));
+  sim->w = p.img[0].width;
+  sim->h = p.img[0].height;
+  pixel_graph_init(&sim->pg, sim->dist_spec, p.nl, p.img, sim->api->pg, debug);
   wire_graph_init(&sim->wg, sim->nl, sim->w, sim->h, &sim->pg, debug);
   sim->num_wire = getnwire(sim);
-  sim->rv2 = renderv2_create(sim->w, sim->h, sim->num_wire, sim->nl, layers);
+  sim->rv2 = renderv2_create(sim->w, sim->h, sim->num_wire, sim->nl, p.layers);
   // sim->rv2->bg_color = (Color){21, 11, 3, 255};
   sim->rv2->bg_color = BLACK;
 
@@ -557,7 +676,7 @@ Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,
   miniprof_print("renderer_init");
   // printf("t0, t1, t2 = %.1fms %.1fms %.1fms\n", 1000 * acc1, 1000 * acc2,
   //        1000 * acc3);
-  sim_register_nands(sim, img[0]);
+  sim_register_nands(sim, p.img[0]);
   profiler_tic_single("init2");
   bool has_errors = sim_has_errors(sim);
   if (has_errors) {
@@ -580,21 +699,27 @@ Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,
 
   if (sim_has_errors(sim)) {
     if (sim->wg.global_error_flags & STATUS_CONFLICT) {
-      msg_add(
-          "Multiple NAND gates connected to same wire. Max 1 per wire "
-          "allowed.",
-          -1);
+      msg_add(T.simu_multiple_nands, -1);
     }
     if (sim->wg.global_error_flags & STATUS_DISCONNECTED) {
-      msg_add("Some NANDs are missing wire connections.", -1);
+      msg_add(T.simu_nand_missing_connection, -1);
     }
     if (sim->wg.global_error_flags & STATUS_TOOSLOW) {
-      msg_add("Some wires are too long/slow. Try breaking them down.", -1);
+      msg_add(T.simu_long_wire, -1);
     }
   }
   profiler_tac_single("init2");
   printf("num_nands=%d\n", sim_get_num_nands(sim));
   printf("parsing=%dms\n", (int)((GetTime() - start) * 1000));
+
+#if 0
+  if (!sim_has_errors(sim)) {
+    double start = GetTime();
+    compute_critical_path(sim);
+    double end = GetTime();
+    printf("scc_graph_time=%.2lf ms\n", (end - start) * 1000);
+  }
+#endif
   return status;
 }
 
@@ -779,7 +904,13 @@ void patch_builder_update_nrj(PatchBuilder* builder, SimState* state) {
   double new_total_energy = state->total_energy + power;
   builder->total_energy_patch =
       double_xor(state->total_energy, new_total_energy);
+  /* Doesn't track energy when in warmup mode */
+  if (state->cycle < state->sim->warmup_cycles) {
+    builder->total_energy_patch = 0;
+  }
 
+  bool track_energy = true;
+#if 0
   if (builder->cycle) {
     /* acc_nrj resets to 0 */
     builder->flags |= PATCH_ECLK;
@@ -802,6 +933,41 @@ void patch_builder_update_nrj(PatchBuilder* builder, SimState* state) {
     }
   } else {
     builder->acc_nrj_patch = double_xor(acc_nrj, state->acc_nrj);
+  }
+#endif
+
+  if (builder->cycle) {
+    /* Doesnt' compute stat for first simulation cycle because it does a lot
+     * of initialization.  */
+    if (state->cycle < state->sim->warmup_cycles) {
+      track_energy = false;
+    } else {
+      bool is_period = (state->cycle % state->sim->period_len) == 0;
+      if (is_period) {
+        track_energy = false;
+        builder->flags |= PATCH_ECLK;
+        int tc = state->cur_tick + 1;
+        series_make_push_patch(&state->energy_per_period_series, acc_nrj,
+                               &builder->energy_per_period_series_patch);
+        series_make_push_patch(&state->ticks_per_period_series, tc,
+                               &builder->ticks_per_period_series_patch);
+        int mt = state->cur_period_tick +
+                 1;  // tc - series_top(&state->ticks_per_period_series);
+        int new_period_tick = 0;
+        builder->period_tick_patch = state->cur_period_tick ^ new_period_tick;
+        if ((mt > state->max_tick)) {
+          builder->flags |= PATCH_MAXT;
+          builder->max_tick_patch = mt ^ state->max_tick;
+          builder->max_tick_cycle_patch = state->cycle ^ state->max_tick_cycle;
+        }
+      }
+    }
+  }
+
+  if (track_energy) {
+    builder->acc_nrj_patch = double_xor(acc_nrj, state->acc_nrj);
+  } else {
+    builder->acc_nrj_patch = double_xor(0, state->acc_nrj);
   }
 }
 
@@ -1050,10 +1216,19 @@ static Status patch_unpack(SimState* state, Buffer patch, bool fw) {
       double_xor(state->total_energy, buffer_pop_double(&patch));
   unpack_series(&state->power_tick_series, &patch, fw);
   if (flags & PATCH_ECLK) {
-    unpack_series(&state->energy_per_cycle_series, &patch, fw);
-    unpack_series(&state->ticks_per_cycle_series, &patch, fw);
+    state->cur_period_tick ^= buffer_pop_int(&patch);
+    unpack_series(&state->energy_per_period_series, &patch, fw);
+    unpack_series(&state->ticks_per_period_series, &patch, fw);
+  } else {
+    if (state->cycle >
+        state->sim->warmup_cycles) { /* Doesn't count "startup" */
+      state->cur_period_tick += fw ? 1 : -1;
+    }
   }
-  if (flags & PATCH_MAXT) state->max_tick ^= buffer_pop_int(&patch);
+  if (flags & PATCH_MAXT) {
+    state->max_tick_cycle ^= buffer_pop_int(&patch);
+    state->max_tick ^= buffer_pop_int(&patch);
+  }
   if (flags & PATCH_NAND) unpack_nand_state(state, &patch);
   if (flags & PATCH_SCHD) unpack_schedule(state, &patch, fw);
   if (flags & PATCH_WTOSH) unpack_wire_to_shift(state, &patch, fw);
@@ -1089,8 +1264,8 @@ HSim wrap_sim(Sim* sim) {
 
 void sim_state_destroy(SimState* state) {
   series_destroy(&state->power_tick_series);
-  series_destroy(&state->energy_per_cycle_series);
-  series_destroy(&state->ticks_per_cycle_series);
+  series_destroy(&state->energy_per_period_series);
+  series_destroy(&state->ticks_per_period_series);
   free(state->skt_values);
   free(state->nand_states);
   free(state->pulses);
@@ -1115,9 +1290,9 @@ void patch_builder_reset(PatchBuilder* pb) {
   pb->level_updated = false;
   pb->max_pulse_time_diff = 0;
   pb->power_tick_series_patch = 0;
-  pb->energy_per_cycle_series_patch = 0;
+  pb->energy_per_period_series_patch = 0;
   pb->out_patch.size = 0;
-
+  pb->period_tick_patch = 0;
   pb->acc_nrj_patch = 0;
   pb->power_patch = 0;
   for (int i = 0; i < NRJ_BINS; i++) {
@@ -1234,10 +1409,12 @@ Buffer patch_builder_commit(PatchBuilder* pb, SimState* state) {
   pack_nand_state(pb, state, patch);
   if (pb->flags & PATCH_MAXT) {
     buffer_push_int(patch, pb->max_tick_patch);
+    buffer_push_int(patch, pb->max_tick_cycle_patch);
   }
   if (pb->flags & PATCH_ECLK) {
-    buffer_push_double(patch, pb->ticks_per_cycle_series_patch);
-    buffer_push_double(patch, pb->energy_per_cycle_series_patch);
+    buffer_push_double(patch, pb->ticks_per_period_series_patch);
+    buffer_push_double(patch, pb->energy_per_period_series_patch);
+    buffer_push_int(patch, pb->period_tick_patch);
   }
   buffer_push_double(patch, pb->power_tick_series_patch);
   buffer_push_double(patch, pb->total_energy_patch);
@@ -1610,7 +1787,7 @@ Tex* sim_render_v2(Sim* sim, int tw, int th, Cam2D cam, float frame_steps,
   return out;
 }
 
-void sim_dry_run(GameRegistry* r) {
+void sim_dry_run() {
   Image img = GenImageColor(8, 8, BLANK);
   Color* clr = img.data;
 
@@ -1631,8 +1808,15 @@ void sim_dry_run(GameRegistry* r) {
   LevelAPI api = {0};
   Status stat = status_ok();
   assert(stat.ok);
-  Sim s;
-  stat = sim_init(&s, 1, &img, &api, &rt);
+  Sim s = {0};
+  SimParams p = {
+      .nl = 1,
+      .img = &img,
+      .api = &api,
+      .layers = &rt,
+      .warmup_cycles = 1,
+  };
+  stat = sim_init(&s, p);
   assert(stat.ok);
   assert(!sim_has_errors(&s));
   HSim hsim = wrap_sim(&s);
@@ -1655,7 +1839,18 @@ void sim_dry_run(GameRegistry* r) {
 #undef SETPIXEL
 }
 
-void sim_notify_level_complete(Sim* sim) {
-  if (sim->complete) return;
+void sim_set_complete(Sim* sim) {
+  if (sim->complete) {
+    return;
+  }
   sim->complete = true;
+  // TODO: register stats
+}
+
+int sim_get_effective_cycle(Sim* sim) {
+  return sim->state.cycle - sim->warmup_cycles + 1;
+}
+
+bool sim_is_on_warmup(Sim* sim) {
+  return sim->state.cycle < sim->warmup_cycles;
 }

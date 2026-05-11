@@ -42,6 +42,7 @@ typedef enum {
   WINDOW_WORKSHOP,
   WINDOW_WORKSHOPDET,
   WINDOW_SETTINGS,
+  WINDOW_CAMPAIGN,
 } WindowEnum;
 
 void ui_init();

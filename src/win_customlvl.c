@@ -3,6 +3,7 @@
 #include "errno.h"
 #include "fs.h"
 #include "game_registry.h"
+#include "i18n.h"
 #include "layout.h"
 #include "paths.h"
 #include "sol_widget.h"
@@ -13,9 +14,9 @@
 #include "ui.h"
 #include "utils.h"
 #include "wdialog.h"
+#include "win_main.h"
 #include "win_pubform.h"
 #include "win_wiki.h"
-#include "wmain.h"
 
 typedef enum {
   PAGE_OFFICIAL = 0,
@@ -59,25 +60,25 @@ static void update_layout() {
   layout_update_offset(C.layout);
   Layout* l = C.layout;
   C.modal = layout_rect(l, "window");
-  listbox_set_box(&C.lb, layout_rect(l, "lb_level"));
-  textbox_set_box(&C.tb, layout_rect(l, "tb_desc"));
-  C.btn_close.hitbox = layout_rect(l, "btn_close");
-  C.btn_choose.hitbox = layout_rect(l, "btn_choose");
-  C.btn_page_local.hitbox = layout_rect(l, "btn_local");
-  C.btn_page_workshop.hitbox = layout_rect(l, "btn_workshop");
-  C.btn_page_official.hitbox = layout_rect(l, "btn_official");
-  C.btn_file.hitbox = layout_rect(l, "btn_file");
+  listbox_set_box(&C.lb, layout_rectb(l, "lb_level"));
+  textbox_set_box(&C.tb, layout_rectb(l, "tb_desc"));
+  C.btn_close.hitbox = layout_rectb(l, "btn_close");
+  C.btn_choose.hitbox = layout_rectb(l, "btn_choose");
+  C.btn_page_local.hitbox = layout_rectb(l, "btn_local");
+  C.btn_page_workshop.hitbox = layout_rectb(l, "btn_workshop");
+  C.btn_page_official.hitbox = layout_rectb(l, "btn_official");
+  C.btn_file.hitbox = layout_rectb(l, "btn_file");
 
-  C.btn_publish.hitbox = layout_rect(l, "btn_publish");
-  C.btn_open_steam.hitbox = layout_rect(l, "btn_open_steam");
-  C.btn_unsubscribe.hitbox = layout_rect(l, "btn_unsubscribe");
-  C.btn_browse_levels.hitbox = layout_rect(l, "btn_browse_levels");
+  C.btn_publish.hitbox = layout_rectb(l, "btn_publish");
+  C.btn_open_steam.hitbox = layout_rectb(l, "btn_open_steam");
+  C.btn_unsubscribe.hitbox = layout_rectb(l, "btn_unsubscribe");
+  C.btn_browse_levels.hitbox = layout_rectb(l, "btn_browse_levels");
 
-  C.btn_level_folder.hitbox = layout_rect(l, "btn_level_folder");
-  C.btn_local_folder.hitbox = layout_rect(l, "btn_local_folder");
-  C.btn_wiki.hitbox = layout_rect(l, "btn_wiki");
+  C.btn_level_folder.hitbox = layout_rectb(l, "btn_level_folder");
+  C.btn_local_folder.hitbox = layout_rectb(l, "btn_local_folder");
+  C.btn_wiki.hitbox = layout_rectb(l, "btn_wiki");
 
-  C.lab_author.hitbox = layout_rect(l, "lab_author");
+  C.lab_author.hitbox = layout_rectb(l, "lab_author");
   // C.lab_name.hitbox = layout_rect(l, "lab_name");
   sol_widget_update_layout(&C.sol, l);
 }
@@ -225,7 +226,7 @@ static void update_page_buttons() {
     set_page(PAGE_WORKSHOP);
   }
   if (btn_update(&C.btn_file)) {
-    bool loaded = custom_level_open_file();
+    bool loaded = win_main_custom_level_open_file();
     if (loaded) {
       ui_winpop();
       return;
@@ -307,8 +308,8 @@ static void update_level_buttons() {
 
   if (btn_update(&C.btn_unsubscribe)) {
     CustomLevelDef* lvl = get_selected_level();
-    dialog_open(TextFormat("Unsubscribe from level \"%s\"?", lvl->name),
-                "Unsubscribe", "Cancel", NULL, on_confirm_unsubscribe);
+    dialog_open(TextFormat(T.customlvl_unsubscribe_confirm, lvl->name),
+                T.unsubscribe, T.cancel, NULL, on_confirm_unsubscribe);
   }
   if (btn_update(&C.btn_open_steam)) {
     u64 item = extract_item_from_id(get_selected_level()->id);
@@ -329,7 +330,7 @@ void win_customlvl_update() {
   }
   if (btn_update(&C.btn_choose)) {
     ui_winpop();
-    main_load_custom_level(get_level(C.sel));
+    win_main_load_custom_level(get_level(C.sel));
     return;
   }
   update_listbox();
@@ -342,19 +343,19 @@ void win_customlvl_update() {
 static const char* get_level_prefix(CustomLevelDef* lvl) {
   switch (lvl->type) {
     case CUSTOM_LEVEL_LOCAL:
-      return "[local]";
+      return T.customlvl_prefix_local;
     case CUSTOM_LEVEL_STEAM:
-      return "[workshop]";
+      return T.customlvl_prefix_workshop;
     case CUSTOM_LEVEL_OFFICIAL:
-      return "[official]";
+      return T.customlvl_prefix_official;
     case CUSTOM_LEVEL_UNK:
-      return "[???]";
+      return T.customlvl_prefix_unknown;
   }
 }
 
 static const char* make_win_title() {
   CustomLevelDef* lvl = get_selected_level();
-  if (!lvl) return "CUSTOM LEVELS";
+  if (!lvl) return T.customlvl_title;
   return lvl->name;
 }
 
@@ -362,8 +363,9 @@ void win_customlvl_draw() {
   draw_win(C.modal, make_win_title());
   textbox_draw(&C.tb);
   listbox_draw(&C.lb, C.sel);
-  btn_draw_text_primary(&C.btn_choose, ui_get_scale(), "SELECT LEVEL");
-  btn_draw_text(&C.btn_close, ui_get_scale(), "CLOSE");
+  C.btn_choose.primary = true;
+  btn_draw_text(&C.btn_choose, T.levels_submit);
+  btn_draw_text(&C.btn_close, T.close);
   Color bg = {0, 0, 0, 150};
   DrawRectangleRec(C.lab_author.hitbox, bg);
 
@@ -372,53 +374,41 @@ void win_customlvl_draw() {
   DrawRectangleRec(C.btn_open_steam.hitbox, bg);
   DrawRectangleRec(C.btn_browse_levels.hitbox, bg);
 
-  btn_draw_text(&C.btn_browse_levels, ui_get_scale(), "WORKSHOP");
+  btn_draw_text(&C.btn_browse_levels, T.customlvl_workshop_btn);
 
-  Texture sprites = ui_get_sprites();
-  btn_draw_icon(&C.btn_publish, ui_get_scale(), sprites, rect_publish);
-  btn_draw_icon(&C.btn_open_steam, ui_get_scale(), sprites, rect_steam);
-  btn_draw_icon(&C.btn_unsubscribe, ui_get_scale(), sprites, rect_trash);
-  btn_draw_icon(&C.btn_wiki, ui_get_scale(), sprites, rect_book);
+  btn_draw_icon(&C.btn_publish, rect_publish);
+  btn_draw_icon(&C.btn_open_steam, rect_steam);
+  btn_draw_icon(&C.btn_unsubscribe, rect_trash);
+  btn_draw_icon(&C.btn_wiki, rect_book);
 
   label_draw(&C.lab_author);
   // label_draw(&C.lab_name);
 
-  btn_draw_text(&C.btn_page_workshop, ui_get_scale(), "Subscribed");
-  btn_draw_text(&C.btn_page_official, ui_get_scale(), "Official");
-  btn_draw_text(&C.btn_page_local, ui_get_scale(), "Local");
-  btn_draw_icon(&C.btn_file, ui_get_scale(), sprites, rect_lua);
+  btn_draw_text(&C.btn_page_workshop, T.customlvl_subscribed);
+  btn_draw_text(&C.btn_page_official, T.customlvl_official);
+  btn_draw_text(&C.btn_page_local, T.customlvl_local);
+  btn_draw_icon(&C.btn_file, rect_lua);
 
-  btn_draw_icon(&C.btn_local_folder, ui_get_scale(), sprites, rect_open);
-  btn_draw_icon(&C.btn_level_folder, ui_get_scale(), sprites, rect_open);
+  btn_draw_icon(&C.btn_local_folder, rect_open);
+  btn_draw_icon(&C.btn_level_folder, rect_open);
 
   sol_widget_draw(&C.sol);
 
   if (ui_get_window() == WINDOW_CUSTOM_LEVEL) {
     sol_widget_draw_leg(&C.sol);
-    btn_draw_legend(&C.btn_wiki, ui_get_scale(), "Open wiki for custom level");
+    btn_draw_legend(&C.btn_wiki, T.customlvl_wiki_leg);
 
-    btn_draw_legend(&C.btn_page_official, ui_get_scale(),
-                    "Official custom levels of the game");
-    btn_draw_legend(&C.btn_page_local, ui_get_scale(),
-                    "Local custom levels located in the local_levels/ "
-                    "folder\n(These levels "
-                    "can be published to Steam Workshop)");
-    btn_draw_legend(&C.btn_browse_levels, ui_get_scale(),
-                    "Browse community levels in Steam Workshop");
-    btn_draw_legend(&C.btn_open_steam, ui_get_scale(),
-                    "See item's page on workshop");
-    btn_draw_legend(&C.btn_publish, ui_get_scale(),
-                    "Publish level on steam workshop");
-    btn_draw_legend(&C.btn_page_workshop, ui_get_scale(),
-                    "Levels subscribed on Steam Workshop");
-    btn_draw_legend(&C.btn_unsubscribe, ui_get_scale(), "Unsubscribe");
-    btn_draw_legend(&C.btn_file, ui_get_scale(),
-                    "Load local lua file\n(This mode has no sandbox)");
+    btn_draw_legend(&C.btn_page_official, T.customlvl_official_leg);
+    btn_draw_legend(&C.btn_page_local, T.customlvl_local_leg);
+    btn_draw_legend(&C.btn_browse_levels, T.customlvl_browse_leg);
+    btn_draw_legend(&C.btn_open_steam, T.customlvl_open_steam_leg);
+    btn_draw_legend(&C.btn_publish, T.customlvl_publish_leg);
+    btn_draw_legend(&C.btn_page_workshop, T.customlvl_workshop_leg);
+    btn_draw_legend(&C.btn_unsubscribe, T.unsubscribe);
+    btn_draw_legend(&C.btn_file, T.customlvl_file_leg);
 
-    btn_draw_legend(&C.btn_local_folder, ui_get_scale(),
-                    "Open folder containing your local custom levels");
-    btn_draw_legend(&C.btn_level_folder, ui_get_scale(),
-                    "Open folder containing this level's content");
+    btn_draw_legend(&C.btn_local_folder, T.customlvl_localfolder_leg);
+    btn_draw_legend(&C.btn_level_folder, T.customlvl_levelfolder_leg);
 
     int hit = C.lb.row_hit;
     if (hit >= 0) {
@@ -429,7 +419,7 @@ void win_customlvl_draw() {
       CustomLevelDef* ldef = get_level(hit);
       if (ldef->steam_author) {
         /* shows steam author on hover for steam items*/
-        btn_draw_legend(&b, 2, TextFormat("by %s", ldef->steam_author));
+        btn_draw_legend(&b, TextFormat(T.by_author, ldef->steam_author));
       }
     }
   }

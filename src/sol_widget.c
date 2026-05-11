@@ -1,5 +1,6 @@
 #include "sol_widget.h"
 
+#include "i18n.h"
 #include "stb_ds.h"
 #include "stdlib.h"
 #include "steam.h"
@@ -11,9 +12,9 @@
 #include "win_workshop.h"
 
 void sol_widget_update_layout(SolWidget* s, Layout* l) {
-  s->btn_prv.hitbox = layout_rect(l, "btn_sol_prv");
-  s->btn_nxt.hitbox = layout_rect(l, "btn_sol_nxt");
-  s->btn_browse.hitbox = layout_rect(l, "btn_browse_sol");
+  s->btn_prv.hitbox = layout_rectb(l, "btn_sol_prv");
+  s->btn_nxt.hitbox = layout_rectb(l, "btn_sol_nxt");
+  s->btn_browse.hitbox = layout_rectb(l, "btn_browse_sol");
   s->sol[0].hitbox = layout_rect(l, "sol1");
   s->sol[1].hitbox = layout_rect(l, "sol2");
   s->sol[2].hitbox = layout_rect(l, "sol3");
@@ -44,9 +45,9 @@ void sol_widget_draw(SolWidget* s) {
     }
   }
   Texture sprites = ui_get_sprites();
-  btn_draw_icon(&s->btn_prv, 2, sprites, rect_left);
-  btn_draw_icon(&s->btn_nxt, 2, sprites, rect_right);
-  btn_draw_icon(&s->btn_browse, 2, sprites, rect_steam);
+  btn_draw_icon(&s->btn_prv, rect_left);
+  btn_draw_icon(&s->btn_nxt, rect_right);
+  btn_draw_icon(&s->btn_browse, rect_steam);
 }
 
 static int get_num_pages(SolWidget* s) {
@@ -62,6 +63,7 @@ void sol_widget_draw_leg(SolWidget* s) {
       blueprint_draw_leg(&s->sol[i], bp, 1);
     }
   }
+  btn_draw_legend(&s->btn_browse, T.sol_browse);
 }
 
 static void update_blueprint_list(SolWidget* s) {

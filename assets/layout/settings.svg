@@ -5,7 +5,7 @@
 <rect id="neon" x="30" y="96" width="456" height="34" fill="#D9D9D9"/>
 <rect id="paint_sound" x="30" y="138" width="456" height="34" fill="#D9D9D9"/>
 <rect id="simu_sound" x="30" y="180" width="456" height="34" fill="#D9D9D9"/>
-<rect id="btn_close" x="358" y="248" width="128" height="34" fill="#D9D9D9"/>
 <rect id="btn_about" x="30" y="248" width="34" height="34" fill="#D9D9D9"/>
+<rect id="btn_close" x="246" y="248" width="240" height="34" fill="#D9D9D9"/>
 </g>
 </svg>

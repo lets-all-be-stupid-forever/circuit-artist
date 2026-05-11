@@ -1,5 +1,6 @@
 #include "win_mtext.h"
 
+#include "i18n.h"
 #include "ui.h"
 #include "utils.h"
 #include "widgets.h"
@@ -72,10 +73,11 @@ void win_mtext_update() {
 }
 
 void win_mtext_draw() {
-  draw_win(C.modal, "TEXT EDITOR");
+  draw_win(C.modal, T.mtext_title);
   mle_draw(&C.mle);
-  btn_draw_text(&C.bClose, ui_get_scale(), "CLOSE");
-  btn_draw_text_primary(&C.bAccept, ui_get_scale(), "ACCEPT");
+  btn_draw_text(&C.bClose, T.close);
+  C.bAccept.primary = true;
+  btn_draw_text(&C.bAccept, T.mtext_accept);
 }
 
 void win_mtext_init() {

@@ -1,5 +1,6 @@
 #include "win_workshopdet.h"
 
+#include "i18n.h"
 #include "layout.h"
 #include "steam.h"
 #include "ui.h"
@@ -45,9 +46,10 @@ void win_workshopdet_update() {
 }
 
 void win_workshopdet_draw() {
-  draw_win(C.modal, "WORKSHOPdet");
-  btn_draw_text(&C.btn_close, 2, "CLOSE");
-  btn_draw_text_primary(&C.btn_subscribe, 2, "SUBSCRIBE");
+  draw_win(C.modal, T.workshop_title);
+  btn_draw_text(&C.btn_close, T.close);
+  C.btn_subscribe.primary = true;
+  btn_draw_text(&C.btn_subscribe, T.workshopdet_subscribe);
 }
 
 void win_workshopdet_on_close() {

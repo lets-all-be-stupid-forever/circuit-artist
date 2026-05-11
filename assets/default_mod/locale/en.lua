@@ -16,9 +16,9 @@ The `power_on_reset` input allows you to initialize memory when applicable. It s
 
 -- Basics Campaign
 
-T.basics_name = "Tutorial I - Wires and Gates"
-T.basics_desc = [[
-Learn the fundamentals of digital circuits.
+T.basics1_name = "Tutorial I - Wires and Gates"
+T.basics1_desc = [[
+Discover the fundamentals of digital circuits.
 
 Start by connecting wires, then build your first logic gates from NAND - the universal building block.
 
@@ -60,21 +60,21 @@ T.nand_desc = [[
   - Compute the NAND operation of the input pins `a` and `b`.
 ]]
 T.nand_example_title = 'NAND Gate Example'
-T.nand_picture = 'NAND Gate Picture'
+T.nand_schema_title = 'NAND Gate Picture'
 
 T.not_name = "NOT Gate"
 T.not_desc = [[
 - Invert the value of the input pin `a`.
 ]]
-T.not_picture = 'NOT Gate Picture'
-T.not_schema='NOT Gate Schema'
+T.not_picture_title  = 'NOT Gate Picture'
+T.not_schema_title ='NOT Gate Schema'
 
 T.and_name="AND Gate"
 T.and_desc = [[
 - Compute the AND operation of the input pins `a` and `b` and write it to `a_and_b` output pin.
 ]]
-T.and_picture ='AND Gate Picture'
-T.and_schema = 'AND Gate Schema'
+T.and_picture_title ='AND Gate Picture'
+T.and_schema_title  = 'AND Gate Schema'
 
 
 
@@ -82,38 +82,38 @@ T.or_name = "OR Gate"
 T.or_desc = [[
 - Compute the OR operation of the input pins `a` and `b` and write it to `a_or_b` output pin.
 ]]
-T.or_picture = 'OR Gate Picture'
-T.or_schema = 'OR Gate Schema'
+T.or_picture_title = 'OR Gate Picture'
+T.or_schema_title = 'OR Gate Schema'
 
 
 T.xor_name="XOR Gate"
 T.xor_desc=[[
 - Compute the XOR operation of the input pins `a` and `b` and write it to `a_xor_b` output pin.
 ]]
-T.xor_picture = 'XOR Gate Picture'
-T.xor_schema = 'XOR Gate Schema'
+T.xor_picture_title = 'XOR Gate Picture'
+T.xor_schema_title = 'XOR Gate Schema'
 
 T.a_eq_b1_name="A equals B"
 T.a_eq_b1_desc=[[
 Given two `1`-bit inputs `a` and `b`, return 1 if they're equal, or 0 if they're different.
 ]]
 
-T.a_eq_b1_tip = 'tip'
+T.a_eq_b1_tip_title= 'Tip'
 
 T.a_eq_b2_name ="A equals B x32"
 T.a_eq_b2_desc= [[
 Given two `32`-bit inputs `a` and `b`, return 1 if they're equal, or 0 if they're different.
 ]]
 
-T.a_eq_b2_tip = 'tip'
+T.a_eq_b2_tip_title = 'tip'
 T.a_eq_b2_tip_text = 'A equals B if: `A0=B0` AND `A1=B1` AND `A2=B2` AND `A3=B3` ... AND `A31=B31`.'
 
 
-T.sevseg_name = "Tutorial II - 7 Segment Display"
-T.sevseg_desc = [[
+T.sevseg1_name = "Tutorial II - 7 Segment Display"
+T.sevseg1_desc = [[
 Apply your logic gate knowledge to build a practical circuit.
 
-Learn about decoders and how to convert binary numbers into visual output - the same principle used in calculators and digital clocks.
+Build decoders to convert binary numbers into visual output - the same principle used in calculators and digital clocks.
 ]]
 T.match7_name= "7?"
 T.match7_desc = [[
@@ -224,7 +224,7 @@ T.sevenseg_name = "Seven Segment Display"
 T.sevenseg_desc = [[
 Given a 4-bit input `n`, display it in a 7-segment display as in the image below.
 ]]
-T.sevenseg_sample = 'Seven Segments'
+T.sevenseg1_title = 'Seven Segments'
 
 T.routing1_name = "Tutorial III - Routing Bits"
 T.routing1_desc = [[
@@ -239,9 +239,9 @@ Create a "1-bit selector" component, where the result is:
 - `a` when `s` is `0`
 - `b` when `s` is `1`
 ]]
-T.mux_2_1_schema = "MUX Schema"
-T.mux_2_1_impl = "MUX Sample Implementation"
-T.mux_2_1_analogy = "MUX Analogy to Switches"
+T.mux1_title = "MUX Schema"
+T.mux2_title= "MUX Sample Implementation"
+T.mux3_title = "MUX Analogy to Switches"
 
 T.mux_4_1_name = "Multiplexer 4:1"
 T.mux_4_1_desc = [[
@@ -252,11 +252,11 @@ Create a "selector" component, where the result is:
 - `d` when `s` is `3`
 ]]
 
-T.mux_4_1_larger = "Larger Multiplexers"
+T.mux_4_1_larger_title = "Larger Multiplexers"
 T.mux_4_1_larger_text = [[
 You can build bigger multiplexers by combining smaller ones.
 ]]
-T.mux_4_1_schema= "4:1 MUX Schema"
+T.mux4_title = "4:1 MUX Schema"
 
 T.mux_4_2_name = "Multiplexer 4:2"
 T.mux_4_2_desc = [[
@@ -279,7 +279,7 @@ In other words, create a 4:1 MUX that broadcasts the selected chip's output to a
 
 ]]
 
-T.bus2_example = 'Example'
+T.bus2_example_title = 'Example'
 T.bus2_example_text = [[
 Let's say we have:
 - c0_out=0
@@ -294,7 +294,7 @@ Then, when `s=1`, we want to have:
 - c2_in=1 `(c1_out)`
 - c3_in=1 `(c1_out)`
 ]]
-T.bus2_example2 = 'Example II'
+T.bus_example_title = 'Example II'
 
 T.demux_1_2_name = "Demux 1:2"
 T.demux_1_2_desc = [[
@@ -310,9 +310,9 @@ T.demux_1_2_analogy_text = [[A DEMUX is like a reversed MUX:
 ]]
 T.demux_1_2_analogy2_title ='Analogy with a Decoder'
 T.demux_1_2_analogy2_text = "When the data input to the DEMUX equals 1, we have a regular decoder (where the 'selector' becomes the decoder's input)."
-T.demux_1_2_demux = '1:2 Demux'
-T.demux_1_2_demux2 = '1:2 Demux Example'
-T.demux_1_2_analogy3 = '1:2 Demux Analogy'
+T.demux1_title= '1:2 Demux'
+T.demux2_title = '1:2 Demux Example'
+T.demux3_title = '1:2 Demux Analogy'
 
 T.demux_1_4_name = "Demux 1:4"
 T.demux_1_4_desc = [[
@@ -322,7 +322,7 @@ T.demux_1_4_desc = [[
   - When `s=2` -> d0=0 d1=0 `d2=a` d3=0
   - When `s=3` -> d0=0 d1=0 d2=0 `d3=a`
 ]]
-T.demux_1_4_tip_title = '1:4 Demux Tip'
+T.demux4_title = '1:4 Demux Tip'
 
 T.demux_2_4_name = "Demux 2:4"
 T.demux_2_4_desc = [[
@@ -364,7 +364,7 @@ T.memory1_name = "Tutorial IV - Memory"
 T.memory1_desc = [[
 Discover how circuits can remember.
 
-So far, outputs have depended only on current inputs. In this tutorial, you'll learn to build circuits that can store information and change behavior over time.
+So far, outputs have depended only on current inputs. In this tutorial, you'll build circuits that can store information and change behavior over time.
 
 Start with simple latches, progress to flip-flops and registers, and finish by building the NAND Processing Unit Prototype 0.
 ]]
@@ -413,9 +413,9 @@ Example:
 - 4th input: D=1 E=0 --> Q=1 (Q doesn't change because E=0)
 - 5th input: D=0 E=1 --> Q=0 (Q changes again because E=1)
 ]]
-T.dlatch_symbol_title = 'Symbol'
-T.dlatch_truthtable_title = 'Truth Table'
-T.dlatch_impl_title = 'D Latch Implementation'
+T.mem2_title= 'Symbol'
+T.mem3_title = 'Truth Table'
+T.mem4_title = 'D Latch Implementation'
 
 T.photo_name = "D Flip-Flop"
 T.photo_desc = [[
@@ -556,7 +556,7 @@ T.dflipflop_with_enable_comment_title = 'Comment'
 T.dflipflop_with_enable_comment_text = [[
 The Enable signal is important for when you only want to update a few of your flip flops. For example, if you store a "memory" of 100 bits and just want to update a few you set most of them to E=0 and the one you want to change to E=1.
 ]]
-T.dflipflop_with_enable_schema_title = 'Schema'
+T.D_with_enable_title = 'Schema'
 
 T.dff_w_r_name = "D FF With Reset"
 T.dff_w_r_desc = [[
@@ -574,7 +574,7 @@ T.dff_w_r_comment_title = 'Comment'
 T.dff_w_r_comment_text = [[
 The Reset signal is important at startup for example to initialize all your "data" to zero.
 ]]
-T.dff_w_r_schema_title = 'Schema'
+T.D_with_reset_title = 'Schema'
 T.dff_w_r_tests_title = 'Test Cases'
 T.dff_w_r_tests_text = [[
   CLK D E RST Q
@@ -855,7 +855,7 @@ T.wiki_bit_order_text = [[
 
 Multi-wire "connections" can be used to represent numbers. In that case, for input/output connections, the game uses the `top-most wire as least significant bit`.
 
-In your chip, you can use your own conventions for the least significant bit in vertical and horizontal multi-bit wires. However, the line tool corner (shift/control keys) mode works best if you keep the top-most/left-most as the least significant bit convention.
+In your chip, you can use your own conventions for the least significant bit (LSB) in vertical and horizontal multi-bit wires. However, the line tool corner (shift/control keys) mode works best if you keep the top-most/left-most as the least significant bit convention.
 
 !img:wiki/imgs/bit_order.png
 
@@ -1412,3 +1412,201 @@ T.wiki_topic_basics = "Basics"
 T.wiki_topic_gates = "Gates"
 T.wiki_topic_mem = "Sequential Circuits"
 T.wiki_topic_math = "Math"
+
+T.aplusb_name = "Tutorial V - Little Bit of Math"
+T.aplusb_desc = [[
+Discover how to add, subtract, compare and multiply integers.
+]]
+
+T.halfadder_name = "Half Adder"
+T.halfadder_desc = [[
+Add two 1-bit inputs and produce two outputs: a sum bit and a carry bit. The carry bit is set when the sum exceeds 1 (i.e., when both inputs are 1).
+
+]]
+
+--!img:imgs/levels/halfadder_img1.png
+
+T.fulladder_name = "Full Adder"
+T.fulladder_desc = [[
+Add three 1-bit inputs: two data bits (A and B) plus a carry-in bit from a previous addition stage. Produce a sum bit and a carry-out bit.
+
+]]
+
+T.adder4bit_name = "A + B (4 bit)"
+T.adder4bit_desc = [[
+Add two 4-bit integers `A` and `B` to produce a 4-bit sum.
+
+]]
+
+
+T.amul2_name = "A x 2 (8 bit)"
+T.amul2_desc = [[
+Multiply the 8-bit unsigned integer `A` by 2.
+
+]]
+
+T.amul3_name = "A x 3 (8 bit)"
+T.amul3_desc = [[
+Multiply the 8-bit unsigned integer `A` by 3.
+
+]]
+
+T.amulb_name = "A x B (8 bit x 4 bit)"
+T.amulb_desc = [[
+Multiply an 8-bit unsigned integer `A` by a 4-bit unsigned integer `B`.
+
+]]
+
+T.subtractor_name = "A - B (4 bit signed)"
+T.subtractor_desc = [[
+Subtract two `signed` 4-bit integers `A` and `B` (A-B).
+
+]]
+
+T.nega_name = "-A (4 bit signed)"
+T.nega_desc = [[
+Compute `-A` of a signed 4-bit integer `A`.
+
+If there is no positive representation for `-A`, return `A` as is. (i.e., `A` = `0b1000`)
+]]
+
+
+T.comparator1_name = "A > B (1bit)"
+T.comparator1_desc= [[
+Given two 1-bit integers `A` and `B`, determine whether `A < B`, `A==B` or `A > B`.
+
+Example:
+- `A`=0 `B`=0 -> (`A<B`)=0, (`A==B`)=1, (`A>B`)=0
+- `A`=0 `B`=1 -> (`A<B`)=1, (`A==B`)=0, (`A>B`)=0
+- `A`=1 `B`=0 -> (`A<B`)=0, (`A==B`)=0, (`A>B`)=1
+- `A`=1 `B`=1 -> (`A<B`)=0, (`A==B`)=1, (`A>B`)=0
+]]
+
+T.comparator2_name = "A > B (4bit)"
+T.comparator2_desc= [[
+Compare two `unsigned` 4-bit integers `A` and `B` and determine whether `A` is greater than, equal to, or less than `B`.
+
+]]
+
+T.comparator3_name = "A > B (4bit signed)"
+T.comparator3_desc= [[
+Compare two `signed` 4-bit integers `A` and `B` and determine whether `A` is greater than, equal to, or less than `B`.
+Example:
+
+`A`=0010, `B`=0010 -> `A_equals_B`=1
+`A`=1110, `B`=0010 -> `A_less_than_B`=1
+]]
+
+T.wiki_comparator_name = "Comparator"
+T.wiki_comparator_text = [[
+
+`COMPARATOR`
+
+The objective of this section is to compare two positive integers `A` and `B`. We often want to perform all 3 comparisons at once, (i) `A > B`, (ii) `A = B` and (iii) `A < B`.
+
+We start by creating a comparator for a single bit:
+  !img:wiki/imgs/comparator1.png
+Which can be done as follows:
+  !img:wiki/imgs/comparator2.png
+  !img:wiki/imgs/comparator3.png
+Then, in a second step, we extend this 1-bit comparator to accept inputs from a "more significant" bit. The idea is to proceed the same way we do when comparing two numbers: first we check if the most significant digit is equal, less than or greater than than the other: if it's lower or higher we know whether a number is lower or higher, but if they're equal, we need to move on to the next digit, creating a sequence of comparisons.
+  !img:wiki/imgs/comparator4.png
+The formulas are as follows, where `Aprv` = previous A, ie, result from previous comparator (from a more significant bit), and `Anxt` = next A, i.e., result passed to the next comparator comparator (towards the least significant bit).
+
+`A`<`Bnxt` = (`A`<`Bprv`) OR (`A`=`Bprv` AND `A`<`B`)
+`A`=`Bnxt` = (`A`=`Bprv`) AND (`A`=`B`)
+`A`>`Bnxt` = (`A`>`Bprv`) OR (`A`=`Bprv` AND `A`>`B`)
+
+Then, similarly to the addition, we chain these comparators together to build a larger N-bit comparator.
+  !img:wiki/imgs/comparator5.png
+
+]]
+
+
+T.wiki_signed_name = "Signed Integers"
+T.wiki_signed_text = [[
+
+`SIGNED INTEGERS`
+
+In an unsigned integer, all bits are used to represent the magnitude of the number.
+
+For `signed` integers, we "sacrifice" the most significant bit (`MSB`) to indicate the `sign`:
+- if it is 0, the number is `non-negative`
+- if it is 1, the number is `negative`
+
+For example:
+
+`Unsigned` 3-bit integers:
+`000` = 0
+`001` = 1
+`010` = 2
+`011` = 3
+`100` = 4
+`101` = 5
+`110` = 6
+`111` = 7
+
+`Signed` 3-bit integers:
+`100` = -4
+`101` = -3
+`110` = -2
+`111` = -1
+`000` = 0
+`001` = 1
+`010` = 2
+`011` = 3
+
+Note that 111 + 1 = 000, which is exactly what you'd expect from -1 + 1 = 0. This means addition between positive and negative numbers works naturally, without any special cases.
+
+This representation is also called `two's complement`. The formula to convert a number to its negative is: `-N = NOT(N) + 1`. It works for both positive and negative numbers.
+
+So let's say you want to find -3 in a 4-bit representation. You know that 3 is represented as `0011`. So, to find -3, first find `NOT(3)` by inverting each bit, getting `1100`. Then add 1, getting `1100` + 1 = `1101`, so -3 is represented as `1101`. You can also go the other way around to get -(-3): first invert `1101` to get `0010`, then add 1 to get `0010` + 1 = `0011`, which is our original representation of 3.
+
+]]
+
+T.wiki_significant_name = 'Most Significant Bit'
+T.wiki_significant_text = [[
+
+`MOST / LEAST SIGNIFICANT BIT`
+
+The most significant bit (`MSB`) is the `leftmost` bit - it is called "most significant" because it has the most impact on the value of the number. The least significant bit (`LSB`) is the `rightmost` bit, and has the least impact on the value.
+
+For example, in `1010`:
+- `1` is the MSB (worth 8 in a 4-bit unsigned integer)
+- `0` is the LSB (worth 1 if set)
+
+And for `0001`:
+- `0` is the MSB (The MSB is always the leftmost bit regardless of its value)
+- `1` is the LSB (The LSB is always the rightmost bit regardless of its value)
+
+It's the same idea as with decimal numbers: in 1234, the digit 1 is the most significant (worth 1000) and 4 is the least significant (worth 1)
+
+Note that for signed integers, the MSB has a special role: instead of contributing to the magnitude, it indicates whether the number is positive or negative.
+
+]]
+
+T.subtip_title = 'Tip'
+T.subtip_text = '`A` - `B` = `A` + (`-B`)'
+T.compnote_title = 'Note'
+T.compnote_text = 'The comparison for unsigned numbers will not work out of the box here, because the most significant bit is 1 for negative numbers.'
+T.mul2tip_title = 'Tip'
+T.mul2tip_text = '2 x 10101 = 10101`0`\n2 x 11111 = 11111`0`\n2 x 10001 = 10001`0`'
+T.mul3tip_title = 'Tip'
+T.mul3tip_text = '3A = A + 2A'
+
+T.subcypher_name = 'Substitution Cypher'
+T.subcypher_desc = [[
+Replace the entry input letter by another, using the substitution cypher table.
+
+Example:
+`Entry`=`A` --> `Out`=`E`
+`Entry`=`G` --> `Out`=`D`
+
+]]
+
+T.enigma_name = "Enigma"
+T.enigma_desc = [[
+Build an Enigma Machine circuit and decode a message.
+]]
+
+T.subcypher_title= 'Substitution Cypher Table'

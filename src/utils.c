@@ -16,6 +16,7 @@
 #include "string.h"
 #include "time.h"
 #include "ui.h"
+#include "uifont.h"
 
 // Implementation of the stb_ds library.
 #define STB_DS_IMPLEMENTATION
@@ -241,17 +242,17 @@ static void draw_widget_frame_inv(Rectangle r) {
 static void draw_title(Rectangle modal, const char* title) {
   rlPushMatrix();
   rlTranslatef(modal.x, modal.y, 0);
-  int w = get_rendered_text_size(title).x;
-
-  int th = 20;
-  int lh = get_font_line_height();
-  int offy = (th - lh) / 2 + 2;
-  int offx = (modal.width / 2 - w) / 2;
-  int s = 2;
+  int w = uifont_text_size_big(title).x;
+  int lh = uifont_line_height_big();
+  int th = lh + 8;
+  int offy = (th - lh) / 2;
+  int offx = modal.width / 2 - w / 2;
   Color k = {21, 11, 3, 255};
-  DrawRectangle(0, 0, modal.width, s * th, k);
-  rlScalef(s, s, 1);
-  font_draw_texture(title, offx, offy, CA_WHITE);
+  DrawRectangle(0, 0, modal.width, th, k);
+  // rlTranslatef(2, 2, 0);
+  // uifont_draw_texture_big(title, offx, offy, BLACK);
+  // rlTranslatef(-2, -2, 0);
+  uifont_draw_texture_big(title, offx, offy, CA_WHITE);
   rlPopMatrix();
 }
 
@@ -996,19 +997,19 @@ void lb_add_line(LegendBuilder* lb, const char* txt, int pad, Color c) {
 }
 
 void lb_render(LegendBuilder* lb, Rectangle hitbox) {
-  int w = -1;
-  int lh = 20;
+  int w = 0;
+  int lh = uifont_line_height();
   int ni = arrlen(lb->items);
   int dbot = 10;
   int h = 0;
   for (int i = 0; i < ni; i++) {
     h += lh + 2 * lb->items[i].pad;
     const char* txt = lb->items[i].txt;
-    int ww = get_rendered_text_size(txt).x;
+    int ww = uifont_text_size(txt).x;
     w = w > ww ? w : ww;
   }
   int th = h + dbot;
-  w = 2 * w + 10;
+  w = w + 20;
 
   int y1 = hitbox.y;
   int xm = hitbox.x + hitbox.width / 2;
@@ -1020,15 +1021,14 @@ void lb_render(LegendBuilder* lb, Rectangle hitbox) {
   rlPushMatrix();
   rlTranslatef(x0, y0 - 6, 0);
   DrawRectangle(0, 0, w, th, bg);
-  rlScalef(2, 2, 1);
   for (int i = 0; i < ni; i++) {
     const char* txt = lb->items[i].txt;
-    int ww = get_rendered_text_size(txt).x;
+    int ww = uifont_text_size(txt).x;
     int pad = lb->items[i].pad;
-    int cx = (w / 2 - ww) / 2;
-    int cy = 2 + pad / 2;
-    font_draw_texture(txt, cx, cy, lb->items[i].c);
-    rlTranslatef(0, lh / 2 + pad, 0);
+    int cx = (w - ww) / 2;
+    int cy = pad;
+    uifont_draw_texture(txt, cx, cy, lb->items[i].c);
+    rlTranslatef(0, lh + pad, 0);
   }
   rlPopMatrix();
 }
@@ -1037,4 +1037,51 @@ void unload_lb(LegendBuilder* lb) {
   int n = arrlen(lb->items);
   for (int i = 0; i < n; i++) free(lb->items[i].txt);
   arrfree(lb->items);
+}
+
+const char* fmtnum(int number) {
+  static char buf[50];
+
+  if (number < 1000) {
+    snprintf(buf, sizeof(buf), "%d", number);
+  } else if (number < 1000000) {
+    float val = number / 1000.0f;
+    if (number % 1000 == 0) {
+      snprintf(buf, sizeof(buf), "%.0fk", val);
+    } else {
+      snprintf(buf, sizeof(buf), "%.1fk", val);
+    }
+  } else if (number < 1000000000) {
+    float val = number / 1000000.0f;
+    if (number % 1000000 == 0) {
+      snprintf(buf, sizeof(buf), "%.0fM", val);
+    } else {
+      snprintf(buf, sizeof(buf), "%.1fM", val);
+    }
+  } else {
+    float val = number / 1000000000.0f;
+    if (number % 1000000000 == 0) {
+      snprintf(buf, sizeof(buf), "%.0fB", val);
+    } else {
+      snprintf(buf, sizeof(buf), "%.1fB", val);
+    }
+  }
+
+  return buf;
+}
+
+void draw_medal(Rectangle r, Color c) {
+  rlPushMatrix();
+  Texture sprites = ui_get_sprites();
+  int mx = r.x;
+  int my = r.y;
+  int mw = r.width;
+  int mh = r.height;
+  int x = mx + (mw - 26) / 2;
+  int y = my + (mh - 26) / 2;
+  rlTranslatef(x, y, 0);
+  rlScalef(2, 2, 1);
+  Rectangle dst = {0, 0, 13, 13};
+  DrawTexturePro(sprites, rect_medal, dst, (Vector2){0}, 0, c);
+  rlPopMatrix();
 }

@@ -5,6 +5,7 @@ local GREEN = {0, 255, 0, 255}
 local RED = {255, 0, 0, 255}
 local BLACK = {0, 0, 0, 255}
 local BLUE = {0, 128, 255, 255}
+local YELLOW= { 253, 249, 0, 255}
 local WHITE = {248, 255, 203, 255}
 local WHITE_ = {255, 255, 255, 255}
 
@@ -17,7 +18,7 @@ function bits(s)
 end
 
 function CombinatorialTest:start()
-  self.v_icase = var(0)
+  self.v_icase = var(-1)
   self.v_done = var(false)
   self.v_err = var(false)
   self.v_errors = var(nil)
@@ -65,7 +66,11 @@ function CombinatorialTest:update()
     local port = self.ports[iport]
     if not port.input then
       -- print(port.name, iport-1, self.cases[icase+1][port.name])
-      WritePort(iport-1, self.cases[icase+1][port.name])
+      if icase >= 0 then
+        WritePort(iport-1, self.cases[icase+1][port.name])
+      else
+        WritePort(iport-1, 0)
+      end
     end
   end
   self.v_icase(icase + 1)
@@ -94,9 +99,12 @@ function CombinatorialTest:draw()
     table.insert(msgs, {text='Level Complete', color=GREEN})
   elseif err then
     table.insert(msgs, {text='Failure', color=RED})
-  else
+  elseif icase > 0 then
     table.insert(msgs, {text='Running...', color=BLUE})
+  else
+    table.insert(msgs, {text='Warmup...', color=YELLOW})
   end
+
   if errors ~= nil then
     table.insert(msgs, {text='Expected:', color=RED})
     table.insert(msgs, {text=errors.port .. '=' .. errors.expected})
@@ -112,11 +120,10 @@ function CombinatorialTest:draw()
   end
 
   rlPushMatrix();
-  rlScalef(3,3,1);
   for i=1,#msgs do
     local txt = msgs[i].text
     local color = msgs[i].color or WHITE
-    local lh = 8
+    local lh = 26
     local pady = 1
     local bh = lh + 2*pady
     local y = (i - 1) * bh + pady
@@ -152,6 +159,7 @@ function easyAddTest(desc)
     self.cases = cases
     self.ports = ports
     self.customDraw = desc.customDraw
+    SetWarmupCycles(1)
   end
   add_chip_instance(Test())
 end

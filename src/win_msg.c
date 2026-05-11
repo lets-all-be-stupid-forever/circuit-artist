@@ -45,7 +45,7 @@ static void update_layout_text() {
   int maxh = 35 * 6 * 2;
   if (th > maxh) th = maxh;
 
-  int pad = 20;
+  int pad = 0;
   C.pad = pad;
   Rectangle mod = {0, 0, tw + 2 * pad, th + 2 * pad};
   Vector2 off = find_modal_off(mod);
@@ -99,8 +99,6 @@ void win_msg_update() {
 
 void win_msg_draw() {
   draw_win(C.modal, NULL);
-  Color c = {0, 0, 0, 150};
-  DrawRectangleRec(C.modal, c);
 
   int x = C.inner_modal.x;
   int y = C.inner_modal.y;
@@ -108,6 +106,8 @@ void win_msg_draw() {
   // c.a = 100;
   // DrawRectangleRec(C.inner_modal, c);
   if (C.tex.width > 0) {
+    Color c = {0, 0, 0, 150};
+    DrawRectangleRec(C.modal, c);
     rlPushMatrix();
     int s = C.scale;
     rlTranslatef(x, y, 0);
@@ -119,3 +119,4 @@ void win_msg_draw() {
   }
 }
 
+void win_msg_init() { textbox_init(&C.tb); }

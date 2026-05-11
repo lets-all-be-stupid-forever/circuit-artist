@@ -10,7 +10,7 @@
 #include "utils.h"
 #include "wabout.h"
 #include "widgets.h"
-#include "wmain.h"
+#include "win_main.h"
 
 #define WIN_W 600
 #define WIN_H 400
@@ -35,8 +35,8 @@ static void update_layout() {
   C.btn_neon.hitbox = layout_rect(l, "neon");
   C.btn_paint_sound.hitbox = layout_rect(l, "paint_sound");
   C.btn_simu_sound.hitbox = layout_rect(l, "simu_sound");
-  C.btn_about.hitbox = layout_rect(l, "btn_about");
-  C.btn_close.hitbox = layout_rect(l, "btn_close");
+  C.btn_about.hitbox = layout_rectb(l, "btn_about");
+  C.btn_close.hitbox = layout_rectb(l, "btn_close");
 }
 
 void win_settings_init() { C.layout = easy_load_layout("settings"); }
@@ -107,10 +107,10 @@ void win_settings_draw() {
   btn_draw_checkbox_text(&C.btn_paint_sound, T.settings_drawing_sound);
   btn_draw_checkbox_text(&C.btn_simu_sound, T.settings_nand_sound);
   Texture sprites = ui_get_sprites();
-  btn_draw_icon(&C.btn_about, 2, sprites, rect_info);
-  btn_draw_text(&C.btn_close, 2, T.close);
+  btn_draw_icon(&C.btn_about, rect_info);
+  btn_draw_text(&C.btn_close, T.close);
   if (ui_get_window() == WINDOW_SETTINGS) {
-    btn_draw_legend(&C.btn_about, 2, T.settings_about_leg);
+    btn_draw_legend(&C.btn_about, T.settings_about_leg);
   }
 }
 

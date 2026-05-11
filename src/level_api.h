@@ -11,6 +11,7 @@ typedef struct {
   PinGroup* pg;
   PinGroup* pg_left;
   PinGroup* pg_right;
+  int warmup_cycles;
   void (*destroy)(void* u);
   Status (*start)(void* u, struct Sim* sim);
   Status (*update)(void* u, Buffer* buffer);

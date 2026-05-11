@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(ca C CXX)
 OPTION(STEAM "Steam support")
+OPTION(DEV "Development version")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 11)
@@ -17,6 +18,10 @@ if(MSVC)
   # Disable annoying warnings such as conversion from 'double' to 'float', possible loss of
   add_compile_options(/wd4244)
 endif()
+
+IF (DEV)
+  add_compile_definitions(CA_DEV=1)
+ENDIF()
 
 IF (STEAM)
   include_directories(${CMAKE_SOURCE_DIR}/third_party/steam/)
@@ -43,6 +48,13 @@ ENDIF()
 # add_compile_definitions(GRAPHICS_API_OPENGL_43)
 add_subdirectory(third_party/raylib)
 add_subdirectory(third_party/nativefiledialog-extended)
+
+set(FT_DISABLE_ZLIB     ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_PNG      ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_BZIP2    ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_BROTLI   ON CACHE BOOL "" FORCE)
+add_subdirectory(third_party/freetype)
 add_subdirectory(third_party/lua)
 add_subdirectory(third_party/json-c)
 add_subdirectory(third_party/msgpack-c)
@@ -96,6 +108,7 @@ SET(ca_src
   src/pq.c
   src/sound.c
   src/profiler.c
+  src/script.c
   src/rectint.c
   src/series.c
   src/shaders.c
@@ -105,6 +118,7 @@ SET(ca_src
   src/tex.c
   src/win_wiki.c
   src/ui.c
+  src/uifont.c
   src/uigraph.c
   src/utils.c
   src/sol_widget.c
@@ -115,12 +129,13 @@ SET(ca_src
   src/win_msg.c
   src/win_blueprint.c
   src/win_pubform.c
+  src/win_campaign.c
   src/win_customlvl.c
   src/win_progress.c
   src/win_bpdetail.c
   src/win_settings.c
+  src/win_main.c
   src/wire_graph.c
-  src/wmain.c
   src/wnumber.c
   src/wtext.c
   src/win_mtext.c
@@ -161,6 +176,7 @@ target_include_directories(calib PRIVATE
   third_party/raylib/src
   third_party/raylib/src/external
   third_party/discord-rpc-3.4.0/include
+  third_party/freetype/include
   )
 
 # shlwapi is only for win32
@@ -179,7 +195,8 @@ target_link_libraries(calib
   lualib
   msgpack-c
   json-c
-  discord-rpc)
+  discord-rpc
+  freetype)
 
 add_executable(ca src/main.c)
 target_link_libraries(ca calib)
@@ -205,6 +222,7 @@ target_include_directories(calib_demo PRIVATE
   third_party/raylib/src
   third_party/raylib/src/external
   third_party/discord-rpc-3.4.0/include
+  third_party/freetype/include
   )
 
 target_compile_definitions(calib_demo PRIVATE DEMO_VERSION=1)
@@ -219,7 +237,8 @@ target_link_libraries(calib_demo
   lualib
   msgpack-c
   json-c
-  discord-rpc)
+  discord-rpc
+  freetype)
 
 # Demo executable
 add_executable(ca_demo src/main.c)

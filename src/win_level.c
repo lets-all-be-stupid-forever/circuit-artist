@@ -3,13 +3,16 @@
 #include "colors.h"
 #include "font.h"
 #include "game_registry.h"
+#include "i18n.h"
 #include "layout.h"
 #include "sol_widget.h"
 #include "stb_ds.h"
 #include "ui.h"
+#include "uifont.h"
 #include "utils.h"
 #include "wabout.h"
 #include "widgets.h"
+#include "win_campaign.h"
 #include "win_msg.h"
 #include "win_wiki.h"
 
@@ -30,12 +33,17 @@ static struct {
   Btn btn_option[NUM_BUTTONS];
   Btn btn_choose;
   Btn btn_close;
-  Btn btn_campaign[10];
-  Rectangle med_camp[10];
+  Rectangle camp_title;
+  Rectangle level_title;
+  Rectangle r_options;
+  Rectangle campicon;
+  Rectangle sepv;
+  Btn btn_camp;
   Btn btn_msg[8];
   Rectangle medals[NUM_BUTTONS];
-  Label level_title;
   Textbox tb;
+  Textbox tbcamp;
+  Rectangle rcamp;
   SolWidget sol;
   void (*on_select_level)(LevelDef*);
 } C = {0};
@@ -64,30 +72,31 @@ static void update_layout() {
   layout_update_offset(C.layout);
   Layout* l = C.layout;
   C.modal = layout_rect(l, "window");
-
-  C.level_title.hitbox = layout_rect(l, "leveltitle");
+  C.rcamp = layout_rectb(l, "rcamp");
 
   for (int i = 0; i < NUM_LEVELS; i++) {
-    C.btn_option[i].hitbox = layout_rect(l, TextFormat("level_%d", i + 1));
-    C.medals[i] = layout_rect(l, TextFormat("medal_%d", i + 1));
+    C.btn_option[i].hitbox = layout_rectb(l, TextFormat("level_%d", i + 1));
+    C.medals[i] = layout_rectb(l, TextFormat("medal_%d", i + 1));
   }
+  C.r_options = layout_rectb(l, "r_options");
 
   int cols = 1;
   int bh = 17 * 2;
 
   for (int i = 0; i < 8; i++) {
-    C.btn_msg[i].hitbox = layout_rect(l, TextFormat("extra%d", i + 1));
+    C.btn_msg[i].hitbox = layout_rectb(l, TextFormat("extra%d", i + 1));
   }
 
-  C.btn_choose.hitbox = layout_rect(l, "btn_select");
-  C.btn_close.hitbox = layout_rect(l, "btn_close");
+  C.btn_choose.hitbox = layout_rectb(l, "btn_select");
+  C.btn_close.hitbox = layout_rectb(l, "btn_close");
+  C.btn_camp.hitbox = layout_rectb(l, "btn_camp");
+  C.camp_title = layout_rectb(l, "camp_title");
+  C.sepv = layout_rect(l, "sepv");
+  C.level_title = layout_rectb(l, "level_title");
+  C.campicon = layout_rectb(l, "campicon");
 
-  for (int i = 0; i < NUM_CAMP; i++) {
-    C.btn_campaign[i].hitbox = layout_rect(l, TextFormat("camp%d", i + 1));
-    C.med_camp[i] = layout_rect(l, TextFormat("campmed%d", i + 1));
-  }
-
-  textbox_set_box(&C.tb, layout_rect(l, "levelbox"));
+  textbox_set_box(&C.tb, layout_rectb(l, "levelbox"));
+  textbox_set_box(&C.tbcamp, layout_rectb(l, "campbox"));
   sol_widget_update_layout(&C.sol, l);
 }
 
@@ -98,13 +107,14 @@ void win_level_set_sel(LevelDef* ldef) {
   C.selected_level = ldef;
   C.selected_group = ldef->group;
   textbox_set_content(&C.tb, ldef->description, ldef->sprites);
-  label_set_text(&C.level_title, ldef->name);
+  textbox_set_content(&C.tbcamp, ldef->group->desc, NULL);
 }
 
 void win_level_init() {
   C.registry = getreg();
   sol_widget_init(&C.sol);
   textbox_init(&C.tb);
+  textbox_init(&C.tbcamp);
   C.layout = easy_load_layout("level");
   C.selected_level = NULL;
 }
@@ -119,8 +129,7 @@ static void select_first_available_level() {
   for (int i = 0; i < nl; i++) {
     // int j = nl - i - 1;
     int j = i;
-    // lg->levels[j]->can_choose &&
-    if (!lg->levels[j]->complete) {
+    if (lg->levels[j]->can_choose && !lg->levels[j]->complete) {
       win_level_set_sel(lg->levels[j]);
       return;
     }
@@ -135,58 +144,33 @@ void win_level_open(LevelDef* active_level,
   update_layout();
   /* When window opens, it puts the active level as the selected one */
   LevelDef* sel = active_level;
-  if (!sel) {
-    sel = C.registry->group_order[0]->levels[0];
+  if (sel) {
+    // sel = C.registry->group_order[0]->levels[0];
+    win_level_set_sel(sel);
+  } else {
+    LevelGroup** g = getreg()->group_order;
+    int ng = arrlen(g);
+    for (int i = ng - 1; i >= 0; i--) {
+      if (g[i]->can_choose) {
+        C.selected_group = g[i];
+      }
+    }
+    select_first_available_level();
   }
-  win_level_set_sel(sel);
   C.on_select_level = on_select_level;
 }
 
-void win_level_set_campaign(int icampaign) {
-  if (icampaign == -1) {
-    return;
-  }
-  LevelGroup* new_group = C.registry->group_order[icampaign];
-  if (C.selected_group != new_group) {
-    C.selected_group = new_group;
-    if (icampaign > 0) {
-      select_first_available_level();
-    } else {
-      select_first_level();
-    }
-  }
-}
-
-static void update_campaign_buttons() {
-  GameRegistry* r = C.registry;
-  int nc = arrlen(r->group_order);
-  Vector2 mouse = GetMousePosition();
-  for (int i = 0; i < nc; i++) {
-    if (btn_update(&C.btn_campaign[i])) {
-      win_level_set_campaign(i);
-    }
-#if 0
-    Rectangle h = C.btn_campaign[i].hitbox;
-    bool disabled = !r->group_order[i]->can_choose;
-    bool hover = rect_hover(h, mouse) && ui_get_hit_count() == 0;
-    C.btn_campaign[i].hover = hover;
-    if (hover) {
-      ui_inc_hit_count();
-      if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !disabled) {
-        win_level_set_campaign(i);
-        return;
-      }
-    }
-#endif
-  }
-  for (int i = 0; i < nc; i++) {
-    C.btn_campaign[i].toggled = C.registry->group_order[i] == C.selected_group;
-  }
+void win_level_accept() {
+  C.on_select_level(C.selected_level);
+  ui_winpop();
 }
 
 void win_level_update() {
   update_layout();
-  update_campaign_buttons();
+  if (btn_update(&C.btn_camp)) {
+    win_campaign_open(C.selected_level->group);
+    return;
+  }
 
   bool escape = IsKeyPressed(KEY_ESCAPE);
   if (btn_update(&C.btn_close) || escape) {
@@ -228,85 +212,65 @@ void win_level_update() {
     if (i < nl) {
       LevelDef* ldef = C.selected_group->levels[i];
       /* Disabling until I fix the dependency */
-      C.btn_option[i].disabled = false;  // ! ldef->can_choose;
+      C.btn_option[i].hidden = !ldef->can_choose;
       C.btn_option[i].toggled = (C.selected_level == ldef);
     }
   }
 
   if (btn_update(&C.btn_choose)) {
-    C.on_select_level(C.selected_level);
-    ui_winpop();
+    win_level_accept();
     return;
   }
   textbox_update(&C.tb);
+  textbox_update(&C.tbcamp);
   sol_widget_update(&C.sol);
-}
-
-static void draw_medal(Rectangle r) {
-  rlPushMatrix();
-  Texture sprites = ui_get_sprites();
-  int mx = r.x;
-  int my = r.y;
-  int mw = r.width;
-  int mh = r.height;
-  int x = mx + (mw - 26) / 2;
-  int y = my + (mh - 26) / 2;
-  rlTranslatef(x, y, 0);
-  rlScalef(2, 2, 1);
-  Rectangle dst = {0, 0, 13, 13};
-  Color clr = get_lut_color(COLOR_BTN2);
-  DrawTexturePro(sprites, rect_medal, dst, (Vector2){0}, 0, clr);
-  rlPopMatrix();
-}
-
-static void draw_camp_legend() {
-  GameRegistry* r = getreg();
-  Vector2 mouse = GetMousePosition();
-  for (int i = 0; i < NUM_CAMP; i++) {
-    if (!C.btn_campaign[i].hidden && C.btn_campaign[i].hover) {
-      int j = i;
-      LevelGroup* g = r->group_order[j];
-      const char* title = g->name;
-      const char* desc = g->desc;
-      // const char* author = g->mod->author;
-
-      int x = mouse.x;
-      int y = mouse.y;
-      Color bg = BLACK;
-      bg.a = 200;
-      int x0 = x + 24;
-      int y0 = y + 24;
-
-      Rectangle area = {x0, y0, 2 * 300, 2 * 200};
-      int s = 2;
-      DrawRectangle(area.x - s, area.y - s, area.width + 2 * s,
-                    area.height + 2 * s, BLACK);
-      draw_bg(area);
-      DrawRectangleRec(area, (Color){0, 0, 0, 150});
-
-      rlPushMatrix();
-      rlTranslatef(x0, y0, 0);
-      rlScalef(2, 2, 1);
-      // Rectangle marea = {0, 0, 300, 200};
-      // DrawRectangleRec(area, bg);
-      int pad = 20;
-      rlTranslatef(0, 4, 0);
-      draw_text_box_advanced(TextFormat("%s\n", title),
-                             (Rectangle){pad, 0, 300 - 2 * pad, 0}, CA_ORANGE,
-                             NULL, NULL);
-      draw_text_box_advanced(desc, (Rectangle){pad, 20, 300 - 2 * pad, 0},
-                             CA_WHITE, NULL, NULL);
-      rlPopMatrix();
-    }
-  }
 }
 
 void win_level_draw() {
   LevelDef* lvl = C.selected_level;
-  draw_win(C.modal, lvl->name);
+  draw_win(C.modal, T.levels_title);
   textbox_draw(&C.tb);
-  btn_draw_text_primary(&C.btn_choose, ui_get_scale(), "SELECT LEVEL");
-  btn_draw_text(&C.btn_close, ui_get_scale(), "CLOSE");
+  textbox_draw(&C.tbcamp);
+
+  {
+    Texture2D icon = C.selected_group->icon;
+    Rectangle r = C.campicon;
+    Rectangle source = {0, 0, icon.width, icon.height};
+    DrawRectangleRec(r, (Color){0, 0, 0, 150});
+
+    int s = 2;
+    int fx = (r.x + r.width / 2) - s * source.width / 2;
+    int fy = (r.y + r.height / 2) - s * source.height / 2;
+    int x = r.x;
+    int y = r.y;
+    int w = r.width;
+    int h = r.height;
+    rlPushMatrix();
+    rlTranslatef(fx, fy, 0);
+    rlScalef(s, s, 1);
+    DrawTextureRec(icon, source, (Vector2){0, 0}, CA_WHITE);
+    rlPopMatrix();
+    draw_frame(r);
+  }
+
+  C.btn_choose.primary = true;
+  btn_draw_text(&C.btn_choose, T.levels_submit);
+  btn_draw_text(&C.btn_close, T.close);
+  btn_draw_text(&C.btn_camp, T.levels_change_campaign);
+
+  {
+    Color c = BLACK;
+    c.a = 150;
+    const char* camp_title_txt = C.selected_level->group->name;
+    const char* level_title_txt = C.selected_level->name;
+    DrawRectangleRec(C.camp_title, c);
+    custom_label_draw_centered(C.camp_title, camp_title_txt, CA_WHITE, BLACK);
+    DrawRectangleRec(C.level_title, c);
+    custom_label_draw_centered(C.level_title, level_title_txt, CA_WHITE, BLACK);
+
+    draw_frame(C.level_title);
+    draw_frame(C.camp_title);
+  }
 
   Texture2D sprites = ui_get_sprites();
   int bscale = ui_get_scale();
@@ -317,13 +281,13 @@ void win_level_draw() {
   for (int i = 0; i < nextra; i++) {
     LevelDefExtraItem* item = &lvl->extra_content[i];
     if (item->text) {
-      btn_draw_icon(&C.btn_msg[j++], bscale, sprites, rect_bulbon);
+      btn_draw_icon(&C.btn_msg[j++], rect_bulbon);
     }
     if (item->wiki) {
-      btn_draw_icon(&C.btn_msg[j++], bscale, sprites, rect_book);
+      btn_draw_icon(&C.btn_msg[j++], rect_book);
     }
     if (item->tex.width > 0) {
-      btn_draw_icon(&C.btn_msg[j++], bscale, sprites, rect_img);
+      btn_draw_icon(&C.btn_msg[j++], rect_img);
     }
   }
 
@@ -345,41 +309,27 @@ void win_level_draw() {
     DrawRectangleRec(C.medals[i], c);
   }
 
-  for (int i = 0; i < 10; i++) {
-    Color c = BLACK;
-    c.a = 150;
-    DrawRectangleRec(C.btn_campaign[i].hitbox, c);
-  }
-
   int nc = arrlen(r->group_order);
-  for (int i = 0; i < 10; i++) {
-    if (i < nc) {
-      LevelGroup* g = r->group_order[i];
-      const char* title = g->name;
-      if (!g->can_choose) title = "???";
-      Rectangle r = C.btn_campaign[i].hitbox;
-      Rectangle rect = {0, 0, g->icon.width, g->icon.height};
-      btn_draw_icon(&C.btn_campaign[i], bscale, g->icon, rect);
-      Color c = BLACK;
-      c.a = 150;
-      DrawRectangleRec(C.med_camp[i], c);
-      if (g->complete) {
-        draw_medal(C.med_camp[i]);
-      }
-    }
-  }
-
   for (int i = 0; i < NUM_BUTTONS; i++) {
     if (i < nl) {
       LevelDef* ldef = levels[i];
-      btn_draw_text(&C.btn_option[i], ui_get_scale(),
-                    TextFormat("%s. %s", get_roman_number(i + 1), ldef->name));
+      const char* txt =
+          TextFormat("%s. %s", get_roman_number(i + 1), ldef->name);
+      btn_draw_text(&C.btn_option[i], txt);
+      if (C.btn_option[i].hidden) {
+        custom_label_draw_centered(C.btn_option[i].hitbox, txt, CA_GRAYDARK,
+                                   BLACK);
+      }
       if (ldef->complete) {
-        draw_medal(C.medals[i]);
+        draw_medal(C.medals[i], CA_WHITE);
       }
     }
   }
 
+  draw_sepv(C.sepv);
+  draw_frame(C.r_options);
+  DrawRectangleRec(C.rcamp, (Color){0, 0, 0, 150});
+  draw_frame(C.rcamp);
   sol_widget_draw(&C.sol);
 
   if (ui_get_window() == WINDOW_LEVEL) {
@@ -387,22 +337,15 @@ void win_level_draw() {
     for (int i = 0; i < nextra; i++) {
       LevelDefExtraItem* item = &lvl->extra_content[i];
       if (item->text || item->tex.width > 0) {
-        btn_draw_legend(&C.btn_msg[i], bscale, lvl->extra_content[i].title);
+        btn_draw_legend(&C.btn_msg[i], lvl->extra_content[i].title);
       }
       if (item->wiki) {
         TutorialItem* wiki_item = find_wiki_from_id(C.registry, item->wiki);
-        btn_draw_legend(&C.btn_msg[i], bscale,
-                        TextFormat("Wiki: %s", wiki_item->name));
+        if (wiki_item) {
+          btn_draw_legend(&C.btn_msg[i], wiki_item->name);
+        }
       }
     }
-
-    // int nc = arrlen(r->group_order);
-    // for (int i = 0; i < nc; i++) {
-    //   btn_draw_legend(&C.btn_campaign[i], bscale,
-    //                   TextFormat("Campaign: %s", r->group_order[i]->name));
-    // }
-    draw_camp_legend();
   }
-  // label_draw(&C.level_title);
 }
 

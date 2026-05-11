@@ -5,7 +5,7 @@
 
 #include "colors.h"
 #include "common.h"
-#include "font.h"
+#include "uifont.h"
 #include "utils.h"
 
 typedef struct msg_s {
@@ -39,21 +39,18 @@ void msg_add(const char* msg_txt, float msgDuration) {
 // Draws messages on screen.
 void msg_draw() {
   msg_t* m = C.msgStack;
-  int y = 50;
+  int y = 100;
   int sw = GetScreenWidth();
-  int s = 2;
-  int dh = 24;
+  int dh = 48;
   float now = GetTime();
   Color r = CA_WHITE;
   Color r2 = r;
   r2.a = 255 * 0.3;
   while (m) {
-    rlPushMatrix();
-    rlScalef(s, s, 1);
     float dt = m->expire_at - now;
-    Vector2 size = get_rendered_text_size(m->txt);
-    int x = sw / s / 2 - size.x / 2;
-    int p = 6;
+    v2 size = uifont_text_size(m->txt);
+    int x = sw / 2 - size.x / 2;
+    int p = 12;
     DrawRectangle(x - p, y - p, size.x + 2 * p, size.y + 2 * p, BLACK);
     DrawRectangle(x - p, y - p, size.x + 2 * p, size.y + 2 * p, r2);
     DrawRectangle(x - p + 1, y - p + 1, size.x + 2 * p - 2, size.y + 2 * p - 2,
@@ -61,8 +58,7 @@ void msg_draw() {
     float t = sinf(10 * dt);
     Color c = r;
     c.a = (t * 0.4 + 0.6) * 255;
-    font_draw_texture(m->txt, x, y, c);
-    rlPopMatrix();
+    uifont_draw_texture(m->txt, x, y, c);
     y += dh;
     m = m->nxt;
   }

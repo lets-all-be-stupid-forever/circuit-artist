@@ -881,7 +881,6 @@ void hist_act_paste_image(Hist* h, Vector2Int offset, int nl, Image* img) {
     }
   }
 
-  printf("PASTE_NL=%d\n", nl);
   if (nl == 1) {
     c->layer = h->layer;
     int ll = h->llsp[h->layer];

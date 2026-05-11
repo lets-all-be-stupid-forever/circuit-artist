@@ -111,14 +111,14 @@ void level_api_draw_board(LevelAPI* api, Cam2D cam, int w, int h,
         name = TextFormat("%s <-", pg[ig].id);
       }
       int tw = get_rendered_text_size(name).x;
-      font_draw_texture(name, -tw - 2, y, WHITE);
+      font_draw_texture(name, -tw - 2, y, CA_WHITE);
     } else {
       if (input) {
         name = TextFormat("<- %s", pg[ig].id);
       } else {
         name = TextFormat("-> %s", pg[ig].id);
       }
-      font_draw_texture(name, w + 2, y, WHITE);
+      font_draw_texture(name, w + 2, y, CA_WHITE);
     }
   }
   rlPopMatrix();

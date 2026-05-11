@@ -132,7 +132,7 @@ void win_log_update() {
 void win_log_draw() {
   draw_win(C.modal, "LOG");
   textbox_draw(&C.tb);
-  btn_draw_text(&C.btn_close, ui_get_scale(), "CLOSE");
+  btn_draw_text(&C.btn_close, "CLOSE");
 }
 
 static void win_log_build_text() {

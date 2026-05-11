@@ -5,6 +5,7 @@
 #include "config.h"
 #include "font.h"
 #include "game_registry.h"
+#include "i18n.h"
 #include "layout.h"
 #include "stb_ds.h"
 #include "stdlib.h"
@@ -34,11 +35,11 @@ static void update_layout() {
   Layout* l = C.layout;
   C.modal = layout_rect(l, "window");
   for (int i = 0; i < 7; i++) {
-    C.btn_topic[i].hitbox = layout_rect(l, TextFormat("topic%d", i + 1));
+    C.btn_topic[i].hitbox = layout_rectb(l, TextFormat("topic%d", i + 1));
   }
-  listbox_set_box(&C.lb, layout_rect(l, "listbox"));
-  textbox_set_box(&C.tb, layout_rect(l, "content_box"));
-  C.btn_close.hitbox = layout_rect(l, "btn_close");
+  listbox_set_box(&C.lb, layout_rectb(l, "listbox"));
+  textbox_set_box(&C.tb, layout_rectb(l, "content_box"));
+  C.btn_close.hitbox = layout_rectb(l, "btn_close");
 }
 
 static TutorialTopic* get_topics() { return C.registry->topics; }
@@ -126,20 +127,20 @@ static TutorialItem* get_item() {
 }
 
 void win_wiki_draw() {
-  draw_win(C.modal, "WIKI");
+  draw_win(C.modal, T.wiki_title);
   textbox_draw(&C.tb);
   listbox_draw(&C.lb, C.item_sel);
   TutorialTopic* topics = get_topics();
   int ntopic = arrlen(topics);
   int s = ui_get_scale();
   for (int i = 0; i < ntopic; i++) {
-    btn_draw_icon(&C.btn_topic[i], s, topics[i].icon.tex,
-                  topics[i].icon.region);
+    btn_draw_icon2(&C.btn_topic[i], s, topics[i].icon.tex,
+                   topics[i].icon.region);
   }
   for (int i = 0; i < ntopic; i++) {
-    btn_draw_legend(&C.btn_topic[i], s, topics[i].name);
+    btn_draw_legend(&C.btn_topic[i], topics[i].name);
   }
-  btn_draw_text(&C.btn_close, ui_get_scale(), "CLOSE");
+  btn_draw_text(&C.btn_close, T.close);
 }
 
 void win_wiki_open_on_item(const char* item_id) {

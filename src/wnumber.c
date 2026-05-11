@@ -4,8 +4,9 @@
 #include "font.h"
 #include "stdio.h"
 #include "ui.h"
+#include "uifont.h"
 #include "utils.h"
-#include "wmain.h"
+#include "win_main.h"
 
 #define MAX_TEXT_SIZE 1000
 
@@ -70,7 +71,7 @@ void number_modal_update() {
     int tlen = C.tlen;
     if (tlen > 0) {
       int n = parse_modal_number();
-      main_set_line_sep(n);
+      win_main_set_line_sep(n);
     }
     ui_winpop();
     return;
@@ -91,23 +92,19 @@ void number_modal_draw() {
   rlPushMatrix();
   draw_bg((Rectangle){0, y0, 2 * sw, 2 * hh});
 
-  rlTranslatef(0, y0, 0);
-  rlScalef(s, s, 1);
-  // DrawRectangle(0, 0, sw, hh, c1);
-
   const char* cap = "Insert Separation Width:";
-  int tx = get_rendered_text_size(cap).x;
+  int cap_w = uifont_text_size(cap).x;
+  int cap_lh = uifont_line_height();
+  int cap_x = sw / 2 - cap_w / 2;
+  int cap_y = y0 + (hh * s / 2 - cap_lh) / 2;
+  uifont_draw_texture(cap, cap_x + 2, cap_y + 2, BLACK);
+  uifont_draw_texture(cap, cap_x, cap_y, CA_WHITE);
 
+  rlTranslatef(0, y0 + hh * s / 2, 0);
+  rlScalef(s, s, 1);
   rlTranslatef(sw / s / 2, 10, 0);
 
-  rlTranslatef(-tx / 2, 0, 0);
-  font_draw_texture(cap, 1, 1, BLACK);
-  font_draw_texture(cap, 0, 0, CA_WHITE);
-  rlTranslatef(tx / 2, 0, 0);
-
-  rlTranslatef(0, 20, 0);
-
-  tx = get_rendered_text_size(C.txt).x;
+  int tx = get_rendered_text_size(C.txt).x;
   rlTranslatef(-tx / 2, 0, 0);
   font_draw_texture(C.txt, 1, 1, BLACK);
   font_draw_texture(C.txt, 0, 0, CA_WHITE);

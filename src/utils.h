@@ -142,6 +142,8 @@ void unload_steam_meta(SteamMeta* meta);
 void remove_steam_metadata(const char* folder);
 void open_file_explorer(const char* folder);
 void ensure_dir(const char* folder);
+const char* fmtnum(int number);
+void draw_medal(Rectangle r, Color c);
 
 #if defined(__cplusplus)
 }

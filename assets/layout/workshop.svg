@@ -15,6 +15,6 @@
 <rect id="btn_votes" x="814" y="146" width="210" height="34" fill="#D9D9D9"/>
 <rect id="btn_recent" x="814" y="184" width="210" height="34" fill="#D9D9D9"/>
 <rect id="btn_steam" x="814" y="374" width="210" height="34" fill="#D9D9D9"/>
-<rect id="btn_close" x="815" y="629" width="209" height="34" fill="#D9D9D9"/>
+<rect id="btn_close" x="814" y="629" width="210" height="34" fill="#D9D9D9"/>
 </g>
 </svg>

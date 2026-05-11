@@ -3,10 +3,12 @@
 #include <stdlib.h>
 
 #include "font.h"
+#include "i18n.h"
 #include "ui.h"
+#include "uifont.h"
 #include "utils.h"
 #include "widgets.h"
-#include "wmain.h"
+#include "win_main.h"
 
 static struct {
   Rectangle confirmModal;
@@ -24,9 +26,9 @@ static void dialog_update_layout() {
 
   int n = nb;
   int gap = 12;
-  int rw = 120;
+  int rw = 140;
   int tot = (n - 1) * gap + n * rw;
-  int rh = 17 * 2;
+  int rh = 19 * 2;
 
   int mW = 500;
   int mH = 180;
@@ -34,7 +36,7 @@ static void dialog_update_layout() {
   int mY = (GetScreenHeight() - mH) / 2;
   C.confirmModal = (Rectangle){mX, mY, mW, mH};
   int x0 = mX + (mW - tot) / 2;
-  int y0 = mY + (mH - 17 * 2 - 20);
+  int y0 = mY + (mH - 19 * 2 - 20);
   for (int i = 0; i < n; i++) {
     C.btn_opt[i].hitbox = (Rectangle){
         x0 + i * (gap + rw),
@@ -95,17 +97,13 @@ void dialog_update() {
 void dialog_draw() {
   int s = ui_get_scale();
   Rectangle r = C.confirmModal;
-  draw_win(r, "Confirm");
-  int msg_size = get_rendered_text_size(C.msg).x;
-  rlPushMatrix();
-  rlTranslatef(r.x, r.y, 0);
-  rlScalef(s, s, 1);
-  int mx = (r.width / s - msg_size) / 2;
-  int my = 36;
-  font_draw_texture(C.msg, mx + 1, my + 1, BLACK);
-  font_draw_texture(C.msg, mx, my, WHITE);
-  rlPopMatrix();
-  if (C.opt[0]) btn_draw_text(&C.btn_opt[0], s, C.opt[0]);
-  if (C.opt[1]) btn_draw_text(&C.btn_opt[1], s, C.opt[1]);
-  if (C.opt[2]) btn_draw_text(&C.btn_opt[2], s, C.opt[2]);
+  draw_win(r, T.confirm);
+  int msg_size = uifont_text_size(C.msg).x;
+  int mx = r.x + (r.width - msg_size) / 2;
+  int my = r.y + 72;
+  uifont_draw_texture(C.msg, mx + 2, my + 2, BLACK);
+  uifont_draw_texture(C.msg, mx, my, CA_WHITE);
+  if (C.opt[0]) btn_draw_text(&C.btn_opt[0], C.opt[0]);
+  if (C.opt[1]) btn_draw_text(&C.btn_opt[1], C.opt[1]);
+  if (C.opt[2]) btn_draw_text(&C.btn_opt[2], C.opt[2]);
 }

@@ -14,7 +14,7 @@
 #include "steam.h"
 #include "ui.h"
 #include "utils.h"
-#include "wmain.h"
+#include "win_main.h"
 
 #define BLUEPRINT_FILE_1_1 "blueprints_1_1.json"
 #define BLUEPRINT_FILE_v2 "blueprints_v2.json"
@@ -416,7 +416,7 @@ int blueprint_create(BlueprintStore* store, int nl, Image* imgs, Image full,
 
   Image thumb = gen_thumbnail(nl, imgs, 64, 64, true);
   Blueprint* bp = calloc(1, sizeof(Blueprint));
-  bp->name = clone_string("My Blueprint");
+  bp->name = clone_string("");
   bp->steam_id = 0;
   bp->desc = NULL;
   bp->layers = nl;
@@ -575,7 +575,7 @@ Blueprint* get_blueprint(BlueprintStore* store, int idx) {
 }
 
 void blueprint_paste(Blueprint* bp) {
-  main_paste_file(blueprint_fname_full(bp), bp->rot);
+  win_main_paste_file(blueprint_fname_full(bp), bp->rot);
 }
 
 void blueprint_rot(Blueprint* bp) { bp->rot = (bp->rot + 1) % 4; }
@@ -663,7 +663,7 @@ void blueprint_update_thumbnail(Blueprint* bp, int nl, Image* imgs) {
 }
 
 bool blueprint_can_delete(Blueprint* s) {
-  return main_get_editting_blueprint() != s;
+  return win_main_get_editting_blueprint() != s;
 }
 
 void blueprint_copy_to_clipboard(Blueprint* s) {

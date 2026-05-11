@@ -7,6 +7,7 @@
 
 #include "errno.h"
 #include "fs.h"
+#include "i18n.h"
 #include "json.h"
 #include "paths.h"
 #include "sound.h"
@@ -16,7 +17,7 @@
 #include "toc.h"
 #include "ui.h"
 #include "utils.h"
-#include "wmain.h"
+#include "win_main.h"
 
 #define KEY_ALWAYS_ON_TOP "always_on_top"
 #define KEY_SIMU_NEON "simu_neon"
@@ -421,6 +422,7 @@ static GameRegistry* create_game_registry() {
   lua_register(L, "AddWikiTopic", lua_AddWikiTopic);
   lua_register(L, "AddWikiItem", lua_AddWikiItem);
   lua_register(L, "Import", lua_Import);
+  i18n_register_lua(L);
   r->L = L;
   return r;
 }
@@ -498,7 +500,7 @@ static void update_levels_completion(GameRegistry* r) {
         int ndep = arrlen(ldef->deps);
         for (int idep = 0; idep < ndep; idep++) {
           if (!ldef->deps[idep]->complete) {
-            // ldef->can_choose = false; /* Uncomment here to enable
+            ldef->can_choose = false; /* Uncomment here to enable
             // can_choose*/
             break;
           }
@@ -595,15 +597,13 @@ void load_progress() {
   _r->cfg.simu_sound = true;
   _r->cfg.always_on_top = false;
 
-  if (!FileExists(get_progress_path())) {
-    return;
+  if (FileExists(get_progress_path())) {
+    json_object* root = json_object_from_file(get_progress_path());
+    assert(root);
+    json_read_config(root);
+    json_read_levels(root);
+    json_object_put(root);
   }
-
-  json_object* root = json_object_from_file(get_progress_path());
-  assert(root);
-  json_read_config(root);
-  json_read_levels(root);
-  json_object_put(root);
   update_levels_completion(_r);
   on_always_on_top_change();
 }

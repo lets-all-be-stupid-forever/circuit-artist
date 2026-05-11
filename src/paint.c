@@ -2,6 +2,7 @@
 #include "paint.h"
 
 #include <math.h>
+#include "i18n.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -16,8 +17,9 @@
 #include "sim.h"
 #include "sound.h"
 #include "ui.h"
+#include "uifont.h"
 #include "utils.h"
-#include "wmain.h"
+#include "win_main.h"
 
 #define IMAGE_MOF 8
 
@@ -711,17 +713,16 @@ static void paint_draw_resize_handle(Paint* pnt) {
       rlTranslatef(sz.x, sz.y, 0);
     }
     rlScalef(1 / pnt->cam.sp, 1 / pnt->cam.sp, 1);
-    rlScalef(2, 2, 1);
-    rlTranslatef(10, -14, 0);
+    rlTranslatef(20, -28, 0);
     char txt[100];
     if (pnt->resizePressed) {
       int w = pnt->activeResizeReg.width;
       int h = pnt->activeResizeReg.height;
       snprintf(txt, sizeof(txt), "%d x %d", w, h);
     } else {
-      snprintf(txt, sizeof(txt), "Drag to resize");
+      snprintf(txt, sizeof(txt), "%s", T.paint_drag_resize);
     }
-    font_draw_texture(txt, 0, 0, WHITE);
+    uifont_draw_texture(txt, 0, 0, CA_WHITE);
     rlPopMatrix();
     EndScissorMode();
   }

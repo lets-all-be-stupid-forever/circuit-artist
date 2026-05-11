@@ -2,7 +2,7 @@
 
 #include "game_registry.h"
 #include "paths.h"
-#include "wmain.h"
+#include "win_main.h"
 
 static struct {
   Sound sound_nand_act;

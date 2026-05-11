@@ -21,7 +21,7 @@
 *
 *   LICENSE: zlib/libpng
 *
-*   Copyright (c) 2014-2024 Ramon Santamaria (@raysan5)
+*   Copyright (c) 2014-2026 Ramon Santamaria (@raysan5)
 *
 *   This software is provided "as-is", without any express or implied warranty. In no event
 *   will the authors be held liable for any damages arising from the use of this software.
@@ -124,7 +124,7 @@ void UpdateGestures(void);                              // Update gestures detec
 
 #if defined(RGESTURES_STANDALONE)
 void SetGesturesEnabled(unsigned int flags);            // Enable a set of gestures using flags
-bool IsGestureDetected(int gesture);                    // Check if a gesture have been detected
+bool IsGestureDetected(int gesture);                    // Check if a gesture has been detected
 int GetGestureDetected(void);                           // Get latest detected gesture
 
 float GetGestureHoldDuration(void);                     // Get gesture hold time in seconds
@@ -232,13 +232,13 @@ typedef struct {
 // Global Variables Definition
 //----------------------------------------------------------------------------------
 static GesturesData GESTURES = {
-    .Touch.firstId = -1,
     .current = GESTURE_NONE,        // No current gesture detected
+    .Touch.firstId = -1,
     .enabledFlags = 0b0000001111111111  // All gestures supported by default
 };
 
 //----------------------------------------------------------------------------------
-// Module specific Functions Declaration
+// Module Internal Functions Declaration
 //----------------------------------------------------------------------------------
 static float rgVector2Angle(Vector2 initialPosition, Vector2 finalPosition);
 static float rgVector2Distance(Vector2 v1, Vector2 v2);
@@ -297,10 +297,10 @@ void ProcessGestureEvent(GestureEvent event)
         }
         else if (event.touchAction == TOUCH_ACTION_UP)
         {
-            // A swipe can happen while the current gesture is drag, but (specially for web) also hold, so set upPosition for both cases
+            // A swipe can happen while the current gesture is drag, but (especially for web) also hold, so set upPosition for both cases
             if (GESTURES.current == GESTURE_DRAG || GESTURES.current == GESTURE_HOLD) GESTURES.Touch.upPosition = event.position[0];
 
-            // NOTE: GESTURES.Drag.intensity dependent on the resolution of the screen
+            // NOTE: GESTURES.Drag.intensity is dependent on the resolution of the screen
             GESTURES.Drag.distance = rgVector2Distance(GESTURES.Touch.downPositionA, GESTURES.Touch.upPosition);
             GESTURES.Drag.intensity = GESTURES.Drag.distance/(float)((rgGetCurrentTime() - GESTURES.Swipe.startTime));
 
@@ -481,7 +481,7 @@ float GetGesturePinchAngle(void)
 }
 
 //----------------------------------------------------------------------------------
-// Module specific Functions Definition
+// Module Internal Functions Definition
 //----------------------------------------------------------------------------------
 // Get angle from two-points vector with X-axis
 static float rgVector2Angle(Vector2 v1, Vector2 v2)

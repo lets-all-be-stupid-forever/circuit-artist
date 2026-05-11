@@ -6,6 +6,8 @@
 extern "C" {
 #endif
 
+void widgets_init();
+
 // Scroll widget.
 typedef struct {
   Rectangle content;
@@ -90,18 +92,22 @@ typedef struct {
   bool hidden;
   bool gradient;
   Rectangle hitbox;
+  bool primary;
+  bool done;
 } Btn;
 
 // Button
 bool btn_update(Btn* b);
-void btn_draw_text(Btn* b, int ui_scale, const char* text);
-void btn_draw_text_primary(Btn* b, int ui_scale, const char* text);
-void btn_draw_legend(Btn* b, int ui_scale, const char* text);
-void btn_draw_icon(Btn* b, int ui_scale, Texture2D tex, Rectangle r);
+void btn_draw_text(Btn* b, const char* text);
+void btn_draw_legend(Btn* b, const char* text);
+void btn_draw_icon(Btn* b, Rectangle r);
+void btn_draw_icon_grad(Btn* b, Texture2D texture, Rectangle source);
+void btn_draw_icon2(Btn* b, int ui_scale, Texture2D texture, Rectangle source);
 void btn_draw_color(Rectangle r, Color c, bool selected, bool disabled);
 void btn_draw_checkbox(Btn* b);
 void btn_draw_checkbox_text(Btn* b, const char* txt);
 bool btn_hover(Btn* b);
+bool btn_right_click(Btn* b);
 
 typedef struct {
   int maxValue;
@@ -138,6 +144,8 @@ typedef struct {
   char txt[256];
 } Label;
 
+void custom_label_draw_centered(Rectangle hitbox, const char* txt, Color c,
+                                Color cshadow);
 void label_set_text(Label* l, const char* txt);
 void label_draw(Label* l);
 void label_draw_centered(Label* l);
@@ -193,6 +201,9 @@ const char* mle_get_text(MultiLineEdit* m);
 void mle_set_focus(MultiLineEdit* m, bool focused);
 bool mle_update(MultiLineEdit* m);
 void mle_draw(MultiLineEdit* m);
+
+void draw_frame(Rectangle r);
+void draw_sepv(Rectangle r);
 
 #if defined(__cplusplus)
 }

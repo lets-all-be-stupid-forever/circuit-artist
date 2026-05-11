@@ -1,6 +1,7 @@
 #include "win_pubform.h"
 
 #include "fs.h"
+#include "i18n.h"
 #include "layout.h"
 #include "stb_ds.h"
 #include "steam.h"
@@ -47,10 +48,11 @@ static void update_layout() {
 
 void win_pubform_init() {
   C.layout = easy_load_layout("pubform");
-  label_set_text(&C.lab_desc, "Description");
-  label_set_text(&C.lab_title, "Title");
+  label_set_text(&C.lab_desc, T.pubform_label_desc);
+  label_set_text(&C.lab_title, T.pubform_label_title);
   lineedit_init(&C.tb_title);
   mle_init(&C.tb_desc);
+  textbox_init(&C.tb_legal);
 }
 
 static void reset_fields() {
@@ -111,7 +113,7 @@ static bool progress_update(void* ctx) {
 }
 
 static void launch_publish() {
-  win_progress_set_text("Uploading to Steam");
+  win_progress_set_text(T.pubform_uploading);
   C.upload_counter = 0;
   ProgressCtx pc = {0};
   int nt = arrlen(C.tags);
@@ -127,10 +129,7 @@ static void launch_publish() {
 void win_pubform_update() {
   update_layout();
   textbox_update(&C.tb_legal);
-  textbox_set_content(&C.tb_legal,
-                      "By submitting this item, you agree to the `Steam "
-                      "Workshop terms of service.`",
-                      NULL);
+  textbox_set_content(&C.tb_legal, T.pubform_legal, NULL);
   bool key_escape = IsKeyPressed(KEY_ESCAPE);
   mle_update(&C.tb_desc);
   lineedit_update(&C.tb_title);
@@ -158,11 +157,12 @@ void win_pubform_update() {
 }
 
 void win_pubform_draw() {
-  draw_win(C.modal, "PUBLISH TO STEAM");
+  draw_win(C.modal, T.pubform_title);
   DrawRectangleRec(C.rect_preview, RED);
   Texture sprites = ui_get_sprites();
-  btn_draw_text(&C.btn_cancel, 2, "CANCEL");
-  btn_draw_text_primary(&C.btn_submit, 2, "PUBLISH");
+  btn_draw_text(&C.btn_cancel, T.cancel);
+  C.btn_submit.primary = true;
+  btn_draw_text(&C.btn_submit, T.pubform_submit);
   lineedit_draw(&C.tb_title);
   mle_draw(&C.tb_desc);
   label_draw(&C.lab_desc);

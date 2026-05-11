@@ -7,10 +7,19 @@
 #include "stdio.h"
 #include "stdlib.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 typedef struct {
   int e;
   float w;
 } GraphEdge;
+
+typedef struct {
+  int e;
+  int w;
+} GraphEdgeInt;
 
 typedef struct {
   int n;
@@ -50,6 +59,7 @@ void djikstra_free(struct Djikstra* dji);
 // void djikstra_spanning_tree(Graph* g, int* stack, float* nd, PQ* p, int root,
 //                             EdgeGroup* eg);
 
+#if !defined(__cplusplus)
 static inline bool graph_is_tree(Graph* g) { return g->ne == 2 * (g->n - 1); }
 static inline bool edge_group_is_tree(EdgeGroup* eg) {
   return eg->ne == 2 * (eg->n - 1);
@@ -135,9 +145,90 @@ static void graph_destroy(Graph* g) {
   free(g->ecount);
   hmfree(g->inv);
 }
+#endif
 
 void graph_print_stats(Graph* g);
 void graph_print_weights(Graph* g);
+
+typedef struct {
+  int src;
+  int dst;
+  int w;
+} GraphBuilderTmp;
+
+typedef struct {
+  int nv;
+  int* ne_off;
+  GraphBuilderTmp* tmp;
+} GraphBuilder;
+
+typedef struct {
+  int nv;
+  int* ne_off;
+  GraphEdgeInt* edges;
+} GraphL;
+
+void gb_init(GraphBuilder* gb, int nv);
+GraphL gb_build_and_dealloc(GraphBuilder* gb);
+static inline void gb_add_edge(GraphBuilder* gb, int src, int dst, int d) {
+  gb->ne_off[src + 1]++;
+  GraphBuilderTmp gt = {
+      src,
+      dst,
+      d,
+  };
+  arrput(gb->tmp, gt);
+}
+
+void debug_graphl(GraphL* g);
+GraphL graphl_invert(GraphL* g);
+void graphl_free(GraphL* g);
+
+bool longest_distance(GraphL* gfwd, GraphL* gbwd, int* AT, int* RAT,
+                      int* prv_AT);
+
+/* Strongly Connected Components algorithm.
+ *
+ * Path-based, implementation from:
+ * https://en.wikipedia.org/wiki/Path-based_strong_component_algorithm
+ * Uses an iterative DFS algorithm.
+ *
+ * Args:
+ * g: (Input)
+ *   Directed graph. (N vertices)
+ * comp: (Output)
+ *    Array of size N. (alloced by the caller)
+ *    The assigned component number of each vertex.
+ * compsz: (Output)
+ *    Array of size N . (alloced by the caller)
+ *    The size of each strongly connected component. Helps on finding the nodes
+ *    that don't belong to a cycle: Those with size=1 are nodes outside a
+ *    cycle.
+ *
+ * Return:
+ *   The number of connected components found (nc).
+ *
+ * */
+int strongly_connected_components(GraphL* g, int* comp, int* compsz);
+
+/* Connected Components algorithm.
+ *
+ * Assumes undirected graph.
+ *
+ * Args:
+ *   g: (Input)
+ *      Input Graph. (N nodes)
+ *   c:  (Output)
+ *      Array of size N. (allocated by the caller)
+ *      Stores the component number of each node.
+ *
+ * Returns the number of connected components found.
+ *
+ * */
 int find_connected_components(Graph* g, int* c);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

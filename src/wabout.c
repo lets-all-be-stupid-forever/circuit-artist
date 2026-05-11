@@ -1,6 +1,7 @@
 #include "wabout.h"
 
 #include "common.h"
+#include "i18n.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "ui.h"
@@ -43,67 +44,18 @@ static void about_update_layout() {
       box.x + box.width - bsize,
       box.y + box.height + 8 * 2,
       bsize,
-      17 * 2,
+      19 * 2,
   };
   textbox_set_box(&C.tb, box2);
 }
 
 void easy_about_open() {
-  const char* content =
-      "\n!img:0\n\n" CA_VERSION
-      "\n"
-      "A game by `lets_all_be_stupid_forever`.\n"
-      "circuitartistgame@gmail.com\n"
-      "Check our blog: `www.circuitartistgame.com`\n"
-      "\n"
-      "Available on "
-      "Steam.\nhttps://store.steampowered.com/app/3139580/Circuit_Artist/"
-      "\n\n"
-      "Join us on Discord!\n\n"
-      "\n`Credits:`"
-      "\n!hl"
-      "\n"
-      "\n`Game Framework`"
-      "\nRaylib + C"
-      "\nraylib.com"
-      "\n\n"
-      "`Font`\n"
-      "m5x7 and m3x6 by Daniel Linssen.\n"
-      "https://managore.itch.io/m5x7\n"
-      "\n"
-      "`File Dialog`\n"
-      "Native File Dialog by Michael Labbe\n"
-      "https://github.com/mlabbe/nativefiledialog\n\n"
-      "`Copy-paste`\n"
-      "Clip library by David Capello / Aseprite.\n"
-      "https://github.com/aseprite/clip\n\n"
-      "`Scripts`\n"
-      "Lua 5.4\n"
-      "https://www.lua.org/\n\n"
-      "`Data Structures in C (array/hashmaps)`\nSTB Library\n"
-      "https://github.com/nothings/stb\n\n"
-      "`Lua Serialization`\nmsgpack-c\n"
-      "https://github.com/msgpack/msgpack-c\n\n"
-      "`JSON parsing from C`\nJSON-C - A JSON implementation in C\n"
-      "https://github.com/json-c/json-c\n\n"
-      "`Trailer Music`\n"
-      "Music by Kevin MacLeod\n"
-      "https://freepd.com/electronic.php\n\n"
-      "`Classes in lua`\nclassic.lua by rxi\n"
-      "https://github.com/rxi/classic\n\n"
-      "`JSON in lua`\njson.lua by rxi\n"
-      "https://github.com/rxi/json.lua";
-  about_open("About", content, C.about_sprites);
+  about_open(T.about_title, T.about_content, C.about_sprites);
 }
 
 void easy_blinking_open() {
-  const char* content =
-      "\n`Photosensitivity Warning`\n\n"
-      " A small percentage of people may experience seizures when exposed to "
-      "certain visual effects, including `flashing lights`.\n\n"
-      "If you experience `discomfort, dizziness, or disorientation`, stop "
-      "playing immediately.\n";
-  about_open("Photosensitivity Warning", content, NULL);
+  about_open(T.about_photosensitivity_title, T.about_photosensitivity_text,
+             NULL);
 }
 
 void about_init() {
@@ -134,5 +86,5 @@ void about_update() {
 void about_draw() {
   draw_win(C.modal, C.title);
   textbox_draw(&C.tb);
-  btn_draw_text(&C.bClose, ui_get_scale(), "CLOSE");
+  btn_draw_text(&C.bClose, T.close);
 }

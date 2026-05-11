@@ -48,21 +48,23 @@ typedef struct {
 
 typedef struct {
   /* Serialized states */
-  int* skt_values;                /* Current value of sockets (size=numSkts); */
-  EventQueue ev_queue;            /* Event Queue for Socket updates */
-  WirePulse* pulses;              /* Visu state of wires (size=numWires) */
-  NandState* nand_states;         /* State of NAND gates. (max_size=numNands) */
-  Series power_tick_series;       /* List of spent energy per tick (power) */
-  Series energy_per_cycle_series; /* List of spent energy per cycle */
-  Series ticks_per_cycle_series;  /* List of ticks per cycle */
-  float energy_t[NRJ_BINS];       /* Energy for each time horizon T=2^k */
-  double power;                   /* Total power at this timestep */
+  int* skt_values;          /* Current value of sockets (size=numSkts); */
+  EventQueue ev_queue;      /* Event Queue for Socket updates */
+  WirePulse* pulses;        /* Visu state of wires (size=numWires) */
+  NandState* nand_states;   /* State of NAND gates. (max_size=numNands) */
+  Series power_tick_series; /* List of spent energy per tick (power) */
+  Series energy_per_period_series; /* List of spent energy per cycle */
+  Series ticks_per_period_series;  /* List of ticks per cycle */
+  float energy_t[NRJ_BINS];        /* Energy for each time horizon T=2^k */
+  double power;                    /* Total power at this timestep */
   double acc_nrj;
   double total_energy; /* Total used energy */
   int max_pulse_time;  /* Time after which pulses are propagated. */
   int active_count;    /* size of active nand state array */
+  int cur_period_tick; /* current period tick (reset every period (ECLK) )*/
   int cur_tick;        /* current simu tick */
   int max_tick;        /* max num of ticks in a clock cycle */
+  int max_tick_cycle;  /*Cycle where max tick happened */
   int cycle;  /* Proxy to clock: everytime level is updated this is increased */
   bool error; /* Simulation is in Error mode */
   bool done;  /* Simulation is in Done mode */
@@ -111,9 +113,11 @@ typedef struct {
   double power_patch;
   double total_energy_patch;
   double power_tick_series_patch;
-  double energy_per_cycle_series_patch;
-  double ticks_per_cycle_series_patch;
+  double energy_per_period_series_patch;
+  double ticks_per_period_series_patch;
   int max_tick_patch;
+  int max_tick_cycle_patch;
+  int period_tick_patch;
   float nrj_patch[NRJ_BINS]; /* XOR for each energy.  */
   double acc_nrj_patch;
 
@@ -175,8 +179,10 @@ typedef struct Sim {
   NandDesc* nidx;    /* index of each nand (used in visu) */
   Texture pulse_tex; /* Pulse GPU data (used in visu)*/
 
+  int period_len; /* How often to capture max tick */
   Cam2D prv_cam;
   SimUiEvent* ui_events;
+  int warmup_cycles; /* Number of cycles on power-on (warm-up / burn-in) */
   RenderV2* rv2;
   uint32_t* pulse_dirty_mask;
   int dirty_mask_size;
@@ -184,19 +190,27 @@ typedef struct Sim {
   int64_t update_interval;
   int base_tps;
   bool complete; /* Activats on complete */
-
 } Sim;
 
-Status sim_init(Sim* sim, int nl, Image* img, LevelAPI* api,
-                RenderTexture2D* layers);
+typedef struct {
+  int warmup_cycles;
+  int nl;
+  Image* img;
+  LevelAPI* api;
+  RenderTexture2D* layers;
+} SimParams;
+
+Status sim_init(Sim* sim, SimParams params);
 void sim_destroy(Sim* sim);
 Tex* sim_render_v2(Sim* sim, int tw, int th, Cam2D cam, float frame_steps,
                    float slackSteps, int hide_mask, bool use_neon);
 Tex* sim_render_energy(Sim* sim, int tw, int th);
 
+bool sim_is_on_warmup(Sim* sim);
 bool sim_is_idle(Sim* sim);
 void sim_find_nearest_pixel(Sim* sim, int tol, v2 fPix, int* pix);
 bool sim_has_errors(Sim* sim);
+void sim_set_complete(Sim* sim);
 void sim_toggle_pixel(Sim* sim, int pix); /* Used for manual interaction */
 int sim_get_pixel_error_status(Sim* sim, int pix);
 HSim wrap_sim(Sim* sim);
@@ -211,7 +225,6 @@ void sim_state_step_patch(SimState* state, Buffer patch);
 bool sim_state_has_work(SimState* state);
 int sim_state_get_max_tick(SimState* state);
 float sim_get_pixel_dist(Sim* sim, int pix);
-void sim_notify_level_complete(Sim* sim);
 
 /* These are the 3 most important functions of state management. */
 void patch_builder_update_nandstate(Sim* sim, PatchBuilder* builder,
@@ -253,6 +266,6 @@ static inline int pulse_unpack_vafter(int p) { return (p >> 2) & 0b11; }
 static inline int pulse_unpack_vbefore(int p) { return p & 0b11; }
 static inline int pulse_unpack_tick(int p) { return p >> 4; }
 
-void sim_dry_run(GameRegistry* r);
-
+void sim_dry_run();
+int sim_get_effective_cycle(Sim* sim);
 #endif

@@ -163,11 +163,10 @@ function _Draw()
   end
 
   rlPushMatrix();
-  rlScalef(3,3,1);
   for i=1,#msgs do
     local txt = msgs[i].text
     local color = msgs[i].color or WHITE
-    local lh = 8
+    local lh = 20
     local pady = 1
     local bh = lh + 2*pady
     local y = (i - 1) * bh + pady
