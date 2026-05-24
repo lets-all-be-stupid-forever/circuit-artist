@@ -13,7 +13,7 @@ function makeCases()
     local n = randbits(8)
     -- 5 = 101
     local r = math.tointeger(n*3)
-    table.insert(out, {A=n, A_mul_5=r, name='' .. n .. 'x5=' .. r})
+    table.insert(out, {A=n, A_mul_3=r, name='' .. n .. 'x3=' .. r})
   end
   return out
 end
