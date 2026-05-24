@@ -9,6 +9,15 @@ local YELLOW= { 253, 249, 0, 255}
 local WHITE = {248, 255, 203, 255}
 local WHITE_ = {255, 255, 255, 255}
 
+function FormatBinary(port, n)
+  local w = port.width
+  local s = "0b"
+  for i = w - 1, 0, -1 do
+    s = s .. ((n >> i) & 1)
+  end
+  return s
+end
+
 function bits(s)
   if s[1] == '2' then
     return nil
@@ -41,6 +50,10 @@ function CombinatorialTest:update()
         local output = ReadPort(iport-1)
         if expect ~= nil and expect ~= output then
           self.v_err(true)
+          if port.fmt ~= nil then
+            expect = port.fmt(port, expect)
+            output = port.fmt(port, output)
+          end
           self.v_errors(
             {
               port=port.name,
@@ -107,9 +120,9 @@ function CombinatorialTest:draw()
 
   if errors ~= nil then
     table.insert(msgs, {text='Expected:', color=RED})
-    table.insert(msgs, {text=errors.port .. '=' .. errors.expected})
+    table.insert(msgs, {text=errors.port .. '=' .. errors.expected, color=YELLOW})
     table.insert(msgs, {text='Got:', color=RED})
-    table.insert(msgs, {text=errors.port .. '=' .. errors.output})
+    table.insert(msgs, {text=errors.port .. '=' .. errors.output, color=YELLOW})
   end
 
   -- Then is the current test index

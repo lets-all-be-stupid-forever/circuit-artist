@@ -1246,17 +1246,11 @@ void paint_render_texture(Paint* ca, Texture2D sidepanel,
         c = WHITE;
       }
     }
-    RectangleInt rect = {
-        resize_rect.x,
-        resize_rect.y,
-        RESIZE_HANDLE_SIZE / ca->cam.sp,
-        RESIZE_HANDLE_SIZE / ca->cam.sp,
-    };
     Rectangle target_rect1 = {
-        ca->cam.off.x + rect.x * ca->cam.sp - 1,
-        ca->cam.off.y + rect.y * ca->cam.sp - 1,
-        (float)(rect.width) * ca->cam.sp + 2,
-        (float)(rect.height) * ca->cam.sp + 2,
+        ca->cam.off.x + resize_rect.x * ca->cam.sp - 1,
+        ca->cam.off.y + resize_rect.y * ca->cam.sp - 1,
+        RESIZE_HANDLE_SIZE + 2,
+        RESIZE_HANDLE_SIZE + 2,
     };
     Vector2 position = {0.f, 0.f};
     float rot = 0.f;
@@ -1361,8 +1355,8 @@ void paint_update_pixel_position(Paint* ca) {
   Rectangle resize_rect = {
       .x = bufsz.x,
       .y = bufsz.y,
-      .width = RESIZE_HANDLE_SIZE / ca->cam.sp,
-      .height = RESIZE_HANDLE_SIZE / ca->cam.sp,
+      .width = fmaxf(1.0f, RESIZE_HANDLE_SIZE / ca->cam.sp),
+      .height = fmaxf(1.0f, RESIZE_HANDLE_SIZE / ca->cam.sp),
   };
   Vector2 pixel_pos = {.x = (float)ca->pixelCursor.x, (float)ca->pixelCursor.y};
   ca->resizeHovered = CheckCollisionPointRec(pixel_pos, resize_rect);

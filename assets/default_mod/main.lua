@@ -174,3 +174,17 @@ amul2 text=mul2tip
 amul3 text=mul3tip
 amulb
 ]], {'basics1'})
+
+RegisterTxt('shifter', [[
+shift1 wiki=bit_shifting text=logic_right_shift
+shift2 text=rotate_shift
+ashift1 text=arithmetic_right_shift
+barrel1 wiki=barrel_shifter
+barrel2
+abarrel1
+lbarrel1
+clbarrel1
+funnel_shifter img=funnel1,s=4
+barrel32
+]], {'aplusb', 'routing1'})
+

@@ -22,7 +22,7 @@ end
 easyAddTest({
   ports = {
     {name="A", width=8, input=false},
-    {name="A_mul_5", width=10, input=true},
+    {name="A_mul_3", width=10, input=true},
   },
   cases = makeCases(),
 })

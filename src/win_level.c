@@ -161,8 +161,8 @@ void win_level_open(LevelDef* active_level,
 }
 
 void win_level_accept() {
-  C.on_select_level(C.selected_level);
   ui_winpop();
+  C.on_select_level(C.selected_level);
 }
 
 void win_level_update() {

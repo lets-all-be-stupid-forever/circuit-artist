@@ -1859,3 +1859,122 @@ mul2tip_title = 'Tip'
 mul2tip_text = '2 x 10101 = 10101`0`\n2 x 11111 = 11111`0`\n2 x 10001 = 10001`0`'
 mul3tip_title = 'Tip'
 mul3tip_text = '3A = A + 2A'
+
+-------- Shifter Campaign
+
+shifter_name = 'Bit Slide'
+shifter_desc = 'Shift and rotate bits.'
+
+--- Level 01: Right Shift by 1
+
+shift1_name = 'Logic A >> 1 (4bits)'
+shift1_desc = [[
+Shift (Logic Shift) input bits `A` (4bits)  to the right by 1 position.
+]]
+
+logic_right_shift_title = 'Logic Right Shift'
+logic_right_shift_text = [[
+In logic right shifts, the new bits in the left are replaced by 0's.
+For example:
+- `1111` >> 1 = `0111`
+- `1011` >> 1 = `0101`
+- `0000` >> 1 = `0000`
+Or in general:
+- `abcd` >> 1 = `0abc`
+]]
+
+--- Level 02: Rotate right by 1
+
+shift2_name = 'Rotate A >> 1 (4bits)'
+shift2_desc = [[
+Rotate input bits `A` (4bits)  to the right by 1 position.
+]]
+
+rotate_shift_title = 'Bit Rotation'
+rotate_shift_text = [[
+In bit rotation we keep the exact same bits but just rotate their positions.
+Example:
+- `1111` >> 1 = `1111`
+- `1011` >> 1 = `1101`
+- `0000` >> 1 = `0000`
+Or in general:
+- `abcd` >> 1 = `dabc`
+]]
+
+--- Level 03: Arithmetic right shift by 1
+ashift1_name = 'Arithmetic A >> 1 (4bits signed)'
+ashift1_desc = [[
+Shift (Arithmetic Shift) input bits `A` (4bits `signed`) to the right by 1 position.
+]]
+
+arithmetic_right_shift_title = 'Shift Right Artithmetic'
+arithmetic_right_shift_text = [[
+In arithmetic shift right, we need to interpret the bits as a signed integer, and the rotated version should keep it's signal. So if we shift -4, we want to achieve -2. (as a regular division would do)
+Example:
+- `0100` >> 1 = `0010` (4 => 2)
+- `1100` >> 1 = `1110` (-4 => -2)
+- `1111` >> 1 = `1111` (-1 => -1)
+- `0000` >> 1 = `0000`
+Note that -1 doesnt change.
+Or in general:
+- `abcd` >> 1 = `aabc`
+]]
+
+--- Level 04: Logic Barrel
+barrel1_name = 'Logic A >> n (4bits)'
+barrel1_desc = [[
+Shift (Logic Shift) input bits `A` (4bits) to the right by `n` positions, where `n` is an unsigned 2-bit integer.
+]]
+
+
+--- Level 05: Rotate Barrel
+barrel2_name = 'Rotate A >> n (4bits)'
+barrel2_desc = [[
+Rotate input bits `A` (4bits) to the right by `n` positions, where `n` is an unsigned 2-bit integer.
+]]
+
+--- Level 06: Arithmetic Barrel
+abarrel1_name = 'Arithmetic A >> n (4bits signed)'
+abarrel1_desc = [[
+Shift (Arithmetic Shift) input bits `A` (4bits signed) to the right by `n` positions, where `n` is an unsigned 2-bit integer.
+]]
+
+--- Level 07: Left Logic Shift
+lbarrel1_name = 'Logic A << n (4bits)'
+lbarrel1_desc = [[
+Shift (Logic Shift) input bits `A` (4bits) to the `left` by `n` positions, where `n` is an unsigned 2-bit integer.
+]]
+
+--- Level 08: Left Logic Shift with carry out
+clbarrel1_name = 'Logic A << n (4bits -> 7bits)'
+clbarrel1_desc = [[
+Shift (Logic Shift) input bits `A` (4bits) to the `left` by `n` positions with carry out (ie output size 4+3=7), where `n` is an unsigned 2-bit integer.
+
+Example: `1111` << 2 = `0111100`. Useful for "multiplying" by power of two without missing bits.
+]]
+
+
+--- Level 09: Funnel shifter
+funnel_shifter_name = 'Funnel Shifter (4+4bits)'
+funnel_shifter_desc = [[
+Given 2 4-bit number `a` and `b`, your task is to extract the 4-bit number from the concatned 8-bit number a++b starting at position `n` (where n=0,1,2,3 or 4).
+
+Example: a=`abcd` b=`efgh` then a++b = `abcdefgh` and n=1 gives extracted=`defg`.
+
+Or: result = (A ++ B) >> n, take the LOWER 4 bits.
+]]
+
+
+--- Level 10: 32-bit Barrel shifter
+barrel32_name = 'RISC-V Barrel Shifter (32-bit)'
+barrel32_desc = [[
+Create a 32-bit barrel shifter that takes as input an integer `a` and computes a `n`-bits shift, with `n`=0,31 (5 bits). It should perform one of 3 operations:
+
+- sll=1: Shift Left Logical
+- srl=1: Shift Right Logical
+- sra=1: Shift Right Arithmetic
+
+Returns the shifted result `y`.
+
+]]
+

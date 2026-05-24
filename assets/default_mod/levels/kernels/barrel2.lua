@@ -4,7 +4,7 @@ easyAddTest({
   ports = {
     {name="a", width=4, input=false},
     {name="shift", width=2, input=false},
-    {name="shifted_a", width=4, input=true},
+    {name="shifted_a", width=4, input=true, fmt=FormatBinary},
   },
   cases = {
     {a=bits("0000"), shift=bits("00"), shifted_a=bits("0000"), name="a=0"},

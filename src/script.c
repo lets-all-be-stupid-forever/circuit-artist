@@ -78,6 +78,18 @@ static struct {
     {"amul3", "../campaign_solutions/05_aplusb/amul3.png"},
     {"amulb", "../campaign_solutions/05_aplusb/amulb.png"},
 
+    /* Campaign 6 : Barrel */
+    {"shift1", "../campaign_solutions/06_shifter/shift1.png"},
+    {"shift2", "../campaign_solutions/06_shifter/shift2.png"},
+    {"ashift1", "../campaign_solutions/06_shifter/ashift1.png"},
+    {"barrel1", "../campaign_solutions/06_shifter/barrel1.png"},
+    {"barrel2", "../campaign_solutions/06_shifter/barrel2.png"},
+    {"abarrel1", "../campaign_solutions/06_shifter/abarrel1.png"},
+    {"lbarrel1", "../campaign_solutions/06_shifter/lbarrel1.png"},
+    {"clbarrel1", "../campaign_solutions/06_shifter/clbarrel1.png"},
+    {"funnel_shifter", "../campaign_solutions/06_shifter/funnel_shifter.png"},
+    {"barrel32", "../campaign_solutions/06_shifter/barrel32.png"},
+
     {NULL, NULL}};
 
 enum {
