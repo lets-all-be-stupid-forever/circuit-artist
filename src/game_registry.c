@@ -49,7 +49,7 @@ static int lua_AddGroup(lua_State* L) {
   }
   group->id = clone_string(lua_tostring(L, -1));
   lua_pop(L, 1);
-  if (get_group_by_id(r, group->id)) {
+  if (get_group_by_id(group->id)) {
     return luaL_error(L, "Group with id '%s' already exists", group->id);
   }
 
@@ -91,7 +91,7 @@ static int lua_AddGroup(lua_State* L) {
     for (int i = 1; i <= ndeps; i++) {
       lua_rawgeti(L, -1, i);
       const char* id = lua_tostring(L, -1);
-      LevelGroup* group_dep = get_group_by_id(r, id);
+      LevelGroup* group_dep = get_group_by_id(id);
       arrput(group->deps, group_dep);
       lua_pop(L, 1);
     }
@@ -137,7 +137,7 @@ static int lua_AddLevel(lua_State* L) {
   /* Group */
   lua_getfield(L, 1, "group");
   const char* group_id = lua_isstring(L, -1) ? lua_tostring(L, -1) : "custom";
-  LevelGroup* group = get_group_by_id(r, group_id);
+  LevelGroup* group = get_group_by_id(group_id);
   if (!group) {
     return luaL_error(L, TextFormat("There's no group with id: %s", group_id));
   }
@@ -155,7 +155,7 @@ static int lua_AddLevel(lua_State* L) {
   }
   ldef->id = clone_string(TextFormat("campaign:%s", lua_tostring(L, -1)));
   lua_pop(L, 1);
-  if (get_level_by_id(r, ldef->id)) {
+  if (get_level_by_id(ldef->id)) {
     return luaL_error(L, "Level with id '%s' already exists", ldef->id);
   }
 
@@ -180,7 +180,7 @@ static int lua_AddLevel(lua_State* L) {
       lua_rawgeti(L, -1, i);
       const char* id = lua_tostring(L, -1);
       assert(id);
-      LevelDef* ldef_dep = get_level_by_id(r, TextFormat("campaign:%s", id));
+      LevelDef* ldef_dep = get_level_by_id(TextFormat("campaign:%s", id));
       arrput(ldef->deps, ldef_dep);
       lua_pop(L, 1);
     }
@@ -336,10 +336,10 @@ static Mod* init_mod_from_folder(GameRegistry* r, const char* mod_path) {
   return mod;
 }
 
-LevelDef* get_level_by_id(GameRegistry* r, const char* level_id) {
-  int i = shgeti(r->levels, level_id);
+LevelDef* get_level_by_id(const char* level_id) {
+  int i = shgeti(_r->levels, level_id);
   if (i == -1) return NULL;
-  return r->levels[i].value;
+  return _r->levels[i].value;
 }
 
 static int find_topic_by_id(GameRegistry* r, const char* topic_id) {
@@ -350,6 +350,23 @@ static int find_topic_by_id(GameRegistry* r, const char* topic_id) {
     }
   }
   return -1;
+}
+
+static void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
+                                        const char* name,
+                                        const char* icon_path) {
+  assert(FileExists(icon_path));
+  int idx = find_topic_by_id(r, topic_id);
+  if (idx != -1) {
+    // TODO Handle this error properly
+    abort();
+  }
+
+  TutorialTopic topic = {0};
+  topic.id = clone_string(topic_id);
+  topic.name = clone_string(name);
+  topic.icon = create_sprite(LoadTexture(icon_path));
+  arrput(r->topics, topic);
 }
 
 static int lua_AddWikiTopic(lua_State* L) {
@@ -377,6 +394,22 @@ static int lua_AddWikiTopic(lua_State* L) {
   return 0;
 }
 
+static void registry_add_tutorial_item(GameRegistry* r, const char* topic_id,
+                                       const char* item_id, const char* name,
+                                       const char* desc, sprite_t* sprites,
+                                       const char* icon_path) {
+  assert(FileExists(icon_path));
+  int idx = find_topic_by_id(r, topic_id);
+  TutorialTopic* topic = &r->topics[idx];
+  TutorialItem item = {0};
+  item.icon = create_sprite(LoadTexture(icon_path));
+  item.desc = clone_string(desc);
+  item.desc_imgs = sprites;
+  item.id = clone_string(item_id);
+  item.name = clone_string(name);
+  arrput(topic->items, item);
+}
+
 static int lua_AddWikiItem(lua_State* L) {
   GameRegistry* r = _load_ctx.registry;
   const char* root = _load_ctx.mod->root;
@@ -386,7 +419,7 @@ static int lua_AddWikiItem(lua_State* L) {
   const char* topic_id = luaL_checkstring(L, -1);
   lua_getfield(L, 1, "id");
   const char* id = luaL_checkstring(L, -1);
-  if (find_wiki_from_id(r, id)) {
+  if (find_wiki_from_id(id)) {
     return luaL_error(L, "Wiki item with id '%s' already exists", id);
   }
   lua_getfield(L, 1, "name");
@@ -427,14 +460,8 @@ static GameRegistry* create_game_registry() {
   return r;
 }
 
-void init_game_registry() {
-  _r = create_game_registry();
-  init_mods(_r);
-  load_progress();
-}
-
-LevelGroup* get_group_by_id(GameRegistry* r, const char* group_id) {
-  return shget(r->groups, group_id);
+LevelGroup* get_group_by_id(const char* group_id) {
+  return shget(_r->groups, group_id);
 }
 
 #ifdef WITH_STEAM
@@ -608,45 +635,13 @@ void load_progress() {
   on_always_on_top_change();
 }
 
-void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
-                                 const char* name, const char* icon_path) {
-  assert(FileExists(icon_path));
-  int idx = find_topic_by_id(r, topic_id);
-  if (idx != -1) {
-    // TODO Handle this error properly
-    abort();
-  }
-
-  TutorialTopic topic = {0};
-  topic.id = clone_string(topic_id);
-  topic.name = clone_string(name);
-  topic.icon = create_sprite(LoadTexture(icon_path));
-  arrput(r->topics, topic);
-}
-
-void registry_add_tutorial_item(GameRegistry* r, const char* topic_id,
-                                const char* item_id, const char* name,
-                                const char* desc, sprite_t* sprites,
-                                const char* icon_path) {
-  assert(FileExists(icon_path));
-  int idx = find_topic_by_id(r, topic_id);
-  TutorialTopic* topic = &r->topics[idx];
-  TutorialItem item = {0};
-  item.icon = create_sprite(LoadTexture(icon_path));
-  item.desc = clone_string(desc);
-  item.desc_imgs = sprites;
-  item.id = clone_string(item_id);
-  item.name = clone_string(name);
-  arrput(topic->items, item);
-}
-
-TutorialItem* find_wiki_from_id(GameRegistry* r, const char* item_id) {
-  int nt = arrlen(r->topics);
+TutorialItem* find_wiki_from_id(const char* item_id) {
+  int nt = arrlen(_r->topics);
   for (int it = 0; it < nt; it++) {
-    int ni = arrlen(r->topics[it].items);
+    int ni = arrlen(_r->topics[it].items);
     for (int ii = 0; ii < ni; ii++) {
-      TutorialItem* item = &r->topics[it].items[ii];
-      if (strcmp(r->topics[it].items[ii].id, item_id) == 0) {
+      TutorialItem* item = &_r->topics[it].items[ii];
+      if (strcmp(_r->topics[it].items[ii].id, item_id) == 0) {
         return item;
       }
     }
@@ -750,11 +745,17 @@ static void init_local_mods(GameRegistry* r) {
 /*
  * Loads the mods one by one.
  */
-void init_mods(GameRegistry* r) {
+static void init_mods(GameRegistry* r) {
   init_default_mod(r);
   register_custom_levels(r);
   //  init_local_mods(r);
   blueprint_store_init(&r->store);
+}
+
+void init_game_registry() {
+  _r = create_game_registry();
+  init_mods(_r);
+  load_progress();
 }
 
 u64 extract_item_from_id(const char* id) {
@@ -783,9 +784,8 @@ CustomLevelDef* find_steam_level(GameRegistry* r, u64 steam_id) {
   return NULL;
 }
 
-void add_steam_level_from_folder(GameRegistry* r, const char* folder,
-                                 u64 steam_id) {
-  CustomLevelDef* l = find_steam_level(r, steam_id);
+void add_steam_level_from_folder(const char* folder, u64 steam_id) {
+  CustomLevelDef* l = find_steam_level(_r, steam_id);
   if (l) {
     // TODO: Update existing level
     l->unsubscribed = false;
@@ -800,7 +800,7 @@ void add_steam_level_from_folder(GameRegistry* r, const char* folder,
   load_custom_level(folder, id, ldef);
   ldef->type = CUSTOM_LEVEL_STEAM;
   ldef->steam_author = clone_string(meta.author_name);
-  arrput(r->workshop_custom_levels, ldef);
+  arrput(_r->workshop_custom_levels, ldef);
   unload_steam_meta(&meta);
 }
 
@@ -819,29 +819,29 @@ bool folder_is_level(const char* folder) {
   return ok;
 }
 
-CustomLevelDef* find_custom_level_by_id(GameRegistry* r, const char* id) {
+CustomLevelDef* find_custom_level_by_id(const char* id) {
   if (starts_with(id, "steam:")) {
-    int n = arrlen(r->workshop_custom_levels);
-    for (int i = 0; i < arrlen(r->workshop_custom_levels); i++) {
-      CustomLevelDef* l = r->workshop_custom_levels[i];
+    int n = arrlen(_r->workshop_custom_levels);
+    for (int i = 0; i < arrlen(_r->workshop_custom_levels); i++) {
+      CustomLevelDef* l = _r->workshop_custom_levels[i];
       if (strcmp(id, l->id) == 0) {
         return l;
       }
     }
   }
   if (starts_with(id, "local:")) {
-    int n = arrlen(r->local_custom_levels);
-    for (int i = 0; i < arrlen(r->local_custom_levels); i++) {
-      CustomLevelDef* l = r->local_custom_levels[i];
+    int n = arrlen(_r->local_custom_levels);
+    for (int i = 0; i < arrlen(_r->local_custom_levels); i++) {
+      CustomLevelDef* l = _r->local_custom_levels[i];
       if (strcmp(id, l->id) == 0) {
         return l;
       }
     }
   }
   if (starts_with(id, "official:")) {
-    int n = arrlen(r->official_custom_levels);
-    for (int i = 0; i < arrlen(r->official_custom_levels); i++) {
-      CustomLevelDef* l = r->official_custom_levels[i];
+    int n = arrlen(_r->official_custom_levels);
+    for (int i = 0; i < arrlen(_r->official_custom_levels); i++) {
+      CustomLevelDef* l = _r->official_custom_levels[i];
       if (strcmp(id, l->id) == 0) {
         return l;
       }
@@ -852,11 +852,11 @@ CustomLevelDef* find_custom_level_by_id(GameRegistry* r, const char* id) {
 
 const char* get_level_name_by_id(const char* id) {
   if (starts_with(id, "campaign:")) {
-    LevelDef* lvl = get_level_by_id(_r, id);
+    LevelDef* lvl = get_level_by_id(id);
     if (!lvl) return "(unknown)";
     return lvl->name;
   } else {
-    CustomLevelDef* lvl = find_custom_level_by_id(_r, id);
+    CustomLevelDef* lvl = find_custom_level_by_id(id);
     if (!lvl) return "(unknown)";
     return lvl->name;
   }

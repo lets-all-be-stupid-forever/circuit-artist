@@ -340,7 +340,7 @@ void win_level_draw() {
         btn_draw_legend(&C.btn_msg[i], lvl->extra_content[i].title);
       }
       if (item->wiki) {
-        TutorialItem* wiki_item = find_wiki_from_id(C.registry, item->wiki);
+        TutorialItem* wiki_item = find_wiki_from_id(item->wiki);
         if (wiki_item) {
           btn_draw_legend(&C.btn_msg[i], wiki_item->name);
         }

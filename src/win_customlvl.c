@@ -426,7 +426,7 @@ void win_customlvl_draw() {
 }
 
 void notify_installed_steam_level(const char* folder, u64 item) {
-  add_steam_level_from_folder(C.r, folder, item);
+  add_steam_level_from_folder(folder, item);
 }
 
 CustomLevelDef* find_sandbox_custom_level() {

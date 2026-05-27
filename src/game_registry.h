@@ -134,28 +134,18 @@ typedef struct GameRegistry {
 
 void init_game_registry();
 GameRegistry* getreg();
-
-void init_mods(GameRegistry* r);
-
-LevelDef* get_level_by_id(GameRegistry* r, const char* level_id);
-LevelGroup* get_group_by_id(GameRegistry* r, const char* group_id);
+LevelDef* get_level_by_id(const char* level_id);
+LevelGroup* get_group_by_id(const char* group_id);
 void dispatch_level_complete(LevelDef* ldef);
 void save_progress();
 void load_progress();
-void registry_add_tutorial_topic(GameRegistry* r, const char* topic_id,
-                                 const char* name, const char* icon_file);
-void registry_add_tutorial_item(GameRegistry* r, const char* topic_id,
-                                const char* item_id, const char* name,
-                                const char* desc, sprite_t* sprites,
-                                const char* icon_file);
-void add_steam_level_from_folder(GameRegistry* r, const char* folder,
-                                 u64 steam_id);
-TutorialItem* find_wiki_from_id(GameRegistry* r, const char* item_id);
+void add_steam_level_from_folder(const char* folder, u64 steam_id);
+TutorialItem* find_wiki_from_id(const char* item_id);
 u64 extract_item_from_id(const char* id);
 char* get_custom_levels_folder();
 const char* get_custom_level_kernel_path(CustomLevelDef* ldef);
 bool folder_is_level(const char* folder);
-CustomLevelDef* find_custom_level_by_id(GameRegistry* r, const char* id);
+CustomLevelDef* find_custom_level_by_id(const char* id);
 
 bool is_paint_sound_on();
 bool is_circuit_sound_on();

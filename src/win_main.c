@@ -476,12 +476,12 @@ static void load_campaign_level(LevelDef* ldef) {
 void main_load_by_level_id(const char* id) {
   if (!id) return;
   if (starts_with(id, "campaign:")) {
-    LevelDef* ldef = get_level_by_id(C.r, id);
+    LevelDef* ldef = get_level_by_id(id);
     if (ldef) {
       load_campaign_level(ldef);
     }
   } else {
-    CustomLevelDef* ldef = find_custom_level_by_id(C.r, id);
+    CustomLevelDef* ldef = find_custom_level_by_id(id);
     if (ldef) {
       win_main_load_custom_level(ldef);
     }

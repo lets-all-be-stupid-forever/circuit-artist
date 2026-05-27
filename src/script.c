@@ -144,7 +144,7 @@ void script_update() {
       }
       char txt[200];
       snprintf(txt, sizeof(txt), "campaign:%s", tests[C.cur_level].id);
-      LevelDef* ldef = get_level_by_id(r, txt);
+      LevelDef* ldef = get_level_by_id(txt);
       win_level_set_sel(ldef);
       C.wait = 5;
       C.state++;
