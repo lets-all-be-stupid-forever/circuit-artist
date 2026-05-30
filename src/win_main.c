@@ -1925,3 +1925,5 @@ bool win_main_is_simu_error() {
 }
 
 bool win_main_is_simu_done() { return can_save_as_solution(); }
+
+const char* win_main_get_level_id() { return get_level_id(); }
