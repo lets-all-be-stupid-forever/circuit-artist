@@ -135,6 +135,7 @@ main_blueprint_marked = "Blueprint marked as solution for: %s."
 main_blueprint_linked = "Blueprint linked to level: %s."
 main_blueprint_unlinked = "Image is no longer associated with the blueprint."
 main_untitled = "Untitled"
+main_levelsidebar_leg = "Level Objectives"
 
 ----- About -----
 about_photosensitivity_text = [[

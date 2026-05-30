@@ -17,6 +17,7 @@ typedef struct {
 
 Layout* parse_layout(const char* fname);
 void layout_update_offset(Layout* l);
+void layout_update_offset_region(Layout* l, Rectangle reg);
 Rectangle layout_rect(Layout* l, const char* id);
 Rectangle layout_rectb(Layout* l, const char* id);
 void layout_free(Layout* l);

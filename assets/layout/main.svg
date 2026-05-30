@@ -16,6 +16,7 @@
 <rect id="btn_bucket" x="8" y="212" width="34" height="34" fill="#D9D9D9"/>
 <rect id="btn_picker" x="44" y="212" width="34" height="34" fill="#D9D9D9"/>
 <rect id="btn_extra1" x="8" y="256" width="34" height="34" fill="#D9D9D9"/>
+<rect id="btn_levelsidebar" x="783" y="889" width="34" height="34" fill="#D9D9D9"/>
 <rect id="btn_extra2" x="44" y="256" width="34" height="34" fill="#D9D9D9"/>
 <rect id="btn_extra3" x="8" y="292" width="34" height="34" fill="#D9D9D9"/>
 <rect id="btn_extra4" x="44" y="292" width="34" height="34" fill="#D9D9D9"/>

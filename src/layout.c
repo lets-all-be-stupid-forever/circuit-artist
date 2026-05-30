@@ -17,6 +17,17 @@ Rectangle layout_rect(Layout* l, const char* id) {
   return roff(l->off, layout_rect_raw(l, id));
 }
 
+void layout_update_offset_region(Layout* l, Rectangle reg) {
+  Rectangle win = layout_rect_raw(l, "window");
+  int sw = reg.width;
+  int sh = reg.height;
+  int ww = win.width;
+  int wh = win.height;
+  int x0 = (sw - ww) / 2;
+  int y0 = (sh - wh) / 2;
+  l->off = (Vector2){x0 + reg.x, reg.y + y0};
+}
+
 void layout_update_offset(Layout* l) {
   Rectangle win = layout_rect_raw(l, "window");
   int sw = GetScreenWidth();

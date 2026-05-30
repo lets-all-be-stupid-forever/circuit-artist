@@ -1,0 +1,16 @@
+<svg width="689" height="609" viewBox="0 0 689 609" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="levelsidebar">
+<rect width="689" height="609" fill="white"/>
+<rect id="levelbox" x="20" y="95" width="649" height="452" fill="#D9D9D9"/>
+<rect id="level_title" x="20" y="39" width="649" height="35" fill="#D9D9D9"/>
+<rect id="extra1" x="202" y="559" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra2" x="238" y="559" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra3" x="274" y="559" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra4" x="310" y="559" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra5" x="346" y="559" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra6" x="382" y="559" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra7" x="418" y="559" width="34" height="34" fill="#D9D9D9"/>
+<rect id="extra8" x="454" y="559" width="34" height="34" fill="#D9D9D9"/>
+<rect id="btn_close" x="20" y="559" width="44" height="44" fill="#D9D9D9"/>
+</g>
+</svg>

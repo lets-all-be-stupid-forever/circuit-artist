@@ -2,7 +2,6 @@
 #include "paint.h"
 
 #include <math.h>
-#include "i18n.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -10,6 +9,7 @@
 #include "clipapi.h"
 #include "colors.h"
 #include "font.h"
+#include "i18n.h"
 #include "img.h"
 #include "msg.h"
 #include "rlgl.h"
@@ -600,13 +600,22 @@ void paint_load_image(Paint* ca, Image img) {
 // for identifying mouse and other controls.
 void paint_set_viewport(Paint* ca, RecI viewport) {
   bool need_centering = false;
+  int dw = 0;
+  int dh = 0;
   if (ca->viewport.width == 0) {
     need_centering = true;
+  } else {
+    dw = viewport.width - ca->viewport.width;
+    dh = viewport.height - ca->viewport.height;
   }
+
   ca->viewport = viewport;
   if (hist_get_buf_size(&ca->h).x > 0) {
     if (need_centering) {
       paint_center_camera(ca);
+    } else {
+      ca->cam.off.x += dw / 2;
+      ca->cam.off.y += dh / 2;
     }
     paint_ensure_camera_within_bounds(ca);
   }
