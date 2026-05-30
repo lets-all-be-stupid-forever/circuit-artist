@@ -28,7 +28,6 @@ static struct {
   Layout* layout;
   char* mod_root;
   Rectangle modal;
-  Rectangle group_panel;
   Rectangle buttons;
   Btn btn_option[NUM_BUTTONS];
   Btn btn_choose;
@@ -43,7 +42,6 @@ static struct {
   Rectangle medals[NUM_BUTTONS];
   Textbox tb;
   Textbox tbcamp;
-  Rectangle rcamp;
   SolWidget sol;
   void (*on_select_level)(LevelDef*);
 } C = {0};
@@ -72,7 +70,6 @@ static void update_layout() {
   layout_update_offset(C.layout);
   Layout* l = C.layout;
   C.modal = layout_rect(l, "window");
-  C.rcamp = layout_rectb(l, "rcamp");
 
   for (int i = 0; i < NUM_LEVELS; i++) {
     C.btn_option[i].hitbox = layout_rectb(l, TextFormat("level_%d", i + 1));
@@ -167,6 +164,7 @@ void win_level_accept() {
 
 void win_level_update() {
   update_layout();
+  C.btn_choose.primary = true;
   if (btn_update(&C.btn_camp)) {
     win_campaign_open(C.selected_level->group);
     return;
@@ -226,89 +224,38 @@ void win_level_update() {
   sol_widget_update(&C.sol);
 }
 
-void win_level_draw() {
-  LevelDef* lvl = C.selected_level;
-  draw_win(C.modal, T.levels_title);
-  textbox_draw(&C.tb);
-  textbox_draw(&C.tbcamp);
+static void draw_campaign_icon() {
+  Texture2D icon = C.selected_group->icon;
+  Rectangle r = C.campicon;
+  Rectangle source = {0, 0, icon.width, icon.height};
+  DrawRectangleRec(r, (Color){0, 0, 0, 150});
 
-  {
-    Texture2D icon = C.selected_group->icon;
-    Rectangle r = C.campicon;
-    Rectangle source = {0, 0, icon.width, icon.height};
-    DrawRectangleRec(r, (Color){0, 0, 0, 150});
+  int s = 2;
+  int fx = (r.x + r.width / 2) - s * source.width / 2;
+  int fy = (r.y + r.height / 2) - s * source.height / 2;
+  int x = r.x;
+  int y = r.y;
+  int w = r.width;
+  int h = r.height;
+  rlPushMatrix();
+  rlTranslatef(fx, fy, 0);
+  rlScalef(s, s, 1);
+  DrawTextureRec(icon, source, (Vector2){0, 0}, CA_WHITE);
+  rlPopMatrix();
+  draw_frame(r);
+}
 
-    int s = 2;
-    int fx = (r.x + r.width / 2) - s * source.width / 2;
-    int fy = (r.y + r.height / 2) - s * source.height / 2;
-    int x = r.x;
-    int y = r.y;
-    int w = r.width;
-    int h = r.height;
-    rlPushMatrix();
-    rlTranslatef(fx, fy, 0);
-    rlScalef(s, s, 1);
-    DrawTextureRec(icon, source, (Vector2){0, 0}, CA_WHITE);
-    rlPopMatrix();
-    draw_frame(r);
-  }
-
-  C.btn_choose.primary = true;
-  btn_draw_text(&C.btn_choose, T.levels_submit);
-  btn_draw_text(&C.btn_close, T.close);
-  btn_draw_text(&C.btn_camp, T.levels_change_campaign);
-
-  {
-    Color c = BLACK;
-    c.a = 150;
-    const char* camp_title_txt = C.selected_level->group->name;
-    const char* level_title_txt = C.selected_level->name;
-    DrawRectangleRec(C.camp_title, c);
-    custom_label_draw_centered(C.camp_title, camp_title_txt, CA_WHITE, BLACK);
-    DrawRectangleRec(C.level_title, c);
-    custom_label_draw_centered(C.level_title, level_title_txt, CA_WHITE, BLACK);
-
-    draw_frame(C.level_title);
-    draw_frame(C.camp_title);
-  }
-
-  Texture2D sprites = ui_get_sprites();
-  int bscale = ui_get_scale();
-  // btn_draw_icon(&C.btn_msg[1], bscale, sprites, rect_book);
-
-  int j = 0;
-  int nextra = arrlen(lvl->extra_content);
-  for (int i = 0; i < nextra; i++) {
-    LevelDefExtraItem* item = &lvl->extra_content[i];
-    if (item->text) {
-      btn_draw_icon(&C.btn_msg[j++], rect_bulbon);
-    }
-    if (item->wiki) {
-      btn_draw_icon(&C.btn_msg[j++], rect_book);
-    }
-    if (item->tex.width > 0) {
-      btn_draw_icon(&C.btn_msg[j++], rect_img);
-    }
-  }
-
-  for (int i = j; i < 8; i++) {
-    Color c = BLACK;
-    c.a = 150;
-    DrawRectangleRec(C.btn_msg[j++].hitbox, c);
-  }
-
-  DrawRectangleRec(C.group_panel, GRAY);
+static void draw_campaign_level_list() {
   GameRegistry* r = C.registry;
-
   LevelDef** levels = C.selected_group->levels;
   int nl = arrlen(levels);
+  draw_frame(C.r_options);
   for (int i = 0; i < 11; i++) {
     Color c = BLACK;
     c.a = 150;
     DrawRectangleRec(C.btn_option[i].hitbox, c);
     DrawRectangleRec(C.medals[i], c);
   }
-
   int nc = arrlen(r->group_order);
   for (int i = 0; i < NUM_BUTTONS; i++) {
     if (i < nl) {
@@ -325,15 +272,71 @@ void win_level_draw() {
       }
     }
   }
+}
 
-  draw_sepv(C.sepv);
-  draw_frame(C.r_options);
-  DrawRectangleRec(C.rcamp, (Color){0, 0, 0, 150});
-  draw_frame(C.rcamp);
+static void draw_campaign_title() {
+  const char* camp_title_txt = C.selected_level->group->name;
+  DrawRectangleRec(C.camp_title, (Color){0, 0, 0, 150});
+  custom_label_draw_centered(C.camp_title, camp_title_txt, CA_WHITE, BLACK);
+  draw_frame(C.camp_title);
+}
+
+static void draw_campaign_side() {
+  draw_campaign_title();
+  draw_campaign_icon();
+  textbox_draw(&C.tbcamp);
+  draw_campaign_level_list();
   sol_widget_draw(&C.sol);
+  btn_draw_text(&C.btn_camp, T.levels_change_campaign);
+}
 
+static void draw_level_title() {
+  const char* level_title_txt = C.selected_level->name;
+  DrawRectangleRec(C.level_title, (Color){0, 0, 0, 150});
+  custom_label_draw_centered(C.level_title, level_title_txt, CA_WHITE, BLACK);
+  draw_frame(C.level_title);
+}
+
+static void draw_level_extra_items() {
+  int j = 0;
+  LevelDef* lvl = C.selected_level;
+  int nextra = arrlen(lvl->extra_content);
+  for (int i = 0; i < nextra; i++) {
+    LevelDefExtraItem* item = &lvl->extra_content[i];
+    if (item->text) {
+      btn_draw_icon(&C.btn_msg[j++], rect_bulbon);
+    }
+    if (item->wiki) {
+      btn_draw_icon(&C.btn_msg[j++], rect_book);
+    }
+    if (item->tex.width > 0) {
+      btn_draw_icon(&C.btn_msg[j++], rect_img);
+    }
+  }
+  for (int i = j; i < 8; i++) {
+    Color c = BLACK;
+    c.a = 150;
+    DrawRectangleRec(C.btn_msg[j++].hitbox, c);
+  }
+}
+
+static void draw_level_side() {
+  draw_level_title();
+  textbox_draw(&C.tb);
+  draw_level_extra_items();
+  btn_draw_text(&C.btn_choose, T.levels_submit);
+  btn_draw_text(&C.btn_close, T.close);
+}
+
+void win_level_draw() {
+  LevelDef* lvl = C.selected_level;
+  draw_win(C.modal, T.levels_title);
+  draw_campaign_side();
+  draw_level_side();
+  draw_sepv(C.sepv);
   if (ui_get_window() == WINDOW_LEVEL) {
     sol_widget_draw_leg(&C.sol);
+    int nextra = arrlen(lvl->extra_content);
     for (int i = 0; i < nextra; i++) {
       LevelDefExtraItem* item = &lvl->extra_content[i];
       if (item->text || item->tex.width > 0) {

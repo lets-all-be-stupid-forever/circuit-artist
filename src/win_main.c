@@ -114,7 +114,6 @@ static struct {
   Image sidepanel_img;
   Texture2D sidepanel_tex;
   bool looping;
-  float base_volume;
 
   int clock_speed;
 
@@ -434,6 +433,7 @@ static void reset_level() {
   C.level_file = NULL;
   C.ldef = NULL;
   C.cldef = NULL;
+  main_new_file();
   level_api_destroy(&C.api);
   reset_kernel_error();
 }
@@ -526,12 +526,26 @@ static void update_viewport() {
   }
 }
 
+static void load_initial_image() {
+  if (false) {
+    Image img = LoadImage("../a.png");
+    paint_load_image(&C.ca, img);
+  } else {
+    if (ui_is_demo()) {
+      Image img = load_image_asset("circuits/help_small.png");
+      paint_load_image(&C.ca, img);
+    } else {
+      Image img = load_image_asset("imgs/tutorial.png");
+      paint_load_image(&C.ca, img);
+    }
+    // paint_new_buffer(&C.ca);
+  }
+}
+
 void win_main_init() {
   srand(time(NULL));
   C.kernel_error = false;
   C.layout = easy_load_layout("main");
-
-  C.base_volume = .2f;
   win_log_init();
   C.clock_speed = 2;
   C.palette[0] = WHITE;
@@ -560,19 +574,6 @@ void win_main_init() {
   C.bottom_size = 3 * 17 * 1 * s - 6 * s;
   paint_init(&C.ca);
   paint_set_color(&C.ca, C.palette[3]);
-  if (false) {
-    Image img = LoadImage("../a.png");
-    paint_load_image(&C.ca, img);
-  } else {
-    if (ui_is_demo()) {
-      Image img = load_image_asset("circuits/help_small.png");
-      paint_load_image(&C.ca, img);
-    } else {
-      Image img = load_image_asset("imgs/tutorial.png");
-      paint_load_image(&C.ca, img);
-    }
-    // paint_new_buffer(&C.ca);
-  }
   C.sidepanel_img = gen_image_simple(200, 800);
   C.sidepanel_tex = LoadTextureFromImage(C.sidepanel_img);
   update_viewport();
@@ -583,6 +584,7 @@ void win_main_init() {
   win_main_load_custom_level(find_sandbox_custom_level());
   discord_init();
   discord_refresh();
+  load_initial_image();
 }
 
 static void simu_play_sounds() {
@@ -1225,6 +1227,14 @@ bool win_main_custom_level_open_file() {
 
 void win_main_open_level() { win_level_open(C.ldef, on_select_level); }
 
+static void on_btn_campaign_level_click() {
+  win_main_ask_for_save_and_proceed(win_main_open_level);
+}
+
+static void on_btn_custom_level_click() {
+  win_main_ask_for_save_and_proceed(custom_level_open_win);
+}
+
 void main_update_hud() {
   Paint* ca = &C.ca;
   if (btn_update(&C.btn_new)) on_new_click();
@@ -1269,8 +1279,8 @@ void main_update_hud() {
   if (C.btn_rewind.pressed) C.rewind_pressed = true;
   if (C.btn_forward.pressed) C.forward_pressed = true;
 
-  if (btn_update(&C.btn_level_campaign)) win_main_open_level();
-  if (btn_update(&C.btn_level_custom)) custom_level_open_win();
+  if (btn_update(&C.btn_level_campaign)) on_btn_campaign_level_click();
+  if (btn_update(&C.btn_level_custom)) on_btn_custom_level_click();
   if (btn_update(&C.btn_wiki)) win_wiki_open();
   if (btn_update(&C.btn_blueprint)) win_blueprint_open();
 
