@@ -433,7 +433,6 @@ static void reset_level() {
   C.level_file = NULL;
   C.ldef = NULL;
   C.cldef = NULL;
-  main_new_file();
   level_api_destroy(&C.api);
   reset_kernel_error();
 }
@@ -1227,13 +1226,9 @@ bool win_main_custom_level_open_file() {
 
 void win_main_open_level() { win_level_open(C.ldef, on_select_level); }
 
-static void on_btn_campaign_level_click() {
-  win_main_ask_for_save_and_proceed(win_main_open_level);
-}
+static void on_btn_campaign_level_click() { win_main_open_level(); }
 
-static void on_btn_custom_level_click() {
-  win_main_ask_for_save_and_proceed(custom_level_open_win);
-}
+static void on_btn_custom_level_click() { custom_level_open_win(); }
 
 void main_update_hud() {
   Paint* ca = &C.ca;
