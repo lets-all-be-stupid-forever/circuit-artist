@@ -34,7 +34,7 @@ static struct {
   Btn btn_choose;
   Btn btn_close;
   int sel;
-  CustomLevelDef** levels;
+  LevelDef** levels;
 
   // Label lab_name;
   Label lab_author;
@@ -81,7 +81,7 @@ static void update_layout() {
   sol_widget_update_layout(&C.sol, l);
 }
 
-static CustomLevelDef** get_page_original_levels() {
+static LevelDef** get_page_original_levels() {
   switch (C.page) {
     case PAGE_OFFICIAL:
       return C.r->official_custom_levels;
@@ -92,35 +92,35 @@ static CustomLevelDef** get_page_original_levels() {
   }
 }
 
-static CustomLevelDef* get_level(int s) { return C.levels[s]; }
+static LevelDef* get_level(int s) { return C.levels[s]; }
 
-static CustomLevelDef* get_selected_level() {
+static LevelDef* get_selected_level() {
   if (C.sel == -1) return NULL;
   return get_level(C.sel);
 }
 
 static int compare_level(const void* a, const void* b) {
-  const CustomLevelDef* const* la = a;
-  const CustomLevelDef* const* lb = b;
+  const LevelDef* const* la = a;
+  const LevelDef* const* lb = b;
   return strcmp((*la)->name, (*lb)->name);
 }
 
 static void rebuild_listbox_items() {
   C.sel = -1;
   arrsetlen(C.levels, 0);
-  CustomLevelDef** orig_levels = get_page_original_levels();
+  LevelDef** orig_levels = get_page_original_levels();
   int no = arrlen(orig_levels);
   for (int i = 0; i < no; i++) {
-    CustomLevelDef* l = orig_levels[i];
+    LevelDef* l = orig_levels[i];
     if (l->unsubscribed) continue;
     arrput(C.levels, l);
   }
   int n = arrlen(C.levels);
   /* Sorts the levels by name*/
-  qsort(C.levels, n, sizeof(CustomLevelDef*), compare_level);
+  qsort(C.levels, n, sizeof(LevelDef*), compare_level);
 
   listbox_clear(&C.lb);
-  // CustomLevelDef* levels = get_page_levels();
+  // LevelDef* levels = get_page_levels();
   for (int i = 0; i < n; i++) {
     listbox_add_row(&C.lb, C.levels[i]->name);
   }
@@ -133,8 +133,8 @@ static void set_sel(int s) {
     // label_set_text(&C.lab_name, "");
     sol_widget_set_level_id(&C.sol, NULL);
   } else {
-    CustomLevelDef* ldef = get_level(s);
-    textbox_set_content(&C.tb, ldef->desc, ldef->desc_imgs);
+    LevelDef* ldef = get_level(s);
+    textbox_set_content(&C.tb, ldef->description, ldef->sprites);
     // label_set_text(&C.lab_name, ldef->name);
     label_set_text(&C.lab_author, "");
     sol_widget_set_level_id(&C.sol, ldef->id);
@@ -167,20 +167,17 @@ void win_customlvl_init() {
   set_page(0);
 }
 
-static void load_page_for_level(CustomLevelDef* ldef) {
-  switch (ldef->type) {
-    case CUSTOM_LEVEL_LOCAL:
-      set_page(PAGE_LOCAL);
-      break;
-    case CUSTOM_LEVEL_STEAM:
-      set_page(PAGE_WORKSHOP);
-      break;
-    case CUSTOM_LEVEL_OFFICIAL:
-      set_page(PAGE_OFFICIAL);
-      break;
-    case CUSTOM_LEVEL_UNK:
-      abort();
+static void load_page_for_level(LevelDef* ldef) {
+  if (ldef->is_custom_local) {
+    set_page(PAGE_LOCAL);
+  } else if (ldef->is_custom_steam) {
+    set_page(PAGE_WORKSHOP);
+  } else if (ldef->is_custom_official) {
+    set_page(PAGE_OFFICIAL);
+  } else {
+    set_page(PAGE_OFFICIAL);
   }
+
   int n = arrlen(C.levels);
   for (int i = 0; i < n; i++) {
     if (strcmp(C.levels[i]->id, ldef->id) == 0) {
@@ -195,15 +192,12 @@ static void load_page_for_level(CustomLevelDef* ldef) {
   }
 }
 
-void win_customlvl_open(CustomLevelDef* ldef) {
+void win_customlvl_open(LevelDef* ldef) {
   ui_winpush(WINDOW_CUSTOM_LEVEL);
   update_layout();
-  if (!ldef) {
-    set_page(0);
-  } else {
-    load_page_for_level(ldef);
-  }
+  load_page_for_level(ldef);
 }
+
 static void update_page_buttons() {
   C.btn_page_workshop.disabled = !is_steam_on();
   if (btn_update(&C.btn_wiki)) {
@@ -257,7 +251,7 @@ static u64 extract_item_from_id(const char* id) {
 #endif
 
 static void publish_level() {
-  CustomLevelDef* lvl = get_selected_level();
+  LevelDef* lvl = get_selected_level();
   char* thumb_path = get_asset_path("imgs/default_level_thumbnail.png");
   char* thumb_path_abs = abs_path(thumb_path);
   free(thumb_path);
@@ -269,7 +263,7 @@ static void publish_level() {
   p.tags = (const char**)tags;
   p.folder = folder;
   p.default_title = lvl->name ? lvl->name : "My Level";
-  p.default_desc = lvl->desc ? lvl->desc : "";
+  p.default_desc = lvl->description ? lvl->description : "";
   p.default_thumbnail_path = thumb_path_abs;
 
   win_pubform_open(p);
@@ -279,7 +273,7 @@ static void publish_level() {
 
 static void on_confirm_unsubscribe(int r) {
   if (r != 0) return;
-  CustomLevelDef* lvl = get_selected_level();
+  LevelDef* lvl = get_selected_level();
   u64 item = extract_item_from_id(lvl->id);
   steam_unsubscribe_item(item);
   lvl->unsubscribed = true;
@@ -298,7 +292,7 @@ static void update_level_buttons() {
   }
 
   if (btn_update(&C.btn_unsubscribe)) {
-    CustomLevelDef* lvl = get_selected_level();
+    LevelDef* lvl = get_selected_level();
     dialog_open(TextFormat(T.customlvl_unsubscribe_confirm, lvl->name),
                 T.unsubscribe, T.cancel, NULL, on_confirm_unsubscribe);
   }
@@ -307,7 +301,7 @@ static void update_level_buttons() {
     steam_open_overlay_item(item);
   }
   if (btn_update(&C.btn_level_folder)) {
-    CustomLevelDef* lvl = get_selected_level();
+    LevelDef* lvl = get_selected_level();
     open_file_explorer(lvl->folder);
   }
 }
@@ -321,7 +315,7 @@ void win_customlvl_update() {
   }
   if (btn_update(&C.btn_choose)) {
     ui_winpop();
-    win_main_load_custom_level(get_level(C.sel));
+    win_main_load_level(get_level(C.sel));
     return;
   }
   update_listbox();
@@ -331,21 +325,8 @@ void win_customlvl_update() {
   sol_widget_update(&C.sol);
 }
 
-static const char* get_level_prefix(CustomLevelDef* lvl) {
-  switch (lvl->type) {
-    case CUSTOM_LEVEL_LOCAL:
-      return T.customlvl_prefix_local;
-    case CUSTOM_LEVEL_STEAM:
-      return T.customlvl_prefix_workshop;
-    case CUSTOM_LEVEL_OFFICIAL:
-      return T.customlvl_prefix_official;
-    case CUSTOM_LEVEL_UNK:
-      return T.customlvl_prefix_unknown;
-  }
-}
-
 static const char* make_win_title() {
-  CustomLevelDef* lvl = get_selected_level();
+  LevelDef* lvl = get_selected_level();
   if (!lvl) return T.customlvl_title;
   return lvl->name;
 }
@@ -401,11 +382,11 @@ void win_customlvl_draw() {
 
     int hit = C.lb.row_hit;
     if (hit >= 0) {
-      // CustomLevelDef* lvls =
+      // LevelDef* lvls =
       Btn b = {0};
       b.hover = true;
       b.hitbox = C.lb.rows[hit].hitbox_g;
-      CustomLevelDef* ldef = get_level(hit);
+      LevelDef* ldef = get_level(hit);
       if (ldef->steam_author) {
         /* shows steam author on hover for steam items*/
         btn_draw_legend(&b, TextFormat(T.by_author, ldef->steam_author));
@@ -418,10 +399,10 @@ void notify_installed_steam_level(const char* folder, u64 item) {
   add_steam_level_from_folder(folder, item);
 }
 
-CustomLevelDef* find_sandbox_custom_level() {
+LevelDef* find_sandbox_custom_level() {
   int n = arrlen(C.r->official_custom_levels);
   for (int i = 0; i < n; i++) {
-    CustomLevelDef* l = C.r->official_custom_levels[i];
+    LevelDef* l = C.r->official_custom_levels[i];
     if (strcmp(l->id, "official:sandbox") == 0) {
       return l;
     }

@@ -141,7 +141,7 @@ void win_level_open(LevelDef* active_level,
   update_layout();
   /* When window opens, it puts the active level as the selected one */
   LevelDef* sel = active_level;
-  if (sel) {
+  if (sel->is_campaign) {
     // sel = C.registry->group_order[0]->levels[0];
     win_level_set_sel(sel);
   } else {

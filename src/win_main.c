@@ -135,7 +135,6 @@ static struct {
   Rectangle energy_rect;
   void (*dialog_callback)();
   LevelDef* ldef;
-  CustomLevelDef* cldef;
   LevelAPI api;
   Blueprint* bp;
 } C = {0};
@@ -258,11 +257,7 @@ void update_layout() {
 
 static void discord_refresh() {
   const char* fname = GetFileName(get_filename());
-  const char* level_name = NULL;
-  if (C.ldef)
-    level_name = C.ldef->name;
-  else if (C.cldef)
-    level_name = C.cldef->name;
+  const char* level_name = C.ldef->name;
 
   if (C.mode == MODE_EDIT) {
     discord_set_editing(fname, level_name, s_last_num_nands);
@@ -303,12 +298,7 @@ static void on_post_image_save(bool saveas) {
     }
     blueprint_update_thumbnail(C.bp, nl, imgs);
     // Now does the linking.
-    const char* id = NULL;
-    if (C.ldef) {
-      id = C.ldef->id;
-    } else if (C.cldef) {
-      id = C.cldef->id;
-    }
+    const char* id = C.ldef->id;
     bool solved = false;
     if (C.mode == MODE_SIMU && C.sim.complete) {
       solved = true;
@@ -429,57 +419,28 @@ static void reset_kernel_error() {
 
 static void reset_level() {
   C.ldef = NULL;
-  C.cldef = NULL;
   level_api_destroy(&C.api);
   main_new_file();
   reset_kernel_error();
 }
 
-void win_main_load_custom_level(CustomLevelDef* ldef) {
-  reset_level();
-  C.cldef = ldef;
-  Status s = lua_level_create_custom(&C.api, ldef);
-  if (!s.ok) {
-    handle_kernel_error(s);
-  } else {
-    msg_add(T.main_custom_level_loaded, 2);
-  }
-  discord_refresh();
-}
-
-static void load_campaign_level(LevelDef* ldef) {
+void win_main_load_level(LevelDef* ldef) {
   reset_level();
   C.ldef = ldef;
-  Status s = lua_level_create_campaign(&C.api, ldef);
+  Status s = lua_level_create(&C.api, ldef);
   if (!s.ok) {
     handle_kernel_error(s);
   } else {
-    msg_add(T.main_campaign_loaded, 2);
+    msg_add(
+        ldef->is_campaign ? T.main_campaign_loaded : T.main_custom_level_loaded,
+        2);
   }
   discord_refresh();
 }
 
-void main_load_by_level_id(const char* id) {
-  if (!id) return;
-  if (starts_with(id, "campaign:")) {
-    LevelDef* ldef = get_level_by_id(id);
-    if (ldef) {
-      load_campaign_level(ldef);
-    }
-  } else {
-    CustomLevelDef* ldef = find_custom_level_by_id(id);
-    if (ldef) {
-      win_main_load_custom_level(ldef);
-    }
-  }
-}
+static void reload_level() { win_main_load_level(C.ldef); }
 
-static void reload_level() {
-  if (C.cldef) win_main_load_custom_level(C.cldef);
-  if (C.ldef) load_campaign_level(C.ldef);
-}
-
-static void on_select_level(LevelDef* ldef) { load_campaign_level(ldef); }
+static void on_select_level(LevelDef* ldef) { win_main_load_level(ldef); }
 
 static void update_viewport() {
   int sw = GetScreenWidth();
@@ -566,7 +527,7 @@ void win_main_init() {
   main_update_widgets();
   C.r = getreg();
   sim_dry_run();
-  win_main_load_custom_level(find_sandbox_custom_level());
+  win_main_load_level(find_sandbox_custom_level());
   discord_init();
   discord_refresh();
   load_initial_image();
@@ -869,22 +830,11 @@ static void main_toggle_simu() {
   }
 }
 
-static const char* get_level_id() {
-  if (C.ldef) {
-    return C.ldef->id;
-  } else if (C.cldef) {
-    return C.cldef->id;
-  } else {
-    return NULL;
-  }
-}
-
 static void add_blueprint_as_solution() {
-  if (!get_level_id()) return;
   win_main_stop_simu();
   Image full = paint_export_buf(&C.ca);
   int nl = hist_get_num_layers(&C.ca.h);
-  const char* lvl_id = get_level_id();
+  const char* lvl_id = C.ldef->id;
   int ibp = blueprint_create_and_open(nl, C.ca.h.buffer, full, lvl_id);
 
   if (ibp >= 0) {
@@ -1190,7 +1140,7 @@ static void toggle_simu_pause() { C.paused = !C.paused; }
 
 static void toggle_sim_show_t() { C.sim_show_t = !C.sim_show_t; }
 
-static void custom_level_open_win() { win_customlvl_open(C.cldef); }
+static void custom_level_open_win() { win_customlvl_open(C.ldef); }
 
 void win_main_open_level() { win_level_open(C.ldef, on_select_level); }
 
@@ -1505,8 +1455,7 @@ static Rectangle rgrow(int p, Rectangle r) {
 }
 
 static bool can_save_as_solution() {
-  bool has_lvl = get_level_id() != NULL;
-  return (C.mode == MODE_SIMU) && C.sim.complete && has_lvl;
+  return (C.mode == MODE_SIMU) && C.sim.complete;
 }
 
 void main_draw_error_message(const char* msg) {
@@ -1623,13 +1572,7 @@ void main_draw_status_bar() {
   snprintf(txt, sizeof(txt), T.main_bar_img, buf_size.x, buf_size.y);
   uifont_draw_texture_outlined(txt, xc, yc, tc, bg);
   yc += step;
-
-  const char* lvl = NULL;
-  if (C.ldef) {
-    lvl = C.ldef->name;
-  } else if (C.cldef) {
-    lvl = C.cldef->name;
-  }
+  const char* lvl = C.ldef->name;
   const char* line = TextFormat(T.main_bar_level, lvl);
   uifont_draw_texture_outlined(line, xc, yc, tc, bg);
   yc += step;
@@ -1811,7 +1754,16 @@ void win_main_load_blueprint(Blueprint* bp) {
   bool keep_filename = bp->steam_id == 0;
   load_image_from_path_ex(blueprint_fname_full(bp), keep_filename);
   if (bp->linked_level_id) {
-    main_load_by_level_id(bp->linked_level_id);
+    LevelDef* ldef = get_level_by_id(bp->linked_level_id);
+    if (!ldef) {
+      msg_add(T.main_cannot_load_notfound, 3);
+    } else {
+      if (ldef->is_campaign && !ldef->can_choose) {
+        msg_add(T.main_cannot_load_unlocked, 3);
+      } else {
+        win_main_load_level(ldef);
+      }
+    }
   }
   win_main_update(); /* To refresh the canva's content */
   if (keep_filename) {

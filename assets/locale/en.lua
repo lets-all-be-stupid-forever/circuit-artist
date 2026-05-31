@@ -8,6 +8,7 @@ ca = "Circuit Artist"
 confirm = "Confirm"
 delete = "Delete"
 unsubscribe = "Unsubscribe"
+unknown = "Unknown"
 
 ----- Main -----
 main_new_leg =  "New Image (CTRL+N)"
@@ -128,13 +129,16 @@ Blueprint `not` associated to image (workshop)
 Saving will create a new image
 ]]
 main_campaign_loaded = "Campaign level loaded"
-main_file_level_loaded = "Custom file level loaded"
 main_custom_level_loaded = "Custom level loaded"
 main_blueprint_saved = "Blueprint Saved."
 main_blueprint_marked = "Blueprint marked as solution for: %s."
 main_blueprint_linked = "Blueprint linked to level: %s."
 main_blueprint_unlinked = "Image is no longer associated with the blueprint."
 main_untitled = "Untitled"
+main_cannot_load_unlocked = "Cannot load unlocked campaign level"
+main_cannot_load_notfound = "Linked level not found"
+
+
 
 ----- About -----
 about_photosensitivity_text = [[
@@ -247,10 +251,6 @@ customlvl_workshop_btn = "WORKSHOP"
 customlvl_subscribed = "Subscribed"
 customlvl_official = "Official"
 customlvl_local = "Local"
-customlvl_prefix_local = "[local]"
-customlvl_prefix_workshop = "[workshop]"
-customlvl_prefix_official = "[official]"
-customlvl_prefix_unknown = "[???]"
 customlvl_unsubscribe_confirm = "Unsubscribe from level \"%s\"?"
 customlvl_wiki_leg = "Open wiki for custom level"
 customlvl_official_leg = "Official custom levels of the game"

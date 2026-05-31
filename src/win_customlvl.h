@@ -7,12 +7,12 @@ extern "C" {
 #endif
 
 void win_customlvl_init();
-void win_customlvl_open(CustomLevelDef* ldef);
+void win_customlvl_open(LevelDef* ldef);
 void win_customlvl_update();
 void win_customlvl_draw();
 
 void notify_installed_steam_level(const char* folder, u64 item);
-CustomLevelDef* find_sandbox_custom_level();
+LevelDef* find_sandbox_custom_level();
 
 #if defined(__cplusplus)
 }

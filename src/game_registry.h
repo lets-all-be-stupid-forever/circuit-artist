@@ -57,20 +57,39 @@ typedef struct {
 } LevelDefExtraItem;
 
 /*
- * Descriptor of a level, defined by a JSON file.
+ * Descriptor of a level.
+ *
+ * Each level id is defined by:
+ *   campaign:<id>      --> Campaign levels
+ *   steam:<id>         --> Workshop subscribed levels
+ *   local:<folder>     --> Levels in custom_levels/ folder.
+ *   ca_custom:<folder> --> for default levels shipped by CA.
  */
 typedef struct LevelDef {
+  /* Common Level stuff */
   char* id;          /* Level ID */
   char* name;        /* Level name */
   char* description; /* Level description text */
   sprite_t* sprites; /* Sprites for description */
   char* kernel;      /* Absolute path to the kernel script */
-  bool complete;     /* wether level was complete (injected from save)*/
-  bool can_choose;   /* If can choose level (computed from dependencies) */
+  char* folder;      /* Root folder */
+
+  /* Level type */
+  bool is_campaign;
+  bool is_custom_local;
+  bool is_custom_official;
+  bool is_custom_steam;
+
+  /* Campaign Level stuff */
+  bool complete;   /* wether level was complete (injected from save)*/
+  bool can_choose; /* If can choose level (computed from dependencies) */
   LevelDefExtraItem* extra_content;
   struct LevelDef** deps; /* dependency levels */
   LevelGroup* group;      /* Level Group  (default=Custom)*/
-  Mod* mod;               /* The mod this level belongs to */
+
+  /* Custom Level stuff */
+  char* steam_author; /* Author name generated during workshop upload */
+  bool unsubscribed;
 } LevelDef;
 
 typedef struct {
@@ -90,30 +109,6 @@ typedef struct {
   LevelGroup* value;
 } LevelGroupDict;
 
-typedef enum {
-  CUSTOM_LEVEL_UNK = 0,
-  CUSTOM_LEVEL_LOCAL,
-  CUSTOM_LEVEL_STEAM,
-  CUSTOM_LEVEL_OFFICIAL,
-} CustomLevelType;
-
-/* A custom level entry.
- * Each level id is defined by:
- *   steam:<id> --> for workshop subscribed levels
- *   local:<folder> --> for levels in custom_levels/ folder.
- *   ca_custom:<folder> --> for default levels shipped by CA.
- **/
-typedef struct {
-  char* id;   /* runtime id of the level */
-  char* name; /* Level name */
-  char* desc; /* Level description */
-  char* folder;
-  char* steam_author;   /* Author name generated during workshop upload */
-  sprite_t* desc_imgs;  /* Level images */
-  CustomLevelType type; /*1 = official, 2=local 3=workshp*/
-  bool unsubscribed;
-} CustomLevelDef;
-
 typedef struct GameRegistry {
   GameConfig cfg;
   TutorialTopic* topics; /* Tutorial stuff */
@@ -125,9 +120,9 @@ typedef struct GameRegistry {
   BlueprintStore store;
 
   /* Custom Levels */
-  CustomLevelDef** workshop_custom_levels;
-  CustomLevelDef** local_custom_levels;
-  CustomLevelDef** official_custom_levels;
+  LevelDef** workshop_custom_levels;
+  LevelDef** local_custom_levels;
+  LevelDef** official_custom_levels;
 } GameRegistry;
 
 void init_game_registry();
@@ -141,9 +136,7 @@ void add_steam_level_from_folder(const char* folder, u64 steam_id);
 TutorialItem* find_wiki_from_id(const char* item_id);
 u64 extract_item_from_id(const char* id);
 char* get_custom_levels_folder();
-const char* get_custom_level_kernel_path(CustomLevelDef* ldef);
 bool folder_is_level(const char* folder);
-CustomLevelDef* find_custom_level_by_id(const char* id);
 
 bool is_paint_sound_on();
 bool is_circuit_sound_on();

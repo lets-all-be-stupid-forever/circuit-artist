@@ -50,7 +50,7 @@ void msg_draw() {
     float dt = m->expire_at - now;
     v2 size = uifont_text_size(m->txt);
     int x = sw / 2 - size.x / 2;
-    int p = 12;
+    int p = 6;
     DrawRectangle(x - p, y - p, size.x + 2 * p, size.y + 2 * p, BLACK);
     DrawRectangle(x - p, y - p, size.x + 2 * p, size.y + 2 * p, r2);
     DrawRectangle(x - p + 1, y - p + 1, size.x + 2 * p - 2, size.y + 2 * p - 2,
@@ -59,7 +59,7 @@ void msg_draw() {
     Color c = r;
     c.a = (t * 0.4 + 0.6) * 255;
     uifont_draw_texture(m->txt, x, y, c);
-    y += dh;
+    y += dh + 2;
     m = m->nxt;
   }
 }

@@ -46,8 +46,6 @@ typedef struct {
 typedef struct {
   PinGroup* pg;   /* Circuit interface */
   LevelDef* ldef; /* Paths */
-  CustomLevelDef* cldef;
-  Mod* mod; /* The mod this level belongs to */
   bool error;
   msgpack_sbuffer sbuf;
   msgpack_packer pk;
@@ -317,8 +315,8 @@ static int lua_Import(lua_State* L) {
   const char* path = luaL_checkstring(L, 1);
   const char* full_path = path;
   char* checked_path = NULL;
-  if (lvl->cldef || lvl->ldef) {
-    const char* folder = lvl->cldef ? lvl->cldef->folder : lvl->ldef->mod->root;
+  if (lvl->ldef) {
+    const char* folder = lvl->ldef->folder;
     checked_path = import_try_resolve(folder, path);
     if (!checked_path) {
       char* shared_root = get_asset_path("lua_shared");
@@ -362,12 +360,8 @@ static int lua_LoadTexture(lua_State* L) {
   const char* path = luaL_checkstring(L, 1);
   const char* full_path = path;
   char* checked_path = NULL;
-  if (lvl->cldef || lvl->ldef) {
-    if (lvl->cldef) {
-      checked_path = checkmodpath(lvl->cldef->folder, path);
-    } else {
-      checked_path = checkmodpath(lvl->ldef->mod->root, path);
-    }
+  if (lvl->ldef) {
+    checked_path = checkmodpath(lvl->ldef->folder, path);
     if (!checked_path) {
       return luaL_error(L, "LoadTexture: invalid path '%s'", path);
     }
@@ -425,7 +419,7 @@ static int lua_notify_level_complete(lua_State* L) {
   // bool should_open = !sim->complete;
   sim_set_complete(sim);
   /* Ldef exists if it's a campaign level */
-  if (lvl->ldef) {
+  if (lvl->ldef->is_campaign) {
     dispatch_level_complete(lvl->ldef);
   }
   return 0;
@@ -1015,19 +1009,7 @@ static void init_level_api(LevelAPI* api) {
   api->destroy = lua_level_destroy;
 }
 
-Status lua_level_create_custom(LevelAPI* api, CustomLevelDef* ldef) {
-  LuaLevel* lvl = calloc(1, sizeof(LuaLevel));
-  init_level_api(api);
-  api->u = lvl;
-  lvl->cldef = ldef;
-  lvl->api = api;
-  char* kernel = clone_string(get_custom_level_kernel_path(ldef));
-  Status ret = lua_load_kernel(lvl, kernel);
-  free(kernel);
-  return ret;
-}
-
-Status lua_level_create_campaign(LevelAPI* api, LevelDef* ldef) {
+Status lua_level_create(LevelAPI* api, LevelDef* ldef) {
   LuaLevel* lvl = calloc(1, sizeof(LuaLevel));
   init_level_api(api);
   api->u = lvl;

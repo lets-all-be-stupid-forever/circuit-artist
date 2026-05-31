@@ -23,6 +23,7 @@ void i18n_register_lua(lua_State* L);
   X(close)                            \
   X(delete)                           \
   X(unsubscribe)                      \
+  X(unknown)                          \
   /* main */                          \
   X(main_new_leg)                     \
   X(main_open_leg)                    \
@@ -102,13 +103,14 @@ void i18n_register_lua(lua_State* L);
   X(main_blueprint_associated)        \
   X(main_blueprint_not_associated)    \
   X(main_campaign_loaded)             \
-  X(main_file_level_loaded)           \
   X(main_custom_level_loaded)         \
   X(main_blueprint_saved)             \
   X(main_blueprint_marked)            \
   X(main_blueprint_linked)            \
   X(main_blueprint_unlinked)          \
   X(main_untitled)                    \
+  X(main_cannot_load_unlocked)        \
+  X(main_cannot_load_notfound)        \
   /* Campaign */                      \
   X(select_campaign)                  \
   /* About */                         \
@@ -191,10 +193,6 @@ void i18n_register_lua(lua_State* L);
   X(customlvl_subscribed)             \
   X(customlvl_official)               \
   X(customlvl_local)                  \
-  X(customlvl_prefix_local)           \
-  X(customlvl_prefix_workshop)        \
-  X(customlvl_prefix_official)        \
-  X(customlvl_prefix_unknown)         \
   X(customlvl_unsubscribe_confirm)    \
   X(customlvl_wiki_leg)               \
   X(customlvl_official_leg)           \
