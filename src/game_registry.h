@@ -42,9 +42,7 @@ typedef struct LevelGroup {
   int nlevels;
   struct GameRegistry* registry;
   Mod* mod;
-  bool allow_inter_mod; /* Allow levels from other mods to be added to this
-                           group */
-  bool complete;        /* A level is complete when all levels are complete */
+  bool complete; /* A level is complete when all levels are complete */
   struct LevelGroup** deps;
   bool can_choose;
   Texture icon;

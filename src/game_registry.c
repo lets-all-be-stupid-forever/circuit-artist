@@ -80,10 +80,6 @@ static int lua_AddGroup(lua_State* L) {
   free(icon_path);
   lua_pop(L, 1);  // Remove icon from stack
 
-  lua_getfield(L, 1, "allow_inter_mod");
-  group->allow_inter_mod = lua_toboolean(L, -1);  // defaults to false if nil
-  lua_pop(L, 1);
-
   lua_getfield(L, 1, "deps");
   if (!lua_isnil(L, -1)) {
     luaL_checktype(L, -1, LUA_TTABLE);
@@ -140,11 +136,6 @@ static int lua_AddLevel(lua_State* L) {
   LevelGroup* group = get_group_by_id(group_id);
   if (!group) {
     return luaL_error(L, TextFormat("There's no group with id: %s", group_id));
-  }
-  if (group->mod != _load_ctx.mod && !group->allow_inter_mod) {
-    return luaL_error(L, TextFormat("Group '%s' belongs to a different mod and "
-                                    "doesn't allow new levels",
-                                    group_id));
   }
   lua_pop(L, 1);  // Remove icon from stack
 
@@ -471,8 +462,6 @@ void steam_stat_sync(GameRegistry* r) {
   bool dirty = false;
   for (int ig = 0; ig < ng; ig++) {
     LevelGroup* g = r->group_order[ig];
-    // Mods that can be extended do not have progression on steam.
-    if (g->allow_inter_mod) continue;
     // Only default mod's campaigns are tracked (for now)
     if (!g->mod->default_mod) continue;
 
