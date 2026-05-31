@@ -10,7 +10,6 @@
 #include "layout.h"
 #include "msg.h"
 #include "paths.h"
-#include "sol_widget.h"
 #include "sound.h"
 #include "stb_ds.h"
 #include "stdio.h"
@@ -34,7 +33,6 @@ static struct {
   Label pages_cap;
   Label staging_cap;
   Label slots_cap;
-  Label solutions_cap;
   Rectangle modal;
   // Blueprint* blueprints[TOTAL_BLUEPRINTS];
   Btn slots[PAGESIZE];
@@ -52,7 +50,6 @@ static struct {
   int apage; /* active page */
   bool editpage;
   BlueprintStore* store;
-  SolWidget sol;
 } C = {0};
 
 static int get_slot_blueprint_idx(int i) {
@@ -87,7 +84,6 @@ static void update_layout() {
   C.btn_steam.hitbox = layout_rectb(l, "btn_steam");
   C.btn_detail.hitbox = layout_rectb(l, "btn_detail");
   C.slots_cap.hitbox = layout_rect(l, "slots_cap");
-  C.solutions_cap.hitbox = layout_rect(l, "solutions_cap");
   C.staging_cap.hitbox = layout_rect(l, "staging_cap");
   C.r_slots = layout_rect(l, "slots");
   C.r_staging = layout_rect(l, "staging");
@@ -97,13 +93,11 @@ static void update_layout() {
   fix_slot_layout(C.slots, C.r_slots.x, C.r_slots.y, rows, cols);
   fix_slot_layout(C.fixed_slots, C.r_staging.x, C.r_staging.y, rows, 2);
   fix_slot_layout(C.page_slots, C.r_pages.x, C.r_pages.y, 1, cols);
-  sol_widget_update_layout(&C.sol, l);
 }
 
 static void update_labels() {
   label_set_text(&C.pages_cap, C.editpage ? T.bp_pages_editing : T.bp_pages);
   label_set_text(&C.slots_cap, T.bp_inventory);
-  label_set_text(&C.solutions_cap, T.bp_solutions);
   label_set_text(&C.staging_cap, T.bp_fixed_slots);
 }
 
@@ -111,13 +105,11 @@ void win_blueprint_init() {
   C.store = &getreg()->store;
   C.layout = easy_load_layout("blueprint");
   update_labels();
-  sol_widget_init(&C.sol);
 }
 
 void win_blueprint_open() {
   ui_winpush(WINDOW_BLUEPRINT);
   update_layout();
-  sol_widget_set_level_id(&C.sol, win_main_get_level_id());
   C.sel = -1;
 }
 
@@ -291,7 +283,6 @@ void win_blueprint_update() {
                      get_page_blueprint_idx(C.store, i));
   }
   update_labels();
-  sol_widget_update(&C.sol);
 }
 
 static void draw_sel_item() {
@@ -351,7 +342,6 @@ void win_blueprint_draw() {
   draw_frame(C.r_staging);
 
   label_draw(&C.slots_cap);
-  label_draw(&C.solutions_cap);
   label_draw(&C.pages_cap);
   label_draw(&C.staging_cap);
 
@@ -418,11 +408,9 @@ void win_blueprint_draw() {
 
   btn_draw_text(&C.btn_close, T.close);
   btn_draw_text(&C.btn_detail, T.bp_details);
-  btn_draw_icon(&C.btn_steam, rect_steam);
-  sol_widget_draw(&C.sol);
+  btn_draw_text(&C.btn_steam, T.bp_browse_workshop);
 
   if (ui_get_window() == WINDOW_BLUEPRINT) {
-    sol_widget_draw_leg(&C.sol);
     btn_draw_legend(&C.btn_editpage, T.bp_edit_page_icons_leg);
     btn_draw_legend(&C.btn_steam, T.bp_workshop_leg);
     btn_draw_legend(&C.btn_detail, T.bp_detail_leg);

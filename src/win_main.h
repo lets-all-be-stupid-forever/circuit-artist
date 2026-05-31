@@ -26,6 +26,5 @@ void win_main_open_level();
 bool win_main_is_simu_error();
 bool win_main_is_simu_done();
 Blueprint* win_main_get_editting_blueprint();
-const char* win_main_get_level_id();
 
 #endif

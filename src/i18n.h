@@ -133,7 +133,6 @@ void i18n_register_lua(lua_State* L);
   X(bp_couldnt_create_inventory_file) \
   X(bp_error_writing_inventory)       \
   X(bp_pages)                         \
-  X(bp_solutions)                     \
   X(bp_inventory)                     \
   X(bp_fixed_slots)                   \
   X(bp_delete_blueprint_confirm)      \
@@ -151,6 +150,7 @@ void i18n_register_lua(lua_State* L);
   X(bp_del_leg)                       \
   X(bp_rename_leg)                    \
   X(bp_details)                       \
+  X(bp_browse_workshop)               \
   X(bp_blueprint_deleted)             \
   X(bp_cant_delete)                   \
   X(bp_detail_leg)                    \
