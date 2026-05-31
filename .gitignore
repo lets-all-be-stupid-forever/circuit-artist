@@ -19,9 +19,5 @@ save_*.json
 blueprints_*.json
 _old
 blueprints/*
-blueprints_v2/*
 compile_commands.json
 .cache
-tags
-local_levels
-temp
