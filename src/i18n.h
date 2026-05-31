@@ -109,7 +109,6 @@ void i18n_register_lua(lua_State* L);
   X(main_blueprint_linked)            \
   X(main_blueprint_unlinked)          \
   X(main_untitled)                    \
-  X(main_levelsidebar_leg)            \
   /* Campaign */                      \
   X(select_campaign)                  \
   /* About */                         \

@@ -14,7 +14,6 @@
 #include "i18n.h"
 #include "img.h"
 #include "layout.h"
-#include "levelsidebar.h"
 #include "log.h"
 #include "lua_level.h"
 #include "math.h"
@@ -103,7 +102,6 @@ static struct {
   Btn btn_clockopt[6];
   Btn btn_sim_show_t;
   Btn btn_sim_soladd;
-  Btn btn_levelsidebar;
 
   Sim sim;
   HSim hsim;
@@ -116,8 +114,9 @@ static struct {
   Image sidepanel_img;
   Texture2D sidepanel_tex;
   bool looping;
+
   int clock_speed;
-  bool sidebar_open;
+
   bool time_open;
   double time_ref;
   char mouse_msg[200];
@@ -140,9 +139,6 @@ static struct {
   char* level_file;
   LevelAPI api;
   Blueprint* bp;
-  Rectangle sidebar_area;
-  Rectangle canvas_area;
-  LevelSidebarWidget level_sidebar;
 } C = {0};
 
 static inline int maxint(int a, int b) { return a > b ? a : b; }
@@ -254,8 +250,7 @@ void update_layout() {
         layout_rectb(l, TextFormat("btn_layer%d_hide", i + 1));
     C.btn_layer_v[i].hitbox.y += dy;
   }
-  C.btn_levelsidebar.hitbox = layout_rectb(l, "btn_levelsidebar");
-  C.btn_levelsidebar.hitbox.y += dy;
+
   C.btn_layer_push.hitbox = layout_rectb(l, "btn_layer_add");
   C.btn_layer_push.hitbox.y += dy;
   C.btn_layer_pop.hitbox = layout_rectb(l, "btn_layer_rm");
@@ -441,7 +436,6 @@ static void reset_level() {
   main_new_file();
   level_api_destroy(&C.api);
   reset_kernel_error();
-  level_sidebar_set_level(&C.level_sidebar, NULL);
 }
 
 void win_main_load_custom_level(CustomLevelDef* ldef) {
@@ -476,7 +470,6 @@ static void load_campaign_level(LevelDef* ldef) {
   } else {
     msg_add(T.main_campaign_loaded, 2);
   }
-  level_sidebar_set_level(&C.level_sidebar, ldef);
   discord_refresh();
 }
 
@@ -518,17 +511,6 @@ static void update_viewport() {
   int tgt_size_x = sw - (int)canvas.x - right_margin;
   int tgt_size_y = sh - (int)canvas.y - bottom_margin;
 
-  C.canvas_area = (Rectangle){
-      C.target_pos.x,
-      C.target_pos.y,
-      tgt_size_x,
-      tgt_size_y,
-  };
-  int sidew = 700;
-  if (C.sidebar_open) {
-    tgt_size_x -= sidew;
-  }
-
   // Avoids crashing when window is too small
   const int min_tgt_size = 32;
   tgt_size_x = maxint(min_tgt_size, tgt_size_x);
@@ -541,17 +523,6 @@ static void update_viewport() {
     }
     C.img_target_tex = gen_render_texture(tgt_size_x, tgt_size_y, BLANK);
     C.level_overlay_tex = gen_render_texture(tgt_size_x, tgt_size_y, BLANK);
-  }
-
-  if (C.sidebar_open) {
-    Rectangle sidebar_area = {
-        C.target_pos.x + tgt_size_x,
-        C.target_pos.y,
-        sidew,
-        tgt_size_y,
-    };
-    C.sidebar_area = sidebar_area;
-    level_sidebar_update_layout(&C.level_sidebar, sidebar_area);
   }
 }
 
@@ -571,15 +542,11 @@ static void load_initial_image() {
   }
 }
 
-static void on_sidebar_close() { C.sidebar_open = false; }
-
 void win_main_init() {
   srand(time(NULL));
   C.kernel_error = false;
   C.layout = easy_load_layout("main");
   win_log_init();
-  level_sidebar_init(&C.level_sidebar);
-  C.level_sidebar.on_sidebar_close = on_sidebar_close;
   C.clock_speed = 2;
   C.palette[0] = WHITE;
   C.palette[1] = BLACK;
@@ -723,16 +690,6 @@ void win_main_update() {
   main_update_controls();
   main_update_widgets();
   profiler_tic("simu");
-
-  if (C.sidebar_open) {
-    level_sidebar_update(&C.level_sidebar);
-  }
-
-  if (btn_update(&C.btn_levelsidebar)) {
-    C.sidebar_open = !C.sidebar_open;
-  }
-  C.btn_levelsidebar.toggled = C.sidebar_open;
-
   if (main_get_simu_mode() == MODE_SIMU) {
     double dt = get_simu_dt();
     if (C.time_open) {
@@ -1029,9 +986,6 @@ void main_update_controls() {
     }
     if (IsKeyPressed(KEY_O)) on_open_click();
     if (IsKeyPressed(KEY_N)) on_new_click();
-  }
-  if (IsKeyPressed(KEY_E)) {
-    C.sidebar_open = !C.sidebar_open;
   }
   paint_update_pixel_position(&C.ca);
   paint_enforce_mouse_on_image_if_need(&C.ca);
@@ -1379,8 +1333,7 @@ void win_main_draw() {
       C.level_overlay_tex.texture.width,
       C.level_overlay_tex.texture.height,
   };
-  // draw_default_tiled_frame(inner_content);
-  draw_default_tiled_frame(C.canvas_area);
+  draw_default_tiled_frame(inner_content);
   main_draw_status_bar();
 
   if (C.mode == MODE_SIMU) {
@@ -1483,11 +1436,6 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_sel_open, rect_sel_open);
   btn_draw_icon(&C.btn_sel_save, rect_sel_save);
   btn_draw_icon(&C.btn_blueprint_add, rect_blueprint_add);
-  btn_draw_icon(&C.btn_levelsidebar, rect_flag);
-
-  if (C.sidebar_open) {
-    level_sidebar_draw(&C.level_sidebar);
-  }
 
   // We only draw the legends if this window is the active window.
   if (ui_get_window() == WINDOW_MAIN) {
@@ -1537,7 +1485,6 @@ void win_main_draw() {
     btn_draw_legend(
         &C.btn_clockopt[5],
         TextFormat(T.main_speed6_leg, fmtnum((int)(get_speed_dt(5)))));
-    btn_draw_legend(&C.btn_levelsidebar, T.main_levelsidebar_leg);
 
     btn_draw_legend(&C.btn_sim_show_t, T.main_show_start_leg);
     btn_draw_legend(&C.btn_sim_soladd, T.main_soladd_leg);
@@ -1897,10 +1844,10 @@ static void load_image_from_path_ex(const char* path, bool keep_file) {
 
 void win_main_load_blueprint(Blueprint* bp) {
   bool keep_filename = bp->steam_id == 0;
+  load_image_from_path_ex(blueprint_fname_full(bp), keep_filename);
   if (bp->linked_level_id) {
     main_load_by_level_id(bp->linked_level_id);
   }
-  load_image_from_path_ex(blueprint_fname_full(bp), keep_filename);
   win_main_update(); /* To refresh the canva's content */
   if (keep_filename) {
     win_msg_open_text(T.main_blueprint_associated, NULL);

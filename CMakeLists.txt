@@ -95,7 +95,6 @@ SET(ca_src
   src/level_api.c
   src/i18n.c
   src/log.c
-  src/levelsidebar.c
   src/modal.c
   src/msg.c
   src/nand_detection.c
