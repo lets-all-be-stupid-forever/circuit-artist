@@ -47,7 +47,6 @@ static struct {
   Btn btn_unsubscribe;
   Btn btn_browse_levels;
 
-  Btn btn_file;
   Btn btn_page_workshop;
   Btn btn_page_official;
   Btn btn_page_local;
@@ -67,7 +66,6 @@ static void update_layout() {
   C.btn_page_local.hitbox = layout_rectb(l, "btn_local");
   C.btn_page_workshop.hitbox = layout_rectb(l, "btn_workshop");
   C.btn_page_official.hitbox = layout_rectb(l, "btn_official");
-  C.btn_file.hitbox = layout_rectb(l, "btn_file");
 
   C.btn_publish.hitbox = layout_rectb(l, "btn_publish");
   C.btn_open_steam.hitbox = layout_rectb(l, "btn_open_steam");
@@ -225,13 +223,6 @@ static void update_page_buttons() {
   if (btn_update(&C.btn_page_workshop)) {
     set_page(PAGE_WORKSHOP);
   }
-  if (btn_update(&C.btn_file)) {
-    bool loaded = win_main_custom_level_open_file();
-    if (loaded) {
-      ui_winpop();
-      return;
-    }
-  }
   C.btn_browse_levels.disabled = !is_steam_on();
   if (btn_update(&C.btn_browse_levels)) {
     steam_browse_workshop_levels();
@@ -387,7 +378,6 @@ void win_customlvl_draw() {
   btn_draw_text(&C.btn_page_workshop, T.customlvl_subscribed);
   btn_draw_text(&C.btn_page_official, T.customlvl_official);
   btn_draw_text(&C.btn_page_local, T.customlvl_local);
-  btn_draw_icon(&C.btn_file, rect_lua);
 
   btn_draw_icon(&C.btn_local_folder, rect_open);
   btn_draw_icon(&C.btn_level_folder, rect_open);
@@ -405,7 +395,6 @@ void win_customlvl_draw() {
     btn_draw_legend(&C.btn_publish, T.customlvl_publish_leg);
     btn_draw_legend(&C.btn_page_workshop, T.customlvl_workshop_leg);
     btn_draw_legend(&C.btn_unsubscribe, T.unsubscribe);
-    btn_draw_legend(&C.btn_file, T.customlvl_file_leg);
 
     btn_draw_legend(&C.btn_local_folder, T.customlvl_localfolder_leg);
     btn_draw_legend(&C.btn_level_folder, T.customlvl_levelfolder_leg);

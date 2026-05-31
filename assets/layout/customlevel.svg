@@ -6,7 +6,6 @@
 <rect id="btn_local" x="8" y="117" width="124" height="34" fill="#D9D9D9"/>
 <rect id="btn_workshop" x="8" y="160" width="124" height="34" fill="#D9D9D9"/>
 <rect id="btn_browse_levels" x="8" y="545" width="124" height="34" fill="#D9D9D9"/>
-<rect id="btn_file" x="52" y="204" width="36" height="34" fill="#D9D9D9"/>
 <rect id="btn_wiki" x="8" y="499" width="36" height="34" fill="#D9D9D9"/>
 <rect id="btn_howto" x="573" y="508" width="36" height="34" fill="#D9D9D9"/>
 <rect id="btn_local_folder" x="96" y="499" width="36" height="34" fill="#D9D9D9"/>

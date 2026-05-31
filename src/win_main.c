@@ -136,7 +136,6 @@ static struct {
   void (*dialog_callback)();
   LevelDef* ldef;
   CustomLevelDef* cldef;
-  char* level_file;
   LevelAPI api;
   Blueprint* bp;
 } C = {0};
@@ -429,11 +428,10 @@ static void reset_kernel_error() {
 }
 
 static void reset_level() {
-  if (C.level_file) free(C.level_file);
-  C.level_file = NULL;
   C.ldef = NULL;
   C.cldef = NULL;
   level_api_destroy(&C.api);
+  main_new_file();
   reset_kernel_error();
 }
 
@@ -447,17 +445,6 @@ void win_main_load_custom_level(CustomLevelDef* ldef) {
     msg_add(T.main_custom_level_loaded, 2);
   }
   discord_refresh();
-}
-
-static void load_file_level(const char* fname) {
-  reset_level();
-  C.level_file = clone_string(fname);
-  Status s = lua_level_create_custom_file(&C.api, C.level_file);
-  if (!s.ok) {
-    handle_kernel_error(s);
-  } else {
-    msg_add(T.main_file_level_loaded, 2);
-  }
 }
 
 static void load_campaign_level(LevelDef* ldef) {
@@ -488,7 +475,6 @@ void main_load_by_level_id(const char* id) {
 }
 
 static void reload_level() {
-  if (C.level_file) load_file_level(C.level_file);
   if (C.cldef) win_main_load_custom_level(C.cldef);
   if (C.ldef) load_campaign_level(C.ldef);
 }
@@ -1206,29 +1192,15 @@ static void toggle_sim_show_t() { C.sim_show_t = !C.sim_show_t; }
 
 static void custom_level_open_win() { win_customlvl_open(C.cldef); }
 
-bool win_main_custom_level_open_file() {
-  on_modal_before_open();
-  ModalResult mr = modal_open_file_lua(NULL);
-  on_modal_after_open();
-  if (mr.ok) {
-    load_file_level(mr.fPath);
-    free(mr.fPath);
-    return true;
-  } else if (mr.cancel) {
-    return false;
-  } else {
-    char txt[500];
-    snprintf(txt, sizeof(txt), T.main_msg_error, mr.errMsg);
-    msg_add(txt, MSG_DURATION);
-  }
-  return false;
-}
-
 void win_main_open_level() { win_level_open(C.ldef, on_select_level); }
 
-static void on_btn_campaign_level_click() { win_main_open_level(); }
+static void on_btn_campaign_level_click() {
+  win_main_ask_for_save_and_proceed(win_main_open_level);
+}
 
-static void on_btn_custom_level_click() { custom_level_open_win(); }
+static void on_btn_custom_level_click() {
+  win_main_ask_for_save_and_proceed(custom_level_open_win);
+}
 
 void main_update_hud() {
   Paint* ca = &C.ca;
@@ -1657,8 +1629,6 @@ void main_draw_status_bar() {
     lvl = C.ldef->name;
   } else if (C.cldef) {
     lvl = C.cldef->name;
-  } else {
-    lvl = GetFileName(C.level_file);
   }
   const char* line = TextFormat(T.main_bar_level, lvl);
   uifont_draw_texture_outlined(line, xc, yc, tc, bg);
