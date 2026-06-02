@@ -141,6 +141,7 @@ SET(ca_src
   src/win_mtext.c
   src/win_workshop.c
   src/win_workshopdet.c
+  src/win_home.c
   third_party/clip/clip.cpp
   third_party/clip/image.cpp
   third_party/raylib/src/external/glad.h

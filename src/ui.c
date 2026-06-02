@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "discord_integration.h"
 #include "font.h"
 #include "game_registry.h"
 #include "i18n.h"
@@ -31,6 +32,7 @@
 #include "win_bpdetail.h"
 #include "win_campaign.h"
 #include "win_customlvl.h"
+#include "win_home.h"
 #include "win_level.h"
 #include "win_main.h"
 #include "win_msg.h"
@@ -157,6 +159,8 @@ void ui_init() {
   C.img_sprites = load_image_asset("imgs/sprite4.png");
   C.sprites = LoadTextureFromImage(C.img_sprites);
   widgets_init();
+  discord_init();
+  win_log_init();
   HideCursor();
   msg_init();
   win_pubform_init();
@@ -174,11 +178,13 @@ void ui_init() {
   win_main_init();
   win_workshop_init();
   win_workshopdet_init();
-  win_main_open();
   win_bpdetail_init();
   win_campaign_init();
   win_msg_init();
   win_settings_init();
+  win_home_init();
+
+  win_home_open();
   flush_win_cmd();
 }
 
@@ -348,6 +354,7 @@ void ui_update_frame() {
   if (update_window == WINDOW_WORKSHOPDET) win_workshopdet_update();
   if (update_window == WINDOW_SETTINGS) win_settings_update();
   if (update_window == WINDOW_CAMPAIGN) win_campaign_update();
+  if (update_window == WINDOW_HOME) win_home_update();
   profiler_tac();
 
   // We stop the app here if should_close is flagged.
@@ -379,6 +386,7 @@ void ui_update_frame() {
     if (window == WINDOW_WORKSHOPDET) win_workshopdet_draw();
     if (window == WINDOW_SETTINGS) win_settings_draw();
     if (window == WINDOW_CAMPAIGN) win_campaign_draw();
+    if (window == WINDOW_HOME) win_home_draw();
   }
   msg_draw();
   ui_draw_mouse();
