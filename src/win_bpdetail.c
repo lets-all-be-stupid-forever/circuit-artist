@@ -1,10 +1,10 @@
 #include "win_bpdetail.h"
 
 #include "assert.h"
-#include "i18n.h"
 #include "blueprint.h"
 #include "common.h"
 #include "fs.h"
+#include "i18n.h"
 #include "img.h"
 #include "layout.h"
 #include "msg.h"

@@ -7,6 +7,7 @@
 #include "stb_ds.h"
 #include "ui.h"
 #include "uifont.h"
+#include "win_home.h"
 #include "win_level.h"
 #include "win_msg.h"
 
@@ -16,9 +17,8 @@ static struct {
   Rectangle bg;
   Texture2D campbg;
   LevelGroup** camps;
-  LevelGroup* cur;
   Btn btn_camp[50];
-  Btn btn_close;
+  Btn btn_back;
   int nc;
 } C = {0};
 
@@ -30,7 +30,7 @@ static void update_layout() {
   for (int i = 0; i < C.nc; i++) {
     C.btn_camp[i].hitbox = layout_rect(l, C.camps[i]->id);
   }
-  C.btn_close.hitbox = layout_rectb(l, "btn_close");
+  C.btn_back.hitbox = layout_rectb(l, "btn_back");
 }
 
 void win_campaign_init() {
@@ -42,9 +42,8 @@ void win_campaign_init() {
   free(path);
 }
 
-void win_campaign_open(LevelGroup* cur) {
+void win_campaign_open() {
   ui_winpush(WINDOW_CAMPAIGN);
-  C.cur = cur;
   update_layout();
 }
 
@@ -64,17 +63,17 @@ static LevelDef* find_best_level(LevelGroup* g) {
 void win_campaign_update() {
   update_layout();
   bool escape = IsKeyPressed(KEY_ESCAPE);
-  if (escape || btn_update(&C.btn_close)) {
+  if (escape || btn_update(&C.btn_back)) {
     ui_winpop();
+    win_home_open();
     return;
   }
   for (int i = 0; i < C.nc; i++) {
     C.btn_camp[i].disabled = !C.camps[i]->can_choose;
-    C.btn_camp[i].toggled = C.camps[i] == C.cur;
     if (btn_update(&C.btn_camp[i])) {
       LevelDef* ldef = find_best_level(C.camps[i]);
-      win_level_set_sel(ldef);
       ui_winpop();
+      win_level_open(ldef->group);
       return;
     }
     if (btn_right_click(&C.btn_camp[i])) {
@@ -87,6 +86,8 @@ void win_campaign_update() {
 }
 
 void win_campaign_draw() {
+  ClearBackground(BLANK);
+  draw_default_tiled_screen();
   draw_win(C.modal, T.select_campaign);
   Texture2D sprites = ui_get_sprites();
   DrawRectangleRec(C.bg, (Color){0, 0, 0, 150});
@@ -182,6 +183,6 @@ void win_campaign_draw() {
     }
   }
 
-  btn_draw_text(&C.btn_close, T.close);
+  btn_draw_text(&C.btn_back, T.back);
 }
 

@@ -1,0 +1,8 @@
+<svg width="427" height="422" viewBox="0 0 427 422" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="home">
+<rect width="427" height="422" fill="white"/>
+<rect id="btn_exit" x="81" y="316" width="253" height="66" fill="#D9D9D9"/>
+<rect id="btn_custom" x="81" y="211" width="253" height="66" fill="#D9D9D9"/>
+<rect id="btn_camp" x="81" y="111" width="253" height="66" fill="#D9D9D9"/>
+</g>
+</svg>

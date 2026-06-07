@@ -8,6 +8,6 @@
 <rect id="memory1" x="822" y="361" width="260" height="140" fill="#D9D9D9"/>
 <rect id="shifter" x="469" y="361" width="260" height="140" fill="#D9D9D9"/>
 <rect id="aplusb" x="118" y="361" width="260" height="140" fill="#D9D9D9"/>
-<rect id="btn_close" x="499" y="650" width="200" height="34" fill="#D9D9D9"/>
+<rect id="btn_back" x="118" y="650" width="200" height="34" fill="#D9D9D9"/>
 </g>
 </svg>

@@ -484,3 +484,16 @@ double ui_get_frame_time() { return C.frame_time; }
 
 WindowEnum ui_wintop() { return ui_get_window(); }
 lua_State* ui_L() { return C.L; }
+
+bool ui_is_win_open(WindowEnum win) {
+  int n = arrlen(C.window);
+  for (int i = 0; i < n; i++) {
+    WindowEnum we = C.window[i];
+    if (we == win) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ui_is_main_open() { return ui_is_win_open(WINDOW_MAIN); }

@@ -6,7 +6,6 @@
 #include "i18n.h"
 #include "layout.h"
 #include "paths.h"
-#include "sol_widget.h"
 #include "stb_ds.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -14,6 +13,7 @@
 #include "ui.h"
 #include "utils.h"
 #include "wdialog.h"
+#include "win_home.h"
 #include "win_main.h"
 #include "win_pubform.h"
 #include "win_wiki.h"
@@ -32,7 +32,7 @@ static struct {
   Textbox tb;
   Listbox lb;
   Btn btn_choose;
-  Btn btn_close;
+  Btn btn_back;
   int sel;
   LevelDef** levels;
 
@@ -51,8 +51,6 @@ static struct {
   Btn btn_page_official;
   Btn btn_page_local;
   int lb_hover;
-
-  SolWidget sol;
 } C = {0};
 
 static void update_layout() {
@@ -61,7 +59,7 @@ static void update_layout() {
   C.modal = layout_rect(l, "window");
   listbox_set_box(&C.lb, layout_rectb(l, "lb_level"));
   textbox_set_box(&C.tb, layout_rectb(l, "tb_desc"));
-  C.btn_close.hitbox = layout_rectb(l, "btn_close");
+  C.btn_back.hitbox = layout_rectb(l, "btn_back");
   C.btn_choose.hitbox = layout_rectb(l, "btn_choose");
   C.btn_page_local.hitbox = layout_rectb(l, "btn_local");
   C.btn_page_workshop.hitbox = layout_rectb(l, "btn_workshop");
@@ -77,8 +75,6 @@ static void update_layout() {
   C.btn_wiki.hitbox = layout_rectb(l, "btn_wiki");
 
   C.lab_author.hitbox = layout_rectb(l, "lab_author");
-  // C.lab_name.hitbox = layout_rect(l, "lab_name");
-  sol_widget_update_layout(&C.sol, l);
 }
 
 static LevelDef** get_page_original_levels() {
@@ -131,13 +127,11 @@ static void set_sel(int s) {
     textbox_set_content(&C.tb, "", NULL);
     label_set_text(&C.lab_author, "");
     // label_set_text(&C.lab_name, "");
-    sol_widget_set_level_id(&C.sol, NULL);
   } else {
     LevelDef* ldef = get_level(s);
     textbox_set_content(&C.tb, ldef->description, ldef->sprites);
     // label_set_text(&C.lab_name, ldef->name);
     label_set_text(&C.lab_author, "");
-    sol_widget_set_level_id(&C.sol, ldef->id);
   }
   C.sel = s;
 }
@@ -159,7 +153,6 @@ static void set_page(Page page) {
 void win_customlvl_init() {
   C.r = getreg();
   C.layout = easy_load_layout("customlevel");
-  sol_widget_init(&C.sol);
   textbox_init(&C.tb);
   listbox_init(&C.lb);
   C.lb.row_pad = 2;
@@ -177,6 +170,7 @@ static void load_page_for_level(LevelDef* ldef) {
   } else {
     set_page(PAGE_OFFICIAL);
   }
+  set_page(PAGE_OFFICIAL);
 
   int n = arrlen(C.levels);
   for (int i = 0; i < n; i++) {
@@ -195,7 +189,12 @@ static void load_page_for_level(LevelDef* ldef) {
 void win_customlvl_open(LevelDef* ldef) {
   ui_winpush(WINDOW_CUSTOM_LEVEL);
   update_layout();
-  load_page_for_level(ldef);
+  if (ldef) {
+    load_page_for_level(ldef);
+  } else {
+    set_page(PAGE_LOCAL);
+    set_sel(0);
+  }
 }
 
 static void update_page_buttons() {
@@ -309,20 +308,20 @@ static void update_level_buttons() {
 void win_customlvl_update() {
   update_layout();
   bool escape = IsKeyPressed(KEY_ESCAPE);
-  if (btn_update(&C.btn_close) || escape) {
+  if (btn_update(&C.btn_back) || escape) {
     ui_winpop();
+    win_home_open();
     return;
   }
   if (btn_update(&C.btn_choose)) {
     ui_winpop();
-    win_main_load_level(get_level(C.sel));
+    win_main_open(get_level(C.sel));
     return;
   }
   update_listbox();
   textbox_update(&C.tb);
   update_page_buttons();
   update_level_buttons();
-  sol_widget_update(&C.sol);
 }
 
 static const char* make_win_title() {
@@ -332,12 +331,14 @@ static const char* make_win_title() {
 }
 
 void win_customlvl_draw() {
+  ClearBackground(BLANK);
+  draw_default_tiled_screen();
   draw_win(C.modal, make_win_title());
   textbox_draw(&C.tb);
   listbox_draw(&C.lb, C.sel);
   C.btn_choose.primary = true;
   btn_draw_text(&C.btn_choose, T.levels_submit);
-  btn_draw_text(&C.btn_close, T.close);
+  btn_draw_text(&C.btn_back, T.back);
   Color bg = {0, 0, 0, 150};
   DrawRectangleRec(C.lab_author.hitbox, bg);
 
@@ -363,10 +364,7 @@ void win_customlvl_draw() {
   btn_draw_icon(&C.btn_local_folder, rect_open);
   btn_draw_icon(&C.btn_level_folder, rect_open);
 
-  sol_widget_draw(&C.sol);
-
   if (ui_get_window() == WINDOW_CUSTOM_LEVEL) {
-    sol_widget_draw_leg(&C.sol);
     btn_draw_legend(&C.btn_wiki, T.customlvl_wiki_leg);
 
     btn_draw_legend(&C.btn_page_official, T.customlvl_official_leg);

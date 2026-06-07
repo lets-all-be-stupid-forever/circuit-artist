@@ -25,6 +25,7 @@ void win_main_open_level();
 bool win_main_is_simu_error();
 bool win_main_is_simu_done();
 void win_main_load_level(LevelDef* ldef);
+LevelDef* win_main_get_level();
 Blueprint* win_main_get_editting_blueprint();
 
 #endif
