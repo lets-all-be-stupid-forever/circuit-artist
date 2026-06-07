@@ -1761,7 +1761,6 @@ static void load_image_from_path_ex(const char* path, bool keep_file) {
 
 void win_main_load_blueprint(Blueprint* bp) {
   bool keep_filename = bp->steam_id == 0;
-  load_image_from_path_ex(blueprint_fname_full(bp), keep_filename);
   if (bp->linked_level_id) {
     LevelDef* ldef = get_level_by_id(bp->linked_level_id);
     if (!ldef) {
@@ -1774,6 +1773,7 @@ void win_main_load_blueprint(Blueprint* bp) {
       }
     }
   }
+  load_image_from_path_ex(blueprint_fname_full(bp), keep_filename);
   win_main_update(); /* To refresh the canva's content */
   if (keep_filename) {
     win_msg_open_text(T.main_blueprint_associated, NULL);
