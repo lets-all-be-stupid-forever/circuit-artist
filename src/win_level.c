@@ -146,13 +146,12 @@ void win_level_accept() {
 void win_level_update() {
   update_layout();
   C.btn_choose.primary = true;
-  if (btn_update(&C.btn_back)) {
+  bool escape = IsKeyPressed(KEY_ESCAPE);
+  if (btn_update(&C.btn_back) || escape) {
     ui_winpop();
     win_campaign_open();
     return;
   }
-
-  bool escape = IsKeyPressed(KEY_ESCAPE);
 
   LevelDef* lvl = C.selected_level;
   int nextra = arrlen(lvl->extra_content);
