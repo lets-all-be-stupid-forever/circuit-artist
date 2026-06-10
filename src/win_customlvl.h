@@ -12,7 +12,7 @@ void win_customlvl_update();
 void win_customlvl_draw();
 
 void notify_installed_steam_level(const char* folder, u64 item);
-LevelDef* find_sandbox_custom_level();
+LevelDef* find_basics_custom_level();
 
 #if defined(__cplusplus)
 }

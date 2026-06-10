@@ -3,8 +3,8 @@ Simple clocked Sandbox
 ]]
 
 function _Setup()
-  RST = AddPortOut(1, 'rst')
-  CLK = AddPortOut(1, 'clk')
+  RST = AddPortOut(1, 'power_on_reset')
+  CLK = AddPortOut(1, 'clock')
   EnableRewind()
 end
 

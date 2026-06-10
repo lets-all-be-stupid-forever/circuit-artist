@@ -676,14 +676,17 @@ static void load_custom_level(const char* folder, const char* id,
   Toc toc = {0};
   toc_init(&toc);
   const char* body = NULL;
-  int ntk = toc_parse(desc_txt, &toc, &body);
+  toc_parse(desc_txt, &toc, &body);
   ldef->description = clone_string(body);
-  for (int i = 0; i < ntk; i++) {
+  for (int i = 0; i < (int)toc.count; i++) {
     const char* key = toc.entries[i].key;
     const char* val = toc.entries[i].value;
     if (strcmp(key, "Title") == 0) {
       if (ldef->name) free(ldef->name);
       ldef->name = clone_string(val);
+    } else if (strcmp(key, "DefaultCircuit") == 0) {
+      if (ldef->default_circuit) free(ldef->default_circuit);
+      ldef->default_circuit = clone_string(val);
     }
   }
   toc_free(&toc);

@@ -427,6 +427,12 @@ static void reset_level() {
 void win_main_load_level(LevelDef* ldef) {
   reset_level();
   C.ldef = ldef;
+  if (ldef->default_circuit && ldef->folder) {
+    const char* img_path =
+        TextFormat("%s/%s", ldef->folder, ldef->default_circuit);
+    Image img = LoadImage(img_path);
+    if (img.data) paint_load_image(&C.ca, img);
+  }
   Status s = lua_level_create(&C.api, ldef);
   if (!s.ok) {
     handle_kernel_error(s);
@@ -472,22 +478,6 @@ static void update_viewport() {
   }
 }
 
-static void load_initial_image() {
-  if (false) {
-    Image img = LoadImage("../a.png");
-    paint_load_image(&C.ca, img);
-  } else {
-    if (ui_is_demo()) {
-      Image img = load_image_asset("circuits/help_small.png");
-      paint_load_image(&C.ca, img);
-    } else {
-      Image img = load_image_asset("imgs/tutorial.png");
-      paint_load_image(&C.ca, img);
-    }
-    // paint_new_buffer(&C.ca);
-  }
-}
-
 void win_main_init() {
   srand(time(NULL));
   C.kernel_error = false;
@@ -527,10 +517,14 @@ void win_main_init() {
   main_update_widgets();
   C.r = getreg();
   sim_dry_run();
-  win_main_load_level(find_sandbox_custom_level());
+  win_main_load_level(find_basics_custom_level());
   discord_init();
   discord_refresh();
-  load_initial_image();
+  if (false) {
+    // For debugging
+    Image img = LoadImage("../a.png");
+    paint_load_image(&C.ca, img);
+  }
 }
 
 static void simu_play_sounds() {
@@ -1752,7 +1746,6 @@ static void load_image_from_path_ex(const char* path, bool keep_file) {
 
 void win_main_load_blueprint(Blueprint* bp) {
   bool keep_filename = bp->steam_id == 0;
-  load_image_from_path_ex(blueprint_fname_full(bp), keep_filename);
   if (bp->linked_level_id) {
     LevelDef* ldef = get_level_by_id(bp->linked_level_id);
     if (!ldef) {
@@ -1765,6 +1758,7 @@ void win_main_load_blueprint(Blueprint* bp) {
       }
     }
   }
+  load_image_from_path_ex(blueprint_fname_full(bp), keep_filename);
   win_main_update(); /* To refresh the canva's content */
   if (keep_filename) {
     win_msg_open_text(T.main_blueprint_associated, NULL);

@@ -1,4 +1,4 @@
-## Title: 02 3x+1 sequence
+## Title: 03 3x+1 sequence
 
 The 3x+1 sequence is defined by:
 * x = x/2 if x is even

@@ -88,7 +88,8 @@ typedef struct LevelDef {
   LevelGroup* group;      /* Level Group  (default=Custom)*/
 
   /* Custom Level stuff */
-  char* steam_author; /* Author name generated during workshop upload */
+  char* steam_author;      /* Author name generated during workshop upload */
+  char* default_circuit;   /* Path to image loaded on first open (relative to folder) */
   bool unsubscribed;
 } LevelDef;
 

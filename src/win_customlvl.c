@@ -399,11 +399,11 @@ void notify_installed_steam_level(const char* folder, u64 item) {
   add_steam_level_from_folder(folder, item);
 }
 
-LevelDef* find_sandbox_custom_level() {
+LevelDef* find_basics_custom_level() {
   int n = arrlen(C.r->official_custom_levels);
   for (int i = 0; i < n; i++) {
     LevelDef* l = C.r->official_custom_levels[i];
-    if (strcmp(l->id, "official:sandbox") == 0) {
+    if (strcmp(l->id, "official:basics") == 0) {
       return l;
     }
   }

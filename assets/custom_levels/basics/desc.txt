@@ -1,0 +1,5 @@
+## Title: 00 Basics
+## DefaultCircuit: basics.png
+Simple empty level that loads the initial "basics" circuit.
+
+Just an example on how to load a default image to a level. (via the `## DefaultCircuit: <filename>.png`)

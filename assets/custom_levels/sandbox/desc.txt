@@ -1,10 +1,6 @@
-## Title: 00 Sandbox
-
-`SANDBOX`
-
+## Title: 01 Clocked Sandbox
 !img:sandbox1.png
-
-Sandbox mode with a clock that triggers when circuit is idle.
+Sandbox mode with a `clock` signal that triggers when circuit is idle.
 
 No objective.
 
