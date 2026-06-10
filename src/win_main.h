@@ -9,7 +9,7 @@
 
 // Main screen.
 void win_main_init();
-void win_main_open(LevelDef* ldef);
+void win_main_open();
 void win_main_update();
 void win_main_draw();
 void win_main_destroy();

@@ -35,7 +35,6 @@
 #include "widgets.h"
 #include "win_blueprint.h"
 #include "win_customlvl.h"
-#include "win_home.h"
 #include "win_level.h"
 #include "win_msg.h"
 #include "win_settings.h"
@@ -321,29 +320,9 @@ static void on_post_image_save(bool saveas) {
   update_title();
 }
 
-static void load_initial_image() {
-  if (false) {
-    Image img = LoadImage("../a.png");
-    paint_load_image(&C.ca, img);
-  } else {
-    if (ui_is_demo()) {
-      Image img = load_image_asset("circuits/help_small.png");
-      paint_load_image(&C.ca, img);
-    } else {
-      Image img = load_image_asset("imgs/tutorial.png");
-      paint_load_image(&C.ca, img);
-    }
-    // paint_new_buffer(&C.ca);
-  }
-}
-
-void win_main_open(LevelDef* ldef) {
+void win_main_open() {
   ui_winpush(WINDOW_MAIN);
-  win_main_load_level(find_sandbox_custom_level());
-  load_initial_image();
-  discord_refresh();
-  update_title();
-  // easy_blinking_open();
+  easy_blinking_open();
 }
 
 static float get_speed_dt(int speed) {
@@ -452,8 +431,9 @@ void win_main_load_level(LevelDef* ldef) {
   if (!s.ok) {
     handle_kernel_error(s);
   } else {
-    // msg_add( ldef->is_campaign ? T.main_campaign_loaded :
-    // T.main_custom_level_loaded, 2);
+    msg_add(
+        ldef->is_campaign ? T.main_campaign_loaded : T.main_custom_level_loaded,
+        2);
   }
   discord_refresh();
 }
@@ -492,10 +472,27 @@ static void update_viewport() {
   }
 }
 
+static void load_initial_image() {
+  if (false) {
+    Image img = LoadImage("../a.png");
+    paint_load_image(&C.ca, img);
+  } else {
+    if (ui_is_demo()) {
+      Image img = load_image_asset("circuits/help_small.png");
+      paint_load_image(&C.ca, img);
+    } else {
+      Image img = load_image_asset("imgs/tutorial.png");
+      paint_load_image(&C.ca, img);
+    }
+    // paint_new_buffer(&C.ca);
+  }
+}
+
 void win_main_init() {
   srand(time(NULL));
   C.kernel_error = false;
   C.layout = easy_load_layout("main");
+  win_log_init();
   C.clock_speed = 2;
   C.palette[0] = WHITE;
   C.palette[1] = BLACK;
@@ -526,9 +523,14 @@ void win_main_init() {
   C.sidepanel_img = gen_image_simple(200, 800);
   C.sidepanel_tex = LoadTextureFromImage(C.sidepanel_img);
   update_viewport();
+  update_title();
   main_update_widgets();
   C.r = getreg();
   sim_dry_run();
+  win_main_load_level(find_sandbox_custom_level());
+  discord_init();
+  discord_refresh();
+  load_initial_image();
 }
 
 static void simu_play_sounds() {
@@ -1150,16 +1152,6 @@ static void on_btn_custom_level_click() {
   win_main_ask_for_save_and_proceed(custom_level_open_win);
 }
 
-static void really_close_main_window() {
-  ui_winpop();
-  // TODO: release data
-  win_home_open();
-}
-
-static void close_main_window() {
-  win_main_ask_for_save_and_proceed(really_close_main_window);
-}
-
 void main_update_hud() {
   Paint* ca = &C.ca;
   if (btn_update(&C.btn_new)) on_new_click();
@@ -1167,8 +1159,7 @@ void main_update_hud() {
   if (btn_update(&C.btn_settings)) win_settings_open();
   if (btn_update(&C.btn_save)) on_save_click(false);
   if (btn_update(&C.btn_saveas)) on_save_click(true);
-  if (btn_update(&C.btn_exit))
-    close_main_window();  // ui_set_close_requested();
+  if (btn_update(&C.btn_exit)) ui_set_close_requested();
 
   if (btn_update(&C.btn_layer_pop)) paint_layer_pop(&C.ca);
   if (btn_update(&C.btn_layer_push)) paint_layer_push(&C.ca);
