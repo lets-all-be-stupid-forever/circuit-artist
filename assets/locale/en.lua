@@ -1816,11 +1816,11 @@ Subtract two `signed` 4-bit integers `A` and `B` (A-B).
 
 ]]
 
-nega_name = "-A (4 bit signed)"
+nega_name = "-A (8 bit signed)"
 nega_desc = [[
-Compute `-A` of a signed 4-bit integer `A`.
+Compute `-A` of a signed 8-bit integer `A`.
 
-If there is no positive representation for `-A`, return `A` as is. (i.e., `A` = `0b1000`)
+If there is no positive representation for `-A`, return `A` as is. (i.e., `A` = `0b10000000`)
 ]]
 
 
