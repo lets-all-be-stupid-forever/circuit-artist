@@ -5,7 +5,7 @@
 #include "status.h"
 
 void win_level_init();
-void win_level_open(LevelGroup* grp);
+void win_level_open(LevelDef* active_level, void (*on_select_level)(LevelDef*));
 void win_level_set_sel(LevelDef* ldef);
 void win_level_update();
 void win_level_accept();

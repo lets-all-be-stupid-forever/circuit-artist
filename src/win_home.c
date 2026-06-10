@@ -42,13 +42,11 @@ void win_home_update() {
   }
   if (btn_update(&C.btn_camp)) {
     ui_winpop();
-    win_campaign_open();
-    return;
+    win_main_open(find_sandbox_custom_level());
   }
   if (btn_update(&C.btn_custom)) {
     ui_winpop();
-    win_customlvl_open(NULL);
-    return;
+    win_main_open(find_sandbox_custom_level());
   }
 }
 

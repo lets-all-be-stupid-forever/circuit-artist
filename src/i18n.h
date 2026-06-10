@@ -21,7 +21,6 @@ void i18n_register_lua(lua_State* L);
   X(save)                             \
   X(cancel)                           \
   X(close)                            \
-  X(back)                             \
   X(delete)                           \
   X(unsubscribe)                      \
   X(unknown)                          \
@@ -158,7 +157,6 @@ void i18n_register_lua(lua_State* L);
   X(bp_cant_delete)                   \
   X(bp_detail_leg)                    \
   X(bp_workshop_leg)                  \
-  X(bp_solutions_cap)                 \
   /* BPDetail */                      \
   X(bpdetail_title)                   \
   X(bpdetail_unnamed)                 \
@@ -188,6 +186,7 @@ void i18n_register_lua(lua_State* L);
   X(levels_publish)                   \
   X(levels_unsubscribe)               \
   X(levels_wiki)                      \
+  X(levels_change_campaign)           \
   /* Custom Level */                  \
   X(customlvl_title)                  \
   X(customlvl_workshop_btn)           \

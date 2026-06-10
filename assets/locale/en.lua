@@ -4,7 +4,6 @@ want_to_save_changes = "Do you want to save changes?"
 dont_save = "Don't save"
 save = "Save"
 cancel = "Cancel"
-back = "BACK"
 ca = "Circuit Artist"
 confirm = "Confirm"
 delete = "Delete"
@@ -212,7 +211,6 @@ bp_blueprint_deleted = "Blueprint deleted."
 bp_cant_delete = "Blueprint can't be deleted while being edited."
 bp_detail_leg = "Open Blueprint details\n(you can also click a second time on the blueprint)"
 bp_workshop_leg = "Open steam overlay to browse for community blueprints\nSubscribed blueprints will automatically appear in the inventory"
-bp_solutions_cap = "Solutions"
 
 ----- BPDetail -----
 bpdetail_title = "BLUEPRINT"
@@ -245,6 +243,7 @@ levels_submit = "SELECT LEVEL"
 levels_publish = "PUBLISH"
 levels_unsubscribe = "UNSUBSCRIBE"
 levels_wiki = "Wiki: %s"
+levels_change_campaign = "CHANGE CAMPAIGN"
 
 ----- Custom Level -----
 customlvl_title = "CUSTOM LEVELS"

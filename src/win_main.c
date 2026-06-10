@@ -75,6 +75,8 @@ static struct {
   Btn btn_forward;
 
   // Tools buttons
+  Btn btn_level_custom;
+  Btn btn_level_campaign;
   Btn btn_simu;
   Btn btn_brush;
   Btn btn_text;
@@ -194,6 +196,8 @@ void update_layout() {
   C.btn_saveas.hitbox = layout_rectb(l, "btn_saveas");
   C.btn_settings.hitbox = layout_rectb(l, "btn_settings");
   C.btn_exit.hitbox = layout_rectb(l, "btn_exit");
+  C.btn_level_campaign.hitbox = layout_rectb(l, "btn_campaign_level");
+  C.btn_level_custom.hitbox = layout_rectb(l, "btn_custom_level");
   C.btn_blueprint.hitbox = layout_rectb(l, "btn_blueprint");
   C.btn_sim_soladd.hitbox = layout_rectb(l, "btn_soladd");
   C.btn_blueprint_add.hitbox = layout_rectb(l, "btn_bluadd");
@@ -335,9 +339,8 @@ static void load_initial_image() {
 
 void win_main_open(LevelDef* ldef) {
   ui_winpush(WINDOW_MAIN);
-  win_main_load_level(ldef);
+  win_main_load_level(find_sandbox_custom_level());
   load_initial_image();
-  main_new_file();
   discord_refresh();
   update_title();
   // easy_blinking_open();
@@ -1137,6 +1140,12 @@ static void toggle_sim_show_t() { C.sim_show_t = !C.sim_show_t; }
 
 static void custom_level_open_win() { win_customlvl_open(C.ldef); }
 
+void win_main_open_level() { win_level_open(C.ldef, on_select_level); }
+
+static void on_btn_campaign_level_click() {
+  win_main_ask_for_save_and_proceed(win_main_open_level);
+}
+
 static void on_btn_custom_level_click() {
   win_main_ask_for_save_and_proceed(custom_level_open_win);
 }
@@ -1144,11 +1153,7 @@ static void on_btn_custom_level_click() {
 static void really_close_main_window() {
   ui_winpop();
   // TODO: release data
-  if (C.ldef->is_campaign) {
-    win_level_open(C.ldef->group);
-  } else {
-    win_customlvl_open(C.ldef);
-  }
+  win_home_open();
 }
 
 static void close_main_window() {
@@ -1200,6 +1205,8 @@ void main_update_hud() {
   if (C.btn_rewind.pressed) C.rewind_pressed = true;
   if (C.btn_forward.pressed) C.forward_pressed = true;
 
+  if (btn_update(&C.btn_level_campaign)) on_btn_campaign_level_click();
+  if (btn_update(&C.btn_level_custom)) on_btn_custom_level_click();
   if (btn_update(&C.btn_wiki)) win_wiki_open();
   if (btn_update(&C.btn_blueprint)) win_blueprint_open();
 
@@ -1328,6 +1335,8 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_pause, rect_pause);
 
   btn_draw_text(&C.btn_wiki, T.main_btn_wiki);
+  btn_draw_text(&C.btn_level_custom, T.main_select_level_custom);
+  btn_draw_text(&C.btn_level_campaign, T.main_select_level);
 
   bool color_disabled = mode != MODE_EDIT;
   btn_draw_color(C.fg_color_rect, paint_get_color(&C.ca), false,
@@ -1376,6 +1385,8 @@ void win_main_draw() {
     btn_draw_legend(&C.btn_layer[1], T.main_layer_f2_leg);
     btn_draw_legend(&C.btn_layer[2], T.main_layer_f3_leg);
 
+    btn_draw_legend(&C.btn_level_custom, T.main_select_level_custom_leg);
+    btn_draw_legend(&C.btn_level_campaign, T.main_select_level_leg);
     btn_draw_legend(&C.btn_wiki, T.main_wiki_leg);
 
     btn_draw_legend(&C.btn_sel_open, T.main_open_sel_leg);
@@ -1654,6 +1665,8 @@ void main_update_widgets() {
 
   C.btn_simu.disabled = C.kernel_error;
 
+  C.btn_level_campaign.disabled = ned;
+  C.btn_level_custom.disabled = ned;
   C.btn_blueprint.disabled = ned;
   C.btn_brush.toggled = tool == TOOL_BRUSH;
   C.btn_line.toggled = tool == TOOL_LINE;
@@ -1838,5 +1851,3 @@ bool win_main_is_simu_error() {
 }
 
 bool win_main_is_simu_done() { return can_save_as_solution(); }
-
-LevelDef* win_main_get_level() { return C.ldef; }

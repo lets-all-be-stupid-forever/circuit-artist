@@ -7,13 +7,21 @@
 <rect id="btn_workshop" x="8" y="160" width="124" height="34" fill="#D9D9D9"/>
 <rect id="btn_browse_levels" x="8" y="545" width="124" height="34" fill="#D9D9D9"/>
 <rect id="btn_wiki" x="8" y="499" width="36" height="34" fill="#D9D9D9"/>
+<rect id="btn_howto" x="573" y="508" width="36" height="34" fill="#D9D9D9"/>
 <rect id="btn_local_folder" x="96" y="499" width="36" height="34" fill="#D9D9D9"/>
-<rect id="btn_open_steam" x="573" y="544" width="34" height="34" fill="#C27D7D"/>
-<rect id="btn_unsubscribe" x="609" y="544" width="34" height="34" fill="#C27D7D"/>
-<rect id="btn_level_folder" x="501" y="544" width="34" height="34" fill="#C27D7D"/>
-<rect id="btn_publish" x="537" y="544" width="34" height="34" fill="#C56767"/>
-<rect id="btn_choose" x="663" y="602" width="300" height="34" fill="#D9D9D9"/>
-<rect id="tb_desc" x="501" y="73" width="580" height="460" fill="#D9D9D9"/>
-<rect id="btn_back" x="8" y="602" width="124" height="34" fill="#D9D9D9"/>
+<rect id="btn_open_steam" x="501" y="544" width="34" height="34" fill="#C27D7D"/>
+<rect id="btn_unsubscribe" x="537" y="544" width="34" height="34" fill="#C27D7D"/>
+<rect id="btn_level_folder" x="501" y="508" width="34" height="34" fill="#C27D7D"/>
+<rect id="btn_publish" x="537" y="508" width="34" height="34" fill="#C56767"/>
+<rect id="btn_choose" x="581" y="602" width="300" height="34" fill="#D9D9D9"/>
+<rect id="tb_desc" x="501" y="73" width="580" height="420" fill="#D9D9D9"/>
+<rect id="btn_browse_sol" x="1047" y="524" width="34" height="34" fill="#D9D9D9"/>
+<rect id="sol1" x="749" y="511" width="64" height="64" fill="#D9D9D9"/>
+<rect id="sol2" x="813" y="511" width="64" height="64" fill="#D9D9D9"/>
+<rect id="sol3" x="877" y="511" width="64" height="64" fill="#D9D9D9"/>
+<rect id="sol4" x="941" y="511" width="64" height="64" fill="#D9D9D9"/>
+<rect id="btn_sol_nxt" x="1007" y="513" width="32" height="60" fill="#D9D9D9"/>
+<rect id="btn_sol_prv" x="715" y="513" width="32" height="60" fill="#D9D9D9"/>
+<rect id="btn_close" x="901" y="602" width="182" height="34" fill="#D9D9D9"/>
 </g>
 </svg>
