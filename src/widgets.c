@@ -22,10 +22,23 @@ static inline int max_int(int a, int b) { return a > b ? a : b; }
 void draw_sepv(Rectangle r) {
   rlPushMatrix();
   rlTranslatef(r.x, r.y, 0);
-  rlScalef(2, 2, 1);
+  int s = ui_get_scale();
+  rlScalef(s, s, 1);
   Texture2D sprites = ui_get_sprites();
   NPatchInfo np = {.source = {512, 171, 2, 5}, 2, 0, 0, 0, NPATCH_NINE_PATCH};
-  Rectangle dest = {0, 0, r.width / 2, r.height / 2};
+  Rectangle dest = {0, 0, r.width / s, r.height / s};
+  DrawTextureNPatch(sprites, np, dest, (Vector2){0, 0}, 0, WHITE);
+  rlPopMatrix();
+}
+
+void draw_seph(Rectangle r) {
+  rlPushMatrix();
+  rlTranslatef(r.x, r.y, 0);
+  int s = ui_get_scale();
+  rlScalef(s, s, 1);
+  Texture2D sprites = ui_get_sprites();
+  NPatchInfo np = {.source = {503, 174, 5, 2}, 0, 2, 0, 0, NPATCH_NINE_PATCH};
+  Rectangle dest = {0, 0, r.width / s, r.height / s};
   DrawTextureNPatch(sprites, np, dest, (Vector2){0, 0}, 0, WHITE);
   rlPopMatrix();
 }

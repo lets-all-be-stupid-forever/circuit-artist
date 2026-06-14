@@ -7,6 +7,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
+#include "ui.h"
 #include "utils.h"
 
 static Rectangle layout_rect_raw(Layout* l, const char* id) {
@@ -156,4 +157,30 @@ Rectangle layout_rectb(Layout* l, const char* id) {
   r.width += 4;
   r.height += 4;
   return r;
+}
+
+void layout_update_offset_region(Layout* l, Rectangle region) {
+  Rectangle win = layout_rect_raw(l, "window");
+  int sw = region.width;
+  int sh = region.height;
+  int ww = win.width;
+  int wh = win.height;
+  int x0 = l->align_left ? 0 : (sw - ww) / 2;
+  int y0 = l->align_top ? 0 : (sh - wh) / 2;
+  l->off = (Vector2){x0 + region.x, y0 + region.y};
+}
+
+static void scale_rect(Rectangle* r, int s) {
+  r->x *= s;
+  r->y *= s;
+  r->width *= s;
+  r->height *= s;
+}
+
+void layout_scale(Layout* l) {
+  int s = ui_get_scale();
+  int n = shlen(l->dict);
+  for (int i = 0; i < n; i++) {
+    scale_rect(&l->dict[i].value, s);
+  }
 }

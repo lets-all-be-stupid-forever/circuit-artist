@@ -137,6 +137,7 @@ main_blueprint_unlinked = "Image is no longer associated with the blueprint."
 main_untitled = "Untitled"
 main_cannot_load_unlocked = "Cannot load unlocked campaign level"
 main_cannot_load_notfound = "Linked level not found"
+main_objectives = "Objectives (O)"
 
 
 

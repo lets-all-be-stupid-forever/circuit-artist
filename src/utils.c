@@ -276,6 +276,10 @@ void draw_default_tiled_screen() {
   draw_tiled_screen(ui_get_scale(), ui_get_sprites(), rect_bg_pattern);
 }
 
+void print_rect(Rectangle r) {
+  printf("r: (x:%f y:%f w:%f h:%f)\n", r.x, r.y, r.width, r.height);
+}
+
 // Default hard coded frame pattern.
 void draw_default_tiled_frame(Rectangle inner_content) {
   FramePatternDesc pd = {

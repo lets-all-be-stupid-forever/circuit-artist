@@ -20,6 +20,7 @@ void draw_default_tiled_frame(Rectangle inner_content);
 char* clone_string(const char* str);
 bool is_control_down();
 bool next_token(const char* str, int* ci, char sep, char* out);
+void print_rect(Rectangle r);
 void print_matrix(const char* name, Matrix m);
 
 typedef struct {

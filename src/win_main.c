@@ -14,6 +14,7 @@
 #include "i18n.h"
 #include "img.h"
 #include "layout.h"
+#include "levelsidebar.h"
 #include "log.h"
 #include "lua_level.h"
 #include "math.h"
@@ -24,6 +25,7 @@
 #include "profiler.h"
 #include "raylib.h"
 #include "sim.h"
+#include "sol_widget.h"
 #include "sound.h"
 #include "stb_ds.h"
 #include "time.h"
@@ -92,6 +94,7 @@ static struct {
   Btn btn_sel_save;
   Btn btn_line_sep;
   Btn btn_line_sep_r;
+  Btn btn_side_level;
 
   Btn btn_layer_push;
   Btn btn_layer_pop;
@@ -137,6 +140,14 @@ static struct {
   LevelDef* ldef;
   LevelAPI api;
   Blueprint* bp;
+  // SolWidget sol;
+  Rectangle lower_bg;
+
+  bool sidebar_open;
+  Rectangle sidebar_rect;
+  int s_last_num_nands;
+  Rectangle sep1;
+  Rectangle sep2;
 } C = {0};
 
 static inline int maxint(int a, int b) { return a > b ? a : b; }
@@ -160,7 +171,7 @@ static bool main_is_simulation_on() {
   return main_get_simu_mode() == MODE_SIMU;
 }
 
-static int s_last_num_nands = 0;
+void win_main_toggle_sidebar() { C.sidebar_open = !C.sidebar_open; }
 
 static const char* get_filename() {
   if (C.fname) {
@@ -180,7 +191,7 @@ static void update_title() {
   SetWindowTitle(tmp);
 }
 
-void update_layout() {
+static void update_layout() {
   Layout* l = C.layout;
   /* No layout_update_offset: full-screen layout, offset stays {0,0} */
   int svg_h = (int)layout_rect(l, "window").height;
@@ -197,10 +208,18 @@ void update_layout() {
   C.btn_exit.hitbox = layout_rectb(l, "btn_exit");
   C.btn_level_campaign.hitbox = layout_rectb(l, "btn_campaign_level");
   C.btn_level_custom.hitbox = layout_rectb(l, "btn_custom_level");
+
+  // C.btn_level_campaign.hitbox.x += dx;
+  //  C.btn_level_custom.hitbox.x += dx;
+
   C.btn_blueprint.hitbox = layout_rectb(l, "btn_blueprint");
   C.btn_sim_soladd.hitbox = layout_rectb(l, "btn_soladd");
   C.btn_blueprint_add.hitbox = layout_rectb(l, "btn_bluadd");
+
   C.btn_wiki.hitbox = layout_rectb(l, "btn_wiki");
+  C.btn_wiki.hitbox.x += dx;
+  C.sep1 = layout_rect(l, "sep1");
+  C.sep2 = layout_rect(l, "sep2");
 
   /* Left-bar play/simu controls */
   C.btn_simu.hitbox = layout_rectb(l, "btn_play");
@@ -231,28 +250,31 @@ void update_layout() {
   C.btn_sel_save.hitbox = extra[5];
   for (int i = 0; i < 6; i++) C.btn_clockopt[i].hitbox = extra[i];
   C.btn_sim_show_t.hitbox = extra[6];
+  l->off.y += dy;
 
   /* Bottom-aligned: shift y by (actual screen height - SVG design height) */
   C.fg_color_rect = layout_rect(l, "rect_fg_color");
-  C.fg_color_rect.y += dy;
 
   for (int i = 0; i < 32; i++) {
     C.color_btn[i] = layout_rect(l, TextFormat("c%d", i + 1));
-    C.color_btn[i].y += dy;
   }
 
   for (int i = 0; i < MAX_LAYERS; i++) {
     C.btn_layer[i].hitbox = layout_rectb(l, TextFormat("btn_layer%d", i + 1));
-    C.btn_layer[i].hitbox.y += dy;
     C.btn_layer_v[i].hitbox =
         layout_rectb(l, TextFormat("btn_layer%d_hide", i + 1));
-    C.btn_layer_v[i].hitbox.y += dy;
   }
 
   C.btn_layer_push.hitbox = layout_rectb(l, "btn_layer_add");
-  C.btn_layer_push.hitbox.y += dy;
   C.btn_layer_pop.hitbox = layout_rectb(l, "btn_layer_rm");
-  C.btn_layer_pop.hitbox.y += dy;
+  l->off.y -= dy;
+
+  l->off.x += dx;
+  l->off.y += dy;
+  C.btn_side_level.hitbox = layout_rectb(l, "btn_side_level");
+  C.lower_bg = layout_rect(l, "lower_bg");
+  l->off.x -= dx;
+  l->off.y -= dy;
 }
 
 static void discord_refresh() {
@@ -260,9 +282,9 @@ static void discord_refresh() {
   const char* level_name = C.ldef->name;
 
   if (C.mode == MODE_EDIT) {
-    discord_set_editing(fname, level_name, s_last_num_nands);
+    discord_set_editing(fname, level_name, C.s_last_num_nands);
   } else {
-    discord_set_simulating(fname, level_name, s_last_num_nands);
+    discord_set_simulating(fname, level_name, C.s_last_num_nands);
   }
 }
 
@@ -442,11 +464,28 @@ void win_main_load_level(LevelDef* ldef) {
         2);
   }
   discord_refresh();
+  level_sidebar_set_lvl(ldef);
+  C.sidebar_open = true;
 }
 
 static void reload_level() { win_main_load_level(C.ldef); }
 
 static void on_select_level(LevelDef* ldef) { win_main_load_level(ldef); }
+
+static void update_texture_size(int w, int h) {
+  const int min_tgt_size = 32;
+  int tgt_size_x = maxint(min_tgt_size, w);
+  int tgt_size_y = maxint(min_tgt_size, h);
+  if (tgt_size_x != C.img_target_tex.texture.width ||
+      tgt_size_y != C.img_target_tex.texture.height) {
+    if (C.img_target_tex.texture.width > 0) {
+      UnloadRenderTexture(C.img_target_tex);
+      UnloadRenderTexture(C.level_overlay_tex);
+    }
+    C.img_target_tex = gen_render_texture(tgt_size_x, tgt_size_y, BLANK);
+    C.level_overlay_tex = gen_render_texture(tgt_size_x, tgt_size_y, BLANK);
+  }
+}
 
 static void update_viewport() {
   int sw = GetScreenWidth();
@@ -463,18 +502,23 @@ static void update_viewport() {
   int tgt_size_x = sw - (int)canvas.x - right_margin;
   int tgt_size_y = sh - (int)canvas.y - bottom_margin;
 
+  int pattern_size = 7;
+  int s = ui_get_scale();
+  int dpat = s * pattern_size;
+  int sidebar_w = C.lower_bg.width;
+
   // Avoids crashing when window is too small
-  const int min_tgt_size = 32;
-  tgt_size_x = maxint(min_tgt_size, tgt_size_x);
-  tgt_size_y = maxint(min_tgt_size, tgt_size_y);
-  if (tgt_size_x != C.img_target_tex.texture.width ||
-      tgt_size_y != C.img_target_tex.texture.height) {
-    if (C.img_target_tex.texture.width > 0) {
-      UnloadRenderTexture(C.img_target_tex);
-      UnloadRenderTexture(C.level_overlay_tex);
-    }
-    C.img_target_tex = gen_render_texture(tgt_size_x, tgt_size_y, BLANK);
-    C.level_overlay_tex = gen_render_texture(tgt_size_x, tgt_size_y, BLANK);
+  if (C.sidebar_open) {
+    tgt_size_x -= sidebar_w + dpat;
+  }
+  update_texture_size(tgt_size_x, tgt_size_y);
+  if (C.sidebar_open) {
+    C.sidebar_rect = (Rectangle){
+        C.target_pos.x + tgt_size_x + dpat,
+        C.target_pos.y,
+        sidebar_w,
+        tgt_size_y,
+    };
   }
 }
 
@@ -482,7 +526,9 @@ void win_main_init() {
   srand(time(NULL));
   C.kernel_error = false;
   C.layout = easy_load_layout("main");
+  layout_scale(C.layout);
   win_log_init();
+  C.sidebar_open = false;
   C.clock_speed = 2;
   C.palette[0] = WHITE;
   C.palette[1] = BLACK;
@@ -512,12 +558,16 @@ void win_main_init() {
   paint_set_color(&C.ca, C.palette[3]);
   C.sidepanel_img = gen_image_simple(200, 800);
   C.sidepanel_tex = LoadTextureFromImage(C.sidepanel_img);
-  update_viewport();
   update_title();
   main_update_widgets();
   C.r = getreg();
   sim_dry_run();
+  level_sidebar_init();
   win_main_load_level(find_basics_custom_level());
+  // update_viewport();
+
+  win_main_update();
+  win_main_update();
   discord_init();
   discord_refresh();
   if (false) {
@@ -622,7 +672,6 @@ Status main_draw_level_kernel() {
 
 void win_main_update() {
   discord_run_callbacks();
-  update_viewport();
   C.rewind_pressed = false;
   C.forward_pressed = false;
   main_check_file_drop();
@@ -657,8 +706,12 @@ void win_main_update() {
       handle_kernel_error(s);
     }
   }
+  if (C.sidebar_open) {
+    level_sidebar_update(C.sidebar_rect);
+  }
   profiler_tac();
   profiler_tic("Rendering");
+  update_viewport();
 
   int mode = main_get_simu_mode();
   if (mode == MODE_EDIT) {
@@ -801,7 +854,7 @@ void win_main_start_simu() {
     return;
   }
 
-  s_last_num_nands = arrlen(C.sim.pg.nands);
+  C.s_last_num_nands = arrlen(C.sim.pg.nands);
   C.hsim = wrap_sim(&C.sim);
   C.simu_target_steps = 0;
   C.pix_toggle = -1;
@@ -909,6 +962,9 @@ static int on_save_click(bool saveas) {
 }
 
 void main_update_controls() {
+  if (IsKeyPressed(KEY_O)) {
+    win_main_toggle_sidebar();
+  }
   if (is_control_down()) {
     if (IsKeyPressed(KEY_S)) {
       on_save_click(false);
@@ -1174,6 +1230,7 @@ void main_update_hud() {
   if (btn_update(&C.btn_text)) text_modal_open(on_paste_text, NULL, NULL);
   if (btn_update(&C.btn_bucket)) paint_set_tool(ca, TOOL_BUCKET);
   if (btn_update(&C.btn_picker)) paint_set_tool(ca, TOOL_PICKER);
+  if (btn_update(&C.btn_side_level)) win_main_toggle_sidebar();
 
   if (btn_update(&C.btn_rotate)) paint_act_sel_rot(ca);
   if (btn_update(&C.btn_fliph)) paint_act_sel_fliph(ca);
@@ -1245,6 +1302,9 @@ void win_main_draw() {
       C.level_overlay_tex.texture.height,
   };
   draw_default_tiled_frame(inner_content);
+  draw_default_tiled_frame(C.lower_bg);
+  draw_seph(C.sep1);
+  draw_seph(C.sep2);
   main_draw_status_bar();
 
   if (C.mode == MODE_SIMU) {
@@ -1319,7 +1379,8 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_forward, rect_forward);
   btn_draw_icon(&C.btn_pause, rect_pause);
 
-  btn_draw_text(&C.btn_wiki, T.main_btn_wiki);
+  // btn_draw_text(&C.btn_wiki, T.main_btn_wiki);
+  btn_draw_icon(&C.btn_wiki, rect_book);
   btn_draw_text(&C.btn_level_custom, T.main_select_level_custom);
   btn_draw_text(&C.btn_level_campaign, T.main_select_level);
 
@@ -1332,11 +1393,13 @@ void win_main_draw() {
                    color_disabled);
   }
   btn_draw_icon(&C.btn_line, rect_line);
-  btn_draw_text(&C.btn_blueprint, T.main_btn_blueprint);
+  // btn_draw_text(&C.btn_blueprint, T.main_btn_blueprint);
+  btn_draw_icon(&C.btn_blueprint, rect_blueprint2);
   btn_draw_icon(&C.btn_brush, rect_brush);
   btn_draw_icon(&C.btn_picker, rect_picker);
   btn_draw_icon(&C.btn_bucket, rect_bucket);
   btn_draw_icon(&C.btn_marquee, rect_marquee);
+  btn_draw_icon(&C.btn_side_level, rect_objective);
   btn_draw_icon(&C.btn_text, rect_text);
   btn_draw_icon(&C.btn_rotate, rect_rot);
   btn_draw_icon(&C.btn_fliph, rect_fliph);
@@ -1347,6 +1410,9 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_sel_open, rect_sel_open);
   btn_draw_icon(&C.btn_sel_save, rect_sel_save);
   btn_draw_icon(&C.btn_blueprint_add, rect_blueprint_add);
+  if (C.sidebar_open) {
+    level_sidebar_draw();
+  }
 
   // We only draw the legends if this window is the active window.
   if (ui_get_window() == WINDOW_MAIN) {
@@ -1358,12 +1424,16 @@ void win_main_draw() {
     btn_draw_legend(&C.btn_blueprint, T.main_btn_blueprint_leg);
     btn_draw_legend(&C.btn_exit, T.main_exit_leg);
 
+    btn_draw_legend(&C.btn_side_level, T.main_objectives);
     btn_draw_legend(&C.btn_layer_push, T.main_layer_push_leg);
     btn_draw_legend(&C.btn_layer_pop, T.main_layer_pop_leg);
 
     for (int i = 0; i < MAX_LAYERS; i++) {
       btn_draw_legend(&C.btn_layer_v[i],
                       TextFormat(T.main_layer_show_leg, i + 1));
+    }
+    if (C.sidebar_open) {
+      level_sidebar_draw_legend();
     }
 
     btn_draw_legend(&C.btn_layer[0], T.main_layer_f1_leg);
@@ -1643,6 +1713,7 @@ void main_update_widgets() {
   C.btn_pause.toggled = C.paused;
   C.btn_rewind.toggled = C.rewind_pressed;
   C.btn_forward.toggled = C.forward_pressed;
+  C.btn_side_level.toggled = C.sidebar_open;
 
   C.btn_rewind.disabled = !ned || !can_rewind;
   C.btn_forward.disabled = !ned || !C.paused;

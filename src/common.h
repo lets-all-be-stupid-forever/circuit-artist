@@ -106,6 +106,8 @@
 #define rect_map ((Rectangle){448, 0, 13, 13})
 #define rect_flag ((Rectangle){0, 128, 13, 13})
 #define rect_success ((Rectangle){16, 128, 48, 48})
+#define rect_objective ((Rectangle){0, 80, 24, 24})
+#define rect_blueprint2 ((Rectangle){64, 128, 24, 24})
 
 // mouse icons
 #define rect_mouse_switch ((Rectangle){144, 32, 32, 32})

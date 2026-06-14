@@ -204,6 +204,7 @@ void mle_draw(MultiLineEdit* m);
 
 void draw_frame(Rectangle r);
 void draw_sepv(Rectangle r);
+void draw_seph(Rectangle r);
 
 #if defined(__cplusplus)
 }

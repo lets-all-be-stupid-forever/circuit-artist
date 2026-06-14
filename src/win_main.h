@@ -26,5 +26,6 @@ bool win_main_is_simu_error();
 bool win_main_is_simu_done();
 void win_main_load_level(LevelDef* ldef);
 Blueprint* win_main_get_editting_blueprint();
+void win_main_toggle_sidebar();
 
 #endif

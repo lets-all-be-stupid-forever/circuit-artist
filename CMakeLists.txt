@@ -93,6 +93,7 @@ SET(ca_src
   src/layout.c
   src/lua_level.c
   src/level_api.c
+  src/levelsidebar.c
   src/i18n.c
   src/log.c
   src/modal.c

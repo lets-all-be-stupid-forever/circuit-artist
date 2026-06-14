@@ -1,16 +1,23 @@
-<svg width="450" height="609" viewBox="0 0 450 609" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="225" height="305" viewBox="0 0 225 305" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="levelsidebar">
-<rect width="450" height="609" fill="white"/>
-<rect id="levelbox" x="16" y="70" width="417" height="452" fill="#D9D9D9"/>
-<rect id="level_title" x="16" y="14" width="417" height="35" fill="#D9D9D9"/>
-<rect id="extra1" x="147" y="534" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra2" x="183" y="534" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra3" x="219" y="534" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra4" x="255" y="534" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra5" x="291" y="534" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra6" x="327" y="534" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra7" x="363" y="534" width="34" height="34" fill="#D9D9D9"/>
-<rect id="extra8" x="399" y="534" width="34" height="34" fill="#D9D9D9"/>
-<rect id="btn_close" x="16" y="551" width="44" height="44" fill="#D9D9D9"/>
+<rect width="225" height="304.5" fill="white"/>
+<rect id="levelbox" x="8" y="35" width="208.5" height="170" fill="#D9D9D9"/>
+<rect id="level_title" x="8" y="7" width="208.5" height="17.5" fill="#D9D9D9"/>
+<rect id="extra1" x="73.5" y="211.5" width="17" height="17" fill="#D9D9D9"/>
+<rect id="extra2" x="91.5" y="211.5" width="17" height="17" fill="#D9D9D9"/>
+<rect id="extra3" x="109.5" y="211.5" width="17" height="17" fill="#D9D9D9"/>
+<rect id="extra4" x="127.5" y="211.5" width="17" height="17" fill="#D9D9D9"/>
+<rect id="extra5" x="145.5" y="211.5" width="17" height="17" fill="#D9D9D9"/>
+<rect id="extra6" x="163.5" y="211.5" width="17" height="17" fill="#D9D9D9"/>
+<rect id="extra7" x="181.5" y="211.5" width="17" height="17" fill="#D9D9D9"/>
+<rect id="extra8" x="199.5" y="211.5" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_close" x="8" y="275.5" width="22" height="22" fill="#D9D9D9"/>
+<rect id="btn_browse_sol" x="192.5" y="245" width="17" height="17" fill="#D9D9D9"/>
+<rect id="sol1" x="43.5" y="238.5" width="32" height="32" fill="#D9D9D9"/>
+<rect id="sol2" x="75.5" y="238.5" width="32" height="32" fill="#D9D9D9"/>
+<rect id="sol3" x="107.5" y="238.5" width="32" height="32" fill="#D9D9D9"/>
+<rect id="sol4" x="139.5" y="238.5" width="32" height="32" fill="#D9D9D9"/>
+<rect id="btn_sol_nxt" x="172.5" y="239.5" width="16" height="30" fill="#D9D9D9"/>
+<rect id="btn_sol_prv" x="26.5" y="239.5" width="16" height="30" fill="#D9D9D9"/>
 </g>
 </svg>
