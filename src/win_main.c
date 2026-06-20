@@ -104,7 +104,6 @@ static struct {
   // speed buttons
   Btn btn_clockopt[6];
   Btn btn_sim_show_t;
-  Btn btn_sim_soladd;
 
   Sim sim;
   HSim hsim;
@@ -213,11 +212,10 @@ static void update_layout() {
   //  C.btn_level_custom.hitbox.x += dx;
 
   C.btn_blueprint.hitbox = layout_rectb(l, "btn_blueprint");
-  C.btn_sim_soladd.hitbox = layout_rectb(l, "btn_soladd");
   C.btn_blueprint_add.hitbox = layout_rectb(l, "btn_bluadd");
 
   C.btn_wiki.hitbox = layout_rectb(l, "btn_wiki");
-  C.btn_wiki.hitbox.x += dx;
+  // C.btn_wiki.hitbox.x += dx;
   C.sep1 = layout_rect(l, "sep1");
   C.sep2 = layout_rect(l, "sep2");
 
@@ -877,7 +875,7 @@ static void main_toggle_simu() {
   }
 }
 
-static void add_blueprint_as_solution() {
+void win_main_add_blueprint_as_solution() {
   win_main_stop_simu();
   Image full = paint_export_buf(&C.ca);
   int nl = hist_get_num_layers(&C.ca.h);
@@ -1259,7 +1257,6 @@ void main_update_hud() {
   if (btn_update(&C.btn_clockopt[4])) C.clock_speed = 4;
   if (btn_update(&C.btn_clockopt[5])) C.clock_speed = 5;
   if (btn_update(&C.btn_sim_show_t)) toggle_sim_show_t();
-  if (btn_update(&C.btn_sim_soladd)) add_blueprint_as_solution();
 
   Vector2 pos = GetMousePosition();
   if (rect_hover(C.fg_color_rect, pos)) {
@@ -1365,7 +1362,6 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_clockopt[4], rect_hz64);
   btn_draw_icon(&C.btn_clockopt[5], rect_hz1k);
   btn_draw_icon(&C.btn_sim_show_t, rect_inspect_wire);
-  btn_draw_icon(&C.btn_sim_soladd, rect_soladd);
 
   int mode = main_get_simu_mode();
   bool simu_on = mode == MODE_SIMU || mode == MODE_ERROR;
@@ -1393,8 +1389,7 @@ void win_main_draw() {
                    color_disabled);
   }
   btn_draw_icon(&C.btn_line, rect_line);
-  // btn_draw_text(&C.btn_blueprint, T.main_btn_blueprint);
-  btn_draw_icon(&C.btn_blueprint, rect_blueprint2);
+  btn_draw_icon(&C.btn_blueprint, rect_blueprint3);
   btn_draw_icon(&C.btn_brush, rect_brush);
   btn_draw_icon(&C.btn_picker, rect_picker);
   btn_draw_icon(&C.btn_bucket, rect_bucket);
@@ -1468,7 +1463,6 @@ void win_main_draw() {
         TextFormat(T.main_speed6_leg, fmtnum((int)(get_speed_dt(5)))));
 
     btn_draw_legend(&C.btn_sim_show_t, T.main_show_start_leg);
-    btn_draw_legend(&C.btn_sim_soladd, T.main_soladd_leg);
 
     if (!C.kernel_error) {
       btn_draw_legend(&C.btn_simu,
@@ -1694,6 +1688,11 @@ void main_check_file_drop() {
   UnloadDroppedFiles(path_list);
 }
 
+bool win_main_can_add_sol() {
+  return !(C.mode != MODE_SIMU || !can_save_as_solution());
+  // C.btn_sim_soladd.disabled = C.mode != MODE_SIMU || !can_save_as_solution();
+}
+
 void main_update_widgets() {
   bool ned = C.mode != MODE_EDIT;
   int tool = paint_get_tool(&C.ca);
@@ -1762,9 +1761,6 @@ void main_update_widgets() {
   }
   C.btn_sim_show_t.toggled = C.sim_show_t;
   C.btn_sim_show_t.hidden = C.mode != MODE_SIMU;
-
-  // C.btn_sim_soladd.hidden = C.mode != MODE_SIMU;
-  C.btn_sim_soladd.disabled = C.mode != MODE_SIMU || !can_save_as_solution();
 
   int nl = paint_get_num_layers(&C.ca);
   C.btn_layer_pop.disabled = ned || (nl == 1);

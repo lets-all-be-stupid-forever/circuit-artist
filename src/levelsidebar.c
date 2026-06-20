@@ -1,5 +1,6 @@
 #include "levelsidebar.h"
 
+#include "i18n.h"
 #include "layout.h"
 #include "sol_widget.h"
 #include "stb_ds.h"
@@ -17,6 +18,7 @@ static struct {
   Rectangle modal;
   Btn btn_msg[8];
   Btn btn_close;
+  Btn btn_addsol;
   Rectangle region;
   SolWidget sol;
 } C = {0};
@@ -35,6 +37,7 @@ static void update_layout(Rectangle region) {
   textbox_set_box(&C.tb, lb);
   l->off.y += dy;
   C.btn_close.hitbox = layout_rectb(l, "btn_close");
+  C.btn_addsol.hitbox = layout_rectb(l, "btn_addsol");
   for (int i = 0; i < 8; i++) {
     C.btn_msg[i].hitbox = layout_rectb(l, TextFormat("extra%d", i + 1));
   }
@@ -59,10 +62,13 @@ void level_sidebar_set_lvl(LevelDef* ldef) {
 }
 
 void level_sidebar_update(Rectangle region) {
-  update_layout(region);
   textbox_update(&C.tb);
   if (btn_update(&C.btn_close)) {
     win_main_toggle_sidebar();
+  }
+  C.btn_addsol.disabled = !win_main_can_add_sol();
+  if (btn_update(&C.btn_addsol)) {
+    win_main_add_blueprint_as_solution();
   }
   sol_widget_update(&C.sol);
   LevelDef* lvl = C.ldef;
@@ -81,6 +87,7 @@ void level_sidebar_update(Rectangle region) {
       }
     }
   }
+  update_layout(region);
 }
 
 static void draw_level_extra_items() {
@@ -120,10 +127,12 @@ void level_sidebar_draw() {
   draw_level_extra_items();
   btn_draw_icon(&C.btn_close, rect_close);
   sol_widget_draw(&C.sol);
+  btn_draw_icon(&C.btn_addsol, rect_soladd);
 }
 
 void level_sidebar_draw_legend() {
   sol_widget_draw_leg(&C.sol);
+  btn_draw_legend(&C.btn_addsol, T.main_soladd_leg);
   LevelDef* lvl = C.ldef;
   int nextra = arrlen(lvl->extra_content);
   for (int i = 0; i < nextra; i++) {

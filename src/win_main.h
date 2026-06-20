@@ -27,5 +27,7 @@ bool win_main_is_simu_done();
 void win_main_load_level(LevelDef* ldef);
 Blueprint* win_main_get_editting_blueprint();
 void win_main_toggle_sidebar();
+void win_main_add_blueprint_as_solution();
+bool win_main_can_add_sol();
 
 #endif

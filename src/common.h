@@ -108,6 +108,8 @@
 #define rect_success ((Rectangle){16, 128, 48, 48})
 #define rect_objective ((Rectangle){0, 80, 24, 24})
 #define rect_blueprint2 ((Rectangle){64, 128, 24, 24})
+#define rect_blueprint3 ((Rectangle){80, 112, 13, 13})
+#define rect_blueprint4 ((Rectangle){96, 112, 13, 13})
 
 // mouse icons
 #define rect_mouse_switch ((Rectangle){144, 32, 32, 32})
