@@ -1,10 +1,10 @@
 #include "win_bpdetail.h"
 
 #include "assert.h"
-#include "i18n.h"
 #include "blueprint.h"
 #include "common.h"
 #include "fs.h"
+#include "i18n.h"
 #include "img.h"
 #include "layout.h"
 #include "msg.h"
@@ -37,6 +37,7 @@ static struct {
   Btn btn_publish;
   Btn btn_thumb;
   Btn btn_copy;
+  bool opened_from_main; /* From main we "pop" the window only once */
   Label lab_author;
   Label lab_props;
   Label lab_name;
@@ -92,6 +93,7 @@ static void update_txt() {
 }
 
 void win_bpdetail_open(Blueprint* bp, BPDetailMainAction main_action) {
+  C.opened_from_main = ui_wintop() == WINDOW_MAIN;
   C.main_action = main_action;
   C.bp = bp;
   C.idx = find_bp_index(C.store, bp);
@@ -157,7 +159,9 @@ static void do_publish() {
 
 static void on_open_bp() {
   ui_winpop();
-  ui_winpop();
+  if (!C.opened_from_main) {
+    ui_winpop();
+  }
   win_main_load_blueprint(C.bp);
 }
 
