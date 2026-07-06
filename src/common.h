@@ -75,6 +75,9 @@
 #define rect_lua ((Rectangle){128, 32, 13, 13})
 #define rect_refresh ((Rectangle){48, 64, 13, 13})
 #define rect_settings ((Rectangle){64, 64, 13, 13})
+#define rect_campaign1 ((Rectangle){1, 177, 24, 24})
+#define rect_campaign2 ((Rectangle){26, 177, 24, 24})
+#define rect_custom_level ((Rectangle){51, 177, 24, 24})
 
 // Clock speed icons
 #define rect_hz0 ((Rectangle){352, 16, 13, 13})
@@ -101,6 +104,7 @@
 #define rect_line_sep ((Rectangle){480, 16, 13, 13})
 #define rect_line_sep_r ((Rectangle){496, 16, 13, 13})
 #define rect_soladd ((Rectangle){80, 80, 13, 13})
+#define rect_engineer ((Rectangle){288, 0, 13, 13})
 
 // minimap icon
 #define rect_map ((Rectangle){448, 0, 13, 13})

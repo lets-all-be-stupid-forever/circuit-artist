@@ -43,10 +43,10 @@ main_show_start_leg = "Show stats on cursor\n`T` = Time it takes to propagate to
 main_simu_stop_leg = "Stop Simulation (SPACE)"
 main_simu_start_leg = "Start Simulation (SPACE)"
 main_simu_err_leg = "Error in level kernel.\nPlease load new level.\nCheck console for error message.."
-main_pause_leg = "Pause/Unpause Simulation (K)."
+main_pause_leg = "Pause/Unpause Simulation (K)\nOnce paused, you can forward simulation using (L)"
 main_rewind_disabled_leg = "Rewind is disabled for this level"
-main_rewind_leg = "Rewinds simulation (J).\nYou can also press (RIGHT MOUSE BUTTON) during simulation to rewind with more accuracy."
-main_forward_leg = "Forwards simulation (L).\nYou can also press (RIGHT MOUSE BUTTON) during simulation to rewind with more accuracy."
+main_rewind_leg = "Rewinds simulation (J).\nYou can also press (RIGHT MOUSE BUTTON) during simulation to rewind with more accuracy.\n"
+main_forward_leg = ".\nYou can also press (RIGHT MOUSE BUTTON) during simulation to rewind with more accuracy."
 main_brush_leg = "Brush tool (B)\nLeft mouse button: draw\nRight mouse button: erase\nPress (ALT) to pick color."
 main_line_leg = [[
 Line tool (L)
@@ -110,7 +110,7 @@ main_insert_number = "INSERT NUMBER"
 main_btn_blueprint = "Blueprints"
 main_btn_blueprint_leg = "Open Blueprints Window (Q)"
 main_select_level = "Campaign"
-main_select_level_custom = "Custom level"
+main_select_level_custom = "Custom"
 main_select_level_custom_leg = [[
 Load a Custom Level
 Press (F5) to quickly reload script

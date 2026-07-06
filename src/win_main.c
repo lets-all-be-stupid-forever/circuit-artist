@@ -73,11 +73,10 @@ static struct {
 
   Btn btn_pause;
   Btn btn_rewind;
-  Btn btn_forward;
+  // Btn btn_forward;
 
   // Tools buttons
   Btn btn_level_custom;
-  Btn btn_level_campaign;
   Btn btn_simu;
   Btn btn_brush;
   Btn btn_text;
@@ -100,6 +99,7 @@ static struct {
   Btn btn_layer_pop;
   Btn btn_layer[MAX_LAYERS];
   Btn btn_layer_v[MAX_LAYERS];
+  Btn btn_camp;
 
   // speed buttons
   Btn btn_clockopt[6];
@@ -205,11 +205,8 @@ static void update_layout() {
   C.btn_saveas.hitbox = layout_rectb(l, "btn_saveas");
   C.btn_settings.hitbox = layout_rectb(l, "btn_settings");
   C.btn_exit.hitbox = layout_rectb(l, "btn_exit");
-  C.btn_level_campaign.hitbox = layout_rectb(l, "btn_campaign_level");
-  C.btn_level_custom.hitbox = layout_rectb(l, "btn_custom_level");
-
-  // C.btn_level_campaign.hitbox.x += dx;
-  //  C.btn_level_custom.hitbox.x += dx;
+  C.btn_camp.hitbox = layout_rectb(l, "btn_camp");
+  C.btn_level_custom.hitbox = layout_rectb(l, "btn_custom");
 
   C.btn_blueprint.hitbox = layout_rectb(l, "btn_blueprint");
   C.btn_blueprint_add.hitbox = layout_rectb(l, "btn_bluadd");
@@ -223,7 +220,7 @@ static void update_layout() {
   C.btn_simu.hitbox = layout_rectb(l, "btn_play");
   C.btn_pause.hitbox = layout_rectb(l, "btn_pause");
   C.btn_rewind.hitbox = layout_rectb(l, "btn_rewind");
-  C.btn_forward.hitbox = layout_rectb(l, "btn_forward");
+  // C.btn_forward.hitbox = layout_rectb(l, "btn_forward");
 
   /* Left-bar tool buttons */
   C.btn_brush.hitbox = layout_rectb(l, "btn_brush");
@@ -528,6 +525,7 @@ void win_main_init() {
   win_log_init();
   C.sidebar_open = false;
   C.clock_speed = 2;
+  C.btn_camp.primary = true;
   C.palette[0] = WHITE;
   C.palette[1] = BLACK;
   C.palette[2] = RED;
@@ -1241,11 +1239,12 @@ void main_update_hud() {
   if (btn_update(&C.btn_simu)) main_toggle_simu();
   if (btn_update(&C.btn_pause)) toggle_simu_pause();
   btn_update(&C.btn_rewind);
-  btn_update(&C.btn_forward);
+  // btn_update(&C.btn_forward);
   if (C.btn_rewind.pressed) C.rewind_pressed = true;
-  if (C.btn_forward.pressed) C.forward_pressed = true;
+  // if (C.btn_forward.pressed) C.forward_pressed = true;
 
-  if (btn_update(&C.btn_level_campaign)) on_btn_campaign_level_click();
+  // if (btn_update(&C.btn_level_campaign)) on_btn_campaign_level_click();
+  if (btn_update(&C.btn_camp)) on_btn_campaign_level_click();
   if (btn_update(&C.btn_level_custom)) on_btn_custom_level_click();
   if (btn_update(&C.btn_wiki)) win_wiki_open();
   if (btn_update(&C.btn_blueprint)) win_blueprint_open();
@@ -1372,13 +1371,15 @@ void win_main_draw() {
   if (C.kernel_error) rec_simu = rect_warning;
   btn_draw_icon(&C.btn_simu, rec_simu);
   btn_draw_icon(&C.btn_rewind, rect_rewind);
-  btn_draw_icon(&C.btn_forward, rect_forward);
+  // btn_draw_icon(&C.btn_forward, rect_forward);
   btn_draw_icon(&C.btn_pause, rect_pause);
 
   // btn_draw_text(&C.btn_wiki, T.main_btn_wiki);
   btn_draw_icon(&C.btn_wiki, rect_book);
-  btn_draw_text(&C.btn_level_custom, T.main_select_level_custom);
-  btn_draw_text(&C.btn_level_campaign, T.main_select_level);
+  // btn_draw_text(&C.btn_level_custom, T.main_select_level_custom);
+  // btn_draw_icon(&C.btn_level_custom, rect_custom_level);
+  btn_draw_icon(&C.btn_level_custom, rect_engineer);
+  // btn_draw_text(&C.btn_level_campaign, T.main_select_level);
 
   bool color_disabled = mode != MODE_EDIT;
   btn_draw_color(C.fg_color_rect, paint_get_color(&C.ca), false,
@@ -1395,6 +1396,9 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_bucket, rect_bucket);
   btn_draw_icon(&C.btn_marquee, rect_marquee);
   btn_draw_icon(&C.btn_side_level, rect_objective);
+  // btn_draw_icon(&C.btn_camp, rect_campaign1);
+  btn_draw_icon(&C.btn_camp, rect_flag);
+
   btn_draw_icon(&C.btn_text, rect_text);
   btn_draw_icon(&C.btn_rotate, rect_rot);
   btn_draw_icon(&C.btn_fliph, rect_fliph);
@@ -1436,7 +1440,7 @@ void win_main_draw() {
     btn_draw_legend(&C.btn_layer[2], T.main_layer_f3_leg);
 
     btn_draw_legend(&C.btn_level_custom, T.main_select_level_custom_leg);
-    btn_draw_legend(&C.btn_level_campaign, T.main_select_level_leg);
+    btn_draw_legend(&C.btn_camp, T.main_select_level_leg);
     btn_draw_legend(&C.btn_wiki, T.main_wiki_leg);
 
     btn_draw_legend(&C.btn_sel_open, T.main_open_sel_leg);
@@ -1478,7 +1482,7 @@ void win_main_draw() {
     } else {
       btn_draw_legend(&C.btn_rewind, T.main_rewind_leg);
     }
-    btn_draw_legend(&C.btn_forward, T.main_forward_leg);
+    // btn_draw_legend(&C.btn_forward, T.main_forward_leg);
     btn_draw_legend(&C.btn_brush, T.main_brush_leg);
     btn_draw_legend(&C.btn_line, T.main_line_leg);
     btn_draw_legend(&C.btn_bucket, T.main_bucket_leg);
@@ -1711,16 +1715,16 @@ void main_update_widgets() {
 
   C.btn_pause.toggled = C.paused;
   C.btn_rewind.toggled = C.rewind_pressed;
-  C.btn_forward.toggled = C.forward_pressed;
+  // C.btn_forward.toggled = C.forward_pressed;
   C.btn_side_level.toggled = C.sidebar_open;
 
   C.btn_rewind.disabled = !ned || !can_rewind;
-  C.btn_forward.disabled = !ned || !C.paused;
+  // C.btn_forward.disabled = !ned || !C.paused;
   C.btn_pause.disabled = !ned;
 
   C.btn_simu.disabled = C.kernel_error;
 
-  C.btn_level_campaign.disabled = ned;
+  C.btn_camp.disabled = ned;
   C.btn_level_custom.disabled = ned;
   C.btn_blueprint.disabled = ned;
   C.btn_brush.toggled = tool == TOOL_BRUSH;
