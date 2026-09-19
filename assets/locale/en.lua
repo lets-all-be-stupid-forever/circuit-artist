@@ -339,10 +339,10 @@ Ctrl-Shift-Z
 Ctrl-Y
 
 `Navigation`
-W = Up
-A = Left
-S = Down
-D = Right
+W / Arrow Up = Up
+A / Arrow Left = Left
+S / Arrow Down = Down
+D / Arrow Right = Right
 = (equal) zoom in
 - (minus) zoom out
 

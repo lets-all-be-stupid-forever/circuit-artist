@@ -2,7 +2,6 @@
 #include "paint.h"
 
 #include <math.h>
-#include "i18n.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -10,6 +9,7 @@
 #include "clipapi.h"
 #include "colors.h"
 #include "font.h"
+#include "i18n.h"
 #include "img.h"
 #include "msg.h"
 #include "rlgl.h"
@@ -1460,6 +1460,45 @@ static void pan_update(PanState* pan, double dt, int dx, int* target) {
   *target += step;
 }
 
+void paint_movement_arrow(Paint* ca, bool paint_mode) {
+  if (ca->tool_pressed) {
+    return;
+  }
+
+  bool arrow_pressed = IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) ||
+                       IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_DOWN);
+  bool arrow_down = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT) ||
+                    IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN);
+  if (arrow_down) {
+    if (paint_mode && paint_get_has_selection(ca)) {
+      /* I just want to move the selection when the arrow is pressed,
+       * otherwise it will move too fast.*/
+      if (arrow_pressed) {
+        // moves the selection...
+        int dx = 0;
+        int dy = 0;
+        // When we press control it moves 2 spaces at a time
+        int d = is_control_down() ? 4 : 1;
+        int ll = hist_get_active_layer_llsp(&ca->h);
+        d = d << ll;
+        if (IsKeyPressed(KEY_DOWN)) dy += d;
+        if (IsKeyPressed(KEY_UP)) dy -= d;
+        if (IsKeyPressed(KEY_LEFT)) dx -= d;
+        if (IsKeyPressed(KEY_RIGHT)) dx += d;
+        hist_act_move_sel(&ca->h, dx, dy);
+        play_sound_click();
+      }
+    } else {
+      int dy = IsKeyDown(KEY_UP) - IsKeyDown(KEY_DOWN);
+      int dx = IsKeyDown(KEY_LEFT) - IsKeyDown(KEY_RIGHT);
+      double dt = 1000.0 * ui_get_frame_time();
+      pan_update(&ca->pan_x, dt, dx, &ca->cam.off.x);
+      pan_update(&ca->pan_y, dt, dy, &ca->cam.off.y);
+      paint_ensure_camera_within_bounds(ca);
+    }
+  }
+}
+
 void paint_movement_keys(Paint* ca) {
   // If control is pressed, don't do anything, to avoid conflict with save
   // (Ctrl+S) or other command.
@@ -1469,10 +1508,8 @@ void paint_movement_keys(Paint* ca) {
   int dy = IsKeyDown(KEY_W) - IsKeyDown(KEY_S);
   int dx = IsKeyDown(KEY_A) - IsKeyDown(KEY_D);
   double dt = 1000.0 * ui_get_frame_time();
-
   pan_update(&ca->pan_x, dt, dx, &ca->cam.off.x);
   pan_update(&ca->pan_y, dt, dy, &ca->cam.off.y);
-
   paint_ensure_camera_within_bounds(ca);
 
   int zoom = IsKeyPressed(KEY_EQUAL) - IsKeyPressed(KEY_MINUS);
@@ -1575,24 +1612,6 @@ void paint_handle_keys(Paint* ca) {
   }
 
   if (!ca->tool_pressed) {
-    if ((paint_get_has_selection(ca)) &&
-        (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) ||
-         IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_DOWN))) {
-      // moves the selection...
-      int dx = 0;
-      int dy = 0;
-      // When we press control it moves 2 spaces at a time
-      int d = is_control_down() ? 4 : 1;
-      int ll = hist_get_active_layer_llsp(&ca->h);
-      d = d << ll;
-      if (IsKeyPressed(KEY_DOWN)) dy += d;
-      if (IsKeyPressed(KEY_UP)) dy -= d;
-      if (IsKeyPressed(KEY_LEFT)) dx -= d;
-      if (IsKeyPressed(KEY_RIGHT)) dx += d;
-      hist_act_move_sel(&ca->h, dx, dy);
-      play_sound_click();
-    }
-
     bool has_sel = paint_get_has_selection(ca);
     if (has_sel && IsKeyPressed(KEY_H)) {
       hist_act_flip_sel(&ca->h, ACTION_SEL_FLIP_H);

@@ -1138,6 +1138,8 @@ void main_update_controls() {
   }
 
   paint_movement_keys(&C.ca);
+  bool paint_mode = main_get_simu_mode() == MODE_EDIT;
+  paint_movement_arrow(&C.ca, paint_mode);
   if (isEdit) paint_handle_keys(&C.ca);
 }
 

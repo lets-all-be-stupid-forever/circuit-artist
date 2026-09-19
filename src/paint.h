@@ -64,6 +64,7 @@ typedef struct {
 void paint_init(Paint* ca);
 void paint_destroy(Paint* ca);
 void paint_movement_keys(Paint* ca);
+void paint_movement_arrow(Paint* ca, bool paint_mode);
 void paint_load_image(Paint* ca, Image img);
 void paint_center_camera(Paint* ca);
 void paint_set_viewport(Paint* ca, RecI viewport);
