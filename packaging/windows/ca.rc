@@ -1,0 +1,3 @@
+// Embeds the application icon into ca.exe. Windows uses the first ICON
+// resource for Explorer, the taskbar and the window title bar.
+IDI_ICON1 ICON "ca.ico"

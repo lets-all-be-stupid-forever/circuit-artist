@@ -119,6 +119,26 @@ bool ui_is_demo() {
 #endif
 }
 
+// Sets the window/taskbar icon on Windows and Linux. On macOS the icon comes
+// from the .app bundle (see MACOS_BUNDLE in CMakeLists.txt) and GLFW warns if
+// we try, so skip it there.
+static void setup_app_icons() {
+#ifdef __APPLE__
+  return;
+#endif
+  Image icons[4] = {
+      load_image_asset("imgs/icon2.png"),  /* 16x16 */
+      load_image_asset("imgs/icon24.png"), /* 24x24 */
+      load_image_asset("imgs/icon32.png"), /* 32x32 */
+      load_image_asset("imgs/icon48.png"), /* 48x48*/
+  };
+  SetWindowIcons(icons, 4);
+  UnloadImage(icons[0]);
+  UnloadImage(icons[1]);
+  UnloadImage(icons[2]);
+  UnloadImage(icons[3]);
+}
+
 void ui_init() {
   C.demo = false;
   C.debug = false;
@@ -138,6 +158,7 @@ void ui_init() {
   // SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
   SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
   InitWindow(screen_width, screen_height, "Circuit Artist");
+  setup_app_icons();
   InitAudioDevice();
   init_i18n();
   init_game_registry();

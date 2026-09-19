@@ -2,6 +2,17 @@ cmake_minimum_required(VERSION 3.5)
 project(ca C CXX)
 OPTION(STEAM "Steam support")
 OPTION(DEV "Development version")
+OPTION(MACOS_BUNDLE "Build ca as a macOS .app bundle (for the Dock/Finder icon)")
+
+# Application icons live in packaging/. Regenerate with packaging/make_icons.py
+IF (WIN32)
+  enable_language(RC)
+  SET(ca_icon_src packaging/windows/ca.rc)
+ELSEIF (APPLE AND MACOS_BUNDLE)
+  SET(ca_icon_src packaging/macos/ca.icns)
+  set_source_files_properties(packaging/macos/ca.icns PROPERTIES
+    MACOSX_PACKAGE_LOCATION Resources)
+ENDIF()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 11)
@@ -199,7 +210,7 @@ target_link_libraries(calib
   discord-rpc
   freetype)
 
-add_executable(ca src/main.c)
+add_executable(ca src/main.c ${ca_icon_src})
 target_link_libraries(ca calib)
 
 # Set RPATH so Linux executables find shared libraries in their own directory
@@ -210,48 +221,21 @@ if(UNIX AND NOT APPLE)
     )
 endif()
 
-# Create demo library with DEMO_VERSION enabled
-add_library(calib_demo STATIC ${ca_src})
-
-target_include_directories(calib_demo PRIVATE
-  src
-  third_party
-  third_party/clip
-  third_party/lua
-  third_party/nativefiledialog-extended/src/include
-  third_party/msgpack-c/include
-  third_party/raylib/src
-  third_party/raylib/src/external
-  third_party/discord-rpc-3.4.0/include
-  third_party/freetype/include
-  )
-
-target_compile_definitions(calib_demo PRIVATE DEMO_VERSION=1)
-
-target_link_libraries(calib_demo
-  raylib
-  ${opengl_lib}
-  ${shlwapi_lib}
-  nfd
-  ${clip_libs}
-  ${steam_libs}
-  lualib
-  msgpack-c
-  json-c
-  discord-rpc
-  freetype)
-
-# Demo executable
-add_executable(ca_demo src/main.c)
-target_link_libraries(ca_demo calib_demo)
-
-# Set RPATH for demo executable
-if(UNIX AND NOT APPLE)
-    set_target_properties(ca_demo PROPERTIES
-        BUILD_RPATH "\$ORIGIN"
-        INSTALL_RPATH "\$ORIGIN"
-    )
-endif()
+# macOS .app bundle: gives the game a Dock/Finder icon. The bundle is meant to
+# be shipped as bin/ca.app next to assets/ (same layout as the bare binary);
+# paths.c resolves assets relative to the bundle when CA_MACOS_BUNDLE is set.
+IF (APPLE AND MACOS_BUNDLE)
+  FOREACH (tgt ca)
+    set_target_properties(${tgt} PROPERTIES
+      MACOSX_BUNDLE TRUE
+      MACOSX_BUNDLE_BUNDLE_NAME "Circuit Artist"
+      MACOSX_BUNDLE_GUI_IDENTIFIER "com.circuitartist.${tgt}"
+      MACOSX_BUNDLE_ICON_FILE ca.icns
+      MACOSX_BUNDLE_HIGH_RESOLUTION_CAPABLE TRUE)
+    target_compile_definitions(${tgt} PRIVATE CA_MACOS_BUNDLE=1)
+  ENDFOREACH()
+  target_compile_definitions(calib PRIVATE CA_MACOS_BUNDLE=1)
+ENDIF()
 
 # Copy Steam library and app ID file to build directory for runtime
 IF (STEAM)
@@ -276,11 +260,4 @@ IF (STEAM)
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       "${CMAKE_SOURCE_DIR}/steam_appid.txt"
       "$<TARGET_FILE_DIR:ca>")
-  add_custom_command(TARGET ca_demo POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${steam_binary}"
-      "$<TARGET_FILE_DIR:ca_demo>"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${CMAKE_SOURCE_DIR}/steam_appid.txt"
-      "$<TARGET_FILE_DIR:ca_demo>")
 ENDIF()

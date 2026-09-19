@@ -18,7 +18,22 @@ static struct {
 
 static void init_env_path(const char** path, const char* name);
 
+#ifdef CA_MACOS_BUNDLE
+// Inside a .app bundle the executable lives at bin/ca.app/Contents/MacOS/ca.
+// Steam launches with an arbitrary cwd, so resolve the same "../assets" and
+// ".." defaults relative to the bin/ folder that contains the bundle instead
+// of relative to cwd. Everything stays inside the install folder.
+static void init_bundle_paths() {
+  const char* bin_dir = TextFormat("%s/../../..", GetApplicationDirectory());
+  C.asset_path = abs_path(TextFormat("%s/../assets", bin_dir));
+  C.data_path = abs_path(TextFormat("%s/..", bin_dir));
+}
+#endif
+
 void paths_init() {
+#ifdef CA_MACOS_BUNDLE
+  init_bundle_paths();
+#endif
   init_env_path(&C.asset_path, "CA_ASSET_DIR");
   if (!DirectoryExists(C.asset_path)) {
     fprintf(stderr,
