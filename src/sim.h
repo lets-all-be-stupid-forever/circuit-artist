@@ -12,7 +12,6 @@
 #include "series.h"
 #include "status.h"
 #include "tex.h"
-#include "tinycthread.h"
 #include "wire_graph.h"
 
 #define NRJ_BINS 32
@@ -152,6 +151,8 @@ typedef struct {
  * the first drivers and sockets belong to the NANDs.
  * Then, the next belong to external wires, and the last belong to lone wires.
  */
+typedef struct SimCompileJob SimCompileJob;
+
 typedef struct Sim {
   /* Parsing */
   int nl;             /* Number of layers */
@@ -193,11 +194,10 @@ typedef struct Sim {
   bool complete; /* Activats on complete */
 
   double start_parsing_time;
-  bool compilation_done;
-  bool compilation_cancelled;
-  thrd_t comp_thr; /* Thread running the job*/
-  mtx_t comp_mut;  /* Mutex for changing state */
-  bool comp_joined;
+  /* Background compilation job (thread + mutex). Opaque: tinycthread.h pulls
+   * in windows.h on MSVC, which clashes with raylib names, so it stays in
+   * sim.c. */
+  SimCompileJob* comp;
 
   RenderTexture2D arg_layers[MAX_LAYERS];
   Image arg_img[MAX_LAYERS];

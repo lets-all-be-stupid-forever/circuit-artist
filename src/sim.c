@@ -16,6 +16,26 @@
 #include "stdio.h"
 #include "stdlib.h"
 
+/* tinycthread.h includes windows.h on MSVC. raylib.h is already included above
+ * (via sim.h) and windows.h's GDI/USER headers redeclare ShowCursor, LoadImage,
+ * DrawText, CloseWindow and Rectangle. Neither is needed for threads. */
+#ifdef _WIN32
+#define NOGDI
+#define NOUSER
+#define NOMINMAX
+#endif
+#include "tinycthread.h"
+
+/* State of the background compilation. Lives in sim.c so tinycthread.h
+ * (which includes windows.h on MSVC) never leaks into sim.h. */
+struct SimCompileJob {
+  thrd_t thr;
+  mtx_t mut; /* protects done/cancelled */
+  bool done;
+  bool cancelled;
+  bool joined;
+};
+
 enum {
   PATCH_LEVL = (1 << 0),
   PATCH_QPOP = (1 << 1),
@@ -637,9 +657,10 @@ static void sim_check_max_delay(Sim* sim, int max_delay) {
 }
 
 bool sim_get_compilation_cancelled(Sim* sim) {
-  mtx_lock(&sim->comp_mut);
-  bool ret = sim->compilation_cancelled;
-  mtx_unlock(&sim->comp_mut);
+  SimCompileJob* j = sim->comp;
+  mtx_lock(&j->mut);
+  bool ret = j->cancelled;
+  mtx_unlock(&j->mut);
   return ret;
 }
 
@@ -681,16 +702,16 @@ static int sim_compile_thread(void* ctx) {
     sim_register_nands(sim, sim->arg_img[0]);
   }
 
-  mtx_lock(&sim->comp_mut);
-  sim->compilation_done = true;
-  mtx_unlock(&sim->comp_mut);
+  mtx_lock(&sim->comp->mut);
+  sim->comp->done = true;
+  mtx_unlock(&sim->comp->mut);
   return 0;
 }
 
 Status sim_post_compile(Sim* sim) {
   profiler_tic_single("init2");
-  assert(!sim->compilation_cancelled);
-  assert(sim->compilation_done);
+  assert(!sim_get_compilation_cancelled(sim));
+  assert(sim_is_compilation_done(sim));
   bool has_errors = sim_has_errors(sim);
   if (has_errors) {
     sim->rv2->error_mode = 1;
@@ -738,16 +759,25 @@ Status sim_post_compile(Sim* sim) {
 }
 
 void sim_stop_compilation(Sim* sim) {
-  mtx_lock(&sim->comp_mut);
-  sim->compilation_cancelled = true;
-  mtx_unlock(&sim->comp_mut);
+  SimCompileJob* j = sim->comp;
+  mtx_lock(&j->mut);
+  j->cancelled = true;
+  mtx_unlock(&j->mut);
 }
 
 bool sim_is_compilation_done(Sim* sim) {
-  mtx_lock(&sim->comp_mut);
-  bool ret = sim->compilation_done;
-  mtx_unlock(&sim->comp_mut);
+  SimCompileJob* j = sim->comp;
+  mtx_lock(&j->mut);
+  bool ret = j->done;
+  mtx_unlock(&j->mut);
   return ret;
+}
+
+void sim_wait_compilation(Sim* sim) {
+  SimCompileJob* j = sim->comp;
+  if (j->joined) return;
+  thrd_join(j->thr, NULL);
+  j->joined = true;
 }
 
 /*
@@ -760,8 +790,6 @@ void sim_init(Sim* sim, SimParams p) {
   sim->warmup_cycles = p.warmup_cycles;
   sim->period_len = 1;
   sim->api = p.api;
-  sim->compilation_done = false;
-  sim->compilation_cancelled = false;
   sim->poked = false;
   init_spec(&sim->dist_spec);
   sim->nl = p.nl;
@@ -769,8 +797,9 @@ void sim_init(Sim* sim, SimParams p) {
     sim->arg_layers[i] = p.layers[i];
     sim->arg_img[i] = p.img[i];
   }
-  mtx_init(&sim->comp_mut, mtx_plain);
-  int ok = thrd_create(&sim->comp_thr, sim_compile_thread, sim);
+  sim->comp = calloc(1, sizeof(SimCompileJob));
+  mtx_init(&sim->comp->mut, mtx_plain);
+  int ok = thrd_create(&sim->comp->thr, sim_compile_thread, sim);
   if (ok != thrd_success) {
     fprintf(stderr, "Failed to create thread.");
     abort();
@@ -779,7 +808,8 @@ void sim_init(Sim* sim, SimParams p) {
 
 void sim_destroy(Sim* sim) {
   sim_wait_compilation(sim);
-  mtx_destroy(&sim->comp_mut);
+  mtx_destroy(&sim->comp->mut);
+  free(sim->comp);
   if (!sim_has_errors(sim)) {
     patch_builder_destroy(&sim->patch_builder);
   }
@@ -1795,13 +1825,6 @@ void patch_builder_handle_socket_events(PatchBuilder* builder,
       }
     }
   }
-}
-
-// sim.c
-void sim_wait_compilation(Sim* sim) {
-  if (sim->comp_joined) return;
-  thrd_join(sim->comp_thr, NULL);
-  sim->comp_joined = true;
 }
 
 int sim_get_pixel_error_status(Sim* sim, int pix) {
