@@ -57,6 +57,7 @@ IF (STEAM)
 ENDIF()
 
 # add_compile_definitions(GRAPHICS_API_OPENGL_43)
+find_package(Threads REQUIRED)
 add_subdirectory(third_party/raylib)
 add_subdirectory(third_party/nativefiledialog-extended)
 
@@ -84,6 +85,7 @@ ENDIF()
 set(CMAKE_C_STANDARD 11)
 
 SET(ca_src
+  third_party/tinycthread/tinycthread.c
   src/discord_integration.cpp
   src/brush.c
   src/buffer.c
@@ -182,6 +184,7 @@ target_include_directories(calib PRIVATE
   src
   third_party
   third_party/clip
+  third_party/tinycthread
   third_party/lua
   third_party/nativefiledialog-extended/src/include
   third_party/msgpack-c/include
@@ -208,7 +211,8 @@ target_link_libraries(calib
   msgpack-c
   json-c
   discord-rpc
-  freetype)
+  freetype
+  Threads::Threads)
 
 add_executable(ca src/main.c ${ca_icon_src})
 target_link_libraries(ca calib)

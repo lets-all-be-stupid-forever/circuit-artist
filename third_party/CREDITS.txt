@@ -43,3 +43,6 @@ https://github.com/TakWolf/ark-pixel-font
 
 Free Type:
 https://gitlab.freedesktop.org/freetype/freetype
+
+TinyCThread - C11 threads.h implementation (zlib license)
+https://github.com/tinycthread/tinycthread

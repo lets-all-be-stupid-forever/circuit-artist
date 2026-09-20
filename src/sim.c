@@ -671,10 +671,6 @@ Status sim_init(Sim* sim, SimParams p) {
 
   sim->dirty_mask_size = (sim->num_wire + 31) / 32;
   sim->pulse_dirty_mask = calloc(sim->dirty_mask_size, sizeof(uint32_t));
-  profiler_tic_single("renderer_init");
-  miniprof_print("renderer_init");
-  // printf("t0, t1, t2 = %.1fms %.1fms %.1fms\n", 1000 * acc1, 1000 * acc2,
-  //        1000 * acc3);
   sim_register_nands(sim, p.img[0]);
   profiler_tic_single("init2");
   bool has_errors = sim_has_errors(sim);
