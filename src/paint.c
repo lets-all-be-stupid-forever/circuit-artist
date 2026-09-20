@@ -968,7 +968,7 @@ static void paint_render_layers_far(Paint* ca, RenderTexture2D target) {
     if (al != l) {
       c.a = 100;
     }
-    draw_projection_on_target(ca->cam, timg, (v2i){tw, th}, 0, c);
+    draw_projection_on_target(ca->cam, timg, (v2i){tw, th}, 1, c);
   }
 
   EndTextureMode();

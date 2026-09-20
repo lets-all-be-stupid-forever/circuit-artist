@@ -47,6 +47,7 @@ typedef struct {
   Shader project_shader;
   int project_loc_sp;
   int project_loc_img_size;
+  int project_loc_mode;
 
   Shader project_pattern_shader;
   int project_pattern_loc_sp;

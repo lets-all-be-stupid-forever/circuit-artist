@@ -48,6 +48,7 @@ void shaders_init() {
   SHADER_LOAD(project);
   SHADER_LOC(project, sp);
   SHADER_LOC(project, img_size);
+  SHADER_LOC(project, mode);
 
   SHADER_LOAD(project_pattern);
   SHADER_LOC(project_pattern, sp);

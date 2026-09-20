@@ -1068,7 +1068,7 @@ void draw_projection_on_target(Cam2D cam, Tex2D tTmp, v2i szImg, int mode,
   int tmp_size[2] = {tTmp.width, tTmp.height};
   int img_size[2] = {szImg.x, szImg.y};
   SetTextureFilter(tTmp, TEXTURE_FILTER_POINT);
-  // set_shader_int(project, mode, &mode);
+  set_shader_int(project, mode, &mode);
   set_shader_vec2(project, sp, &sp);
   set_shader_ivec2(project, img_size, &tmp_size);
   int mw = img_size[0];

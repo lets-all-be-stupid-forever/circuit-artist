@@ -13,6 +13,7 @@ out vec4 finalColor;
 
 uniform vec2 sp; // zoom
 uniform ivec2 img_size; // image size in image pixels
+uniform int mode; // 0 = simulation (opaque), 1 = paint (keeps alpha)
 
 vec4 msample(vec2 pos, int r) {
   float kx = 1.0 / float(img_size.x);
@@ -26,14 +27,20 @@ vec4 msample(vec2 pos, int r) {
       // It's ok for drawing mode, but for sim mode it throws away on/off info
       // if it's done with alphas, so need to use a=1 on simu.
       if (s.a < 0.001) {
-        s = vec4(0,0,0,1);
+        // paint mode: transparent texels contribute nothing (but are counted)
+        s = (mode == 1) ? vec4(0,0,0,0) : vec4(0,0,0,1);
       }
       ss = ss + s;
       cnt += 1.0;
     }
   }
   vec4 p = ss / cnt;
-  if (p.a > 0.0) p.a = 1.0;
+  if (mode == 1) {
+    // un-premultiply so partially covered texels keep their colour
+    if (p.a > 0.0) p.rgb /= p.a;
+  } else {
+    if (p.a > 0.0) p.a = 1.0;
+  }
   return p;
 }
 
