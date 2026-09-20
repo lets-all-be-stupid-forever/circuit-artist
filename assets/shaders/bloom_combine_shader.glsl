@@ -36,6 +36,10 @@ void main()
   vec4 scene = texture(texture0, fragTexCoord);
   vec4 glow = texture(bloom, fragTexCoord);
 
+  if (scene.a == 0) {
+    fragColor = vec4(scene.rgb,1.);
+    return;
+  }
   vec3 s = scene.rgb;
   vec3 linear = pow(s, vec3(2.2));
   vec3 glow2 = pow(glow.rgb, vec3(2.2));

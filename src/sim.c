@@ -659,8 +659,7 @@ Status sim_init(Sim* sim, SimParams p) {
   wire_graph_init(&sim->wg, sim->nl, sim->w, sim->h, &sim->pg, debug);
   sim->num_wire = getnwire(sim);
   sim->rv2 = renderv2_create(sim->w, sim->h, sim->num_wire, sim->nl, p.layers);
-  // sim->rv2->bg_color = (Color){21, 11, 3, 255};
-  sim->rv2->bg_color = BLACK;
+  // sim->rv2->bg_color = BLACK;
 
   int nskt = arrlen(sim->pg.skt);
   dist_graph_init(&sim->dg, sim->dist_spec, sim->w, sim->h, sim->nl, &sim->pg.g,
@@ -1764,7 +1763,9 @@ void sim_reset_dirty_mask(Sim* sim) {
 }
 
 Tex* sim_render_v2(Sim* sim, int tw, int th, Cam2D cam, float frame_steps,
-                   float slack_steps, int hide_mask, bool use_neon) {
+                   float slack_steps, int hide_mask, bool use_neon,
+                   Color bg_color) {
+  sim->rv2->bg_color = bg_color;  //(Color){21, 11, 3, 255};
   renderv2_update_hidden_mask(sim->rv2, hide_mask);
   UpdateTexture(sim->pulse_tex, sim->state.pulses);
   renderv2_update_pulse(sim->rv2, sim->pulse_tex, sim->pulse_dirty_mask);
@@ -1829,8 +1830,8 @@ void sim_dry_run() {
     int hide_mask = 0;
     bool use_neon = true;
     float frame_steps = 20;
-    Tex* rendered =
-        sim_render_v2(&s, 50, 50, cam, frame_steps, slack, hide_mask, use_neon);
+    Tex* rendered = sim_render_v2(&s, 50, 50, cam, frame_steps, slack,
+                                  hide_mask, use_neon, WHITE);
   }
   hsim_destroy(&hsim);
   sim_destroy(&s);

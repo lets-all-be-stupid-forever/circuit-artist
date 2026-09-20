@@ -711,7 +711,7 @@ void win_main_update() {
 
   int mode = main_get_simu_mode();
   if (mode == MODE_EDIT) {
-    Color k_normal = {21, 11, 3, 255};
+    Color k_normal = {41, 31, 13, 255};
     // Color k_blueprint = {3, 11, 31, 255};
     // C.ca.bg_color = (C.bp == NULL) ? k_normal : k_blueprint;
     C.ca.bg_color = k_normal;
@@ -742,8 +742,9 @@ void win_main_update() {
         hide_mask = hide_mask | (1 << i);
       }
     }
-    Tex* rendered = sim_render_v2(&C.sim, tw, th, C.ca.cam, frame_steps,
-                                  slack_steps, hide_mask, is_circuit_neon_on());
+    Tex* rendered =
+        sim_render_v2(&C.sim, tw, th, C.ca.cam, frame_steps, slack_steps,
+                      hide_mask, is_circuit_neon_on(), C.ca.bg_color);
     profiler_tac();
     BeginTextureMode(C.img_target_tex);
     ClearBackground(PURPLE);

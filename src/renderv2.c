@@ -483,8 +483,10 @@ Tex* renderv2_render(RenderV2* r, Cam2D cam, int tw, int th, int ns,
                      bool use_neon, Times times) {
   Tex* tc = texnew(tw, th);
   Tex* tl = texnew(tw, th);
-  texclear(tc, r->bg_color);
-  texclear(tl, BLACK);
+  Color c2 = r->bg_color;
+  c2.a = 0;
+  texclear(tc, c2);
+  texclear(tl, BLANK);
   Tex* light = r->acc_l;
   Tex* circ = r->acc_c;
 

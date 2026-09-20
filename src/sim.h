@@ -203,7 +203,8 @@ typedef struct {
 Status sim_init(Sim* sim, SimParams params);
 void sim_destroy(Sim* sim);
 Tex* sim_render_v2(Sim* sim, int tw, int th, Cam2D cam, float frame_steps,
-                   float slackSteps, int hide_mask, bool use_neon);
+                   float slackSteps, int hide_mask, bool use_neon,
+                   Color bg_color);
 Tex* sim_render_energy(Sim* sim, int tw, int th);
 
 bool sim_is_on_warmup(Sim* sim);
