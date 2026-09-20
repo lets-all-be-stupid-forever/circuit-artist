@@ -761,17 +761,6 @@ void win_main_update() {
     level_api_draw_pin_sockets(&C.api, C.ca.cam, w, h, C.img_target_tex);
   }
 
-  if (mode == MODE_COMPILING) {
-    if (false) {
-      BeginTextureMode(C.img_target_tex);
-      Color bg = {0, 0, 0, 100};
-      int rw = C.img_target_tex.texture.width;
-      int rh = C.img_target_tex.texture.height;
-      DrawRectangle(0, 0, rw, rh, bg);
-      EndTextureMode();
-    }
-  }
-
   if (mode == MODE_SIMU || mode == MODE_ERROR) {
     float slack_steps = get_simu_slack_steps();
     Texture texs[MAX_LAYERS] = {0};
@@ -1664,6 +1653,9 @@ void main_draw_status_bar() {
       uifont_draw_texture_outlined(txt, xc, yc, tc, bg);
       yc += step;
     }
+  } else if (C.mode == MODE_COMPILING) {
+    uifont_draw_texture_outlined(T.main_compiling, xc, yc, tc, bg);
+    yc += step * 5;
   } else {
     yc += step * 5;
   }
@@ -1698,20 +1690,6 @@ RectangleInt main_get_target_region() {
 }
 
 void main_draw_mouse_extra() {
-  if (C.mode == MODE_COMPILING) {
-    int num_pixels = get_total_pixels();
-    int min_pixels_ui = 1 * 500 * 500;
-    if (num_pixels > min_pixels_ui) {
-      Vector2 pos = GetMousePosition();
-      int lh = uifont_line_height();
-      int tx = (int)pos.x + 16;
-      int ty = (int)pos.y + 16;
-      char txt[150];
-      uifont_draw_texture(T.main_compiling, tx + 2, ty + 2, BLACK);
-      uifont_draw_texture(T.main_compiling, tx, ty, YELLOW);
-    }
-  }
-
   if (main_get_simu_mode() == MODE_EDIT && paint_get_tool(&C.ca) == TOOL_LINE &&
       C.mouseIsPen) {
     Vector2 pos = GetMousePosition();
