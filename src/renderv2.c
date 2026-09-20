@@ -240,8 +240,6 @@ RenderV2* renderv2_create(int w, int h, int nwire, int nl,
   r->w = w;
   r->h = h;
   r->nwire = nwire;
-  r->pmap = texnew(w, h);
-  texclear(r->pmap, BLANK);
   r->full_pmap_update = true;
   r->num_blocks = (r->nwire + 31) / 32;
   r->wire_block = calloc(r->num_blocks, sizeof(WireBlock));
@@ -252,11 +250,6 @@ RenderV2* renderv2_create(int w, int h, int nwire, int nl,
   for (int i = 0; i < nl; i++) {
     r->layers[i] = layers[i];
   }
-  r->combined_layers = texnew(w, h);
-  r->acc_c = texnew(w, h);
-  r->acc_l = texnew(w, h);
-  texclear(r->acc_c, BLANK);
-  texclear(r->acc_l, BLANK);
   r->hide_mask = ~0;
   return r;
 }
@@ -558,6 +551,13 @@ void renderv2_update_hidden_mask(RenderV2* r, int hidden_mask) {
 }
 
 static void renderv2_prepare_nand(RenderV2* r) {
+  r->pmap = texnew(r->w, r->h);
+  texclear(r->pmap, BLANK);
+  r->combined_layers = texnew(r->w, r->h);
+  r->acc_c = texnew(r->w, r->h);
+  r->acc_l = texnew(r->w, r->h);
+  texclear(r->acc_c, BLANK);
+  texclear(r->acc_l, BLANK);
   int n = arrlen(r->nand_clr);
   if (n == 0) return;
   r->nand_vao = rlLoadVertexArray();

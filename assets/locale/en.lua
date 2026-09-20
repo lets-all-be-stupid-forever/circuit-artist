@@ -138,6 +138,7 @@ main_untitled = "Untitled"
 main_cannot_load_unlocked = "Cannot load unlocked campaign level"
 main_cannot_load_notfound = "Linked level not found"
 main_objectives = "Objectives (O)"
+main_compiling = "Compiling..."
 
 
 

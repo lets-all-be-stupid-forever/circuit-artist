@@ -402,8 +402,12 @@ static void show_kernel_error() {
 
 void win_main_stop_simu() {
   // assert(main_get_simu_mode() != MODE_EDIT);
-  assert(main_get_simu_mode() == MODE_SIMU ||
-         main_get_simu_mode() == MODE_ERROR);
+  assert(C.mode == MODE_SIMU || C.mode == MODE_ERROR ||
+         C.mode == MODE_COMPILING);
+  if (C.mode == MODE_COMPILING) {
+    sim_stop_compilation(&C.sim);
+    return;
+  }
   hsim_destroy(&C.hsim);
   sim_destroy(&C.sim);
 
@@ -568,7 +572,7 @@ void win_main_init() {
   discord_refresh();
   if (false) {
     // For debugging
-    Image img = LoadImage("../a.png");
+    Image img = LoadImage("../big2.png");
     paint_load_image(&C.ca, img);
   }
 }
@@ -666,6 +670,66 @@ Status main_draw_level_kernel() {
   return s;
 }
 
+static void update_compilation() {
+  if (C.mode != MODE_COMPILING) return;
+  if (sim_is_compilation_done(&C.sim)) {
+    sim_wait_compilation(&C.sim);
+    if (sim_get_compilation_cancelled(&C.sim)) {
+      C.mode = MODE_EDIT;
+      sim_destroy(&C.sim);
+      return;
+    }
+    Status s = sim_post_compile(&C.sim);
+    if (!s.ok) {
+      C.mode = MODE_EDIT;
+      handle_kernel_error(s);
+      sim_destroy(&C.sim);
+      return;
+    }
+    C.s_last_num_nands = arrlen(C.sim.pg.nands);
+    C.hsim = wrap_sim(&C.sim);
+    C.simu_target_steps = 0;
+    C.pix_toggle = -1;
+    if (sim_has_errors(&C.sim)) {
+      play_sound_oops();
+      C.mode = MODE_ERROR;
+      discord_refresh();
+      return;
+    }
+    C.mode = MODE_SIMU;
+    discord_refresh();
+  }
+}
+
+static void update_simu_controls() {
+  if (C.mode != MODE_SIMU) return;
+  double dt = get_simu_dt();
+  if (C.time_open) {
+    v2 pos = GetMousePosition();
+    v2 ref = C.time_pos_ref;
+    double diff = 0.003 * dt * get_clock_delta(C.time_c, pos, ref);
+    double tgt = C.time_ref + diff;
+    if (tgt < 0) {
+      C.time_ref += tgt;
+      tgt = 0;
+    }
+    C.simu_target_steps = tgt;
+    C.time_ref = tgt;
+    C.time_pos_ref = pos;
+  } else {
+    double frame_time = ui_get_frame_time();
+    int dir = get_simu_speed();
+    if (dir != 0) {
+      double new_time = C.simu_target_steps + frame_time * dir * dt;
+      C.simu_target_steps = new_time >= 0 ? new_time : 0;
+    }
+  }
+  Status s = main_update_simu();
+  if (!s.ok) {
+    handle_kernel_error(s);
+  }
+}
+
 void win_main_update() {
   discord_run_callbacks();
   C.rewind_pressed = false;
@@ -675,33 +739,8 @@ void win_main_update() {
   main_update_controls();
   main_update_widgets();
   profiler_tic("simu");
-  if (main_get_simu_mode() == MODE_SIMU) {
-    double dt = get_simu_dt();
-    if (C.time_open) {
-      v2 pos = GetMousePosition();
-      v2 ref = C.time_pos_ref;
-      double diff = 0.003 * dt * get_clock_delta(C.time_c, pos, ref);
-      double tgt = C.time_ref + diff;
-      if (tgt < 0) {
-        C.time_ref += tgt;
-        tgt = 0;
-      }
-      C.simu_target_steps = tgt;
-      C.time_ref = tgt;
-      C.time_pos_ref = pos;
-    } else {
-      double frame_time = ui_get_frame_time();
-      int dir = get_simu_speed();
-      if (dir != 0) {
-        double new_time = C.simu_target_steps + frame_time * dir * dt;
-        C.simu_target_steps = new_time >= 0 ? new_time : 0;
-      }
-    }
-    Status s = main_update_simu();
-    if (!s.ok) {
-      handle_kernel_error(s);
-    }
-  }
+  update_compilation();
+  update_simu_controls();
   if (C.sidebar_open) {
     level_sidebar_update(C.sidebar_rect);
   }
@@ -710,15 +749,27 @@ void win_main_update() {
   update_viewport();
 
   int mode = main_get_simu_mode();
-  if (mode == MODE_EDIT) {
+  if (mode == MODE_EDIT || mode == MODE_COMPILING) {
     Color k_normal = {41, 31, 13, 255};
     // Color k_blueprint = {3, 11, 31, 255};
     // C.ca.bg_color = (C.bp == NULL) ? k_normal : k_blueprint;
     C.ca.bg_color = k_normal;
-    paint_render_texture(&C.ca, C.sidepanel_tex, C.img_target_tex);
+    paint_render_texture(&C.ca, C.sidepanel_tex, C.img_target_tex,
+                         mode == MODE_EDIT);
     int w = paint_img_width(&C.ca);
     int h = paint_img_height(&C.ca);
     level_api_draw_pin_sockets(&C.api, C.ca.cam, w, h, C.img_target_tex);
+  }
+
+  if (mode == MODE_COMPILING) {
+    if (false) {
+      BeginTextureMode(C.img_target_tex);
+      Color bg = {0, 0, 0, 100};
+      int rw = C.img_target_tex.texture.width;
+      int rh = C.img_target_tex.texture.height;
+      DrawRectangle(0, 0, rw, rh, bg);
+      EndTextureMode();
+    }
   }
 
   if (mode == MODE_SIMU || mode == MODE_ERROR) {
@@ -819,9 +870,18 @@ static void main_update_paint_cursor_type() {
   }
 }
 
+static int get_total_pixels() {
+  int ret = 0;
+  int nl = hist_get_num_layers(&C.ca.h);
+  for (int i = 0; i < nl; i++) {
+    ret += C.ca.h.buffer[i].width * C.ca.h.buffer[i].height;
+  }
+  return ret;
+}
+
 void win_main_start_simu() {
   assert(!C.kernel_error);
-  assert(main_get_simu_mode() != MODE_SIMU);
+  assert(C.mode == MODE_EDIT); /* Can only compile from the EDIT mode */
   C.time_open = false;
   C.looping = false;
   C.paused = false;
@@ -844,25 +904,8 @@ void win_main_start_simu() {
       .layers = &texs[0],
       .warmup_cycles = api->warmup_cycles,
   };
-  Status s = sim_init(&C.sim, p);
-  if (!s.ok) {
-    handle_kernel_error(s);
-    sim_destroy(&C.sim);
-    return;
-  }
-
-  C.s_last_num_nands = arrlen(C.sim.pg.nands);
-  C.hsim = wrap_sim(&C.sim);
-  C.simu_target_steps = 0;
-  C.pix_toggle = -1;
-  if (sim_has_errors(&C.sim)) {
-    play_sound_oops();
-    C.mode = MODE_ERROR;
-    discord_refresh();
-    return;
-  }
-  C.mode = MODE_SIMU;
-  discord_refresh();
+  sim_init(&C.sim, p);
+  C.mode = MODE_COMPILING;
 }
 
 static void main_toggle_simu() {
@@ -1026,7 +1069,8 @@ void main_update_controls() {
     text_modal_open(on_paste_text, NULL, NULL);
   }
   if (isEdit) paint_handle_mouse(pnt, paint_hit);
-  if (!isEdit && ui_get_hit_count() == 0) {
+  bool is_simu = C.mode == MODE_SIMU || C.mode == MODE_ERROR;
+  if (is_simu && ui_get_hit_count() == 0) {
     if (mouseOnTarget) {
       int bw = pnt->h.buffer[0].width;
       int bh = pnt->h.buffer[0].height;
@@ -1366,7 +1410,8 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_sim_show_t, rect_inspect_wire);
 
   int mode = main_get_simu_mode();
-  bool simu_on = mode == MODE_SIMU || mode == MODE_ERROR;
+  bool simu_on =
+      mode == MODE_SIMU || mode == MODE_ERROR || mode == MODE_COMPILING;
 
   Rectangle rec_simu = {0};
   if (simu_on) rec_simu = rect_stop;
@@ -1653,11 +1698,25 @@ RectangleInt main_get_target_region() {
 }
 
 void main_draw_mouse_extra() {
+  if (C.mode == MODE_COMPILING) {
+    int num_pixels = get_total_pixels();
+    int min_pixels_ui = 1 * 500 * 500;
+    if (num_pixels > min_pixels_ui) {
+      Vector2 pos = GetMousePosition();
+      int lh = uifont_line_height();
+      int tx = (int)pos.x + 16;
+      int ty = (int)pos.y + 16;
+      char txt[150];
+      uifont_draw_texture(T.main_compiling, tx + 2, ty + 2, BLACK);
+      uifont_draw_texture(T.main_compiling, tx, ty, YELLOW);
+    }
+  }
+
   if (main_get_simu_mode() == MODE_EDIT && paint_get_tool(&C.ca) == TOOL_LINE &&
       C.mouseIsPen) {
     Vector2 pos = GetMousePosition();
     bool just_changed = paint_get_key_line_width_has_just_changed(&C.ca);
-    char txt[50];
+    char txt[150];
     int lh = uifont_line_height();
     int tx = (int)pos.x + 16;
     int ty = (int)pos.y + 16;
@@ -1702,6 +1761,7 @@ bool win_main_can_add_sol() {
 
 void main_update_widgets() {
   bool ned = C.mode != MODE_EDIT;
+  bool simu = C.mode == MODE_SIMU;
   int tool = paint_get_tool(&C.ca);
   bool demo = ui_is_demo();
 
@@ -1721,9 +1781,9 @@ void main_update_widgets() {
   // C.btn_forward.toggled = C.forward_pressed;
   C.btn_side_level.toggled = C.sidebar_open;
 
-  C.btn_rewind.disabled = !ned || !can_rewind;
+  C.btn_rewind.disabled = !simu || !can_rewind;
   // C.btn_forward.disabled = !ned || !C.paused;
-  C.btn_pause.disabled = !ned;
+  C.btn_pause.disabled = !simu;
 
   C.btn_simu.disabled = C.kernel_error;
 

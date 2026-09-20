@@ -70,7 +70,7 @@ void paint_center_camera(Paint* ca);
 void paint_set_viewport(Paint* ca, RecI viewport);
 void paint_paste_image(Paint* ca, Image img, int r);
 void paint_render_texture(Paint* ca, Texture2D sidepanel,
-                          RenderTexture2D target);
+                          RenderTexture2D target, bool is_edit);
 void paint_new_buffer(Paint* ca);
 void paint_set_not_dirty(Paint* ca);
 void paint_set_tool(Paint* ca, tool_t tool);

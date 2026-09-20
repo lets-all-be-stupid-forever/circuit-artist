@@ -4,8 +4,9 @@
 #include "game_registry.h"
 
 #define MODE_EDIT 0
-#define MODE_SIMU 1
-#define MODE_ERROR 2
+#define MODE_COMPILING 1
+#define MODE_SIMU 2
+#define MODE_ERROR 3
 
 // Main screen.
 void win_main_init();

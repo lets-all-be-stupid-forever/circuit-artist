@@ -46,13 +46,34 @@
 
 #define bV (bM | bU | bB)
 
+static inline int get_crossing_pixel_direction(int* pixels, int w, int h, int x,
+                                               int y) {
+  if (x == 0 || x == w - 1 || y == 0 || y == h - 1) {
+    return false;
+  }
+  int idx = y * w + x;
+  int c = pixels[idx];
+  int nh = 0;
+  int nv = 0;
+  nv += pixels[idx - w] == c;
+  nv += pixels[idx + w] == c;
+  nh += pixels[idx - 1] == c;
+  nh += pixels[idx + 1] == c;
+  if (nv > nh) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 /* Neighbourhood code:
  * bit1: is wether the pixel is a fg or bg.
  * bit2-5: foreground flag for each of 4-neighbour
  * bit6: flag if pixel has a "via" to the upper layer.
  * bit7: flag id pixel is
  */
-static void sim_parse_code(int w, int h, u8* code, u8* code_up) {
+static void sim_parse_code_and_ori(int w, int h, u8* code, u8* code_up,
+                                   int* pixels, u8* ori) {
   int wc = w;
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
@@ -70,6 +91,16 @@ static void sim_parse_code(int w, int h, u8* code, u8* code_up) {
         b |= (via << 5);
       }
       code[idx] |= b;
+      u8 pc = b & (bA);
+      int v = 0;
+      if (pc == bA) {
+        v = get_crossing_pixel_direction(pixels, w, h, x, y);
+      } else if (pc == bV || (pc == (bM | bU)) || (pc == (bM | bB))) {
+        v = 1;
+      } else {
+        v = 0;
+      }
+      ori[idx] = v;
     }
   }
 }
@@ -428,44 +459,6 @@ static void pixel_graph_register_external_pins(PixelGraph* pg, int w, int h,
   }
 }
 
-static inline int get_crossing_pixel_direction(int* pixels, int w, int h, int x,
-                                               int y) {
-  if (x == 0 || x == w - 1 || y == 0 || y == h - 1) {
-    return false;
-  }
-  int idx = y * w + x;
-  int c = pixels[idx];
-  int nh = 0;
-  int nv = 0;
-  nv += pixels[idx - w] == c;
-  nv += pixels[idx + w] == c;
-  nh += pixels[idx - 1] == c;
-  nh += pixels[idx + 1] == c;
-  if (nv > nh) {
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-void find_pixel_orientation(int w, int h, int* pixels, u8* code, u8* ori) {
-  for (int y = 0; y < h; y++) {
-    for (int x = 0; x < w; x++) {
-      int idx = y * w + x;
-      u8 pc = code[idx] & (bA);
-      int v = 0;
-      if (pc == bA) {
-        v = get_crossing_pixel_direction(pixels, w, h, x, y);
-      } else if (pc == bV || (pc == (bM | bU)) || (pc == (bM | bB))) {
-        v = 1;
-      } else {
-        v = 0;
-      }
-      ori[idx] = v;
-    }
-  }
-}
-
 void pixel_graph_init(PixelGraph* pg, DistSpec spec, int nl, Image* imgs,
                       PinGroup* p, bool debug) {
   profiler_tic_single("pixel_graph");
@@ -509,11 +502,11 @@ void pixel_graph_init(PixelGraph* pg, DistSpec spec, int nl, Image* imgs,
   miniprof_time();  // T1 ends
   /* This scales poorly with layers. Can be done on GPU ! */
   for (int l = nl - 1; l >= 0; l--) {
-    sim_parse_code(w, h, img_code[l], img_code[l + 1]);
     int wl = imgs[l].width;
     int hl = imgs[l].height;
     pg->ori[l] = calloc(wl * hl, sizeof(u8));
-    find_pixel_orientation(wl, hl, imgs[l].data, img_code[l], pg->ori[l]);
+    sim_parse_code_and_ori(w, h, img_code[l], img_code[l + 1], imgs[l].data,
+                           pg->ori[l]);
   }
   miniprof_time();  // T2 ends
   /* This is the slowest part */

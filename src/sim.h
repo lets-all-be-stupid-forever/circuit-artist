@@ -12,6 +12,7 @@
 #include "series.h"
 #include "status.h"
 #include "tex.h"
+#include "tinycthread.h"
 #include "wire_graph.h"
 
 #define NRJ_BINS 32
@@ -190,6 +191,16 @@ typedef struct Sim {
   int64_t update_interval;
   int base_tps;
   bool complete; /* Activats on complete */
+
+  double start_parsing_time;
+  bool compilation_done;
+  bool compilation_cancelled;
+  thrd_t comp_thr; /* Thread running the job*/
+  mtx_t comp_mut;  /* Mutex for changing state */
+  bool comp_joined;
+
+  RenderTexture2D arg_layers[MAX_LAYERS];
+  Image arg_img[MAX_LAYERS];
 } Sim;
 
 typedef struct {
@@ -200,7 +211,12 @@ typedef struct {
   RenderTexture2D* layers;
 } SimParams;
 
-Status sim_init(Sim* sim, SimParams params);
+void sim_init(Sim* sim, SimParams params);
+bool sim_is_compilation_done(Sim* sim);
+void sim_stop_compilation(Sim* sim);
+bool sim_get_compilation_cancelled(Sim* sim);
+Status sim_post_compile(Sim* sim);
+void sim_wait_compilation(Sim* sim);
 void sim_destroy(Sim* sim);
 Tex* sim_render_v2(Sim* sim, int tw, int th, Cam2D cam, float frame_steps,
                    float slackSteps, int hide_mask, bool use_neon,

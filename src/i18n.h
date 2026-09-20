@@ -112,6 +112,7 @@ void i18n_register_lua(lua_State* L);
   X(main_cannot_load_unlocked)        \
   X(main_cannot_load_notfound)        \
   X(main_objectives)                  \
+  X(main_compiling)                   \
   /* Campaign */                      \
   X(select_campaign)                  \
   /* About */                         \

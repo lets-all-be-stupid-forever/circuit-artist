@@ -1058,7 +1058,7 @@ static void paint_combine_layers_onoff2(Paint* ca, RenderTexture2D target) {
 
 // Renders the drawing image+tools at the target render texture.
 void paint_render_texture(Paint* ca, Texture2D sidepanel,
-                          RenderTexture2D target) {
+                          RenderTexture2D target, bool is_edit) {
   paint_update_temp_render_texture(ca);
   tool_t tool = hist_get_tool(&ca->h);
   if (paint_get_tool_is_picker_in_practice(ca)) {
@@ -1094,7 +1094,9 @@ void paint_render_texture(Paint* ca, Texture2D sidepanel,
     RenderTexture rt_tool = {0};
     bool tool_is_pixel = false;
     v2i tool_off = {0};
-    make_tool_for_layer(ca, l, &tool_off, &rt_tool, &tool_is_pixel);
+    if (is_edit) {
+      make_tool_for_layer(ca, l, &tool_off, &rt_tool, &tool_is_pixel);
+    }
     int ll = ca->h.llsp[l];
     v2i l_tool_off = {
         .x = tool_off.x >> ll,
@@ -1115,11 +1117,16 @@ void paint_render_texture(Paint* ca, Texture2D sidepanel,
     cam.sp = pnt->cam.sp * (1 << ll);
     Texture2D t_img = ca->h.t_buffer[l].texture;
     v2i size_img = {t_img.width, t_img.height};
-    Texture2D sel = ca->h.t_selbuffer[l].texture;
-    v2i l_seloff = {
-        seloff.x >> ll,
-        seloff.y >> ll,
-    };
+    Texture2D sel = {0};
+    v2i l_seloff = {0};
+
+    if (is_edit) {
+      sel = ca->h.t_selbuffer[l].texture;
+      l_seloff = (v2i){
+          seloff.x >> ll,
+          seloff.y >> ll,
+      };
+    }
     paint_draw_tmp_tex(cam, t_img, sel, rt_tool.texture, l_seloff, l_tool_off,
                        szTgt, c);
     EndTextureMode();
@@ -1134,6 +1141,9 @@ void paint_render_texture(Paint* ca, Texture2D sidepanel,
     paint_render_layers_far(ca, target);
   } else {
     paint_combine_layers_onoff2(ca, target);
+  }
+  if (!is_edit) {
+    return;
   }
 
   BeginTextureMode(target);

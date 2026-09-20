@@ -636,49 +636,68 @@ static void sim_check_max_delay(Sim* sim, int max_delay) {
   }
 }
 
-/*
- * The PinGroup is the pin API for external component(s).
- */
-Status sim_init(Sim* sim, SimParams p) {
-  *sim = (Sim){0};
+bool sim_get_compilation_cancelled(Sim* sim) {
+  mtx_lock(&sim->comp_mut);
+  bool ret = sim->compilation_cancelled;
+  mtx_unlock(&sim->comp_mut);
+  return ret;
+}
+
+static int sim_compile_thread(void* ctx) {
+  Sim* sim = ctx;
   bool debug = false;
-  sim->complete = false;
-  sim->base_tps = 240;
-  sim->warmup_cycles = p.warmup_cycles;
-  sim->period_len = 1;
-  Status status = status_ok();
-  sim->api = p.api;
-  double start = GetTime();
-  sim->poked = false;
-  init_spec(&sim->dist_spec);
-  sim->nl = p.nl;
+  sim->start_parsing_time = GetTime();
   sim->pinbuf = malloc(arrlen(sim->api->pg) * sizeof(PinComm));
-  sim->w = p.img[0].width;
-  sim->h = p.img[0].height;
-  pixel_graph_init(&sim->pg, sim->dist_spec, p.nl, p.img, sim->api->pg, debug);
-  wire_graph_init(&sim->wg, sim->nl, sim->w, sim->h, &sim->pg, debug);
-  sim->num_wire = getnwire(sim);
-  sim->rv2 = renderv2_create(sim->w, sim->h, sim->num_wire, sim->nl, p.layers);
-  // sim->rv2->bg_color = BLACK;
+  sim->w = sim->arg_img[0].width;
+  sim->h = sim->arg_img[0].height;
+  if (!sim_get_compilation_cancelled(sim)) {
+    pixel_graph_init(&sim->pg, sim->dist_spec, sim->nl, sim->arg_img,
+                     sim->api->pg, debug);
+  }
+  if (!sim_get_compilation_cancelled(sim)) {
+    wire_graph_init(&sim->wg, sim->nl, sim->w, sim->h, &sim->pg, debug);
+  }
+  if (!sim_get_compilation_cancelled(sim)) {
+    sim->num_wire = getnwire(sim);
+    sim->rv2 = renderv2_create(sim->w, sim->h, sim->num_wire, sim->nl,
+                               sim->arg_layers);
+    // sim->rv2->bg_color = BLACK;
+  }
 
-  int nskt = arrlen(sim->pg.skt);
-  dist_graph_init(&sim->dg, sim->dist_spec, sim->w, sim->h, sim->nl, &sim->pg.g,
-                  sim->wg.wire_to_drv, sim->pg.drv, sim->wg.wire_to_skt,
-                  sim->wg.wire_to_skt_off, sim->pg.skt, nskt, getnwire(sim),
-                  sim->wg.comp, sim->pg.ori, sim->rv2, debug);
-  int max_delay = SIM_MAX_WIRE_DELAY;
-  sim_check_max_delay(sim, max_delay);
+  if (!sim_get_compilation_cancelled(sim)) {
+    int nskt = arrlen(sim->pg.skt);
+    dist_graph_init(&sim->dg, sim->dist_spec, sim->w, sim->h, sim->nl,
+                    &sim->pg.g, sim->wg.wire_to_drv, sim->pg.drv,
+                    sim->wg.wire_to_skt, sim->wg.wire_to_skt_off, sim->pg.skt,
+                    nskt, getnwire(sim), sim->wg.comp, sim->pg.ori, sim->rv2,
+                    debug);
+    int max_delay = SIM_MAX_WIRE_DELAY;
+    sim_check_max_delay(sim, max_delay);
+  }
 
-  sim->dirty_mask_size = (sim->num_wire + 31) / 32;
-  sim->pulse_dirty_mask = calloc(sim->dirty_mask_size, sizeof(uint32_t));
-  sim_register_nands(sim, p.img[0]);
+  if (!sim_get_compilation_cancelled(sim)) {
+    sim->dirty_mask_size = (sim->num_wire + 31) / 32;
+    sim->pulse_dirty_mask = calloc(sim->dirty_mask_size, sizeof(uint32_t));
+    sim_register_nands(sim, sim->arg_img[0]);
+  }
+
+  mtx_lock(&sim->comp_mut);
+  sim->compilation_done = true;
+  mtx_unlock(&sim->comp_mut);
+  return 0;
+}
+
+Status sim_post_compile(Sim* sim) {
   profiler_tic_single("init2");
+  assert(!sim->compilation_cancelled);
+  assert(sim->compilation_done);
   bool has_errors = sim_has_errors(sim);
   if (has_errors) {
     sim->rv2->error_mode = 1;
     collect_bugged_pixels(sim);
   }
   sim_init_state(sim);
+  Status status = status_ok();
   if (sim->api && !has_errors) {
     if (status.ok && sim->api->start) {
       status = sim->api->start(sim->api->u, sim);
@@ -705,7 +724,7 @@ Status sim_init(Sim* sim, SimParams p) {
   }
   profiler_tac_single("init2");
   printf("num_nands=%d\n", sim_get_num_nands(sim));
-  printf("parsing=%dms\n", (int)((GetTime() - start) * 1000));
+  printf("parsing=%dms\n", (int)((GetTime() - sim->start_parsing_time) * 1000));
 
 #if 0
   if (!sim_has_errors(sim)) {
@@ -718,7 +737,49 @@ Status sim_init(Sim* sim, SimParams p) {
   return status;
 }
 
+void sim_stop_compilation(Sim* sim) {
+  mtx_lock(&sim->comp_mut);
+  sim->compilation_cancelled = true;
+  mtx_unlock(&sim->comp_mut);
+}
+
+bool sim_is_compilation_done(Sim* sim) {
+  mtx_lock(&sim->comp_mut);
+  bool ret = sim->compilation_done;
+  mtx_unlock(&sim->comp_mut);
+  return ret;
+}
+
+/*
+ * The PinGroup is the pin API for external component(s).
+ */
+void sim_init(Sim* sim, SimParams p) {
+  *sim = (Sim){0};
+  sim->complete = false;
+  sim->base_tps = 240;
+  sim->warmup_cycles = p.warmup_cycles;
+  sim->period_len = 1;
+  sim->api = p.api;
+  sim->compilation_done = false;
+  sim->compilation_cancelled = false;
+  sim->poked = false;
+  init_spec(&sim->dist_spec);
+  sim->nl = p.nl;
+  for (int i = 0; i < sim->nl; i++) {
+    sim->arg_layers[i] = p.layers[i];
+    sim->arg_img[i] = p.img[i];
+  }
+  mtx_init(&sim->comp_mut, mtx_plain);
+  int ok = thrd_create(&sim->comp_thr, sim_compile_thread, sim);
+  if (ok != thrd_success) {
+    fprintf(stderr, "Failed to create thread.");
+    abort();
+  }
+}
+
 void sim_destroy(Sim* sim) {
+  sim_wait_compilation(sim);
+  mtx_destroy(&sim->comp_mut);
   if (!sim_has_errors(sim)) {
     patch_builder_destroy(&sim->patch_builder);
   }
@@ -727,7 +788,7 @@ void sim_destroy(Sim* sim) {
   dist_graph_destroy(&sim->dg);
   UnloadTexture(sim->pulse_tex);
   free(sim->pulse_dirty_mask);
-  renderv2_free(sim->rv2);
+  if (sim->rv2) renderv2_free(sim->rv2);
   if (sim->light_ema) texdel(sim->light_ema);
   if (sim->circ_ema) texdel(sim->circ_ema);
   sim_state_destroy(&sim->state);
@@ -1736,6 +1797,13 @@ void patch_builder_handle_socket_events(PatchBuilder* builder,
   }
 }
 
+// sim.c
+void sim_wait_compilation(Sim* sim) {
+  if (sim->comp_joined) return;
+  thrd_join(sim->comp_thr, NULL);
+  sim->comp_joined = true;
+}
+
 int sim_get_pixel_error_status(Sim* sim, int pix) {
   int w = sim->w;
   int h = sim->h;
@@ -1813,7 +1881,9 @@ void sim_dry_run() {
       .layers = &rt,
       .warmup_cycles = 1,
   };
-  stat = sim_init(&s, p);
+  sim_init(&s, p);
+  sim_wait_compilation(&s);
+  stat = sim_post_compile(&s);
   assert(stat.ok);
   assert(!sim_has_errors(&s));
   HSim hsim = wrap_sim(&s);

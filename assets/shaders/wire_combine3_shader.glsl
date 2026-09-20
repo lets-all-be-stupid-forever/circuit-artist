@@ -242,7 +242,14 @@ void main()
 
   /* p is the last EXACT TICK where the circuit has changed */
   int p = unpack_int32(texture(pmap, pos));
-  /* NAND or bg */
+  /* Image background: always opaque black, in normal and error mode */
+  if (c.a == 0.0) {
+    out_circ = vec4(0.0, 0.0, 0.0, 1.0);
+    out_light = vec4(0.0, 0.0, 0.0, 1.0);
+    return;
+  }
+
+  /* NAND pixel in normal mode (error mode draws NANDs separately) */
   if (p == 0 && error_mode == 0) {
     out_circ = vec4(c.rgb * 0.5, 1);
     out_light = vec4(0,0,0,1);
