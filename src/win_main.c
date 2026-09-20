@@ -73,7 +73,7 @@ static struct {
 
   Btn btn_pause;
   Btn btn_rewind;
-  // Btn btn_forward;
+  Btn btn_forward;
 
   // Tools buttons
   Btn btn_level_custom;
@@ -220,7 +220,7 @@ static void update_layout() {
   C.btn_simu.hitbox = layout_rectb(l, "btn_play");
   C.btn_pause.hitbox = layout_rectb(l, "btn_pause");
   C.btn_rewind.hitbox = layout_rectb(l, "btn_rewind");
-  // C.btn_forward.hitbox = layout_rectb(l, "btn_forward");
+  C.btn_forward.hitbox = layout_rectb(l, "btn_forward");
 
   /* Left-bar tool buttons */
   C.btn_brush.hitbox = layout_rectb(l, "btn_brush");
@@ -1275,9 +1275,9 @@ void main_update_hud() {
   if (btn_update(&C.btn_simu)) main_toggle_simu();
   if (btn_update(&C.btn_pause)) toggle_simu_pause();
   btn_update(&C.btn_rewind);
-  // btn_update(&C.btn_forward);
+  btn_update(&C.btn_forward);
   if (C.btn_rewind.pressed) C.rewind_pressed = true;
-  // if (C.btn_forward.pressed) C.forward_pressed = true;
+  if (C.btn_forward.pressed) C.forward_pressed = true;
 
   // if (btn_update(&C.btn_level_campaign)) on_btn_campaign_level_click();
   if (btn_update(&C.btn_camp)) on_btn_campaign_level_click();
@@ -1408,7 +1408,7 @@ void win_main_draw() {
   if (C.kernel_error) rec_simu = rect_warning;
   btn_draw_icon(&C.btn_simu, rec_simu);
   btn_draw_icon(&C.btn_rewind, rect_rewind);
-  // btn_draw_icon(&C.btn_forward, rect_forward);
+  btn_draw_icon(&C.btn_forward, rect_forward);
   btn_draw_icon(&C.btn_pause, rect_pause);
 
   // btn_draw_text(&C.btn_wiki, T.main_btn_wiki);
@@ -1519,7 +1519,7 @@ void win_main_draw() {
     } else {
       btn_draw_legend(&C.btn_rewind, T.main_rewind_leg);
     }
-    // btn_draw_legend(&C.btn_forward, T.main_forward_leg);
+    btn_draw_legend(&C.btn_forward, T.main_forward_leg);
     btn_draw_legend(&C.btn_brush, T.main_brush_leg);
     btn_draw_legend(&C.btn_line, T.main_line_leg);
     btn_draw_legend(&C.btn_bucket, T.main_bucket_leg);
@@ -1756,11 +1756,11 @@ void main_update_widgets() {
 
   C.btn_pause.toggled = C.paused;
   C.btn_rewind.toggled = C.rewind_pressed;
-  // C.btn_forward.toggled = C.forward_pressed;
+  C.btn_forward.toggled = C.forward_pressed;
   C.btn_side_level.toggled = C.sidebar_open;
 
   C.btn_rewind.disabled = !simu || !can_rewind;
-  // C.btn_forward.disabled = !ned || !C.paused;
+  C.btn_forward.disabled = !ned || !C.paused;
   C.btn_pause.disabled = !simu;
 
   C.btn_simu.disabled = C.kernel_error;
