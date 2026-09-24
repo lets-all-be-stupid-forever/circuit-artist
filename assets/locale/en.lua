@@ -1221,6 +1221,9 @@ This is a `truth table`, it shows you the desired output for each of the possibl
 sevenseg_name = "Seven Segment Display"
 sevenseg_desc = [[
 Given a 4-bit input `n`, display it in a 7-segment display as in the image below.
+
+!img:levels/imgs/sevenseg1.png
+
 ]]
 sevenseg1_title = 'Seven Segments'
 
