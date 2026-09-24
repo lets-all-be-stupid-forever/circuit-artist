@@ -4,6 +4,9 @@
 #include "stb_ds.h"
 #include "ui.h"
 
+/* Alpha used for the level's ports when they are inactive (sandbox mode). */
+#define LEVEL_HIDDEN_ALPHA 160
+
 void level_api_add_port(LevelAPI* api, int width, const char* id, int type,
                         bool right) {
   PinGroup pg = {0};
@@ -45,7 +48,7 @@ void level_api_destroy(LevelAPI* api) {
 }
 
 static void draw_pin_sockets(PinGroup* l_pg, Cam2D cam, int w, int h,
-                             RenderTexture target) {
+                             RenderTexture target, bool hidden) {
   BeginTextureMode(target);
   rlPushMatrix();
   rlTranslatef(cam.off.x, cam.off.y, 0);
@@ -73,6 +76,7 @@ static void draw_pin_sockets(PinGroup* l_pg, Cam2D cam, int w, int h,
       if (cam.sp < 16) {
         source = (Rectangle){576 + 16, 160, 16, 16};
       }
+      if (hidden) clr.a = LEVEL_HIDDEN_ALPHA;
       DrawTexturePro(sprite, source, target, (Vector2){0, 0}, 0, clr);
     }
   }
@@ -81,17 +85,22 @@ static void draw_pin_sockets(PinGroup* l_pg, Cam2D cam, int w, int h,
 }
 
 void level_api_draw_pin_sockets(LevelAPI* api, Cam2D cam, int w, int h,
-                                RenderTexture target) {
-  draw_pin_sockets(api->pg_left, cam, w, h, target);
-  draw_pin_sockets(api->pg_right, cam, w, h, target);
+                                RenderTexture target, bool hidden) {
+  draw_pin_sockets(api->pg_left, cam, w, h, target, hidden);
+  draw_pin_sockets(api->pg_right, cam, w, h, target, hidden);
 }
 
 void level_api_draw_board(LevelAPI* api, Cam2D cam, int w, int h,
-                          RenderTexture rt) {
+                          RenderTexture rt, bool hidden) {
   PinGroup* pg = api->pg;
   int ng = arrlen(pg);
   BeginTextureMode(rt);
   ClearBackground(BLANK);
+  /* Port names fade out when the board is hidden. */
+  Color text_color = CA_WHITE;
+  if (hidden) {
+    text_color.a = LEVEL_HIDDEN_ALPHA;
+  }
   rlPushMatrix();
   rlTranslatef(cam.off.x, cam.off.y, 0);
   rlScalef(cam.sp, cam.sp, 1);
@@ -111,14 +120,14 @@ void level_api_draw_board(LevelAPI* api, Cam2D cam, int w, int h,
         name = TextFormat("%s <-", pg[ig].id);
       }
       int tw = get_rendered_text_size(name).x;
-      font_draw_texture(name, -tw - 2, y, CA_WHITE);
+      font_draw_texture(name, -tw - 2, y, text_color);
     } else {
       if (input) {
         name = TextFormat("<- %s", pg[ig].id);
       } else {
         name = TextFormat("-> %s", pg[ig].id);
       }
-      font_draw_texture(name, w + 2, y, CA_WHITE);
+      font_draw_texture(name, w + 2, y, text_color);
     }
   }
   rlPopMatrix();

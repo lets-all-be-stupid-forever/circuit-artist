@@ -37,10 +37,12 @@
 
 // Play/Stop icons
 #define rect_start ((Rectangle){16 * 0, 16 * 1, 13, 13})
+#define rect_start_sb ((Rectangle){48, 112, 13, 13})
 #define rect_pause ((Rectangle){16 * 1, 16 * 1, 13, 13})
 #define rect_stop ((Rectangle){16 * 2, 16 * 1, 13, 13})
 #define rect_rewind ((Rectangle){16 * 3, 16 * 1, 13, 13})
 #define rect_forward ((Rectangle){16 * 4, 16 * 1, 13, 13})
+#define rect_sandbox ((Rectangle){80, 96, 13, 13})
 
 // Logo of CircuitArtist (for About page)
 #define rect_logo ((Rectangle){160, 80, 158, 87})
@@ -105,6 +107,8 @@
 #define rect_line_sep_r ((Rectangle){496, 16, 13, 13})
 #define rect_soladd ((Rectangle){80, 80, 13, 13})
 #define rect_engineer ((Rectangle){288, 0, 13, 13})
+#define rect_nothing ((Rectangle){48, 96, 13, 13})
+#define rect_wires ((Rectangle){96, 96, 13, 13})
 
 // minimap icon
 #define rect_map ((Rectangle){448, 0, 13, 13})

@@ -8,6 +8,11 @@
 #define MODE_SIMU 2
 #define MODE_ERROR 3
 
+typedef enum {
+  SIM_MODE_LEVEL,
+  SIM_MODE_SANDBOX,
+} SimMode;
+
 // Main screen.
 void win_main_init();
 void win_main_open();

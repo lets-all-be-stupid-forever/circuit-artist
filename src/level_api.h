@@ -22,10 +22,13 @@ typedef struct {
 
 void level_api_add_port(LevelAPI* api, int width, const char* id, int type,
                         bool right);
+/* Alpha used for the level's ports when they are inactive (sandbox mode). */
+#define LEVEL_HIDDEN_ALPHA 160
+
 void level_api_draw_pin_sockets(LevelAPI* api, Cam2D cam, int w, int h,
-                                RenderTexture target);
+                                RenderTexture target, bool hidden);
 void level_api_draw_board(LevelAPI* api, Cam2D cam, int w, int h,
-                          RenderTexture rt);
+                          RenderTexture rt, bool hidden);
 void level_api_destroy(LevelAPI* api);
 
 #endif

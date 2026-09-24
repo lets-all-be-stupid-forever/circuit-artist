@@ -7,24 +7,26 @@
 <rect id="btn_pause" x="22" y="30" width="17" height="17" fill="#D9D9D9"/>
 <rect id="btn_rewind" x="4" y="48" width="17" height="17" fill="#D9D9D9"/>
 <rect id="btn_forward" x="22" y="48" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_playmode" x="4" y="66" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_none" x="22" y="66" width="17" height="17" fill="#D9D9D9"/>
 <rect id="btn_open" opacity="0.6" x="22" y="4" width="17" height="17" fill="#D9D9D9"/>
 <rect id="btn_save" x="40" y="4" width="17" height="17" fill="#D9D9D9"/>
 <rect id="btn_saveas" x="58" y="4" width="17" height="17" fill="#D9D9D9"/>
 <rect id="btn_exit" x="94" y="4" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_brush" x="4" y="70" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_line" x="22" y="70" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_bucket" x="4" y="106" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_picker" x="22" y="106" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_extra1" x="4" y="128" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_extra2" x="22" y="128" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_extra3" x="4" y="146" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_extra4" x="22" y="146" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_marquee" x="4" y="88" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_text" x="22" y="88" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_extra5" x="4" y="164" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_extra6" x="22" y="164" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_extra7" x="4" y="182" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_extra8" x="22" y="182" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_brush" x="4" y="84" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_line" x="22" y="84" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_bucket" x="4" y="120" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_picker" x="22" y="120" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_extra1" x="4" y="145" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_extra2" x="22" y="145" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_extra3" x="4" y="163" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_extra4" x="22" y="163" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_marquee" x="4" y="102" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_text" x="22" y="102" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_extra5" x="4" y="181" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_extra6" x="22" y="181" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_extra7" x="4" y="199" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_extra8" x="22" y="199" width="17" height="17" fill="#D9D9D9"/>
 <rect id="btn_campaign_level" x="622" y="5" width="162" height="17" fill="#D9D9D9"/>
 <rect id="btn_wiki" x="256" y="4" width="17" height="17" fill="#D9D9D9"/>
 <rect id="btn_blueprint" x="202" y="4" width="17" height="17" fill="#D9D9D9"/>
@@ -76,7 +78,6 @@
 <rect id="btn_side_level" x="722.5" y="437" width="34" height="34" fill="#D9D9D9"/>
 <rect id="btn_camp" x="130" y="4" width="35" height="17" fill="#D9D9D9"/>
 <rect id="btn_custom" x="166" y="4" width="17" height="17" fill="#D9D9D9"/>
-<rect id="sep1" x="2" y="67" width="39" height="2" fill="#D9D9D9"/>
-<rect id="sep2" x="2" y="125" width="39" height="2" fill="#D9D9D9"/>
+<rect id="sep2" x="2" y="142" width="39" height="2" fill="#D9D9D9"/>
 </g>
 </svg>

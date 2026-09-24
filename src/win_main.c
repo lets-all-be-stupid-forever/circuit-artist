@@ -74,6 +74,8 @@ static struct {
   Btn btn_pause;
   Btn btn_rewind;
   Btn btn_forward;
+  Btn btn_nop;
+  Btn btn_simmode;
 
   // Tools buttons
   Btn btn_level_custom;
@@ -138,6 +140,7 @@ static struct {
   void (*dialog_callback)();
   LevelDef* ldef;
   LevelAPI api;
+  LevelAPI sandbox_api;
   Blueprint* bp;
   // SolWidget sol;
   Rectangle lower_bg;
@@ -145,8 +148,9 @@ static struct {
   bool sidebar_open;
   Rectangle sidebar_rect;
   int s_last_num_nands;
-  Rectangle sep1;
   Rectangle sep2;
+
+  SimMode sim_mode;
 } C = {0};
 
 static inline int maxint(int a, int b) { return a > b ? a : b; }
@@ -178,6 +182,15 @@ static const char* get_filename() {
   }
   return T.main_untitled;
 }
+
+static LevelAPI* getlevel() {
+  if (C.sim_mode == SIM_MODE_LEVEL) {
+    return &C.api;
+  } else {
+    return &C.sandbox_api;
+  }
+}
+static bool get_can_rewind() { return getlevel()->bw != NULL; }
 
 static void update_title() {
   const char* fname = GetFileName(get_filename());
@@ -213,7 +226,6 @@ static void update_layout() {
 
   C.btn_wiki.hitbox = layout_rectb(l, "btn_wiki");
   // C.btn_wiki.hitbox.x += dx;
-  C.sep1 = layout_rect(l, "sep1");
   C.sep2 = layout_rect(l, "sep2");
 
   /* Left-bar play/simu controls */
@@ -221,6 +233,8 @@ static void update_layout() {
   C.btn_pause.hitbox = layout_rectb(l, "btn_pause");
   C.btn_rewind.hitbox = layout_rectb(l, "btn_rewind");
   C.btn_forward.hitbox = layout_rectb(l, "btn_forward");
+  C.btn_simmode.hitbox = layout_rectb(l, "btn_playmode");
+  C.btn_nop.hitbox = layout_rectb(l, "btn_none");
 
   /* Left-bar tool buttons */
   C.btn_brush.hitbox = layout_rectb(l, "btn_brush");
@@ -283,7 +297,7 @@ static void discord_refresh() {
   }
 }
 
-static bool main_can_rewind() { return C.api.bw != NULL; }
+static bool main_can_rewind() { return get_can_rewind(); }
 
 static void on_modal_before_open() {
   if (is_always_on_top()) {
@@ -441,8 +455,10 @@ static void reset_kernel_error() {
 static void reset_level() {
   C.ldef = NULL;
   level_api_destroy(&C.api);
+  level_api_destroy(&C.sandbox_api);
   main_new_file();
   reset_kernel_error();
+  C.sim_mode = SIM_MODE_LEVEL;
 }
 
 void win_main_load_level(LevelDef* ldef) {
@@ -462,6 +478,9 @@ void win_main_load_level(LevelDef* ldef) {
         ldef->is_campaign ? T.main_campaign_loaded : T.main_custom_level_loaded,
         2);
   }
+  LevelDef* ldef_sandbox = get_level_by_id("official:basics");
+  lua_level_create(&C.sandbox_api, ldef_sandbox);
+
   discord_refresh();
   level_sidebar_set_lvl(ldef);
   C.sidebar_open = true;
@@ -527,6 +546,7 @@ void win_main_init() {
   C.layout = easy_load_layout("main");
   layout_scale(C.layout);
   win_log_init();
+  C.sim_mode = SIM_MODE_LEVEL;
   C.sidebar_open = false;
   C.clock_speed = 2;
   C.btn_camp.primary = true;
@@ -563,6 +583,7 @@ void win_main_init() {
   C.r = getreg();
   sim_dry_run();
   level_sidebar_init();
+
   win_main_load_level(find_basics_custom_level());
   // update_viewport();
 
@@ -655,8 +676,6 @@ float get_clock_delta(v2 c, v2 a, v2 b) {
   // [bx, by, bz]
   // [0, 0, 1]
 }
-
-static LevelAPI* getlevel() { return &C.api; }
 
 Status main_draw_level_kernel() {
   if (!main_is_simulation_on()) return status_ok();
@@ -758,7 +777,9 @@ void win_main_update() {
                          mode == MODE_EDIT);
     int w = paint_img_width(&C.ca);
     int h = paint_img_height(&C.ca);
-    level_api_draw_pin_sockets(&C.api, C.ca.cam, w, h, C.img_target_tex);
+    bool ports_hidden = C.sim_mode == SIM_MODE_SANDBOX;
+    level_api_draw_pin_sockets(&C.api, C.ca.cam, w, h, C.img_target_tex,
+                               ports_hidden);
   }
 
   if (mode == MODE_SIMU || mode == MODE_ERROR) {
@@ -796,7 +817,8 @@ void win_main_update() {
   {
     int w = paint_img_width(&C.ca);
     int h = paint_img_height(&C.ca);
-    level_api_draw_board(&C.api, C.ca.cam, w, h, C.level_overlay_tex);
+    bool hidden = C.sim_mode == SIM_MODE_SANDBOX;
+    level_api_draw_board(&C.api, C.ca.cam, w, h, C.level_overlay_tex, hidden);
   }
 
   if (!C.kernel_error) {
@@ -1230,6 +1252,14 @@ static void on_btn_campaign_level_click() {
   win_main_ask_for_save_and_proceed(win_main_open_level);
 }
 
+static void toggle_sim_mode() {
+  if (C.sim_mode == SIM_MODE_LEVEL) {
+    C.sim_mode = SIM_MODE_SANDBOX;
+  } else if (C.sim_mode == SIM_MODE_SANDBOX) {
+    C.sim_mode = SIM_MODE_LEVEL;
+  }
+}
+
 static void on_btn_custom_level_click() {
   win_main_ask_for_save_and_proceed(custom_level_open_win);
 }
@@ -1278,6 +1308,7 @@ void main_update_hud() {
   btn_update(&C.btn_forward);
   if (C.btn_rewind.pressed) C.rewind_pressed = true;
   if (C.btn_forward.pressed) C.forward_pressed = true;
+  if (btn_update(&C.btn_simmode)) toggle_sim_mode();
 
   // if (btn_update(&C.btn_level_campaign)) on_btn_campaign_level_click();
   if (btn_update(&C.btn_camp)) on_btn_campaign_level_click();
@@ -1314,7 +1345,15 @@ static void draw_complete_badge() {
   DrawTexturePro(sprites, rect_medal, tgt, (Vector2){0, 0}, 0, CA_WHITE);
 }
 
-static bool get_can_rewind() { return C.api.bw != NULL; }
+static Rectangle get_rect_sim_mode() {
+  switch (C.sim_mode) {
+    case SIM_MODE_LEVEL:
+      return rect_wires;
+    case SIM_MODE_SANDBOX:
+      return rect_sandbox;
+  }
+  return rect_nothing;
+}
 
 void win_main_draw() {
   ClearBackground(BLANK);
@@ -1335,7 +1374,6 @@ void win_main_draw() {
   };
   draw_default_tiled_frame(inner_content);
   draw_default_tiled_frame(C.lower_bg);
-  draw_seph(C.sep1);
   draw_seph(C.sep2);
   main_draw_status_bar();
 
@@ -1409,6 +1447,8 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_simu, rec_simu);
   btn_draw_icon(&C.btn_rewind, rect_rewind);
   btn_draw_icon(&C.btn_forward, rect_forward);
+  btn_draw_icon(&C.btn_simmode, get_rect_sim_mode());
+  btn_draw_icon(&C.btn_nop, rect_nothing);
   btn_draw_icon(&C.btn_pause, rect_pause);
 
   // btn_draw_text(&C.btn_wiki, T.main_btn_wiki);
@@ -1459,6 +1499,7 @@ void win_main_draw() {
     btn_draw_legend(&C.btn_saveas, T.main_saveas_leg);
     btn_draw_legend(&C.btn_blueprint, T.main_btn_blueprint_leg);
     btn_draw_legend(&C.btn_exit, T.main_exit_leg);
+    btn_draw_legend(&C.btn_simmode, T.main_simmode_leg);
 
     btn_draw_legend(&C.btn_side_level, T.main_objectives);
     btn_draw_legend(&C.btn_layer_push, T.main_layer_push_leg);
@@ -1674,10 +1715,15 @@ void main_draw_status_bar() {
   snprintf(txt, sizeof(txt), T.main_bar_img, buf_size.x, buf_size.y);
   uifont_draw_texture_outlined(txt, xc, yc, tc, bg);
   yc += step;
-  const char* lvl = C.ldef->name;
-  const char* line = TextFormat(T.main_bar_level, lvl);
-  uifont_draw_texture_outlined(line, xc, yc, tc, bg);
-  yc += step;
+  if (C.sim_mode == SIM_MODE_LEVEL) {
+    const char* lvl = C.ldef->name;
+    const char* line = TextFormat(T.main_bar_level, lvl);
+    uifont_draw_texture_outlined(line, xc, yc, tc, bg);
+    yc += step;
+  } else {
+    uifont_draw_texture_outlined(T.main_bar_sandbox, xc, yc, CA_ORANGE, bg);
+    yc += step;
+  }
 }
 
 RectangleInt main_get_target_region() {
@@ -1760,8 +1806,9 @@ void main_update_widgets() {
   C.btn_side_level.toggled = C.sidebar_open;
 
   C.btn_rewind.disabled = !simu || !can_rewind;
-  C.btn_forward.disabled = !ned || !C.paused;
+  C.btn_forward.disabled = !simu || !C.paused;
   C.btn_pause.disabled = !simu;
+  C.btn_simmode.disabled = ned;
 
   C.btn_simu.disabled = C.kernel_error;
 
@@ -1835,6 +1882,7 @@ void main_new_file() {
 }
 
 void win_main_destroy() {
+  reset_level();
   discord_shutdown();
   paint_destroy(&C.ca);
   if (C.fname) {

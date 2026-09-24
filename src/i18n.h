@@ -29,6 +29,7 @@ void i18n_register_lua(lua_State* L);
   X(main_open_leg)                    \
   X(main_save_leg)                    \
   X(main_saveas_leg)                  \
+  X(main_simmode_leg)                 \
   X(main_open_blueprint_leg)          \
   X(main_exit_leg)                    \
   X(main_layer_push_leg)              \
@@ -74,6 +75,7 @@ void i18n_register_lua(lua_State* L);
   X(main_linesep_reset_leg)           \
   X(main_btn_wiki)                    \
   X(main_bar_level)                   \
+  X(main_bar_sandbox)                 \
   X(main_bar_img)                     \
   X(main_bar_img_name)                \
   X(main_bar_tick)                    \
