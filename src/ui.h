@@ -2,6 +2,7 @@
 #define CA_UI_H
 #include <lua.h>
 
+#include "common.h"
 #include "raylib.h"
 #include "stdbool.h"
 
@@ -49,13 +50,10 @@ void ui_init();
 void ui_update_frame();
 void ui_destroy();
 bool ui_get_should_close();
-int ui_get_scale();
 void ui_winpush(WindowEnum newWindow);
 void ui_winpop();
 WindowEnum ui_wintop();
 WindowEnum ui_get_window();
-Texture2D ui_get_sprites();
-Image ui_get_sprites_img();
 void ui_inc_hit_count();
 int ui_get_hit_count();
 void ui_set_cursor(MouseCursorType cursor);

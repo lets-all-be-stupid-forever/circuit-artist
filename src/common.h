@@ -242,4 +242,10 @@ typedef struct {
   double lone_pulse_energy; /* Pulse energy for LONE wires */
 } DistSpec;
 
+Texture2D ui_get_sprites();
+Image ui_get_sprites_img();
+int ui_get_scale();
+
+void init_common_globals();
+
 #endif

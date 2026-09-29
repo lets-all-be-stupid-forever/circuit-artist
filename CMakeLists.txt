@@ -91,6 +91,7 @@ SET(ca_src
   src/buffer.c
   src/blueprint.c
   src/clipapi.cpp
+  src/common.c
   src/colors.c
   src/dist_graph.c
   src/elmore.c

@@ -50,10 +50,7 @@ typedef struct {
 } WinCmd;
 
 static struct {
-  int scale;           // Global UI pixel scaling.
-  Image img_sprites;   // Global UI sprites loaded from the sprite4.png asset
-  Texture2D sprites;   // Global UI sprites loaded from the sprite4.png asset
-  WindowEnum* window;  // Active window/screen.
+  WindowEnum* window;      // Active window/screen.
   MouseCursorType cursor;  // Current mouse cursor type.
   bool close_requested;    // If true, will try to close the game.
   bool should_close;       // If True, app will close next frame.
@@ -102,12 +99,7 @@ void ui_winpop() {
 
 void ui_inc_hit_count() { C.hit_count++; };
 
-Texture2D ui_get_sprites() { return C.sprites; };
-Image ui_get_sprites_img() { return C.img_sprites; };
-
 int ui_get_hit_count() { return C.hit_count; };
-
-int ui_get_scale() { return C.scale; }
 
 void ui_crash(const char* error) { C.lua_error = clone_string(error); }
 
@@ -148,16 +140,13 @@ void ui_init() {
   }
 #endif
 
-  //  For now the ui scale only works at scale=2, there are some hard coded
-  //  scale that needs to be fixed (low priority)
-  C.scale = 2;
-
   /* The minimum must be done here so we can display errors */
   int screen_width = 640 * 2;
   int screen_height = 320 * 2;
   // SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
   SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
   InitWindow(screen_width, screen_height, "Circuit Artist");
+  init_common_globals();
   setup_app_icons();
   InitAudioDevice();
   init_i18n();
@@ -175,8 +164,6 @@ void ui_init() {
   DrawRectangle(0, 0, 2000, 2000, BLACK);
   EndDrawing();
   SetWindowState(FLAG_WINDOW_MAXIMIZED);
-  C.img_sprites = load_image_asset("imgs/sprite4.png");
-  C.sprites = LoadTextureFromImage(C.img_sprites);
   widgets_init();
   HideCursor();
   msg_init();
@@ -476,15 +463,15 @@ void ui_draw_mouse() {
       break;
     }
   };
-  int s = C.scale;
+  int s = ui_get_scale();
   Rectangle target = {
       .x = pos.x - 16 * s,
       .y = pos.y - 16 * s,
       .width = 32 * s,
       .height = 32 * s,
   };
-  DrawTexturePro(C.sprites, source, target, (Vector2){.x = 0, .y = 0}, 0.0f,
-                 CA_WHITE);
+  DrawTexturePro(ui_get_sprites(), source, target, (Vector2){.x = 0, .y = 0},
+                 0.0f, CA_WHITE);
 }
 
 bool ui_get_should_close() { return C.should_close; }
