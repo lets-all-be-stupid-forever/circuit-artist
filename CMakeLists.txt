@@ -62,6 +62,7 @@ SET(ca_src
   src/renderv2.c
   src/graph.c
   src/hist.c
+  src/cam2d.c
   src/hsim.c
   src/img.c
   src/layout.c
@@ -90,19 +91,20 @@ SET(ca_src
   third_party/tinycthread/tinycthread.c
   )
 add_library(ca_lib STATIC ${ca_src})
-target_include_directories(ca_lib PRIVATE
+set(ca_lib_includes
+  src
   third_party
-  third_party/msgpack-c/include
   third_party/raylib/src
+  third_party/msgpack-c/include
   third_party/raylib/src/external
   third_party/freetype/include
-  )
+)
+target_include_directories(ca_lib PRIVATE ${ca_lib_includes})
 target_link_libraries(ca_lib
   raylib
   ${opengl_lib}
   msgpack-c
   json-c
-  discord-rpc
   freetype)
 
 ##################################
@@ -207,6 +209,25 @@ if(UNIX AND NOT APPLE)
         INSTALL_RPATH "\$ORIGIN"
     )
 endif()
+
+##################################
+# Player
+##################################
+SET(ca_player_src
+  player/main.c
+  player/player.c
+)
+
+add_library(ca_player STATIC ${ca_player_src})
+target_include_directories(ca_player PRIVATE player ${ca_lib_includes})
+target_link_libraries(ca_player ca_lib ${shlwapi_lib})
+
+add_executable(cap player/main.c)
+target_link_libraries(cap ca_player)
+
+
+
+
 
 ##################################
 include(MacOSBundle)
