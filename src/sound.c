@@ -1,8 +1,6 @@
 #include "sound.h"
 
-#include "game_registry.h"
 #include "paths.h"
-#include "win_main.h"
 
 static struct {
   Sound sound_nand_act;
@@ -33,12 +31,10 @@ void sound_init() {
   SetSoundVolume(C.sound_oops, C.base_volume);
 }
 
-void play_sound_click() {
-  if (is_paint_sound_on()) PlaySound(C.sound_click1);
-}
+void play_sound_click() { PlaySound(C.sound_click1); }
 
 void play_sound_paint(int al) {
-  if (is_paint_sound_on() && !IsSoundPlaying(C.sound_click2)) {
+  if (!IsSoundPlaying(C.sound_click2)) {
     SetSoundPitch(C.sound_click2, 1 << al);
     PlaySound(C.sound_click2);
   }
@@ -46,9 +42,7 @@ void play_sound_paint(int al) {
 
 void play_sound_nand() {
   // SetSoundPitch(C.sound_nand, ev.sound);
-  if (is_circuit_sound_on()) {
-    PlaySound(C.sound_nand_act);
-  }
+  PlaySound(C.sound_nand_act);
 }
 
 void play_sound_oops() { PlaySound(C.sound_oops); }

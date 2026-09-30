@@ -2,7 +2,6 @@
 
 #include "font.h"
 #include "stb_ds.h"
-#include "ui.h"
 
 /* Alpha used for the level's ports when they are inactive (sandbox mode). */
 #define LEVEL_HIDDEN_ALPHA 160

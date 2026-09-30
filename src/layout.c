@@ -7,7 +7,6 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
-#include "ui.h"
 #include "utils.h"
 
 static Rectangle layout_rect_raw(Layout* l, const char* id) {

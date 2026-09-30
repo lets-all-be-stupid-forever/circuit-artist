@@ -424,6 +424,7 @@ void win_main_stop_simu() {
   }
   hsim_destroy(&C.hsim);
   sim_destroy(&C.sim);
+  msg_clear_permanent();
 
   C.paused = false;
   C.mode = MODE_EDIT;
@@ -604,7 +605,9 @@ static void simu_play_sounds() {
   for (int i = 0; i < na; i++) {
     SimUiEvent ev = C.sim.ui_events[i];
     if (ev.sound > 0) {
-      play_sound_nand();
+      if (is_circuit_sound_on()) {
+        play_sound_nand();
+      }
     }
   }
 }
@@ -649,7 +652,7 @@ static Status main_update_simu() {
       C.sim.pause_requested = false;
       C.paused = true;
       C.simu_target_steps = C.sim.state.cur_tick;
-      play_sound_click();
+      ui_sound_click();
       break;
     }
     slack_steps -= 1.f;
@@ -696,6 +699,7 @@ static void update_compilation() {
     if (sim_get_compilation_cancelled(&C.sim)) {
       C.mode = MODE_EDIT;
       sim_destroy(&C.sim);
+      msg_clear_permanent();
       return;
     }
     Status s = sim_post_compile(&C.sim);
@@ -703,6 +707,7 @@ static void update_compilation() {
       C.mode = MODE_EDIT;
       handle_kernel_error(s);
       sim_destroy(&C.sim);
+      msg_clear_permanent();
       return;
     }
     C.s_last_num_nands = arrlen(C.sim.pg.nands);
@@ -710,6 +715,15 @@ static void update_compilation() {
     C.simu_target_steps = 0;
     C.pix_toggle = -1;
     if (sim_has_errors(&C.sim)) {
+      if (C.sim.wg.global_error_flags & STATUS_CONFLICT) {
+        msg_add(T.simu_multiple_nands, -1);
+      }
+      if (C.sim.wg.global_error_flags & STATUS_DISCONNECTED) {
+        msg_add(T.simu_nand_missing_connection, -1);
+      }
+      if (C.sim.wg.global_error_flags & STATUS_TOOSLOW) {
+        msg_add(T.simu_long_wire, -1);
+      }
       play_sound_oops();
       C.mode = MODE_ERROR;
       discord_refresh();
@@ -1050,20 +1064,20 @@ void main_update_controls() {
   }
 
   if (isEdit && IsKeyPressed(KEY_F1)) {
-    play_sound_click();
+    ui_sound_click();
     paint_set_layer(&C.ca, 0);
   }
 
   if (isEdit && IsKeyPressed(KEY_F2)) {
     if (paint_get_num_layers(&C.ca) > 1) {
-      play_sound_click();
+      ui_sound_click();
       paint_set_layer(&C.ca, 1);
     }
   }
 
   if (isEdit && IsKeyPressed(KEY_F3)) {
     if (paint_get_num_layers(&C.ca) > 2) {
-      play_sound_click();
+      ui_sound_click();
       paint_set_layer(&C.ca, 2);
     }
   }
@@ -1332,7 +1346,7 @@ void main_update_hud() {
     if (rect_hover(C.color_btn[i], pos) && ui_get_hit_count() == 0) {
       ui_inc_hit_count();
       if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        play_sound_click();
+        ui_sound_click();
         paint_set_color(&C.ca, C.palette[i]);
       }
     }

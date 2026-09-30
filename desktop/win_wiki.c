@@ -2,7 +2,6 @@
 
 #include "assert.h"
 #include "common.h"
-#include "config.h"
 #include "font.h"
 #include "game_registry.h"
 #include "i18n.h"

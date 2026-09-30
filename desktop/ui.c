@@ -484,3 +484,7 @@ double ui_get_frame_time() { return C.frame_time; }
 
 WindowEnum ui_wintop() { return ui_get_window(); }
 lua_State* ui_L() { return C.L; }
+
+void ui_sound_click() {
+  if (is_paint_sound_on()) play_sound_click();
+}

@@ -407,7 +407,7 @@ bool btn_update(Btn* b) {
     b->pressed = false;
   }
   if (ret) {
-    play_sound_click();
+    ui_sound_click();
   }
   /* The button might miss the release event if the window gets closed for
    * example.*/

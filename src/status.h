@@ -1,6 +1,5 @@
 #ifndef CA_STATUS_H
 #define CA_STATUS_H
-#include <lua.h>
 
 #include "utils.h"
 

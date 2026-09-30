@@ -308,6 +308,43 @@ static Mod* create_mod() {
   return mod;
 }
 
+static int dofile_with_traceback(lua_State* L, const char* filename) {
+  // Push debug.traceback as error handler
+  lua_getglobal(L, "debug");
+  lua_getfield(L, -1, "traceback");
+  lua_remove(L, -2);  // remove debug table
+  int error_handler = lua_gettop(L);
+
+  // Load the file (luaL_loadfile compiles but doesn't execute)
+  int load_result = luaL_loadfile(L, filename);
+
+  if (load_result != LUA_OK) {
+    // Compilation error (syntax error, file not found, etc.)
+    const char* err = lua_tostring(L, -1);
+    if (err) {
+      printf("load error:\n%s\n", err);
+      ui_crash(err);
+    }
+    lua_pop(L, 1);  // pop error
+    lua_pop(L, 1);  // pop error handler
+    return load_result;
+  }
+
+  // Execute the loaded chunk with error handler
+  int result = lua_pcall(L, 0, LUA_MULTRET, error_handler);
+  if (result != LUA_OK) {
+    const char* err = lua_tostring(L, -1);
+    if (err) {
+      printf("Runtime error:\n%s\n", err);
+      ui_crash(err);
+    }
+    lua_pop(L, 1);  // pop error
+  }
+
+  lua_pop(L, 1);  // pop error handler
+  return result;
+}
+
 static Mod* init_mod_from_folder(GameRegistry* r, const char* mod_path) {
   _load_ctx.registry = r;
   assert(!_load_ctx.mod);

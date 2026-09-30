@@ -1381,7 +1381,7 @@ void paint_handle_wheel_zoom(Paint* ca) {
   if (fabs(wheel) > 1e-3) {
     int z = wheel > 0 ? 1 : -1;
     paint_zoom_camera_at(ca, pos, z);
-    play_sound_click();
+    ui_sound_click();
   }
 }
 
@@ -1496,7 +1496,7 @@ void paint_movement_arrow(Paint* ca, bool paint_mode) {
         if (IsKeyPressed(KEY_LEFT)) dx -= d;
         if (IsKeyPressed(KEY_RIGHT)) dx += d;
         hist_act_move_sel(&ca->h, dx, dy);
-        play_sound_click();
+        ui_sound_click();
       }
     } else {
       int dy = IsKeyDown(KEY_UP) - IsKeyDown(KEY_DOWN);
@@ -1531,20 +1531,20 @@ void paint_movement_keys(Paint* ca) {
         .y = r.y + r.height / 2,
     };
     paint_zoom_camera_at(ca, screenpos, zoom);
-    play_sound_click();
+    ui_sound_click();
   }
 }
 
 static void paint_redo(Paint* ca) {
   hist_redo(&ca->h);
-  play_sound_click();
+  ui_sound_click();
   paint_on_tool_change(ca);
   paint_ensure_camera_within_bounds(ca);
 }
 
 static void paint_undo(Paint* ca) {
   hist_undo(&ca->h);
-  play_sound_click();
+  ui_sound_click();
   paint_on_tool_change(ca);
   paint_ensure_camera_within_bounds(ca);
 }
@@ -1558,7 +1558,7 @@ void paint_handle_keys(Paint* ca) {
     int key = paint_get_number_key_pressed();
     if (key >= 0) {
       paint_append_line_width_number(ca, key);
-      play_sound_click();
+      ui_sound_click();
     }
   }
 
@@ -1578,38 +1578,38 @@ void paint_handle_keys(Paint* ca) {
 
   // Copy
   if (is_control_down() && IsKeyPressed(KEY_C)) {
-    play_sound_click();
+    ui_sound_click();
     paint_copy_to_clipboard(ca);
   }
 
   // Paste
   if (is_control_down() && IsKeyPressed(KEY_V)) {
-    play_sound_click();
+    ui_sound_click();
     paint_paste_from_clipboard(ca);
   }
 
   if (IsKeyPressed(KEY_L)) {
-    play_sound_click();
+    ui_sound_click();
     paint_set_tool(ca, TOOL_LINE);
   }
 
   if (IsKeyPressed(KEY_B)) {
-    play_sound_click();
+    ui_sound_click();
     paint_set_tool(ca, TOOL_BRUSH);
   }
 
   if (IsKeyPressed(KEY_G)) {
-    play_sound_click();
+    ui_sound_click();
     paint_set_tool(ca, TOOL_BUCKET);
   }
 
   if (IsKeyPressed(KEY_I)) {
-    play_sound_click();
+    ui_sound_click();
     paint_set_tool(ca, TOOL_PICKER);
   }
 
   if (IsKeyPressed(KEY_M)) {
-    play_sound_click();
+    ui_sound_click();
     paint_set_tool(ca, TOOL_SEL);
   }
 
@@ -1617,7 +1617,7 @@ void paint_handle_keys(Paint* ca) {
   // between commands
   if (!ca->tool_pressed && paint_get_has_selection(ca) &&
       IsKeyPressed(KEY_ESCAPE)) {
-    play_sound_click();
+    ui_sound_click();
     paint_perform_tool_action(ca);
   }
 
@@ -1625,30 +1625,34 @@ void paint_handle_keys(Paint* ca) {
     bool has_sel = paint_get_has_selection(ca);
     if (has_sel && IsKeyPressed(KEY_H)) {
       hist_act_flip_sel(&ca->h, ACTION_SEL_FLIP_H);
-      play_sound_click();
+      ui_sound_click();
     }
     if (has_sel && IsKeyPressed(KEY_R)) {
-      play_sound_click();
+      ui_sound_click();
       hist_act_flip_sel(&ca->h, ACTION_SEL_ROTATE);
     }
     if (has_sel && IsKeyPressed(KEY_V) && !is_control_down()) {
       hist_act_flip_sel(&ca->h, ACTION_SEL_FLIP_V);
-      play_sound_click();
+      ui_sound_click();
     }
 
     if (has_sel && (IsKeyPressed(KEY_F))) {
       hist_act_fill_sel(&ca->h, ca->fg_color);
-      play_sound_click();
+      ui_sound_click();
     }
 
     if (has_sel && (IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE))) {
-      play_sound_click();
+      ui_sound_click();
       hist_act_delete_sel(&ca->h);
     }
   }
 }
 
-static void on_paint_act(Paint* ca) { play_sound_paint(ca->h.layer); }
+static void on_paint_act(Paint* ca) {
+  if (is_paint_sound_on()) {
+    play_sound_paint(ca->h.layer);
+  }
+}
 
 /**
  * Stops the resizing process.
@@ -1673,7 +1677,7 @@ static void paint_resizing_stop(Paint* pnt) {
   if (!pnt->resizePressed) {
     return;
   }
-  play_sound_click();
+  ui_sound_click();
   int new_x = pnt->pixelCursor.x;
   int new_y = pnt->pixelCursor.y;
   new_x = new_x < 8 ? 8 : new_x;

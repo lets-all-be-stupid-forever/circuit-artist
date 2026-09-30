@@ -3,7 +3,6 @@
 #include "common.h"
 #include "dist_graph.h"
 #include "event_queue.h"
-#include "game_registry.h"
 #include "hsim.h"
 #include "level_api.h"
 #include "paged_stack.h"

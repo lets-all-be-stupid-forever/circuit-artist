@@ -1,5 +1,6 @@
 #ifndef CA_SOUND_MAIN_H
 #define CA_SOUND_MAIN_H
+#include <stdbool.h>
 
 void sound_init();
 

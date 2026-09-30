@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include "json.h"
-#include "lua.h"
 #include "raylib.h"
 #include "stdbool.h"
 
@@ -62,7 +61,6 @@ char** find_png_files(const char* folder_path);
 char* extract_filename_no_ext(const char* filepath);
 
 sprite_t* read_text_sprites(const char* desc, const char* root);
-int dofile_with_traceback(lua_State* L, const char* filename);
 
 struct TexPool;
 

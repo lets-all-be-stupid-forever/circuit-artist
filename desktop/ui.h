@@ -2,7 +2,7 @@
 #define CA_UI_H
 #include <lua.h>
 
-#include "common.h"
+#include "paths.h"
 #include "raylib.h"
 #include "stdbool.h"
 
@@ -63,6 +63,7 @@ void ui_crash(const char* err);
 double ui_get_frame_time();
 void ui_handle_lua_error(lua_State* L);
 bool ui_is_demo();
+void ui_sound_click();
 
 #if defined(__cplusplus)
 }

@@ -4,10 +4,8 @@
 
 #include "assert.h"
 #include "graph.h"
-#include "i18n.h"
 #include "img.h"
 #include "math.h"
-#include "msg.h"
 #include "pixel_graph.h"
 #include "plot.h"
 #include "profiler.h"
@@ -732,17 +730,6 @@ Status sim_post_compile(Sim* sim) {
   int tickgap = sim->state.tick_mod / sim->state.tick_slots;
   renderv2_prepare(sim->rv2, sim->state.tick_mod, tickgap);
 
-  if (sim_has_errors(sim)) {
-    if (sim->wg.global_error_flags & STATUS_CONFLICT) {
-      msg_add(T.simu_multiple_nands, -1);
-    }
-    if (sim->wg.global_error_flags & STATUS_DISCONNECTED) {
-      msg_add(T.simu_nand_missing_connection, -1);
-    }
-    if (sim->wg.global_error_flags & STATUS_TOOSLOW) {
-      msg_add(T.simu_long_wire, -1);
-    }
-  }
   profiler_tac_single("init2");
   printf("num_nands=%d\n", sim_get_num_nands(sim));
   printf("parsing=%dms\n", (int)((GetTime() - sim->start_parsing_time) * 1000));
@@ -828,7 +815,6 @@ void sim_destroy(Sim* sim) {
   arrfree(sim->nidx);
   arrfree(sim->ui_events);
   *sim = (Sim){0};
-  msg_clear_permanent();
 }
 
 Tex* sim_render_energy(Sim* sim, int tw, int th) {

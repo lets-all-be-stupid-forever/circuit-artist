@@ -171,7 +171,7 @@ static void run_main_action() {
   switch (C.main_action) {
     case BPDETAIL_PASTE: {
       blueprint_paste(C.bp);
-      play_sound_click();
+      ui_sound_click();
       ui_winpop();
       ui_winpop();
       blueprint_store_save(C.store);

@@ -129,7 +129,7 @@ static void on_rename_accept(void* ctx, const char* txt) {
 
 static void use_blueprint(int ibp) {
   blueprint_paste(get_blueprint(C.store, ibp));
-  play_sound_click();
+  ui_sound_click();
   ui_winpop();
   blueprint_store_save(C.store);
   return;
@@ -154,16 +154,16 @@ static void update_slot(Btn* b, Vector2 mouse, int sidx) {
         if (sidx == C.sel) {
           win_bpdetail_open(get_blueprint(store, sidx), BPDETAIL_PASTE);
           C.sel = -1;
-          play_sound_click();
+          ui_sound_click();
           return;
         } else {
           blueprint_store_swap(store, C.sel, sidx);
           C.sel = -1;
-          play_sound_click();
+          ui_sound_click();
         }
       } else {
         if (get_blueprint(store, sidx)) {
-          play_sound_click();
+          ui_sound_click();
           if (is_control_down()) {
             /* Tries to move to fixed slot*/
             if (!isfixed) {
@@ -194,7 +194,7 @@ static void update_page_slot(Btn* b, Vector2 mouse, int sidx) {
     if (b->hover) {
       ui_set_cursor(MOUSE_POINTER);
       if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        play_sound_click();
+        ui_sound_click();
         int ipage = sidx - NUM_FIXED - NUM_PAGES * PAGESIZE;
         set_page(ipage);
       }

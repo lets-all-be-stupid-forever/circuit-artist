@@ -6,7 +6,6 @@
 #include "shaders.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "ui.h"
 #include "utils.h"
 
 static struct {

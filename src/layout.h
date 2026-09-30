@@ -1,7 +1,6 @@
 #ifndef CA_LAYOUT_H
 #define CA_LAYOUT_H
 #include "raylib.h"
-#include "widgets.h"
 
 #if defined(__cplusplus)
 extern "C" {

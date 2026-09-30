@@ -9,7 +9,6 @@
 #include "stb_ds.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "ui.h"
 #include "union_find.h"
 
 static void bucket_sort(int ng, int* g0, int* s0, int nb, int* bins, int* g2,
