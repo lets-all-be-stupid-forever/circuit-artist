@@ -146,12 +146,6 @@ typedef struct {
   float sound;
 } SimUiEvent;
 
-/*
- * the first drivers and sockets belong to the NANDs.
- * Then, the next belong to external wires, and the last belong to lone wires.
- */
-typedef struct SimCompileJob SimCompileJob;
-
 typedef struct Sim {
   /* Parsing */
   int nl;             /* Number of layers */
@@ -193,13 +187,13 @@ typedef struct Sim {
   bool complete; /* Activats on complete */
 
   double start_parsing_time;
-  /* Background compilation job (thread + mutex). Opaque: tinycthread.h pulls
-   * in windows.h on MSVC, which clashes with raylib names, so it stays in
-   * sim.c. */
-  SimCompileJob* comp;
 
   RenderTexture2D arg_layers[MAX_LAYERS];
   Image arg_img[MAX_LAYERS];
+
+  /* Compilation cancelation callback, for compilation threads */
+  bool (*is_cancelled_cb)(void* ctx);
+  void* is_cancelled_ctx;
 } Sim;
 
 typedef struct {
@@ -211,11 +205,12 @@ typedef struct {
 } SimParams;
 
 void sim_init(Sim* sim, SimParams params);
-bool sim_is_compilation_done(Sim* sim);
-void sim_stop_compilation(Sim* sim);
-bool sim_get_compilation_cancelled(Sim* sim);
+int sim_compile(Sim* sim);
+// bool sim_is_compilation_done(Sim* sim);
+// void sim_stop_compilation(Sim* sim);
+// bool sim_get_compilation_cancelled(Sim* sim);
 Status sim_post_compile(Sim* sim);
-void sim_wait_compilation(Sim* sim);
+// void sim_wait_compilation(Sim* sim);
 void sim_destroy(Sim* sim);
 Tex* sim_render_v2(Sim* sim, int tw, int th, Cam2D cam, float frame_steps,
                    float slackSteps, int hide_mask, bool use_neon,

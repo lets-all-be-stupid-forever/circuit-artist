@@ -92,7 +92,6 @@ SET(ca_src
 add_library(ca_lib STATIC ${ca_src})
 target_include_directories(ca_lib PRIVATE
   third_party
-  third_party/tinycthread
   third_party/msgpack-c/include
   third_party/raylib/src
   third_party/raylib/src/external
@@ -104,8 +103,7 @@ target_link_libraries(ca_lib
   msgpack-c
   json-c
   discord-rpc
-  freetype
-  Threads::Threads)
+  freetype)
 
 ##################################
 # Desktop
@@ -128,6 +126,7 @@ SET(ca_desktop_src
   desktop/wtext.c
   desktop/script.c
   desktop/paint.c
+  desktop/compilation_thread.c
   desktop/game_registry.c
   desktop/wabout.c
   desktop/wdialog.c

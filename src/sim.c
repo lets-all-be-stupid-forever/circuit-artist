@@ -14,26 +14,6 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-/* tinycthread.h includes windows.h on MSVC. raylib.h is already included above
- * (via sim.h) and windows.h's GDI/USER headers redeclare ShowCursor, LoadImage,
- * DrawText, CloseWindow and Rectangle. Neither is needed for threads. */
-#ifdef _WIN32
-#define NOGDI
-#define NOUSER
-#define NOMINMAX
-#endif
-#include "tinycthread.h"
-
-/* State of the background compilation. Lives in sim.c so tinycthread.h
- * (which includes windows.h on MSVC) never leaks into sim.h. */
-struct SimCompileJob {
-  thrd_t thr;
-  mtx_t mut; /* protects done/cancelled */
-  bool done;
-  bool cancelled;
-  bool joined;
-};
-
 enum {
   PATCH_LEVL = (1 << 0),
   PATCH_QPOP = (1 << 1),
@@ -654,36 +634,35 @@ static void sim_check_max_delay(Sim* sim, int max_delay) {
   }
 }
 
-bool sim_get_compilation_cancelled(Sim* sim) {
-  SimCompileJob* j = sim->comp;
-  mtx_lock(&j->mut);
-  bool ret = j->cancelled;
-  mtx_unlock(&j->mut);
-  return ret;
+static bool should_stop_compilation(Sim* sim) {
+  if (!sim->is_cancelled_cb) return false;
+  if (sim->is_cancelled_cb(sim->is_cancelled_ctx)) {
+    return true;
+  }
+  return false;
 }
 
-static int sim_compile_thread(void* ctx) {
-  Sim* sim = ctx;
+int sim_compile(Sim* sim) {
   bool debug = false;
   sim->start_parsing_time = GetTime();
   sim->pinbuf = malloc(arrlen(sim->api->pg) * sizeof(PinComm));
   sim->w = sim->arg_img[0].width;
   sim->h = sim->arg_img[0].height;
-  if (!sim_get_compilation_cancelled(sim)) {
+  if (!should_stop_compilation(sim)) {
     pixel_graph_init(&sim->pg, sim->dist_spec, sim->nl, sim->arg_img,
                      sim->api->pg, debug);
   }
-  if (!sim_get_compilation_cancelled(sim)) {
+  if (!should_stop_compilation(sim)) {
     wire_graph_init(&sim->wg, sim->nl, sim->w, sim->h, &sim->pg, debug);
   }
-  if (!sim_get_compilation_cancelled(sim)) {
+  if (!should_stop_compilation(sim)) {
     sim->num_wire = getnwire(sim);
     sim->rv2 = renderv2_create(sim->w, sim->h, sim->num_wire, sim->nl,
                                sim->arg_layers);
     // sim->rv2->bg_color = BLACK;
   }
 
-  if (!sim_get_compilation_cancelled(sim)) {
+  if (!should_stop_compilation(sim)) {
     int nskt = arrlen(sim->pg.skt);
     dist_graph_init(&sim->dg, sim->dist_spec, sim->w, sim->h, sim->nl,
                     &sim->pg.g, sim->wg.wire_to_drv, sim->pg.drv,
@@ -694,22 +673,16 @@ static int sim_compile_thread(void* ctx) {
     sim_check_max_delay(sim, max_delay);
   }
 
-  if (!sim_get_compilation_cancelled(sim)) {
+  if (!should_stop_compilation(sim)) {
     sim->dirty_mask_size = (sim->num_wire + 31) / 32;
     sim->pulse_dirty_mask = calloc(sim->dirty_mask_size, sizeof(uint32_t));
     sim_register_nands(sim, sim->arg_img[0]);
   }
-
-  mtx_lock(&sim->comp->mut);
-  sim->comp->done = true;
-  mtx_unlock(&sim->comp->mut);
   return 0;
 }
 
 Status sim_post_compile(Sim* sim) {
   profiler_tic_single("init2");
-  assert(!sim_get_compilation_cancelled(sim));
-  assert(sim_is_compilation_done(sim));
   bool has_errors = sim_has_errors(sim);
   if (has_errors) {
     sim->rv2->error_mode = 1;
@@ -745,28 +718,6 @@ Status sim_post_compile(Sim* sim) {
   return status;
 }
 
-void sim_stop_compilation(Sim* sim) {
-  SimCompileJob* j = sim->comp;
-  mtx_lock(&j->mut);
-  j->cancelled = true;
-  mtx_unlock(&j->mut);
-}
-
-bool sim_is_compilation_done(Sim* sim) {
-  SimCompileJob* j = sim->comp;
-  mtx_lock(&j->mut);
-  bool ret = j->done;
-  mtx_unlock(&j->mut);
-  return ret;
-}
-
-void sim_wait_compilation(Sim* sim) {
-  SimCompileJob* j = sim->comp;
-  if (j->joined) return;
-  thrd_join(j->thr, NULL);
-  j->joined = true;
-}
-
 /*
  * The PinGroup is the pin API for external component(s).
  */
@@ -784,19 +735,9 @@ void sim_init(Sim* sim, SimParams p) {
     sim->arg_layers[i] = p.layers[i];
     sim->arg_img[i] = p.img[i];
   }
-  sim->comp = calloc(1, sizeof(SimCompileJob));
-  mtx_init(&sim->comp->mut, mtx_plain);
-  int ok = thrd_create(&sim->comp->thr, sim_compile_thread, sim);
-  if (ok != thrd_success) {
-    fprintf(stderr, "Failed to create thread.");
-    abort();
-  }
 }
 
 void sim_destroy(Sim* sim) {
-  sim_wait_compilation(sim);
-  mtx_destroy(&sim->comp->mut);
-  free(sim->comp);
   if (!sim_has_errors(sim)) {
     patch_builder_destroy(&sim->patch_builder);
   }
@@ -1891,7 +1832,7 @@ void sim_dry_run() {
       .warmup_cycles = 1,
   };
   sim_init(&s, p);
-  sim_wait_compilation(&s);
+  sim_compile(&s);
   stat = sim_post_compile(&s);
   assert(stat.ok);
   assert(!sim_has_errors(&s));

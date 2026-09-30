@@ -9,6 +9,7 @@
 #include "blueprint.h"
 #include "colors.h"
 #include "common.h"
+#include "compilation_thread.h"
 #include "discord_integration.h"
 #include "font.h"
 #include "i18n.h"
@@ -151,6 +152,7 @@ static struct {
   Rectangle sep2;
 
   SimMode sim_mode;
+
 } C = {0};
 
 static inline int maxint(int a, int b) { return a > b ? a : b; }
@@ -419,11 +421,12 @@ void win_main_stop_simu() {
   assert(C.mode == MODE_SIMU || C.mode == MODE_ERROR ||
          C.mode == MODE_COMPILING);
   if (C.mode == MODE_COMPILING) {
-    sim_stop_compilation(&C.sim);
+    stop_compilation();
     return;
   }
   hsim_destroy(&C.hsim);
   sim_destroy(&C.sim);
+  destroy_comp_thread();
   msg_clear_permanent();
 
   C.paused = false;
@@ -694,11 +697,12 @@ Status main_draw_level_kernel() {
 
 static void update_compilation() {
   if (C.mode != MODE_COMPILING) return;
-  if (sim_is_compilation_done(&C.sim)) {
-    sim_wait_compilation(&C.sim);
-    if (sim_get_compilation_cancelled(&C.sim)) {
+  if (is_compilation_done()) {
+    wait_compilation();
+    if (is_compilation_cancelled()) {
       C.mode = MODE_EDIT;
       sim_destroy(&C.sim);
+      destroy_comp_thread();
       msg_clear_permanent();
       return;
     }
@@ -707,6 +711,7 @@ static void update_compilation() {
       C.mode = MODE_EDIT;
       handle_kernel_error(s);
       sim_destroy(&C.sim);
+      destroy_comp_thread();
       msg_clear_permanent();
       return;
     }
@@ -930,6 +935,7 @@ void win_main_start_simu() {
       .warmup_cycles = api->warmup_cycles,
   };
   sim_init(&C.sim, p);
+  init_compilation_thread(&C.sim);
   C.mode = MODE_COMPILING;
 }
 
