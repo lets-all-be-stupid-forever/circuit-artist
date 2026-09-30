@@ -346,8 +346,9 @@ void player_render(RenderTexture2D* target) {
   if (C.paused) frame_steps = 0;
   int hide_mask = 0;
   bool neon = true;
+  Color bg = {41, 31, 13, 255};
   Tex* rendered = sim_render_v2(&C.sim, tw, th, C.cam, frame_steps, slack_steps,
-                                hide_mask, neon, PINK);
+                                hide_mask, neon, bg);
   texdraw2(*target, rendered->rt);
   texdel(rendered);
 

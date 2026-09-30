@@ -12,8 +12,8 @@ void main() {
   v_clr = clr;
   float x = pos.x + vert;
   float y = pos.y + 0.5;
-  x = (x / w);
-  y = (y / h);
+  x = (x / float(w));
+  y = (y / float(h));
   x = 2.0 * x- 1.0;
   y = -2.0 * y + 1.0;
   gl_Position = vec4(x, y, 0, 1.0);

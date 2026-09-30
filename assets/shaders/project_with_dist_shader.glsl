@@ -19,14 +19,14 @@ uniform ivec2 off;  // layer offset
 uniform ivec2 img_size;  // Layer size
 
 float dist_to_edge_m(vec2 pos, int code) {
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
 
   /* First corner distances */
-  float dpos = 1000;
-  float dneg = 1000;
+  float dpos = 1000.0;
+  float dneg = 1000.0;
   int ix = int(floor(xc));
   int iy = int(floor(yc));
   {
@@ -35,9 +35,9 @@ float dist_to_edge_m(vec2 pos, int code) {
     int c = (code >> 8) & 1;
     int d = (code >> 6) & 1;
     float da = dist_max(xc-x, yc-y);
-    float db = dist_max(xc+1-x, yc-y);
-    float dc = dist_max(xc+1-x, yc+1-y);
-    float dd = dist_max(xc-x, yc+1-y);
+    float db = dist_max(xc+1.0-x, yc-y);
+    float dc = dist_max(xc+1.0-x, yc+1.0-y);
+    float dd = dist_max(xc-x, yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -59,8 +59,8 @@ float dist_to_edge_m(vec2 pos, int code) {
     int d = (code >> 7) & 1;
     float da = abs(x-xc);
     float db = abs(y-yc);
-    float dc = abs(xc+1-x);
-    float dd = abs(yc+1-y);
+    float dc = abs(xc+1.0-x);
+    float dd = abs(yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -72,11 +72,11 @@ float dist_to_edge_m(vec2 pos, int code) {
   }
   {
     if (((code >> 4)&1) != 0) {
-      dpos = 0;
-      dneg = fmin(dneg, 1);
+      dpos = 0.0;
+      dneg = fmin(dneg, 1.0);
     } else {
-      dneg= 0;
-      dpos= fmin(dpos, 1);
+      dneg = 0.0;
+      dpos= fmin(dpos, 1.0);
     }
   }
 
@@ -90,14 +90,14 @@ float dist2(float aa, float bb){
 
 
 float dist_to_edge(vec2 pos, int code) {
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
 
   /* First corner distances */
-  float dpos = 1000;
-  float dneg = 1000;
+  float dpos = 1000.0;
+  float dneg = 1000.0;
   int ix = int(floor(xc));
   int iy = int(floor(yc));
   {
@@ -106,9 +106,9 @@ float dist_to_edge(vec2 pos, int code) {
     int c = (code >> 8) & 1;
     int d = (code >> 6) & 1;
     float da = dist2(xc-x, yc-y);
-    float db = dist2(xc+1-x, yc-y);
-    float dc = dist2(xc+1-x, yc+1-y);
-    float dd = dist2(xc-x, yc+1-y);
+    float db = dist2(xc+1.0-x, yc-y);
+    float dc = dist2(xc+1.0-x, yc+1.0-y);
+    float dd = dist2(xc-x, yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -130,8 +130,8 @@ float dist_to_edge(vec2 pos, int code) {
     int d = (code >> 7) & 1;
     float da = square(x-xc);
     float db = square(y-yc);
-    float dc = square(xc+1-x);
-    float dd = square(yc+1-y);
+    float dc = square(xc+1.0-x);
+    float dd = square(yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -143,11 +143,11 @@ float dist_to_edge(vec2 pos, int code) {
   }
   {
     if (((code >> 4)&1) != 0) {
-      dpos = 0;
-      dneg = fmin(dneg, 1);
+      dpos = 0.0;
+      dneg = fmin(dneg, 1.0);
     } else {
-      dneg= 0;
-      dpos= fmin(dpos, 1);
+      dneg = 0.0;
+      dpos= fmin(dpos, 1.0);
     }
   }
 
@@ -165,18 +165,18 @@ float dist_to_edge(vec2 pos, int code) {
 
 
 vec2 raw_dist_to_edge(vec2 pos, int code) {
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
 
   /* First corner distances */
-  float dpos = 1000;
-  float dneg = 1000;
-  float dxmin_pos = 0;
-  float dymin_pos = 0;
-  float dxmin_neg = 0;
-  float dymin_neg = 0;
+  float dpos = 1000.0;
+  float dneg = 1000.0;
+  float dxmin_pos = 0.0;
+  float dymin_pos = 0.0;
+  float dxmin_neg = 0.0;
+  float dymin_neg = 0.0;
   int ix = int(floor(xc));
   int iy = int(floor(yc));
   {
@@ -185,9 +185,9 @@ vec2 raw_dist_to_edge(vec2 pos, int code) {
     int c = (code >> 8) & 1;
     int d = (code >> 6) & 1;
     float da = dist2(xc-x, yc-y);
-    float db = dist2(xc+1-x, yc-y);
-    float dc = dist2(xc+1-x, yc+1-y);
-    float dd = dist2(xc-x, yc+1-y);
+    float db = dist2(xc+1.0-x, yc-y);
+    float dc = dist2(xc+1.0-x, yc+1.0-y);
+    float dd = dist2(xc-x, yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -209,8 +209,8 @@ vec2 raw_dist_to_edge(vec2 pos, int code) {
     int d = (code >> 7) & 1;
     float da = square(x-xc);
     float db = square(y-yc);
-    float dc = square(xc+1-x);
-    float dd = square(yc+1-y);
+    float dc = square(xc+1.0-x);
+    float dd = square(yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -222,11 +222,11 @@ vec2 raw_dist_to_edge(vec2 pos, int code) {
   }
   {
     if (((code >> 4)&1) != 0) {
-      dpos = 0;
-      dneg = fmin(dneg, 1);
+      dpos = 0.0;
+      dneg = fmin(dneg, 1.0);
     } else {
-      dneg= 0;
-      dpos= fmin(dpos, 1);
+      dneg = 0.0;
+      dpos= fmin(dpos, 1.0);
     }
   }
 
@@ -235,22 +235,22 @@ vec2 raw_dist_to_edge(vec2 pos, int code) {
 #endif
 
 int get_pixel_code(vec2 pos) {
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
   int ix = int(floor(xc));
   int iy = int(floor(yc));
   int r = 0;
-  int b0 = (texelFetch(texture0, ivec2(ix-1, iy-1), 0).a > 0) ? (1 << 0): 0;
-  int b1 = (texelFetch(texture0, ivec2(ix-0, iy-1), 0).a > 0) ? (1 << 1): 0;
-  int b2 = (texelFetch(texture0, ivec2(ix+1, iy-1), 0).a > 0) ? (1 << 2): 0;
-  int b3 = (texelFetch(texture0, ivec2(ix-1, iy-0), 0).a > 0) ? (1 << 3): 0;
-  int b4 = (texelFetch(texture0, ivec2(ix-0, iy-0), 0).a > 0) ? (1 << 4): 0;
-  int b5 = (texelFetch(texture0, ivec2(ix+1, iy-0), 0).a > 0) ? (1 << 5): 0;
-  int b6 = (texelFetch(texture0, ivec2(ix-1, iy+1), 0).a > 0) ? (1 << 6): 0;
-  int b7 = (texelFetch(texture0, ivec2(ix-0, iy+1), 0).a > 0) ? (1 << 7): 0;
-  int b8 = (texelFetch(texture0, ivec2(ix+1, iy+1), 0).a > 0) ? (1 << 8): 0;
+  int b0 = (texelFetch(texture0, ivec2(ix-1, iy-1), 0).a > 0.0) ? (1 << 0): 0;
+  int b1 = (texelFetch(texture0, ivec2(ix-0, iy-1), 0).a > 0.0) ? (1 << 1): 0;
+  int b2 = (texelFetch(texture0, ivec2(ix+1, iy-1), 0).a > 0.0) ? (1 << 2): 0;
+  int b3 = (texelFetch(texture0, ivec2(ix-1, iy-0), 0).a > 0.0) ? (1 << 3): 0;
+  int b4 = (texelFetch(texture0, ivec2(ix-0, iy-0), 0).a > 0.0) ? (1 << 4): 0;
+  int b5 = (texelFetch(texture0, ivec2(ix+1, iy-0), 0).a > 0.0) ? (1 << 5): 0;
+  int b6 = (texelFetch(texture0, ivec2(ix-1, iy+1), 0).a > 0.0) ? (1 << 6): 0;
+  int b7 = (texelFetch(texture0, ivec2(ix-0, iy+1), 0).a > 0.0) ? (1 << 7): 0;
+  int b8 = (texelFetch(texture0, ivec2(ix+1, iy+1), 0).a > 0.0) ? (1 << 8): 0;
   return b0 | b1 | b2 | b3 | b4 | b5 | b6| b7 | b8;
 }
 

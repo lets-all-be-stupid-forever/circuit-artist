@@ -39,7 +39,7 @@ void main()
   if (p==0) p = -10000;
 
   // Releative time.
-  int rt = (tick - p) * segsize + int(slack * segsize);
+  int rt = (tick - p) * segsize + int(slack * float(segsize));
 
   int dd = (rt - d);
   // if (b == 51) {
@@ -47,9 +47,9 @@ void main()
   // } else {
   //   finalColor = vec4(1, 0, 0, 1.0);
   // }
-  float f = dd / 50.0;
+  float f = float(dd) / 50.0;
   int v = v0;
-  if (f > 0) {
+  if (f > 0.0) {
     v = v1;
   }
  //if (d > 2) v = 1;

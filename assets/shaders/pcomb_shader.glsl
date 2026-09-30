@@ -34,25 +34,25 @@ float dist2(float aa, float bb){
 
 float dist_to_edge(sampler2D layer) {
   vec2 pos = fragTexCoord;
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
 
   /* First corner distances */
-  float dpos = 1000;
-  float dneg = 1000;
+  float dpos = 1000.0;
+  float dneg = 1000.0;
   int ix = int(floor(xc));
   int iy = int(floor(yc));
   {
-    int a = (texelFetch(layer, ivec2(ix-1, iy-1), 0).a > 0) ? 1 : 0;
-    int b = (texelFetch(layer, ivec2(ix+1, iy-1), 0).a > 0) ? 1 : 0;
-    int c = (texelFetch(layer, ivec2(ix+1, iy+1), 0).a > 0) ? 1 : 0;
-    int d = (texelFetch(layer, ivec2(ix-1, iy+1), 0).a > 0) ? 1 : 0;
+    int a = (texelFetch(layer, ivec2(ix-1, iy-1), 0).a > 0.0) ? 1 : 0;
+    int b = (texelFetch(layer, ivec2(ix+1, iy-1), 0).a > 0.0) ? 1 : 0;
+    int c = (texelFetch(layer, ivec2(ix+1, iy+1), 0).a > 0.0) ? 1 : 0;
+    int d = (texelFetch(layer, ivec2(ix-1, iy+1), 0).a > 0.0) ? 1 : 0;
     float da = dist2(xc-x, yc-y);
-    float db = dist2(xc+1-x, yc-y);
-    float dc = dist2(xc+1-x, yc+1-y);
-    float dd = dist2(xc-x, yc+1-y);
+    float db = dist2(xc+1.0-x, yc-y);
+    float dc = dist2(xc+1.0-x, yc+1.0-y);
+    float dd = dist2(xc-x, yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -64,14 +64,14 @@ float dist_to_edge(sampler2D layer) {
   }
   /* Lateral distances */
   {
-    int a = (texelFetch(layer, ivec2(ix-1, iy), 0).a > 0)? 1 : 0;
-    int b = (texelFetch(layer, ivec2(ix, iy-1), 0).a > 0)? 1 : 0;
-    int c = (texelFetch(layer, ivec2(ix+1, iy), 0).a > 0)? 1 : 0;
-    int d = (texelFetch(layer, ivec2(ix, iy+1), 0).a > 0)? 1 : 0;
+    int a = (texelFetch(layer, ivec2(ix-1, iy), 0).a > 0.0)? 1 : 0;
+    int b = (texelFetch(layer, ivec2(ix, iy-1), 0).a > 0.0)? 1 : 0;
+    int c = (texelFetch(layer, ivec2(ix+1, iy), 0).a > 0.0)? 1 : 0;
+    int d = (texelFetch(layer, ivec2(ix, iy+1), 0).a > 0.0)? 1 : 0;
     float da = square(x-xc);
     float db = square(y-yc);
-    float dc = square(xc+1-x);
-    float dd = square(yc+1-y);
+    float dc = square(xc+1.0-x);
+    float dd = square(yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -82,12 +82,12 @@ float dist_to_edge(sampler2D layer) {
     if (d == 0) dneg = fmin(dneg, dd);
   }
   {
-    if (texelFetch(layer, ivec2(ix, iy), 0).a > 0) {
-      dpos = 0;
-      dneg = fmin(dneg, 1);
+    if (texelFetch(layer, ivec2(ix, iy), 0).a > 0.0) {
+      dpos = 0.0;
+      dneg = fmin(dneg, 1.0);
     } else {
-      dneg= 0;
-      dpos= fmin(dpos, 1);
+      dneg= 0.0;
+      dpos= fmin(dpos, 1.0);
     }
   }
 
@@ -106,8 +106,8 @@ void main()
 {
   vec2 pos = fragTexCoord;
   int spi = int(sp);
-  int px = int(pos.x * img_size.x * sp.x + off.x);
-  int py = int(pos.y * img_size.y * sp.y + off.y);
+  int px = int(pos.x * float(img_size.x) * sp.x + float(off.x));
+  int py = int(pos.y * float(img_size.y) * sp.y + float(off.y));
   int ppx = px / spi;
   int ppy = py / spi;
   px = px /2 ;
@@ -123,8 +123,8 @@ void main()
 
   float r = 0.3;
   //if (abs(d1) < r) f = 0;
-  float f = smoothstep(0, r, d2);
-  float f1 = smoothstep(0, r, d1);
+  float f = smoothstep(0.0, r, d2);
+  float f1 = smoothstep(0.0, r, d1);
 
   // Now I'll do an outline.
     
@@ -137,7 +137,7 @@ void main()
   if (img_color2.a == 1.0) {
     float k = 1.0;
     //c= k*img_color2+(1-k)*img_color1;
-    c= pat*img_color2+(1-pat)*c2;
+    c= float(pat)*img_color2+float(1-pat)*c2;
     c=img_color2;
 
   } else {
@@ -147,17 +147,17 @@ void main()
 #endif
 #if 1
 
-  if(d2>0){
+  if(d2>0.0){
 //  c.rgb = f*c.rgb;
 //  if (c.a == 0 && f < 1) c.a=1-f;
-  int k = int(d2*spi);
+  int k = int(d2*float(spi));
 
   int h =  spi/2;
 
-  if (k == h-2) c= 0*img_color2;
+  if (k == h-2) c= 0.0*img_color2;
   if (k < h-2) c = vec4(1.0, 1.0, 1.0, 0.5);
   }
-  if (d2<0) {
+  if (d2<0.0) {
     c = vec4(1.0, 1.0, 1.0, 0.5);
   }
 

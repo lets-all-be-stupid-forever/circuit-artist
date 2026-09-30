@@ -26,13 +26,13 @@ void main() {
   float cnt = 0.0;
   for (int y = -r; y < r; y++) {
     for (int x = -r; x < r; x++) {
-      vec4 s = texture(texture0, vec2(pos.x + (x+0.5)*kx , pos.y +(y+0.5)*ky));
+      vec4 s = texture(texture0, vec2(pos.x + (float(x)+0.5)*kx , pos.y +(float(y)+0.5)*ky));
       // it averages the pixels even if they are black (ie a=0)
       // It's ok for drawing mode, but for sim mode it throws away on/off info
       // if it's done with alphas, so need to use a=1 on simu.
-      float krn = 0;
+      float krn = 0.0;
       if (x*x + y*y <= r*r) {
-        krn = 1;
+        krn = 1.0;
       }
       //s.a = 1.0;
       ss = ss + krn * s;

@@ -21,7 +21,7 @@ vec4 msample(vec2 pos, int r) {
   float cnt = 0.0;
   for (int y = -r; y < r; y++) {
     for (int x = -r; x < r; x++) {
-      vec4 s = texture(texture0, vec2(pos.x + (x+0.5)*kx , pos.y +(y+0.5)*ky));
+      vec4 s = texture(texture0, vec2(pos.x + (float(x)+0.5)*kx , pos.y +(float(y)+0.5)*ky));
       // if (s.a > 0.01) {
       if (true) {
         s.a = 1.0;

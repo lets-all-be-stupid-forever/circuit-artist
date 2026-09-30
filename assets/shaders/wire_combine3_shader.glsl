@@ -51,7 +51,7 @@ vec4 grayscale_darker(vec4 color) {
 vec4 getlight(float f, vec4 c, int v, int v1, vec4 c_on, vec4 c_off) {
   vec4 fc = vec4(0.0, 0.0, 0.0, 1.0);
   float r = 2.0;
-  if (f > 0 && f < glow_dt) {
+  if (f > 0.0 && f < glow_dt) {
     float k = 1.0 - smoothstep(glow_dt*.5, glow_dt, f);
     // k is the distance to the tip. 1.0 is on the tip.
     vec4 cc;
@@ -64,7 +64,7 @@ vec4 getlight(float f, vec4 c, int v, int v1, vec4 c_on, vec4 c_off) {
   } else {
     if (v == 1) {
       // float t = (1 +sin(2*3.1415*utime));
-      float t = 0;
+      float t = 0.0;
       fc.rgb = c.rgb * 0.15 + 0.05;
      }
   }
@@ -139,7 +139,7 @@ void get_color_on_off(vec4 c) {
  //  g_c_on  = mix(g_c_off, g_c_on, mix(0.5, 1.0, noise));
 }// 
 
-void get_color_on_off__(vec4 c) {
+void get_color_on_off_v2(vec4 c) {
   vec3 k = rgb2hsv(c.rgb);
 float h = k.r;
 float s = k.g;
@@ -242,14 +242,7 @@ void main()
 
   /* p is the last EXACT TICK where the circuit has changed */
   int p = unpack_int32(texture(pmap, pos));
-  /* Image background: always opaque black, in normal and error mode */
-  if (c.a == 0.0) {
-    out_circ = vec4(0.0, 0.0, 0.0, 1.0);
-    out_light = vec4(0.0, 0.0, 0.0, 1.0);
-    return;
-  }
-
-  /* NAND pixel in normal mode (error mode draws NANDs separately) */
+  /* NAND or bg */
   if (p == 0 && error_mode == 0) {
     out_circ = vec4(c.rgb * 0.5, 1);
     out_light = vec4(0,0,0,1);
@@ -268,12 +261,12 @@ void main()
   int rt = tick_diff(64*tick, p);
 
   /* Relative time = relative tick + slack_ticks - distmap_tick */
-  float f = (float(rt) + 64 * slack);
+  float f = (float(rt) + 64.0 * slack);
   f = f / 64.f;
   int v = v0;
 
   /* f > 0 means the pixel has changed value */
-  if (f > 0) {
+  if (f > 0.0) {
     v = v1;
   }
   vec4 fc = c;
@@ -292,9 +285,9 @@ void main()
 
   // Set alpha to (1 - ema_factor) for exponential moving average blending
 
-  if (ema_factor > 0) {
-    out_circ = circ * ema_factor + (1-ema_factor) * texture(prev_circ, p2);
-    out_light = light * ema_factor+ (1-ema_factor) * texture(prev_light, p2);
+  if (ema_factor > 0.0) {
+    out_circ = circ * ema_factor + (1.0-ema_factor) * texture(prev_circ, p2);
+    out_light = light * ema_factor+ (1.0-ema_factor) * texture(prev_light, p2);
   } else {
     out_circ = circ; // vec4(circ.rgb, 1.0 - ema_factor);
     out_light = light; //vec4(light.rgb, 1.0 - ema_factor);

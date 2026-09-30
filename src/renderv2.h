@@ -83,6 +83,8 @@ typedef struct {
   int hide_mask;        /* Bit0 = visibility of layer 0 */
   Tex* acc_c;           /* Accumulated (EMA) circuit texture */
   Tex* acc_l;           /* Accumulated (EMA) light texture */
+  Tex* prev_c;          /* Previous frame's acc_c (ping-pong, EMA source) */
+  Tex* prev_l;          /* Previous frame's acc_l (ping-pong, EMA source) */
   bool full_pmap_update;
   Color bg_color; /* Color outside the circuit */
 } RenderV2;

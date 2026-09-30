@@ -13,7 +13,6 @@ out vec4 finalColor;
 
 uniform vec2 sp; // zoom
 uniform ivec2 img_size; // image size in image pixels
-uniform int mode; // 0 = simulation (opaque), 1 = paint (keeps alpha)
 
 vec4 msample(vec2 pos, int r) {
   float kx = 1.0 / float(img_size.x);
@@ -22,25 +21,19 @@ vec4 msample(vec2 pos, int r) {
   float cnt = 0.0;
   for (int y = -r; y < r; y++) {
     for (int x = -r; x < r; x++) {
-      vec4 s = texture(texture0, vec2(pos.x + (x+0.5)*kx , pos.y +(y+0.5)*ky));
+      vec4 s = texture(texture0, vec2(pos.x + (float(x)+0.5)*kx , pos.y +(float(y)+0.5)*ky));
       // it averages the pixels even if they are black (ie a=0)
       // It's ok for drawing mode, but for sim mode it throws away on/off info
       // if it's done with alphas, so need to use a=1 on simu.
       if (s.a < 0.001) {
-        // paint mode: transparent texels contribute nothing (but are counted)
-        s = (mode == 1) ? vec4(0,0,0,0) : vec4(0,0,0,1);
+        s = vec4(0,0,0,1);
       }
       ss = ss + s;
       cnt += 1.0;
     }
   }
   vec4 p = ss / cnt;
-  if (mode == 1) {
-    // un-premultiply so partially covered texels keep their colour
-    if (p.a > 0.0) p.rgb /= p.a;
-  } else {
-    if (p.a > 0.0) p.a = 1.0;
-  }
+  if (p.a > 0.0) p.a = 1.0;
   return p;
 }
 

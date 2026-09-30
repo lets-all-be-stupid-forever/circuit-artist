@@ -44,7 +44,7 @@ vec4 grayscale_darker(vec4 color) {
 vec4 getlight(float f, vec4 c, int v, int v1, vec4 c_on, vec4 c_off) {
   vec4 fc = vec4(0.0, 0.0, 0.0, 1.0);
   float r = 2.0;
-  if (f > 0 && f < glow_dt) {
+  if (f > 0.0 && f < glow_dt) {
     float k = 1.0 - smoothstep(glow_dt*.5, glow_dt, f);
     // k is the distance to the tip. 1.0 is on the tip.
     vec4 cc;
@@ -57,7 +57,7 @@ vec4 getlight(float f, vec4 c, int v, int v1, vec4 c_on, vec4 c_off) {
   } else {
     if (v == 1) {
       // float t = (1 +sin(2*3.1415*utime));
-      float t = 0;
+      float t = 0.0;
       fc.rgb = c.rgb * 0.15 + 0.05;
      }
   }
@@ -131,7 +131,7 @@ void get_color_on_off(vec4 c) {
  //  g_c_on  = mix(g_c_off, g_c_on, mix(0.5, 1.0, noise));
 }// 
 
-void get_color_on_off__(vec4 c) {
+void get_color_on_off_v2(vec4 c) {
   vec3 k = rgb2hsv(c.rgb);
 float h = k.r;
 float s = k.g;
@@ -225,7 +225,7 @@ void main()
 
   /* d is the pixel distance in floating TICKS (ie can be fractional) */
   float d = unpack_float32(texture(dmap, pos));
-  if (d < 0) d = -d;
+  if (d < 0.0) d = -d;
 
   /* Encoded value before and after of the last change in the first 4 bits */
   int v0 = p & 3;
@@ -242,7 +242,7 @@ void main()
   int v = v0;
 
   /* f > 0 means the pixel has changed value */
-  if (f > 0) {
+  if (f > 0.0) {
     v = v1;
   }
   vec4 fc = c;

@@ -30,15 +30,15 @@ void main()
   int v1 = (p >> 2)&3;
   p = p >> 4;
   if (p==0) p = -10000;
-  int rt = (tick - p) * segsize + int(slack * segsize);
+  int rt = (tick - p) * segsize + int(slack * float(segsize));
   int dd = (rt - d);
 
    
-  float f = dd / 50.0;
+  float f = float(dd) / 50.0;
   vec4 fc = vec4(0.0, 0.0, 0.0, 1.0);
   //if (f > 0 && f < 20) fc = vec4(1.0);
   float r = 2.0;
-  if (f > 0 && f < rtime) {
+  if (f > 0.0 && f < rtime) {
     float k = 1.0 - smoothstep(rtime*.5, rtime, f);
     // k is the distance to the tip. 1.0 is on the tip.
     vec4 cc;

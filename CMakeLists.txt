@@ -30,6 +30,12 @@ set(FT_DISABLE_BZIP2    ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_BROTLI   ON CACHE BOOL "" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
+IF (EMSCRIPTEN)
+  # This repo's rlgl.h uses MRT calls (glDrawBuffers, GL_COLOR_ATTACHMENTn)
+  # unconditionally, which don't exist in WebGL1/GLES2. Force WebGL2/GLES3.
+  set(GRAPHICS "GRAPHICS_API_OPENGL_ES3")
+ENDIF()
+
 add_subdirectory(third_party/raylib)
 add_subdirectory(third_party/freetype)
 add_subdirectory(third_party/json-c)
@@ -151,65 +157,67 @@ SET(ca_desktop_src
   third_party/clip/image.cpp
 )
 
-IF (WIN32)
-  SET(ca_desktop_src ${ca_desktop_src}
-    third_party/clip/clip_win.cpp
-    third_party/clip/clip_win_wic.cpp
-    third_party/clip/clip_win_bmp.cpp
-  )
-ELSEIF (APPLE)
-  SET(ca_desktop_src ${ca_desktop_src}
-    third_party/clip/clip_osx.mm
-  )
-ELSEIF (UNIX)
-  ADD_COMPILE_DEFINITIONS(HAVE_XCB_XLIB_H=1)
-  SET(clip_libs xcb pthread)
-  SET(ca_desktop_src ${ca_desktop_src}
-    third_party/clip/clip_x11.cpp
-  )
-ENDIF()
-# shlwapi is only for win32
-IF(WIN32)
-  SET(shlwapi_lib shlwapi)
-    SET(opengl_lib opengl32)
-ENDIF()
-add_library(ca_desktop STATIC ${ca_desktop_src})
-target_include_directories(ca_desktop PRIVATE
-  src
-  desktop
-  third_party
-  third_party/clip
-  third_party/tinycthread
-  third_party/lua
-  third_party/nativefiledialog-extended/src/include
-  third_party/msgpack-c/include
-  third_party/raylib/src
-  third_party/raylib/src/external
-  third_party/discord-rpc-3.4.0/include
-  third_party/freetype/include
-  )
-target_link_libraries(ca_desktop
-  ca_lib
-  ${shlwapi_lib}
-  nfd
-  ${clip_libs}
-  ${steam_libs}
-  lualib
-  discord-rpc
-  Threads::Threads)
-
-
-add_executable(ca desktop/main.c ${ca_icon_src})
-target_link_libraries(ca ca_desktop)
-target_include_directories(ca PRIVATE src)
-# Set RPATH so Linux executables find shared libraries in their own directory
-if(UNIX AND NOT APPLE)
-    set_target_properties(ca PROPERTIES
-        BUILD_RPATH "\$ORIGIN"
-        INSTALL_RPATH "\$ORIGIN"
+IF (NOT EMSCRIPTEN)
+  IF (WIN32)
+    SET(ca_desktop_src ${ca_desktop_src}
+      third_party/clip/clip_win.cpp
+      third_party/clip/clip_win_wic.cpp
+      third_party/clip/clip_win_bmp.cpp
     )
-endif()
+  ELSEIF (APPLE)
+    SET(ca_desktop_src ${ca_desktop_src}
+      third_party/clip/clip_osx.mm
+    )
+  ELSEIF (UNIX)
+    ADD_COMPILE_DEFINITIONS(HAVE_XCB_XLIB_H=1)
+    SET(clip_libs xcb pthread)
+    SET(ca_desktop_src ${ca_desktop_src}
+      third_party/clip/clip_x11.cpp
+    )
+  ENDIF()
+  # shlwapi is only for win32
+  IF(WIN32)
+    SET(shlwapi_lib shlwapi)
+    SET(opengl_lib opengl32)
+  ENDIF()
+  add_library(ca_desktop STATIC ${ca_desktop_src})
+  target_include_directories(ca_desktop PRIVATE
+    src
+    desktop
+    third_party
+    third_party/clip
+    third_party/tinycthread
+    third_party/lua
+    third_party/nativefiledialog-extended/src/include
+    third_party/msgpack-c/include
+    third_party/raylib/src
+    third_party/raylib/src/external
+    third_party/discord-rpc-3.4.0/include
+    third_party/freetype/include
+  )
+  target_link_libraries(ca_desktop
+    ca_lib
+    ${shlwapi_lib}
+    nfd
+    ${clip_libs}
+    ${steam_libs}
+    lualib
+    discord-rpc
+    Threads::Threads)
 
+
+  add_executable(ca desktop/main.c ${ca_icon_src})
+  target_link_libraries(ca ca_desktop)
+  target_include_directories(ca PRIVATE src)
+  # Set RPATH so Linux executables find shared libraries in their own directory
+  if(UNIX AND NOT APPLE)
+    set_target_properties(ca PROPERTIES
+      BUILD_RPATH "\$ORIGIN"
+      INSTALL_RPATH "\$ORIGIN"
+    )
+  endif()
+
+ENDIF()
 ##################################
 # Player
 ##################################
@@ -224,6 +232,62 @@ target_link_libraries(ca_player ca_lib ${shlwapi_lib})
 
 add_executable(cap player/main.c)
 target_link_libraries(cap ca_player)
+
+IF (EMSCRIPTEN)
+  # WASM viewer: exactly the same calib + ca_viewer core and the same
+  # src/main_viewer.c entry point as the native "cav" viewer (main_viewer.c
+  # picks the right frame-loop strategy internally via PLATFORM_WEB). assets/
+  # is baked into MEMFS at build time via --preload-file, so
+  # LoadImage("../assets/example.png") resolves the same way it does on
+  # desktop (cwd is "/", and ".." above the MEMFS root clamps back to "/",
+  # landing on "/assets/example.png").
+  #
+  # Desktop GL (ca/cav) needs "#version 330" shaders; WebGL2/GLES3 needs
+  # "#version 300 es" + an explicit precision qualifier. Rather than forking
+  # assets/shaders/*.glsl (which both platforms load from the same path),
+  # stage_wasm_assets.sh copies assets/ into the build tree and rewrites only
+  # the staged copy's shaders. assets/shaders/ on disk stays desktop-only.
+  #
+  # The .data bundle is produced by the *link* step, so the link must be
+  # re-run whenever anything under assets/ changes (not just when a .c file
+  # does). A stamp file regenerated from the asset list carries that
+  # dependency into LINK_DEPENDS.
+  set(wasm_assets_dir "${CMAKE_BINARY_DIR}/wasm_assets")
+  set(wasm_assets_stamp "${CMAKE_BINARY_DIR}/wasm_assets.stamp")
+  file(GLOB_RECURSE wasm_asset_srcs CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/*")
+  add_custom_command(
+    OUTPUT "${wasm_assets_stamp}"
+    COMMAND bash "${CMAKE_SOURCE_DIR}/stage_wasm_assets.sh"
+      "${CMAKE_SOURCE_DIR}/assets" "${wasm_assets_dir}"
+    COMMAND ${CMAKE_COMMAND} -E touch "${wasm_assets_stamp}"
+    DEPENDS ${wasm_asset_srcs} "${CMAKE_SOURCE_DIR}/stage_wasm_assets.sh"
+    COMMENT "Staging assets/ for wasm (rewriting shaders to GLSL ES 300)"
+  )
+  add_custom_target(wasm_assets ALL DEPENDS "${wasm_assets_stamp}")
+
+  add_executable(ca_wasm player/main.c)
+  add_dependencies(ca_wasm wasm_assets)
+  set_target_properties(ca_wasm PROPERTIES LINK_DEPENDS "${wasm_assets_stamp}")
+  target_include_directories(ca_wasm PRIVATE ${calib_includes})
+  target_link_libraries(ca_wasm ca_player)
+
+  set_target_properties(ca_wasm PROPERTIES SUFFIX ".html")
+  # -DWASM_GL_DEBUG=ON makes every WebGL error print the GL call that caused
+  # it (plus a JS stack) in the browser console. Slow; for debugging only.
+  option(WASM_GL_DEBUG "Trace WebGL errors per GL call in the wasm build" OFF)
+  if (WASM_GL_DEBUG)
+    target_link_options(ca_wasm PRIVATE "-sGL_DEBUG=1" "-sGL_ASSERTIONS=1" "-sASSERTIONS=1")
+  endif()
+  target_link_options(ca_wasm PRIVATE
+    "-sUSE_GLFW=3"
+    "-sASYNCIFY"
+    "-sALLOW_MEMORY_GROWTH=1"
+    "--shell-file=${CMAKE_SOURCE_DIR}/player/wasm_shell.html"
+    "--preload-file=${wasm_assets_dir}@/assets"
+  )
+
+  return()
+ENDIF()
 
 
 

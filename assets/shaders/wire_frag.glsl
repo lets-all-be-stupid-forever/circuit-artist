@@ -17,7 +17,7 @@ void main()
 {
   /* I only update if dmap is the same orientation */
   float d = unpack_float32(texture(dmap, fragTexCoord));
-  if ((ori > 0.5 && d <= 0) || (ori < 0.5 && d >= 0)) {
+  if ((ori > 0.5 && d <= 0.0) || (ori < 0.5 && d >= 0.0)) {
     finalColor = pvalue;
   } else {
     discard;

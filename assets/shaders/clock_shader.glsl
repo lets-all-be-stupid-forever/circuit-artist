@@ -33,7 +33,7 @@ vec4 mixer(vec4 c1, vec4 c2) {
 
 vec4 line(vec4 c, vec2 p, vec2 a, vec2 b) {
   float d = distline(p, a, b);
-  if (d < 2) c = mixer(c, vec4(1,1,1,1));
+  if (d < 2.0) c = mixer(c, vec4(1,1,1,1));
   return c;
 }
 
@@ -100,12 +100,12 @@ void main()
   }
 #endif
 
-  if (color.a > 1) color.a = 1;
+  if (color.a > 1.0) color.a = 1.0;
 
   float dmouse = length(pos - mouse);
 float dpos = length(pos);
-float amouse = 0.7 * (1.0-smoothstep(30, 90, dmouse));
-float apos = 0.7 * (1.0-smoothstep(30, 90, dpos));
+float amouse = 0.7 * (1.0-smoothstep(30.0, 90.0, dmouse));
+float apos = 0.7 * (1.0-smoothstep(30.0, 90.0, dpos));
 
   color.a = max(amouse, apos) * color.a;
 

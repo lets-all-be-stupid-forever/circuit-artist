@@ -26,15 +26,15 @@ float unpack_float32(vec4 rgba) {
 // Do I need to pass p0,p1,p? Or can i just pass p ?
 float interp(int p0, int p1, int p, float rc, float d0,
                            float d1) {
-  if (d0 == 0 && d1 == 0) {
+  if (d0 == 0.0 && d1 == 0.0) {
     return 0.f;
   }
   float a, t0, t1;
   if (p0 == p) return d0;
   if (p1 == p) return d1;
-  float fp0 = p0;
-  float fp1 = p1;
-  float fp = p;
+  float fp0 = float(p0);
+  float fp1 = float(p1);
+  float fp = float(p);
   if (d0 < d1) {
     a = (fp - fp0) / (fp1 - fp0);
     t0 = d0;
@@ -72,9 +72,11 @@ void main()
   /* I only update if dmap is the same orientation */
   // float d = unpack_float32(texture(dmap, fragTexCoord));
 
-  int p0 = int(floor(flat_p.x + 0.5));
-  int p1 = int(floor(flat_p.y + 0.5));
-  int p = int(floor(v_l * (flat_p.y - flat_p.x) + flat_p.x + 0.5));
+  /* flat_p spans the segment edge to edge: [first pixel, last pixel + 1).
+   * Fragments sit on pixel centers, so floor() gives the pixel index. */
+  int p0 = int(floor(flat_p.x));
+  int p1 = int(floor(flat_p.y)) - 1;
+  int p = int(floor(v_l * (flat_p.y - flat_p.x) + flat_p.x));
   float d0 = v_dist.x;
   float d1 = v_dist.y;
 
@@ -88,7 +90,7 @@ void main()
   int v1 = (pp >> 2)&3;
   int p2 = pp >> 4;
 
-  int dist_i = int(64 * d);
+  int dist_i = int(64.0 * d);
   // unscaled
   p2 = p2 * 64;
 

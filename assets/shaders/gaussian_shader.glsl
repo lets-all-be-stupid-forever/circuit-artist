@@ -13,8 +13,8 @@ void main()
 
   int w = size.x;
   int h = size.y;
-  float dx = 1.0 / w;
-  float dy = 1.0 / h;
+  float dx = 1.0 / float(w);
+  float dy = 1.0 / float(h);
 
   vec3 acc = vec3(0);
   // x

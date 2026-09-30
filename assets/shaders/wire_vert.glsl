@@ -57,10 +57,10 @@ void main()
     float ty = round(y - 0.5);
     int s = 0;
     pvalue = mygetnum();
-    float xx = (x)/w;
-    float yy = 1.0 - (y)/h;
+    float xx = (x)/float(w);
+    float yy = 1.0 - (y)/float(h);
     fragTexCoord = vec2(xx, 1.0-yy);
-    x = 2.0*x/w-1.0;
-    y = 2.0*y/h-1.0;
+    x = 2.0*x/float(w)-1.0;
+    y = 2.0*y/float(h)-1.0;
     gl_Position = mvp * vec4(x,  y, 0.0, 1.0);
 }

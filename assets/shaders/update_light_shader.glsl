@@ -16,7 +16,7 @@ void main()
   /* when m is 1 i want to block light from l0, otherwise i just copy */
   vec4 l0 = texture(tex_l0, fragTexCoord);
   vec4 l1 = texture(tex_l1, fragTexCoord);
-  vec4 combined =  l0 * (1-m) + (m)*l1;
+  vec4 combined =  l0 * (1.0-m) + (m)*l1;
   finalColor = combined;
 }
 

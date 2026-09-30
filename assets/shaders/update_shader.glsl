@@ -19,7 +19,7 @@ uniform ivec2 sel_off; // selection offset in image pixels
 uniform ivec2 tool_size; 
 uniform ivec2 tool_off; 
 
-vec4 sample(vec2 pos) {
+vec4 sample_at(vec2 pos) {
   if (pos.x < 0.0 || pos.y < 0.0 || pos.x >= 1.0 || pos.y >= 1.0) {
     return vec4(0.0, 0.0, 0.0, 0.0);
   }
@@ -29,7 +29,7 @@ vec4 sample(vec2 pos) {
   // pixel coordinate image 
   int px = int(round(pos.x * fx - 0.5));
   int py = int(round((1.0 - pos.y) * fy - 0.5));
-  if (sel_size.x > 0.1) {
+  if (float(sel_size.x) > 0.1) {
     int sx = px - sel_off.x;
     int sy = py - sel_off.y;
     if (sx >= 0 && sy >= 0 && sx < sel_size.x && sy < sel_size.y) {
@@ -44,7 +44,7 @@ vec4 sample(vec2 pos) {
       }
     }
   }
-  if (tool_size.x > 0.1) {
+  if (float(tool_size.x) > 0.1) {
     int sx = px - tool_off.x;
     int sy = py - tool_off.y;
     if (sx >= 0 && sy >= 0 && sx < tool_size.x && sy < tool_size.y) {
@@ -64,6 +64,6 @@ vec4 sample(vec2 pos) {
 
 void main()
 {
-  vec4 img_color = sample(fragTexCoord);
+  vec4 img_color = sample_at(fragTexCoord);
   finalColor =  img_color * colDiffuse *fragColor;
 }

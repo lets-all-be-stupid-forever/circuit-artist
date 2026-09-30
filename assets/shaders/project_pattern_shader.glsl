@@ -88,8 +88,8 @@ vec4 sample_zoom_in_pattern(){
   int w = img_size.x;
   int h = img_size.y;
 
-  float fx = pos.x * img_size.x - 0.5;
-  float fy = pos.y * img_size.y - 0.5;
+  float fx = pos.x * float(img_size.x) - 0.5;
+  float fy = pos.y * float(img_size.y) - 0.5;
 
   int ix = int(floor(fx));
   int iy = int(floor(fy));

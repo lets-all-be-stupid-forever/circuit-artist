@@ -211,7 +211,8 @@ void texclear(Tex* t, Color c) {
 
 void texmapcircuitlight_v2(Texture2D circuit, Tex* pmap, int error_mode,
                            Times times, int tickmod, int tickgap, float f_ema,
-                           Tex** circ, Tex** light) {
+                           Tex* prev_circ, Tex* prev_light, Tex** circ,
+                           Tex** light) {
   Texture main_tex = circuit;
   int w = circuit.width;
   int h = circuit.height;
@@ -220,13 +221,13 @@ void texmapcircuitlight_v2(Texture2D circuit, Tex* pmap, int error_mode,
   Rectangle source = {0, 0, w, h};
   Rectangle target = {0, 0, w, h};
 
-  Texture tcirc = (*circ)->rt.texture;
-  Texture tlight = (*light)->rt.texture;
+  Texture tcirc = prev_circ->rt.texture;
+  Texture tlight = prev_light->rt.texture;
 
   rlSetupMRT((*circ)->rt.id, (*light)->rt.texture.id, 2);
   BeginTextureMode((*circ)->rt);
-  rlSetBlendMode(BLEND_CUSTOM);
   rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
+  rlSetBlendMode(BLEND_CUSTOM);
 
   begin_shader(wire_combine3);
   float ema_factor = f_ema;  //
@@ -344,28 +345,27 @@ void texdrawboard(Tex* t, Cam2D cam, int cw, int ch, Color c) {
 void texclock(Tex* t, float mx, float my) {
   BeginTextureMode(t->rt);
   shader_load("clock");
-  Texture tex = ui_get_sprites();
-  Rectangle source = {
-      0,
-      0,
-      tex.width,
-      tex.height,
-  };
   int tw = t->rt.texture.width;
   int th = t->rt.texture.height;
-  Rectangle dest = {
-      0,
-      0,
-      tw,
-      th,
-  };
 
   Vector2 target_size = {(float)tw, (float)th};
   Vector2 mouse = {mx, my};
   shader_vec2("target_size", &target_size);
   shader_vec2("mouse", &mouse);
 
-  DrawTexturePro(tex, source, dest, (Vector2){0, 0}, 0, WHITE);
+  /* The clock shader derives the pixel position from fragTexCoord, so it
+   * needs 0..1 texcoords across the target. DrawRectangle() can't be used:
+   * raylib maps shapes onto a 1x1 pixel of the font atlas, giving a constant
+   * texcoord. A stretched 1x1 white texture gives the full range and keeps us
+   * independent of the UI sprite sheet (and of the target, for WebGL). */
+  static Texture2D white = {0};
+  if (white.id == 0) {
+    Image im = GenImageColor(1, 1, WHITE);
+    white = LoadTextureFromImage(im);
+    UnloadImage(im);
+  }
+  DrawTexturePro(white, (Rectangle){0, 0, 1, 1}, (Rectangle){0, 0, tw, th},
+                 (Vector2){0, 0}, 0, WHITE);
   shader_unload();
   EndTextureMode();
 }

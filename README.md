@@ -111,3 +111,24 @@ cd build/
 cmake ..
 make
 ```
+
+### WASM
+
+First need to install emsdk:
+
+```
+cd path/to/emsdk
+./emsdk install latest     # only needed the first time
+./emsdk activate latest
+source ./emsdk_env.sh      # Windows: emsdk_env.bat
+```
+
+Then:
+
+```
+mkdir b_wasm && cd b_wasm 
+emcmake cmake .. -DPLATFORM=Web
+emmake make
+```
+
+Then the html is generated in b_wasm folder, you can serve it via `python -m http.server` for example.

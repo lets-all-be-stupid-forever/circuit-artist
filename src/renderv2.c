@@ -487,7 +487,8 @@ Tex* renderv2_render(RenderV2* r, Cam2D cam, int tw, int th, int ns,
   f = 1 - f;
 
   texmapcircuitlight_v2(r->combined_layers->rt.texture, r->pmap, r->error_mode,
-                        times, r->tickmod, r->tickgap, f, &circ, &light);
+                        times, r->tickmod, r->tickgap, f, r->prev_c, r->prev_l,
+                        &circ, &light);
   renderv2_render_err(r, times.utime);
 
   if (r->error_mode) {
@@ -502,6 +503,13 @@ Tex* renderv2_render(RenderV2* r, Cam2D cam, int tw, int th, int ns,
   texproj(circ, cam, tc);
   texproj(light, cam, tl);
 
+  /* Ping-pong: this frame's acc_* becomes next frame's EMA source. */
+  Tex* tmp = r->prev_c;
+  r->prev_c = r->acc_c;
+  r->acc_c = tmp;
+  tmp = r->prev_l;
+  r->prev_l = r->acc_l;
+  r->acc_l = tmp;
   Tex* combined;
   if (r->error_mode) {
     /* No bloom/gaussian in error mode */
@@ -550,13 +558,19 @@ void renderv2_update_hidden_mask(RenderV2* r, int hidden_mask) {
 }
 
 static void renderv2_prepare_nand(RenderV2* r) {
+  int w = r->w;
+  int h = r->h;
   r->pmap = texnew(r->w, r->h);
   texclear(r->pmap, BLANK);
-  r->combined_layers = texnew(r->w, r->h);
-  r->acc_c = texnew(r->w, r->h);
-  r->acc_l = texnew(r->w, r->h);
+  r->combined_layers = texnew(w, h);
+  r->acc_c = texnew(w, h);
+  r->acc_l = texnew(w, h);
+  r->prev_c = texnew(w, h);
+  r->prev_l = texnew(w, h);
   texclear(r->acc_c, BLANK);
   texclear(r->acc_l, BLANK);
+  texclear(r->prev_c, BLANK);
+  texclear(r->prev_l, BLANK);
   int n = arrlen(r->nand_clr);
   if (n == 0) return;
   r->nand_vao = rlLoadVertexArray();
@@ -816,8 +830,8 @@ void renderv2_update_pulse(RenderV2* r, Texture pulses, uint32_t* dirty_mask) {
   rlPushMatrix();
   rlEnableDepthTest();
   // rlClearScreenBuffers();  // Clear both color and depth buffers
-  rlSetBlendMode(RL_BLEND_CUSTOM);
   rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
+  rlSetBlendMode(RL_BLEND_CUSTOM);
   Shaders* s = get_shaders();
   int w = r->w;
   int h = r->h;
@@ -923,6 +937,8 @@ void renderv2_free(RenderV2* r) {
   texdel(r->pmap);
   texdel(r->acc_l);
   texdel(r->acc_c);
+  texdel(r->prev_l);
+  texdel(r->prev_c);
   texdel(r->combined_layers);
   arrfree(r->pos);
   arrfree(r->wids);

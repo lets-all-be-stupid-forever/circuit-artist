@@ -46,14 +46,14 @@ float dist_max(float aa, float bb){
 }
 
 float dist_to_edge_m(vec2 pos, int code) {
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
 
   /* First corner distances */
-  float dpos = 1000;
-  float dneg = 1000;
+  float dpos = 1000.0;
+  float dneg = 1000.0;
   int ix = int(floor(xc));
   int iy = int(floor(yc));
   {
@@ -62,9 +62,9 @@ float dist_to_edge_m(vec2 pos, int code) {
     int c = (code >> 8) & 1;
     int d = (code >> 6) & 1;
     float da = dist_max(xc-x, yc-y);
-    float db = dist_max(xc+1-x, yc-y);
-    float dc = dist_max(xc+1-x, yc+1-y);
-    float dd = dist_max(xc-x, yc+1-y);
+    float db = dist_max(xc+1.0-x, yc-y);
+    float dc = dist_max(xc+1.0-x, yc+1.0-y);
+    float dd = dist_max(xc-x, yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -86,8 +86,8 @@ float dist_to_edge_m(vec2 pos, int code) {
     int d = (code >> 7) & 1;
     float da = abs(x-xc);
     float db = abs(y-yc);
-    float dc = abs(xc+1-x);
-    float dd = abs(yc+1-y);
+    float dc = abs(xc+1.0-x);
+    float dd = abs(yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -99,11 +99,11 @@ float dist_to_edge_m(vec2 pos, int code) {
   }
   {
     if (((code >> 4)&1) != 0) {
-      dpos = 0;
-      dneg = fmin(dneg, 1);
+      dpos = 0.0;
+      dneg = fmin(dneg, 1.0);
     } else {
-      dneg= 0;
-      dpos= fmin(dpos, 1);
+      dneg = 0.0;
+      dpos= fmin(dpos, 1.0);
     }
   }
 
@@ -126,35 +126,35 @@ bool isvia_to_bot(int code) {
  *   bit3  bit4  bit5
  *   bit6  bit7  bit8 */
 int get_pixel_code(vec2 pos, sampler2D layer) {
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
   int ix = int(floor(xc));
   int iy = int(floor(yc));
   int r = 0;
-  int b0 = (texelFetch(layer, ivec2(ix-1, iy-1), 0).a > 0) ? (1 << 0): 0;
-  int b1 = (texelFetch(layer, ivec2(ix-0, iy-1), 0).a > 0) ? (1 << 1): 0;
-  int b2 = (texelFetch(layer, ivec2(ix+1, iy-1), 0).a > 0) ? (1 << 2): 0;
-  int b3 = (texelFetch(layer, ivec2(ix-1, iy-0), 0).a > 0) ? (1 << 3): 0;
-  int b4 = (texelFetch(layer, ivec2(ix-0, iy-0), 0).a > 0) ? (1 << 4): 0;
-  int b5 = (texelFetch(layer, ivec2(ix+1, iy-0), 0).a > 0) ? (1 << 5): 0;
-  int b6 = (texelFetch(layer, ivec2(ix-1, iy+1), 0).a > 0) ? (1 << 6): 0;
-  int b7 = (texelFetch(layer, ivec2(ix-0, iy+1), 0).a > 0) ? (1 << 7): 0;
-  int b8 = (texelFetch(layer, ivec2(ix+1, iy+1), 0).a > 0) ? (1 << 8): 0;
+  int b0 = (texelFetch(layer, ivec2(ix-1, iy-1), 0).a > 0.0) ? (1 << 0): 0;
+  int b1 = (texelFetch(layer, ivec2(ix-0, iy-1), 0).a > 0.0) ? (1 << 1): 0;
+  int b2 = (texelFetch(layer, ivec2(ix+1, iy-1), 0).a > 0.0) ? (1 << 2): 0;
+  int b3 = (texelFetch(layer, ivec2(ix-1, iy-0), 0).a > 0.0) ? (1 << 3): 0;
+  int b4 = (texelFetch(layer, ivec2(ix-0, iy-0), 0).a > 0.0) ? (1 << 4): 0;
+  int b5 = (texelFetch(layer, ivec2(ix+1, iy-0), 0).a > 0.0) ? (1 << 5): 0;
+  int b6 = (texelFetch(layer, ivec2(ix-1, iy+1), 0).a > 0.0) ? (1 << 6): 0;
+  int b7 = (texelFetch(layer, ivec2(ix-0, iy+1), 0).a > 0.0) ? (1 << 7): 0;
+  int b8 = (texelFetch(layer, ivec2(ix+1, iy+1), 0).a > 0.0) ? (1 << 8): 0;
   return b0 | b1 | b2 | b3 | b4 | b5 | b6| b7 | b8;
 }
 
 
 float dist_to_edge(vec2 pos, int code) {
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
 
   /* First corner distances */
-  float dpos = 1000;
-  float dneg = 1000;
+  float dpos = 1000.0;
+  float dneg = 1000.0;
   int ix = int(floor(xc));
   int iy = int(floor(yc));
   {
@@ -163,9 +163,9 @@ float dist_to_edge(vec2 pos, int code) {
     int c = (code >> 8) & 1;
     int d = (code >> 6) & 1;
     float da = dist2(xc-x, yc-y);
-    float db = dist2(xc+1-x, yc-y);
-    float dc = dist2(xc+1-x, yc+1-y);
-    float dd = dist2(xc-x, yc+1-y);
+    float db = dist2(xc+1.0-x, yc-y);
+    float dc = dist2(xc+1.0-x, yc+1.0-y);
+    float dd = dist2(xc-x, yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -187,8 +187,8 @@ float dist_to_edge(vec2 pos, int code) {
     int d = (code >> 7) & 1;
     float da = square(x-xc);
     float db = square(y-yc);
-    float dc = square(xc+1-x);
-    float dd = square(yc+1-y);
+    float dc = square(xc+1.0-x);
+    float dd = square(yc+1.0-y);
     if (a == 1) dpos = fmin(dpos, da);
     if (b == 1) dpos = fmin(dpos, db);
     if (c == 1) dpos = fmin(dpos, dc);
@@ -200,11 +200,11 @@ float dist_to_edge(vec2 pos, int code) {
   }
   {
     if (((code >> 4)&1) != 0) {
-      dpos = 0;
-      dneg = fmin(dneg, 1);
+      dpos = 0.0;
+      dneg = fmin(dneg, 1.0);
     } else {
-      dneg= 0;
-      dpos= fmin(dpos, 1);
+      dneg = 0.0;
+      dpos= fmin(dpos, 1.0);
     }
   }
 
@@ -231,22 +231,22 @@ vec4 get_pattern(int px, int py, int p) {
   py = 15 - (py % 16);
   vec4 c = texelFetch(pat_tex, ivec2(px+pattern0.x, py+pattern0.y + 16*p), 0);
   return c;
-  //if (c.a > 0) return 1;
+  //if (c.a > 0.0) return 1;
 //  return 0;
 }
 
 vec4 via_formula2(vec2 pos, vec4 c, bool up, bool down) {
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
 
   /* First corner distances */
   int ix = int(floor(xc));
   int iy = int(floor(yc));
-  xc = x - ix;
-  yc = y - iy;
-  yc = 1 - yc;
+  xc = x - float(ix);
+  yc = y - float(iy);
+  yc = 1.0 - yc;
 
   float ox = (640.0 + xc * 16.0)/ 1024.0;
   float oy = (160.0 + yc * 16.0)/ 512.0;
@@ -262,22 +262,22 @@ vec4 via_formula2(vec2 pos, vec4 c, bool up, bool down) {
 
 
   vec4 r = texture(pat_tex, vec2(ox, oy));
-  vec4 k = r.a * r + (1-r.a) * c;
+  vec4 k = r.a * r + (1.0-r.a) * c;
   return k;
 }
 
 vec4 via_formula(vec2 pos, vec4 c, bool up) {
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
 
   /* First corner distances */
   int ix = int(floor(xc));
   int iy = int(floor(yc));
-  xc = x - ix;
-  yc = y - iy;
-  yc = 1 - yc;
+  xc = x - float(ix);
+  yc = y - float(iy);
+  yc = 1.0 - yc;
 
   float ox = (640.0 + xc * 16.0)/ 1024.0;
   float oy = (160.0 + yc * 16.0)/ 512.0;
@@ -285,7 +285,7 @@ vec4 via_formula(vec2 pos, vec4 c, bool up) {
  //   ox += 16.0 / 1024.0;
  //}
   vec4 r = texture(pat_tex, vec2(ox, oy));
-  vec4 k = r.a * r + (1-r.a) * c;
+  vec4 k = r.a * r + (1.0-r.a) * c;
   return k;
 }
 
@@ -300,16 +300,16 @@ c.rgb = 0.333 * c.rgb;
 
 vec4 get_pixel(vec2 pos, sampler2D layer, int l) {
   int spi = int(sp);
-  int px = int(pos.x * img_size.x * sp.x + off.x);
-  int py = int(pos.y * img_size.y * sp.y + off.y);
+  int px = int(pos.x * float(img_size.x) * sp.x + float(off.x));
+  int py = int(pos.y * float(img_size.y) * sp.y + float(off.y));
   //px= px /2;
   //py= py /2;
   if (spi >= 15) {
       px = px / (spi / 16);
       py = py / (spi / 16);
   } else {
-      px = int(round(px / (spi / 16.0)));
-      py = int(round(py / (spi / 16.0)));
+      px = int(round(float(px) / (float(spi) / 16.0)));
+      py = int(round(float(py) / (float(spi) / 16.0)));
   }
   vec4 img_color1 = texture(layer, pos);
   int code = get_pixel_code(pos, layer);
@@ -323,7 +323,7 @@ vec4 get_pixel(vec2 pos, sampler2D layer, int l) {
   via_down = via_down && (l == al+1);
 
   /* distance in screen pixels (negative = inside wire) */
-  int di = int(round( d * spi)) + (d>0?0:-1);
+  int di = int(round( d * float(spi))) + (d>0.0?0:-1);
   if (spi >= 16) {
     di = di / (spi/16);
   }
@@ -370,7 +370,7 @@ vec4 get_pixel(vec2 pos, sampler2D layer, int l) {
   // positive d --> outside
     //img_color1 = makeoff(img_color1);
   }
-//  if (l>0 && p.a > 0) p.a = 1.0;
+//  if (l>0 && p.a > 0.0) p.a = 1.0;
   #if 0
   if (l ==1) {
       //if (di == -1) p = vec4(0,0,0,1);
@@ -459,8 +459,8 @@ vec4 find_bg_pixel() {
 return vec4(0,0,0, 1);
   if (al == 0) return vec4(0,0,0, 1);
   vec2 pos = fragTexCoord;
-  float x = pos.x * img_size.x;
-  float y = pos.y * img_size.y;
+  float x = pos.x * float(img_size.x);
+  float y = pos.y * float(img_size.y);
   float xc = floor(x);
   float yc = floor(y);
   int t = 1 << (al+1);

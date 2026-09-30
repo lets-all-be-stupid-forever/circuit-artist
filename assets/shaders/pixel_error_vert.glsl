@@ -17,11 +17,11 @@ void main()
     float y0 = p.y;
     float x1 = x0 + 1.0;
     float y1 = y0 + 1.0;
-    float t = 0.5 * (utime + 1);
+    float t = 0.5 * (utime + 1.0);
     t = 5.0*t / zoom;
 
-    x0 = x0 - 1 * t;
-    y0 = y0 - 1 * t;
+    x0 = x0 - 1.0 * t;
+    y0 = y0 - 1.0 * t;
     x1 = x1 + t;
     y1 = y1 + t;
     float vx = vert.x;

@@ -74,5 +74,6 @@ void texclock(Tex* t, float mx, float my);
 
 void texmapcircuitlight_v2(Texture2D circuit, Tex* pmap, int error_mode,
                            Times times, int tickmod, int tickgap, float f_ema,
-                           Tex** circ, Tex** light);
+                           Tex* prev_circ, Tex* prev_light, Tex** circ,
+                           Tex** light);
 #endif

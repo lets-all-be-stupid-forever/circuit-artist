@@ -36,17 +36,18 @@ void main()
   vec4 scene = texture(texture0, fragTexCoord);
   vec4 glow = texture(bloom, fragTexCoord);
 
-  if (scene.a == 0) {
-    fragColor = vec4(scene.rgb,1.);
+  if (scene.a == 0.0) {
+    fragColor = vec4(scene.rgb, 1.0);
     return;
   }
+
   vec3 s = scene.rgb;
   vec3 linear = pow(s, vec3(2.2));
   vec3 glow2 = pow(glow.rgb, vec3(2.2));
 
-  float brightness = 1;
+  float brightness = 1.0;
 
-vec3 hdr = linear * brightness + 3*bloom_intensity * glow2;
+vec3 hdr = linear * brightness + 3.0*bloom_intensity * glow2;
 
 //vec3 tonemapped = hdr / (hdr + 1.0);
 vec3 tonemapped = aces(hdr);

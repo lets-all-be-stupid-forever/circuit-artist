@@ -55,12 +55,15 @@ void main()
     /* Vertical */
     if ((wid_pack & 1) == 1) {
         // Vertical segment: x constant, y varies from p.y to p.z
+        // Edge to edge, like the horizontal case: ending at the center of the
+        // next pixel relied on the diamond-exit rule to drop it, which ANGLE
+        // (WebGL) doesn't honor and lit one extra pixel below the segment.
         x = p.x + 0.5;  // Center of pixel
         y0 = p.y+0.5;
-        y1 = p.z + 1.0+0.5;
+        y1 = p.z + 1.0;
         y = y0 * (1.0 - t) + t * y1;
         v_l = t;
-        z = 2*l + 1;
+        z = float(2*l + 1);
         flat_p = vec2(y0, y1);
     } else {
         // Horizontal segment: y constant, x varies from p.y to p.z
@@ -68,7 +71,7 @@ void main()
         x1 = p.z + 1.0;
         x = x0 * (1.0 - t) + t * x1;
         y = p.x + 0.5;  // Center of pixel
-        z = 2*l;
+        z = float(2*l);
         v_l = t;
         flat_p = vec2(x0, x1);
     }
@@ -91,10 +94,10 @@ void main()
       pvalue = texelFetch(pulses, coord, 0);
     }
 
-    float xx = (x)/w;
-    float yy = 1.0 - (y)/h;
+    float xx = (x)/float(w);
+    float yy = 1.0 - (y)/float(h);
     fragTexCoord = vec2(xx, 1.0-yy);
-    x = 2.0*x/w-1.0;
-    y = (2.0*y/h-1.0);
+    x = 2.0*x/float(w)-1.0;
+    y = (2.0*y/float(h)-1.0);
     gl_Position = mvp * vec4(x, y, z, 1.0);
 }
