@@ -2,6 +2,7 @@
 
 #include <math.h>
 
+#if 0
 const float CAM2D_ZOOM_LUT[] = {
     -1,    /*  border */
     0.125, /* 1 screen pixel = 8 image pixels */
@@ -19,6 +20,40 @@ const float CAM2D_ZOOM_LUT[] = {
     24.0,  /*   */
     32.0,  /*   */
     48.0,  /*   */
+    64.0,  /* 1pix image = 64 screen pix*/
+    -1,    /*  border  */
+};
+#endif
+
+const float CAM2D_ZOOM_LUT[] = {
+    -1,    /*  border */
+    0.125, /* 1 screen pixel = 8 image pixels */
+    0.25,  /*   */
+    0.5,   /*   */
+    1.0,   /* 1:1 ratio  */
+    2.0,   /*   */
+    3.0,   /* 1pix image = 3 screen pix */
+    4.0,   /*   */
+    5.0,   /*   */
+    6.0,   /*   */
+    8.0,   /*   */
+    10.0,  /*   */
+    12.0,  /*   */
+    14.0,  /*   */
+    16.0,  /*   */
+    18.0,  /*   */
+    20.0,  /*   */
+    22.0,  /*   */
+    24.0,  /*   */
+    28.0,  /*   */
+    30.0,  /*   */
+    32.0,  /*   */
+    34.0,  /*   */
+    38.0,  /*   */
+    42.0,  /*   */
+    48.0,  /*   */
+    54.0,  /*   */
+    60.0,  /*   */
     64.0,  /* 1pix image = 64 screen pix*/
     -1,    /*  border  */
 };

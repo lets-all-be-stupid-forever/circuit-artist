@@ -37,6 +37,22 @@ IF (EMSCRIPTEN)
 ENDIF()
 
 add_subdirectory(third_party/raylib)
+
+IF (EMSCRIPTEN)
+  # raylib's src/CMakeLists.txt does:
+  #   target_link_options(raylib PUBLIC "-sUSE_GLFW=3" -sEXPORTED_RUNTIME_METHODS=ccall)
+  # Being PUBLIC, that propagates into every target linking raylib, and CMake
+  # appends propagated interface options *after* the target's own ones. Since
+  # emscripten takes the last `-s<NAME>=` wins for a given setting, raylib's
+  # bare `ccall` silently clobbered our list and Module.cwrap was undefined at
+  # runtime. Drop it from the interface; we set the full list on ca_wasm below.
+  get_target_property(_rl_iface_link_opts raylib INTERFACE_LINK_OPTIONS)
+  IF (_rl_iface_link_opts)
+    list(REMOVE_ITEM _rl_iface_link_opts "-sEXPORTED_RUNTIME_METHODS=ccall")
+    set_target_properties(raylib PROPERTIES
+      INTERFACE_LINK_OPTIONS "${_rl_iface_link_opts}")
+  ENDIF()
+ENDIF()
 add_subdirectory(third_party/freetype)
 add_subdirectory(third_party/json-c)
 add_subdirectory(third_party/msgpack-c)
@@ -219,19 +235,11 @@ IF (NOT EMSCRIPTEN)
 
 ENDIF()
 ##################################
-# Player
+# Player - Desktop
 ##################################
-SET(ca_player_src
-  player/main.c
-  player/player.c
-)
-
-add_library(ca_player STATIC ${ca_player_src})
-target_include_directories(ca_player PRIVATE player ${ca_lib_includes})
-target_link_libraries(ca_player ca_lib ${shlwapi_lib})
-
-add_executable(cap player/main.c)
-target_link_libraries(cap ca_player)
+add_executable(cap player/player.c)
+target_include_directories(cap PRIVATE player ${ca_lib_includes})
+target_link_libraries(cap ca_lib ${shlwapi_lib})
 
 IF (EMSCRIPTEN)
   # WASM viewer: exactly the same calib + ca_viewer core and the same
@@ -252,6 +260,7 @@ IF (EMSCRIPTEN)
   # re-run whenever anything under assets/ changes (not just when a .c file
   # does). A stamp file regenerated from the asset list carries that
   # dependency into LINK_DEPENDS.
+  set(wasm_shell "${CMAKE_SOURCE_DIR}/player/wasm_shell.html")
   set(wasm_assets_dir "${CMAKE_BINARY_DIR}/wasm_assets")
   set(wasm_assets_stamp "${CMAKE_BINARY_DIR}/wasm_assets.stamp")
   file(GLOB_RECURSE wasm_asset_srcs CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/*")
@@ -265,11 +274,15 @@ IF (EMSCRIPTEN)
   )
   add_custom_target(wasm_assets ALL DEPENDS "${wasm_assets_stamp}")
 
-  add_executable(ca_wasm player/main.c)
+  add_executable(ca_wasm player/player.c)
   add_dependencies(ca_wasm wasm_assets)
-  set_target_properties(ca_wasm PROPERTIES LINK_DEPENDS "${wasm_assets_stamp}")
-  target_include_directories(ca_wasm PRIVATE ${calib_includes})
-  target_link_libraries(ca_wasm ca_player)
+  # The shell html is baked into ca_wasm.html by the link step too, so it has
+  # to be a LINK_DEPENDS as well -- otherwise editing wasm_shell.html leaves a
+  # stale ca_wasm.html behind and `make` cheerfully reports "Built target".
+  set_target_properties(ca_wasm PROPERTIES
+    LINK_DEPENDS "${wasm_assets_stamp};${wasm_shell}")
+  target_include_directories(ca_wasm PRIVATE ${ca_lib_includes})
+  target_link_libraries(ca_wasm ca_lib)
 
   set_target_properties(ca_wasm PROPERTIES SUFFIX ".html")
   # -DWASM_GL_DEBUG=ON makes every WebGL error print the GL call that caused
@@ -282,7 +295,9 @@ IF (EMSCRIPTEN)
     "-sUSE_GLFW=3"
     "-sASYNCIFY"
     "-sALLOW_MEMORY_GROWTH=1"
-    "--shell-file=${CMAKE_SOURCE_DIR}/player/wasm_shell.html"
+    "-sEXPORTED_FUNCTIONS=_main,_malloc,_free,_ca_get_tick,_ca_toggle_pause,_ca_is_paused"
+    "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8,HEAPU8,FS"
+    "--shell-file=${wasm_shell}"
     "--preload-file=${wasm_assets_dir}@/assets"
   )
 

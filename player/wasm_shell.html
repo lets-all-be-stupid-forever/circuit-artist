@@ -5,26 +5,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Circuit Artist - WASM test</title>
     <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        background: #000;
-        overflow: hidden;
-      }
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
       #canvas {
         display: block;
         width: 100vw;
         height: 100vh;
       }
+
+      /* The canvas is 100vh, so anything after it in normal flow starts below
+         the fold and gets clipped by the overflow:hidden above. The overlay
+         has to be taken out of flow -- positioning #tick alone would detach
+         the number from its "Tick:" label and leave the button off-screen. */
+      #ui {
+        position: fixed;
+        z-index: 200;
+        left: 8px;
+        top: 8px;
+      }
+
+      .panel {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        font: 14px/1.4 ui-monospace, monospace;
+      }
+
     </style>
   </head>
   <body>
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="ui">
+      <div class="panel">
+        <div>Tick: <span id="tick">0</span></div>
+        <button id="pause">Pause</button>
+      </div>
+    </div>
     <script type="text/javascript">
       var Module = {
         canvas: document.getElementById('canvas'),
+        onRuntimeInitialized() {
+          const getTick     = Module.cwrap('ca_get_tick', 'number', []);
+          const togglePause = Module.cwrap('ca_toggle_pause', 'number', []);
+          const isPaused    = Module.cwrap('ca_is_paused', 'number', []);
+
+          const tickEl = document.getElementById('tick');
+          const btn = document.getElementById('pause');
+
+          const setLabel = (paused) => {
+            btn.textContent = paused ? 'Resume' : 'Pause';
+          };
+
+          btn.addEventListener('click', () => {
+            /* ca_toggle_pause returns the new state, so the round trip into C
+               and back is what drives the label -- no state kept in JS. */
+            setLabel(togglePause());
+            /* Drop focus, otherwise the button keeps swallowing the keys that
+               GLFW wants on the canvas (K to pause, WASD to pan). */
+            btn.blur();
+          });
+
+          setLabel(isPaused());
+          setInterval(() => {
+            tickEl.textContent = getTick();
+            /* Re-read rather than trust the last click: K on the canvas flips
+               the same flag, and the label would otherwise go stale. */
+            setLabel(isPaused());
+          }, 100);
+        }
       };
     </script>
     {{{ SCRIPT }}}
