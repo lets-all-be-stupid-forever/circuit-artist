@@ -1956,6 +1956,7 @@ static void load_image_from_path_ex(const char* path, bool keep_file) {
 }
 
 void win_main_load_blueprint(Blueprint* bp) {
+  if (C.mode != MODE_EDIT) win_main_stop_simu();
   bool keep_filename = bp->steam_id == 0;
   if (bp->linked_level_id) {
     LevelDef* ldef = get_level_by_id(bp->linked_level_id);
