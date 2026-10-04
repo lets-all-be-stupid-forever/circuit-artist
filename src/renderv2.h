@@ -99,6 +99,7 @@ void renderv2_addnand(RenderV2* r, Vector2 p0, Vector2 p1, Vector2 p2, Color c0,
 Tex* renderv2_render(RenderV2* r, Cam2D cam, int tw, int th, int ns,
                      float frame_steps, NandDesc* nidx, NandState* states,
                      bool use_neon, Times times);
+void renderv2_notify_reset(RenderV2* rv2);
 void renderv2_free(RenderV2* r);
 void renderv2_add_err_pixel(RenderV2* r, int x, int y);
 void renderv2_add_bad_nand(RenderV2* r, int nand_id);

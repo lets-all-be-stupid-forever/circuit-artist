@@ -1019,3 +1019,17 @@ void renderv2_addnand(RenderV2* r, Vector2 p0, Vector2 p1, Vector2 p2, Color c0,
   arrput(r->nand_clr, clr2vec4(c1));
   arrput(r->nand_clr, clr2vec4(c2));
 }
+
+void renderv2_notify_reset(RenderV2* rv2) {
+  rv2->full_pmap_update = true;
+  texclear(rv2->pmap, BLANK);
+  /* The glow is an EMA over frames: texmapcircuitlight_v2() reads prev_* as its
+   * source and the pair ping-pongs afterwards, so whatever is in there outlives
+   * the timeline it was accumulated on and bleeds in for a few frames. Clearing
+   * all four restores the state renderv2_prepare_nand() hands out at startup,
+   * which is what a run normally begins from. */
+  texclear(rv2->acc_c, BLANK);
+  texclear(rv2->acc_l, BLANK);
+  texclear(rv2->prev_c, BLANK);
+  texclear(rv2->prev_l, BLANK);
+}

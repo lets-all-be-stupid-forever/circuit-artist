@@ -43,6 +43,7 @@
 #define rect_rewind ((Rectangle){16 * 3, 16 * 1, 13, 13})
 #define rect_forward ((Rectangle){16 * 4, 16 * 1, 13, 13})
 #define rect_sandbox ((Rectangle){80, 96, 13, 13})
+#define rect_full_rewind ((Rectangle){96, 128, 13, 13})
 
 // Logo of CircuitArtist (for About page)
 #define rect_logo ((Rectangle){160, 80, 158, 87})

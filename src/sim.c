@@ -747,8 +747,6 @@ void sim_destroy(Sim* sim) {
   UnloadTexture(sim->pulse_tex);
   free(sim->pulse_dirty_mask);
   if (sim->rv2) renderv2_free(sim->rv2);
-  if (sim->light_ema) texdel(sim->light_ema);
-  if (sim->circ_ema) texdel(sim->circ_ema);
   sim_state_destroy(&sim->state);
   free(sim->pinbuf);
   free(sim->switch_delay);
@@ -1870,4 +1868,37 @@ int sim_get_effective_cycle(Sim* sim) {
 
 bool sim_is_on_warmup(Sim* sim) {
   return sim->state.cycle < sim->warmup_cycles;
+}
+
+Status sim_reset_state(Sim* sim) {
+  // TODO
+  arrfree(sim->ui_events);
+  if (!sim_has_errors(sim)) {
+    patch_builder_destroy(&sim->patch_builder);
+  }
+  sim_state_destroy(&sim->state);
+  sim->state = (SimState){0};
+  UnloadTexture(sim->pulse_tex);
+  /* Scoped to one run, like the state it summarises: the rewound run has not
+   * reached completion, so can_save_as_solution() must not keep saying it did.
+   * Campaign progress is unaffected -- that lives in LevelDef.complete, which
+   * dispatch_level_complete() persists the moment the level is solved. */
+  sim->complete = false;
+
+  sim_init_state(sim);
+  /* Ahead of the level hooks below, which can fail and return early: the
+   * accumulated visuals belong to the timeline we just dropped either way. */
+  renderv2_notify_reset(sim->rv2);
+  Status status = status_ok();
+  bool has_errors = sim_has_errors(sim);
+  if (sim->api && !has_errors) {
+    if (status.ok && sim->api->start) {
+      status = sim->api->start(sim->api->u, sim);
+    }
+    if (status.ok) status = sim_update_level(sim);
+    if (!status.ok) {
+      return status;
+    }
+  }
+  return status;
 }

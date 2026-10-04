@@ -47,8 +47,11 @@ html, body {
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
     <div id="ui">
       <div class="panel">
-        <div>Tick: <span id="tick">0</span></div>
+        <select id="circuit"></select>
         <button id="pause">Pause</button>
+        <button id="fetch">Load from URL</button>
+        <div>Tick: <span id="tick">0</span></div>
+        <div>State: <span id="mode">-</span></div>
       </div>
     </div>
     <script type="text/javascript">
@@ -58,9 +61,84 @@ html, body {
           const getTick     = Module.cwrap('ca_get_tick', 'number', []);
           const togglePause = Module.cwrap('ca_toggle_pause', 'number', []);
           const isPaused    = Module.cwrap('ca_is_paused', 'number', []);
+          /* 'string' marshals the JS string into wasm memory for the duration
+             of the call; the C side copies it, so nothing outlives the call. */
+          const loadImage   = Module.cwrap('ca_load_image', null, ['string']);
+          const loadPng     = Module.cwrap('ca_load_png', null, ['number', 'number']);
+          const getMode     = Module.cwrap('ca_get_mode_name', 'string', []);
 
           const tickEl = document.getElementById('tick');
+          const modeEl = document.getElementById('mode');
           const btn = document.getElementById('pause');
+          const sel = document.getElementById('circuit');
+          const fetchBtn = document.getElementById('fetch');
+
+          const REMOTE_PNG = 'https://i.imgur.com/rolTNUw.png';
+
+          /* Errors raised on the JS side have no PlayerMode to report them, and
+             the poll below would overwrite the field on its next tick, so park
+             them here and let the poll keep showing them until the next load. */
+          let jsError = '';
+
+          /* Hand an encoded PNG straight to C. No MEMFS write needed: the only
+             reason to stage one would be to give raylib a path to open, and
+             ca_load_png feeds LoadImageFromMemory instead. */
+          const loadPngBytes = (bytes) => {
+            const ptr = Module._malloc(bytes.length);
+            try {
+              /* Read Module.HEAPU8 *after* the malloc. ALLOW_MEMORY_GROWTH is
+                 on, and growing the heap replaces the typed-array views, so a
+                 view captured earlier would be detached and silently empty. */
+              Module.HEAPU8.set(bytes, ptr);
+              loadPng(ptr, bytes.length);
+            } finally {
+              /* ca_load_png copied the bytes, so this is safe right away. */
+              Module._free(ptr);
+            }
+          };
+
+          fetchBtn.addEventListener('click', async () => {
+            fetchBtn.disabled = true;
+            jsError = '';
+            try {
+              const res = await fetch(REMOTE_PNG);
+              if (!res.ok) throw new Error('HTTP ' + res.status);
+              loadPngBytes(new Uint8Array(await res.arrayBuffer()));
+              sel.selectedIndex = -1;  /* no longer showing a bundled circuit */
+            } catch (e) {
+              jsError = 'fetch failed: ' + e.message;
+            } finally {
+              fetchBtn.disabled = false;
+              fetchBtn.blur();
+            }
+          });
+
+          /* List the .png files in the preloaded MEMFS tree, so the picker
+             reflects what --preload-file actually baked in instead of a list
+             kept in sync by hand. Only the dirs that hold circuits: a full
+             walk of assets/ turns up ~60 files, nearly all achievement badges,
+             toolbar icons and screenshots. */
+          const CIRCUIT_DIRS = ['/assets', '/assets/default_blueprints',
+                                '/assets/circuits'];
+          for (const dir of CIRCUIT_DIRS) {
+            let names;
+            try {
+              names = Module.FS.readdir(dir);
+            } catch (e) {
+              continue;  /* dir not in this bundle */
+            }
+            for (const name of names.sort()) {
+              if (!name.endsWith('.png')) continue;
+              const path = dir + '/' + name;
+              sel.add(new Option(path.replace('/assets/', ''), path));
+            }
+          }
+
+          sel.addEventListener('change', () => {
+            jsError = '';
+            loadImage(sel.value);
+            sel.blur();
+          });
 
           const setLabel = (paused) => {
             btn.textContent = paused ? 'Resume' : 'Pause';
@@ -78,10 +156,16 @@ html, body {
           setLabel(isPaused());
           setInterval(() => {
             tickEl.textContent = getTick();
+            modeEl.textContent = jsError || getMode();
             /* Re-read rather than trust the last click: K on the canvas flips
                the same flag, and the label would otherwise go stale. */
             setLabel(isPaused());
           }, 100);
+
+          /* Nothing is loaded at startup (main() leaves MODE_EMPTY), so pick
+             the first entry -- this is the JS side choosing, same as a change
+             event would. */
+          if (sel.options.length) loadImage(sel.value);
         }
       };
     </script>

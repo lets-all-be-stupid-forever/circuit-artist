@@ -166,8 +166,6 @@ typedef struct Sim {
   SimState state;  /* Simulation state */
   PatchBuilder patch_builder; /* Temporary buffer used during state update */
 
-  Tex* light_ema;
-  Tex* circ_ema;
   LevelAPI* api;
 
   /* Rendering */
@@ -216,6 +214,7 @@ Tex* sim_render_v2(Sim* sim, int tw, int th, Cam2D cam, float frame_steps,
                    float slackSteps, int hide_mask, bool use_neon,
                    Color bg_color);
 Tex* sim_render_energy(Sim* sim, int tw, int th);
+Status sim_reset_state(Sim* sim);
 
 bool sim_is_on_warmup(Sim* sim);
 bool sim_is_idle(Sim* sim);

@@ -75,7 +75,7 @@ static struct {
   Btn btn_pause;
   Btn btn_rewind;
   Btn btn_forward;
-  Btn btn_nop;
+  Btn btn_fullrewind;
   Btn btn_simmode;
 
   // Tools buttons
@@ -166,6 +166,7 @@ static void main_check_file_drop();
 static void main_update_widgets();
 static void main_update_controls();
 static void main_update_hud();
+static void full_rewind();
 static void main_new_file();
 static void main_open_file_modal();
 static RectangleInt main_get_target_region();
@@ -236,7 +237,7 @@ static void update_layout() {
   C.btn_rewind.hitbox = layout_rectb(l, "btn_rewind");
   C.btn_forward.hitbox = layout_rectb(l, "btn_forward");
   C.btn_simmode.hitbox = layout_rectb(l, "btn_playmode");
-  C.btn_nop.hitbox = layout_rectb(l, "btn_none");
+  C.btn_fullrewind.hitbox = layout_rectb(l, "btn_none");
 
   /* Left-bar tool buttons */
   C.btn_brush.hitbox = layout_rectb(l, "btn_brush");
@@ -1189,6 +1190,14 @@ void main_update_controls() {
     if (can_rewind) {
       if (IsKeyDown(KEY_J)) C.rewind_pressed = true;
     }
+    /* MODE_SIMU, not just !isEdit like the keys above, so the hotkey is
+     * available exactly when btn_fullrewind is: there is nothing to rewind to
+     * on a circuit that failed to start. Paint's own R (rotate selection) is
+     * behind `if (isEdit)` at the paint_handle_keys() call, so it cannot clash
+     * with this one. */
+    if (C.mode == MODE_SIMU && IsKeyPressed(KEY_R)) {
+      full_rewind();
+    }
   }
 
   if (C.mode == MODE_SIMU) {
@@ -1284,6 +1293,25 @@ static void on_btn_custom_level_click() {
   win_main_ask_for_save_and_proceed(custom_level_open_win);
 }
 
+static void full_rewind() {
+  /* Reset before swapping the history, not after: HSim owns only its own patch
+   * stacks (its ctx is a borrowed Sim*), so it is unbothered by the state being
+   * rebuilt under it. The other order would double-destroy C.hsim whenever the
+   * reset fails, because handle_kernel_error() tears it down as well. */
+  Status s = sim_reset_state(&C.sim);
+  if (!s.ok) {
+    /* Same recovery as a failed sim_post_compile(): this stops the simulation
+     * (destroying C.sim and C.hsim) and drops back to MODE_EDIT, so nothing
+     * below may run. */
+    handle_kernel_error(s);
+    return;
+  }
+  hsim_destroy(&C.hsim);
+  C.hsim = wrap_sim(&C.sim);
+  C.simu_target_steps = 0;
+  C.pix_toggle = -1;
+}
+
 void main_update_hud() {
   Paint* ca = &C.ca;
   if (btn_update(&C.btn_new)) on_new_click();
@@ -1329,6 +1357,7 @@ void main_update_hud() {
   if (C.btn_rewind.pressed) C.rewind_pressed = true;
   if (C.btn_forward.pressed) C.forward_pressed = true;
   if (btn_update(&C.btn_simmode)) toggle_sim_mode();
+  if (btn_update(&C.btn_fullrewind)) full_rewind();
 
   // if (btn_update(&C.btn_level_campaign)) on_btn_campaign_level_click();
   if (btn_update(&C.btn_camp)) on_btn_campaign_level_click();
@@ -1468,7 +1497,7 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_rewind, rect_rewind);
   btn_draw_icon(&C.btn_forward, rect_forward);
   btn_draw_icon(&C.btn_simmode, get_rect_sim_mode());
-  btn_draw_icon(&C.btn_nop, rect_nothing);
+  btn_draw_icon(&C.btn_fullrewind, rect_full_rewind);
   btn_draw_icon(&C.btn_pause, rect_pause);
 
   // btn_draw_text(&C.btn_wiki, T.main_btn_wiki);
@@ -1581,6 +1610,7 @@ void win_main_draw() {
       btn_draw_legend(&C.btn_rewind, T.main_rewind_leg);
     }
     btn_draw_legend(&C.btn_forward, T.main_forward_leg);
+    btn_draw_legend(&C.btn_fullrewind, T.main_fullrewind_leg);
     btn_draw_legend(&C.btn_brush, T.main_brush_leg);
     btn_draw_legend(&C.btn_line, T.main_line_leg);
     btn_draw_legend(&C.btn_bucket, T.main_bucket_leg);
@@ -1829,6 +1859,7 @@ void main_update_widgets() {
   C.btn_forward.disabled = !simu || !C.paused;
   C.btn_pause.disabled = !simu;
   C.btn_simmode.disabled = ned;
+  C.btn_fullrewind.disabled = !simu;
 
   C.btn_simu.disabled = C.kernel_error;
 

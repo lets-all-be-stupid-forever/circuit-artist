@@ -61,6 +61,7 @@ void i18n_register_lua(lua_State* L);
   X(main_rewind_disabled_leg)         \
   X(main_rewind_leg)                  \
   X(main_forward_leg)                 \
+  X(main_fullrewind_leg)              \
   X(main_brush_leg)                   \
   X(main_line_leg)                    \
   X(main_bucket_leg)                  \

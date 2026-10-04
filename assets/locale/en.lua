@@ -48,6 +48,7 @@ main_pause_leg = "Pause/Unpause Simulation (K)\n"
 main_rewind_disabled_leg = "Rewind is disabled for this level"
 main_rewind_leg = "Rewinds simulation (J).\nYou can also press (RIGHT MOUSE BUTTON) during simulation to rewind with more accuracy.\n"
 main_forward_leg = "Forwards simulation (L).\nYou can also press (RIGHT MOUSE BUTTON) during simulation to rewind with more accuracy."
+main_fullrewind_leg = "Restarts the simulation (R)."
 main_brush_leg = "Brush tool (B)\nLeft mouse button: draw\nRight mouse button: erase\nPress (ALT) to pick color."
 main_line_leg = [[
 Line tool (L)
