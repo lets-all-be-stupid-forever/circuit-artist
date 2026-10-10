@@ -13,8 +13,8 @@ extern "C" {
 #define F_COLS 2
 #define NUM_PAGES S_COLS
 #define NUM_FIXED (F_COLS * S_ROWS)
-#define PAGESIZE (S_COLS * S_ROWS)
-#define TOTAL_BLUEPRINTS (NUM_FIXED + NUM_PAGES * PAGESIZE + NUM_PAGES)
+#define BP_PAGESIZE (S_COLS * S_ROWS)
+#define TOTAL_BLUEPRINTS (NUM_FIXED + NUM_PAGES * BP_PAGESIZE + NUM_PAGES)
 
 /* Blueprints */
 typedef struct {

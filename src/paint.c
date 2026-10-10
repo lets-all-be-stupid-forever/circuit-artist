@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "clipapi.h"
 #include "colors.h"
 #include "font.h"
 #include "i18n.h"
@@ -20,6 +19,10 @@
 #include "uifont.h"
 #include "utils.h"
 #include "win_main.h"
+
+#ifndef CA_WEB
+#include "clipapi.h"
+#endif
 
 #define IMAGE_MOF 8
 
@@ -1025,8 +1028,6 @@ static void paint_combine_layers_onoff2(Paint* ca, RenderTexture2D target) {
     shader_tex(TextFormat("layer%d", l), ca->t_tmp[l].texture);
   }
 
-  int pat_size[2] = {sprites.width, sprites.height};
-  shader_ivec2("pat_size", &pat_size[0]);
   shader_intv("layer_pat", &layer_pat[0], 4);
   shader_intv("layer_hidden", &layer_hidden[0], 4);
   shader_intv("layer_mode", &layer_mode[0], 4);
@@ -1386,6 +1387,7 @@ void paint_handle_wheel_zoom(Paint* ca) {
 }
 
 static void paint_paste_from_clipboard(Paint* ca) {
+#ifndef CA_WEB
   // If there's an image in the clipboard, uses that image instead (and save
   // it in internal clipboard)
   Image system_clipboard_image = image_from_clipboard();
@@ -1409,9 +1411,11 @@ static void paint_paste_from_clipboard(Paint* ca) {
     UnloadImage(ca->clipboard_image);
     ca->clipboard_image = (Image){0};
   }
+#endif
 }
 
 static void paint_copy_to_clipboard(Paint* ca) {
+#ifndef CA_WEB
   if (!paint_get_has_selection(ca)) {
     return;
   }
@@ -1424,6 +1428,7 @@ static void paint_copy_to_clipboard(Paint* ca) {
   ca->clipboard_image = hist_export_sel(&ca->h);
   // Copies the image in the clipboard as well
   image_to_clipboard(ca->clipboard_image);
+#endif
 }
 
 static int paint_get_number_key_pressed() {

@@ -35,7 +35,7 @@ static struct {
   Label slots_cap;
   Rectangle modal;
   // Blueprint* blueprints[TOTAL_BLUEPRINTS];
-  Btn slots[PAGESIZE];
+  Btn slots[BP_PAGESIZE];
   Btn page_slots[NUM_PAGES];
   Btn fixed_slots[NUM_FIXED];
 
@@ -117,7 +117,7 @@ static void set_page(int page) { C.apage = page; }
 
 static void gotopage_of(int ibp) {
   if (ibp < NUM_FIXED) return;
-  int p = (ibp - NUM_FIXED) / PAGESIZE;
+  int p = (ibp - NUM_FIXED) / BP_PAGESIZE;
   set_page(p);
 }
 
@@ -195,7 +195,7 @@ static void update_page_slot(Btn* b, Vector2 mouse, int sidx) {
       ui_set_cursor(MOUSE_POINTER);
       if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         ui_sound_click();
-        int ipage = sidx - NUM_FIXED - NUM_PAGES * PAGESIZE;
+        int ipage = sidx - NUM_FIXED - NUM_PAGES * BP_PAGESIZE;
         set_page(ipage);
       }
     }
@@ -264,7 +264,7 @@ void win_blueprint_update() {
 
   if (btn_update(&C.btn_editpage)) {
     C.editpage = !C.editpage;
-    if (C.sel >= NUM_FIXED + NUM_PAGES * PAGESIZE) {
+    if (C.sel >= NUM_FIXED + NUM_PAGES * BP_PAGESIZE) {
       C.sel = -1;
     }
     return;
@@ -272,7 +272,7 @@ void win_blueprint_update() {
   C.btn_editpage.toggled = C.editpage;
 
   Vector2 mouse = GetMousePosition();
-  for (int i = 0; i < PAGESIZE; i++) {
+  for (int i = 0; i < BP_PAGESIZE; i++) {
     update_slot(&C.slots[i], mouse, get_slot_blueprint_idx(i));
   }
   for (int i = 0; i < NUM_FIXED; i++) {
@@ -348,13 +348,13 @@ void win_blueprint_draw() {
   int num_pages = 10;
 
   /* Main inventory */
-  for (int i = 0; i < PAGESIZE; i++) {
+  for (int i = 0; i < BP_PAGESIZE; i++) {
     draw_slot(&C.slots[i], get_slot_blueprint_idx(i));
   }
-  for (int i = 0; i < PAGESIZE; i++) {
+  for (int i = 0; i < BP_PAGESIZE; i++) {
     draw_slot_hover(&C.slots[i], get_slot_blueprint_idx(i));
   }
-  for (int i = 0; i < PAGESIZE; i++) {
+  for (int i = 0; i < BP_PAGESIZE; i++) {
     draw_slot_sel(&C.slots[i], get_slot_blueprint_idx(i));
   }
 
@@ -417,7 +417,7 @@ void win_blueprint_draw() {
     for (int i = 0; i < NUM_FIXED; i++) {
       draw_slot_hover_leg(&C.fixed_slots[i], get_fixed_blueprint_idx(store, i));
     }
-    for (int i = 0; i < PAGESIZE; i++) {
+    for (int i = 0; i < BP_PAGESIZE; i++) {
       draw_slot_hover_leg(&C.slots[i], get_slot_blueprint_idx(i));
     }
   }

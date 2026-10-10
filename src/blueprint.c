@@ -3,7 +3,6 @@
 #include <inttypes.h>
 
 #include "assert.h"
-#include "clipapi.h"
 #include "font.h"
 #include "fs.h"
 #include "img.h"
@@ -15,6 +14,10 @@
 #include "ui.h"
 #include "utils.h"
 #include "win_main.h"
+
+#ifndef CA_WEB
+#include "clipapi.h"
+#endif
 
 #define BLUEPRINT_FILE_1_1 "blueprints_1_1.json"
 #define BLUEPRINT_FILE_v2 "blueprints_v2.json"
@@ -89,12 +92,12 @@ void blueprint_store_swap(BlueprintStore* store, int i0, int i1) {
 }
 
 int get_page_blueprint_idx(BlueprintStore* store, int i) {
-  int off = NUM_FIXED + NUM_PAGES * PAGESIZE;
+  int off = NUM_FIXED + NUM_PAGES * BP_PAGESIZE;
   return off + i;
 }
 
 int get_page_slot_blueprint_idx(BlueprintStore* store, int page, int i) {
-  int off = NUM_FIXED + page * PAGESIZE;
+  int off = NUM_FIXED + page * BP_PAGESIZE;
   return off + i;
 }
 
@@ -125,7 +128,7 @@ int find_available_fixed_slot(BlueprintStore* store) {
 }
 
 int find_available_page_slot(BlueprintStore* store, int page) {
-  for (int i = 0; i < PAGESIZE; i++) {
+  for (int i = 0; i < BP_PAGESIZE; i++) {
     int sidx = get_page_slot_blueprint_idx(store, page, i);
     if (!store->blueprints[sidx]) return sidx;
   }
@@ -667,9 +670,11 @@ bool blueprint_can_delete(Blueprint* s) {
 }
 
 void blueprint_copy_to_clipboard(Blueprint* s) {
+#ifndef CA_WEB
   Image img = LoadImage(blueprint_fname_full(s));
   image_to_clipboard(img);
   UnloadImage(img);
+#endif
 }
 
 /* Updates link to level and saves blueprint metadata */

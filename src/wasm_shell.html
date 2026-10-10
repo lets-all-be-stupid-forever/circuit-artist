@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Circuit Artist - WASM test</title>
     <style>
+/* The game's own UI font. Converted from
+   assets/font/ark-pixel-12px-proportional-latin.bdf (the file uifont.c loads)
+   by tools/bdf2woff2.py, which turns each lit pixel into a square outline so it
+   stays crisp instead of being autotraced into curves. Served from next to this
+   page by a configure_file() step -- CSS cannot read the MEMFS bundle.
+
+   It is a 12px bitmap design, so ONLY multiples of 12px stay pixel-exact:
+   12 / 24 / 36. Anything else (14px, 16px, 1em...) resamples and goes fuzzy.
+   The game itself draws it at PIXEL_FONT_SCALE 2, i.e. 24px. */
+@font-face {
+  font-family: 'CA Pixel';
+  src: url('ca-ui-font.woff2') format('woff2');
+  /* block, not swap: a fallback flash would reflow at a different metric. */
+  font-display: block;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -12,6 +28,23 @@ html, body {
   height: 100%;
   background: #000;
   overflow: hidden;
+  /* Keep the stack monospaced so a fallback still lines up roughly. */
+  font-family: 'CA Pixel', ui-monospace, monospace;
+  font-size: 24px;    /* 12 * PIXEL_FONT_SCALE, matching the in-game size */
+  line-height: 32px;  /* 16px design line box * 2 */
+  /* Non-standard but harmless: stops macOS greying the pixel edges. */
+  -webkit-font-smoothing: none;
+}
+
+/* Form controls do not inherit font-family or font-size by default, so the
+   select and buttons would otherwise stay in the browser's UI font. */
+select, button, input, textarea {
+  font: inherit;
+}
+
+/* Anything scaled from the game's pixel art must not be interpolated. */
+canvas, img {
+  image-rendering: pixelated;
 }
       #canvas {
         display: block;
@@ -38,7 +71,6 @@ html, body {
         border-radius: 4px;
         background: rgba(0, 0, 0, 0.6);
         color: #fff;
-        font: 14px/1.4 ui-monospace, monospace;
       }
 
     </style>
@@ -73,7 +105,8 @@ html, body {
           const sel = document.getElementById('circuit');
           const fetchBtn = document.getElementById('fetch');
 
-          const REMOTE_PNG = 'https://i.imgur.com/rolTNUw.png';
+          //const REMOTE_PNG = 'https://i.imgur.com/rolTNUw.png';
+          const REMOTE_PNG = 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Oryctolagus_cuniculus_-_euqirneto_-_419737670_%28cropped%29.jpeg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original';
 
           /* Errors raised on the JS side have no PlayerMode to report them, and
              the poll below would overwrite the field on its next tick, so park
@@ -97,19 +130,54 @@ html, body {
             }
           };
 
+          /* Fetch an encoded image over the network and hand the bytes to C. */
+          const loadFromUrl = async (url) => {
+            jsError = '';
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            loadPngBytes(new Uint8Array(await res.arrayBuffer()));
+            sel.selectedIndex = -1;  /* no longer showing a bundled circuit */
+          };
+
           fetchBtn.addEventListener('click', async () => {
             fetchBtn.disabled = true;
-            jsError = '';
             try {
-              const res = await fetch(REMOTE_PNG);
-              if (!res.ok) throw new Error('HTTP ' + res.status);
-              loadPngBytes(new Uint8Array(await res.arrayBuffer()));
-              sel.selectedIndex = -1;  /* no longer showing a bundled circuit */
+              await loadFromUrl(REMOTE_PNG);
             } catch (e) {
               jsError = 'fetch failed: ' + e.message;
             } finally {
               fetchBtn.disabled = false;
               fetchBtn.blur();
+            }
+          });
+
+          /* Drag an image onto the page to load it.
+
+             Drops on the canvas need nothing here: emscripten's GLFW already
+             listens for drop/dragover on it, writes the file into MEMFS and
+             only then calls raylib's drop callback, which player.c picks up via
+             IsFileDropped(). Touching those would double-load, so they are
+             left strictly alone.
+
+             The #ui panel overlays the canvas though, and GLFW never sees a
+             drop that lands on it -- the browser would instead navigate to the
+             image and take the page with it. Those go through the same byte
+             path as "Load from URL". */
+          const onCanvas = (e) => e.target === Module.canvas;
+          window.addEventListener('dragover', (e) => {
+            if (!onCanvas(e)) e.preventDefault();
+          });
+          window.addEventListener('drop', async (e) => {
+            if (onCanvas(e)) return;
+            e.preventDefault();
+            const file = e.dataTransfer && e.dataTransfer.files[0];
+            if (!file) return;
+            jsError = '';
+            try {
+              loadPngBytes(new Uint8Array(await file.arrayBuffer()));
+              sel.selectedIndex = -1;  /* no longer a bundled circuit */
+            } catch (err) {
+              jsError = 'drop failed: ' + err.message;
             }
           });
 
@@ -162,10 +230,33 @@ html, body {
             setLabel(isPaused());
           }, 100);
 
-          /* Nothing is loaded at startup (main() leaves MODE_EMPTY), so pick
-             the first entry -- this is the JS side choosing, same as a change
-             event would. */
-          if (sel.options.length) loadImage(sel.value);
+          /* ?img=<url-or-asset> chooses what to load at startup, so the
+             player can be handed round as a link.
+
+             An absolute http(s) URL (or a protocol-relative //host/...) is
+             fetched over the network; anything else is read as a path into the
+             preloaded assets, matching the picker's own values, so both
+             ?img=example2.png and ?img=/assets/circuits/help.png work. */
+          const wanted = new URLSearchParams(location.search).get('img');
+          if (wanted && /^(https?:)?\/\//i.test(wanted)) {
+            loadFromUrl(wanted).catch((e) => {
+              /* Nearly always CORS: a cross-origin fetch needs
+                 access-control-allow-origin from the far end, which most image
+                 hosts do not send. The failure shows up in the State field. */
+              jsError = 'img= failed: ' + e.message;
+            });
+          } else if (wanted) {
+            const path = wanted.startsWith('/') ? wanted : '/assets/' + wanted;
+            loadImage(path);
+            /* Reflect it in the picker when it is one of the bundled files;
+               findIndex gives -1 otherwise, which blanks the select. */
+            sel.selectedIndex =
+                Array.from(sel.options).findIndex((o) => o.value === path);
+          } else if (sel.options.length) {
+            /* No ?img= at all: main() leaves MODE_EMPTY, so pick the first
+               entry -- the JS side choosing, same as a change event would. */
+            loadImage(sel.value);
+          }
         }
       };
     </script>

@@ -11,6 +11,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
+IF(NOT EMSCRIPTEN)
+  add_compile_definitions(CA_DESKTOP=1)
+ELSE()
+  add_compile_definitions(CA_WEB=1)
+ENDIF()
+
 IF (DEV)
   add_compile_definitions(CA_DEV=1)
 ENDIF()
@@ -56,8 +62,8 @@ ENDIF()
 add_subdirectory(third_party/freetype)
 add_subdirectory(third_party/json-c)
 add_subdirectory(third_party/msgpack-c)
+add_subdirectory(third_party/lua)
 IF(NOT EMSCRIPTEN)
-  add_subdirectory(third_party/lua)
   add_subdirectory(third_party/nativefiledialog-extended)
   add_subdirectory(third_party/discord-rpc-3.4.0)
 ENDIF()
@@ -72,6 +78,7 @@ unset(CLANG_FORMAT_CMD CACHE)
 ################################
 # Core
 ###############################
+
 SET(ca_src
   src/buffer.c
   src/common.c
@@ -111,15 +118,110 @@ SET(ca_src
   src/wire_graph.c
   third_party/raylib/src/external/glad.h
   third_party/tinycthread/tinycthread.c
+  src/brush.c
+  src/discord_integration.cpp
+  src/log.c
+  src/i18n.c
+  src/msg.c
+  src/blueprint.c
+  src/ui.c
+  src/levelsidebar.c
+  src/lua_level.c
+  src/steam.cpp
+  src/sol_widget.c
+  src/widgets.c
+  src/wnumber.c
+  src/wtext.c
+  src/script.c
+  src/paint.c
+  src/game_registry.c
+  src/wabout.c
+  src/wdialog.c
+  src/win_wiki.c
+  src/win_mtext.c
+  src/win_level.c
+  src/win_workshop.c
+  src/win_workshopdet.c
+  src/win_msg.c
+  src/win_blueprint.c
+  src/win_pubform.c
+  src/win_campaign.c
+  src/win_customlvl.c
+  src/win_progress.c
+  src/win_bpdetail.c
+  src/win_settings.c
+  src/win_main.c
+)
+
+IF(NOT EMSCRIPTEN)
+  set(ca_src
+    ${ca_src}
+    src/modal.c
+    src/compilation_thread.c
+    src/clipapi.cpp
+    third_party/clip/clip.cpp
+    third_party/clip/image.cpp
   )
+ELSE()
+  set(ca_src
+    ${ca_src}
+    src/compilation_thread_naive.c
+  )
+ENDIF()
+
+IF (WIN32)
+  SET(ca_src ${ca_src}
+    third_party/clip/clip_win.cpp
+    third_party/clip/clip_win_wic.cpp
+    third_party/clip/clip_win_bmp.cpp
+  )
+ELSEIF (APPLE)
+  SET(ca_src ${ca_src}
+    third_party/clip/clip_osx.mm
+  )
+ELSEIF (UNIX)
+  ADD_COMPILE_DEFINITIONS(HAVE_XCB_XLIB_H=1)
+  SET(clip_libs xcb pthread)
+  SET(ca_desktop_src ${ca_src}
+    third_party/clip/clip_x11.cpp
+  )
+ENDIF()
+# shlwapi is only for win32
+IF(WIN32)
+  SET(shlwapi_lib shlwapi)
+  SET(opengl_lib opengl32)
+ENDIF()
+
+IF(NOT EMSCRIPTEN)
+  # --- desktop only --
+  set(ca_desktop_includes
+    third_party/nativefiledialog-extended/src/include
+    third_party/tinycthread
+    third_party/clip
+    third_party/discord-rpc-3.4.0/include
+  )
+  set(ca_desktop_libs
+    nfd
+    ${shlwapi_lib}
+    ${clip_libs}
+    ${steam_libs}
+    discord-rpc
+    Threads::Threads
+  )
+ENDIF()
+
 add_library(ca_lib STATIC ${ca_src})
 set(ca_lib_includes
   src
   third_party
   third_party/raylib/src
-  third_party/msgpack-c/include
   third_party/raylib/src/external
   third_party/freetype/include
+  third_party/lua
+  third_party/msgpack-c/include
+  third_party/freetype/include
+  third_party/msgpack-c/include
+  ${ca_desktop_includes}
 )
 target_include_directories(ca_lib PRIVATE ${ca_lib_includes})
 target_link_libraries(ca_lib
@@ -127,103 +229,18 @@ target_link_libraries(ca_lib
   ${opengl_lib}
   msgpack-c
   json-c
-  freetype)
+  freetype
+  lualib
+  ${ca_desktop_libs}
+)
 
 ##################################
 # Desktop
 ##################################
-SET(ca_desktop_src
-  desktop/brush.c
-  desktop/discord_integration.cpp
-  desktop/log.c
-  desktop/modal.c
-  desktop/i18n.c
-  desktop/msg.c
-  desktop/blueprint.c
-  desktop/ui.c
-  desktop/levelsidebar.c
-  desktop/lua_level.c
-  desktop/steam.cpp
-  desktop/sol_widget.c
-  desktop/widgets.c
-  desktop/wnumber.c
-  desktop/wtext.c
-  desktop/script.c
-  desktop/paint.c
-  desktop/compilation_thread.c
-  desktop/game_registry.c
-  desktop/wabout.c
-  desktop/wdialog.c
-  desktop/win_wiki.c
-  desktop/win_mtext.c
-  desktop/win_level.c
-  desktop/win_workshop.c
-  desktop/win_workshopdet.c
-  desktop/win_msg.c
-  desktop/win_blueprint.c
-  desktop/win_pubform.c
-  desktop/win_campaign.c
-  desktop/win_customlvl.c
-  desktop/win_progress.c
-  desktop/win_bpdetail.c
-  desktop/win_settings.c
-  desktop/win_main.c
-  desktop/clipapi.cpp
-  third_party/clip/clip.cpp
-  third_party/clip/image.cpp
-)
 
 IF (NOT EMSCRIPTEN)
-  IF (WIN32)
-    SET(ca_desktop_src ${ca_desktop_src}
-      third_party/clip/clip_win.cpp
-      third_party/clip/clip_win_wic.cpp
-      third_party/clip/clip_win_bmp.cpp
-    )
-  ELSEIF (APPLE)
-    SET(ca_desktop_src ${ca_desktop_src}
-      third_party/clip/clip_osx.mm
-    )
-  ELSEIF (UNIX)
-    ADD_COMPILE_DEFINITIONS(HAVE_XCB_XLIB_H=1)
-    SET(clip_libs xcb pthread)
-    SET(ca_desktop_src ${ca_desktop_src}
-      third_party/clip/clip_x11.cpp
-    )
-  ENDIF()
-  # shlwapi is only for win32
-  IF(WIN32)
-    SET(shlwapi_lib shlwapi)
-    SET(opengl_lib opengl32)
-  ENDIF()
-  add_library(ca_desktop STATIC ${ca_desktop_src})
-  target_include_directories(ca_desktop PRIVATE
-    src
-    desktop
-    third_party
-    third_party/clip
-    third_party/tinycthread
-    third_party/lua
-    third_party/nativefiledialog-extended/src/include
-    third_party/msgpack-c/include
-    third_party/raylib/src
-    third_party/raylib/src/external
-    third_party/discord-rpc-3.4.0/include
-    third_party/freetype/include
-  )
-  target_link_libraries(ca_desktop
-    ca_lib
-    ${shlwapi_lib}
-    nfd
-    ${clip_libs}
-    ${steam_libs}
-    lualib
-    discord-rpc
-    Threads::Threads)
-
-
-  add_executable(ca desktop/main.c ${ca_icon_src})
-  target_link_libraries(ca ca_desktop)
+  add_executable(ca src/main.c ${ca_icon_src})
+  target_link_libraries(ca ca_lib)
   target_include_directories(ca PRIVATE src)
   # Set RPATH so Linux executables find shared libraries in their own directory
   if(UNIX AND NOT APPLE)
@@ -232,14 +249,12 @@ IF (NOT EMSCRIPTEN)
       INSTALL_RPATH "\$ORIGIN"
     )
   endif()
-
 ENDIF()
+
 ##################################
-# Player - Desktop
-##################################
-add_executable(cap player/player.c)
-target_include_directories(cap PRIVATE player ${ca_lib_includes})
-target_link_libraries(cap ca_lib ${shlwapi_lib})
+include(MacOSBundle)
+include(SteamBinariesCopy)
+
 
 IF (EMSCRIPTEN)
   # WASM viewer: exactly the same calib + ca_viewer core and the same
@@ -260,7 +275,15 @@ IF (EMSCRIPTEN)
   # re-run whenever anything under assets/ changes (not just when a .c file
   # does). A stamp file regenerated from the asset list carries that
   # dependency into LINK_DEPENDS.
-  set(wasm_shell "${CMAKE_SOURCE_DIR}/player/wasm_shell.html")
+  set(wasm_shell "${CMAKE_SOURCE_DIR}/src/wasm_shell.html")
+
+  # The UI webfont is fetched over HTTP by @font-face in the shell. CSS cannot
+  # read MEMFS, so being inside the --preload-file bundle is not enough: the
+  # file has to sit next to ca_wasm.html. COPYONLY also registers it as a
+  # configure-time dependency, so regenerating it re-copies on the next build.
+  # Generated from assets/font/*.bdf by tools/bdf2woff2.py.
+  configure_file("${CMAKE_SOURCE_DIR}/assets/font/ca-ui-font.woff2"
+                 "${CMAKE_BINARY_DIR}/ca-ui-font.woff2" COPYONLY)
   set(wasm_assets_dir "${CMAKE_BINARY_DIR}/wasm_assets")
   set(wasm_assets_stamp "${CMAKE_BINARY_DIR}/wasm_assets.stamp")
   file(GLOB_RECURSE wasm_asset_srcs CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/*")
@@ -274,7 +297,7 @@ IF (EMSCRIPTEN)
   )
   add_custom_target(wasm_assets ALL DEPENDS "${wasm_assets_stamp}")
 
-  add_executable(ca_wasm player/player.c)
+  add_executable(ca_wasm src/player.c)
   add_dependencies(ca_wasm wasm_assets)
   # The shell html is baked into ca_wasm.html by the link step too, so it has
   # to be a LINK_DEPENDS as well -- otherwise editing wasm_shell.html leaves a
@@ -289,25 +312,20 @@ IF (EMSCRIPTEN)
   # it (plus a JS stack) in the browser console. Slow; for debugging only.
   option(WASM_GL_DEBUG "Trace WebGL errors per GL call in the wasm build" OFF)
   if (WASM_GL_DEBUG)
-    target_link_options(ca_wasm PRIVATE "-sGL_DEBUG=1" "-sGL_ASSERTIONS=1" "-sASSERTIONS=1")
+    # -g2 keeps the wasm name section so the console shows C function names
+    # instead of $funcNNNN, which is what makes a GL_DEBUG trace actionable.
+    target_link_options(ca_wasm PRIVATE "-sGL_DEBUG=1" "-sGL_ASSERTIONS=1"
+                        "-sASSERTIONS=1" "-g2")
+    target_compile_options(ca_wasm PRIVATE "-g2")
   endif()
   target_link_options(ca_wasm PRIVATE
     "-sUSE_GLFW=3"
     "-sASYNCIFY"
     "-sALLOW_MEMORY_GROWTH=1"
-    "-sEXPORTED_FUNCTIONS=_main,_malloc,_free,_ca_get_tick,_ca_toggle_pause,_ca_is_paused"
-    "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8,HEAPU8,FS"
     "--shell-file=${wasm_shell}"
+   "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8,HEAPU8,FS"
+   "-sEXPORTED_FUNCTIONS=_main,_malloc,_free,_ca_get_tick,_ca_toggle_pause,_ca_is_paused"
     "--preload-file=${wasm_assets_dir}@/assets"
   )
-
   return()
 ENDIF()
-
-
-
-
-
-##################################
-include(MacOSBundle)
-include(SteamBinariesCopy)

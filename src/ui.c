@@ -12,7 +12,6 @@
 #include "game_registry.h"
 #include "i18n.h"
 #include "log.h"
-#include "modal.h"
 #include "msg.h"
 #include "paths.h"
 #include "profiler.h"
@@ -43,6 +42,14 @@
 #include "win_workshopdet.h"
 #include "wnumber.h"
 #include "wtext.h"
+
+#ifdef CA_DESKTOP
+#include "modal.h"
+#endif
+
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
 
 typedef struct {
   bool push; /* push or pop */
@@ -143,8 +150,12 @@ void ui_init() {
   /* The minimum must be done here so we can display errors */
   int screen_width = 640 * 2;
   int screen_height = 320 * 2;
-  // SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+#if defined(PLATFORM_WEB)
+  SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+#else
   SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
+#endif
+
   InitWindow(screen_width, screen_height, "Circuit Artist");
   init_common_globals();
   setup_app_icons();
@@ -175,7 +186,9 @@ void ui_init() {
   win_customlvl_init();
   win_blueprint_init();
   profiler_init();
+#ifdef CA_DESKTOP
   modal_init();
+#endif
   win_wiki_init();
   shaders_init();
   win_level_init();
@@ -193,7 +206,9 @@ void ui_init() {
 void ui_destroy() {
   uifont_unload();
   win_main_destroy();
+#ifdef CA_DESKTOP
   modal_destroy();
+#endif
 #ifdef WITH_STEAM
   SteamShutdown();
 #endif
@@ -288,8 +303,38 @@ static void frame_control_vsync() {
   PollInputEvents();
 }
 
+#ifdef CA_WEB
+/* On web the browser paces us via requestAnimationFrame, so there is nothing
+ * to wait/spin on: just swap, measure the elapsed time and poll input.
+ * raylib is built with SUPPORT_CUSTOM_FRAME_CONTROL, so EndDrawing() does
+ * none of this for us. */
+static void frame_control_web() {
+  SwapScreenBuffer();
+  double current_time = GetTime();
+  double delta_time = current_time - C.previous_time;
+  /* rAF stops while the tab is hidden; don't let the sim jump on return. */
+  if (delta_time > 0.1) delta_time = 0.1;
+  C.frame_time = delta_time;
+  C.previous_time = current_time;
+  PollInputEvents();
+}
+static void update_draw_frame_web(void) {
+  if (ui_get_should_close()) {
+    // save_level_progress();
+    return;
+  }
+  if (C.lua_error) {
+    ui_error_mode();
+  } else {
+    ui_update_frame();
+  }
+  frame_control_web();
+}
+#endif
+
 void ui_run() {
   C.previous_time = GetTime();  // Previous time measure
+#ifndef CA_WEB
   while (true) {
     if (ui_get_should_close()) {
       // save_level_progress();
@@ -306,6 +351,9 @@ void ui_run() {
     // frame_control_default();
     // frame_control_vsync();
   }
+#else
+  emscripten_set_main_loop(update_draw_frame_web, 0, 1);
+#endif
 }
 
 void ui_update_frame() {

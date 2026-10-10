@@ -8,6 +8,7 @@
 #define NOUSER
 #define NOMINMAX
 #endif
+
 #include "tinycthread.h"
 
 static struct {

@@ -33,13 +33,6 @@
 
 typedef struct {
   Shader comb_shader;
-  int comb_loc_dst_tex;
-  // int comb_loc_off;
-  int comb_loc_src_size;
-  int comb_loc_dst_size;
-  // int comb_loc_roi_size;
-  int comb_loc_src_off;
-  int comb_loc_dst_off;
   Shader fill_shader;
   Shader rotate_shader;
   int rotate_loc_ccw;

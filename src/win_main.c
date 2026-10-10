@@ -19,7 +19,6 @@
 #include "log.h"
 #include "lua_level.h"
 #include "math.h"
-#include "modal.h"
 #include "msg.h"
 #include "paint.h"
 #include "paths.h"
@@ -44,6 +43,10 @@
 #include "win_wiki.h"
 #include "wnumber.h"
 #include "wtext.h"
+
+#ifdef CA_DESKTOP
+#include "modal.h"
+#endif
 
 static struct {
   Layout* layout;
@@ -998,6 +1001,7 @@ static void on_open_click() {
 static void on_new_click() { win_main_ask_for_save_and_proceed(main_new_file); }
 
 static int on_save_click(bool saveas) {
+#ifdef CA_DESKTOP
   if (C.fname == NULL || saveas) {
     on_modal_before_open();
     ModalResult mr = modal_save_file(NULL, NULL);
@@ -1030,6 +1034,7 @@ static int on_save_click(bool saveas) {
     on_post_image_save(saveas);
     return 0;
   }
+#endif
   return 0;
 }
 
@@ -1229,6 +1234,7 @@ void main_update_controls() {
 }
 
 void main_open_selection() {
+#ifdef CA_DESKTOP
   on_modal_before_open();
   ModalResult mr = modal_open_file(NULL);
   on_modal_after_open();
@@ -1241,9 +1247,12 @@ void main_open_selection() {
     snprintf(txt, sizeof(txt), T.main_msg_error, mr.errMsg);
     msg_add(txt, MSG_DURATION);
   }
+#endif
 }
 
 void main_save_selection() {
+#ifdef CA_DESKTOP
+  on_modal_before_open();
   on_modal_before_open();
   ModalResult mr = modal_save_file(NULL, NULL);
   on_modal_after_open();
@@ -1267,6 +1276,7 @@ void main_save_selection() {
     msg_add(T.main_sel_saved, MSG_DURATION);
     return;
   }
+#endif
 }
 
 static void toggle_simu_pause() { C.paused = !C.paused; }
@@ -1987,6 +1997,7 @@ void win_main_load_image_from_path(const char* path) {
 }
 
 void main_open_file_modal() {
+#ifdef CA_DESKTOP
   on_modal_before_open();
   ModalResult mr = modal_open_file(NULL);
   on_modal_after_open();
@@ -1999,6 +2010,7 @@ void main_open_file_modal() {
     snprintf(txt, sizeof(txt), "ERROR: %s\n", mr.errMsg);
     msg_add(txt, MSG_DURATION);
   }
+#endif
 }
 
 static void on_dialog_close(int r) {

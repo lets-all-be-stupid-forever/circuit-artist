@@ -16,7 +16,6 @@ uniform vec4 colDiffuse;
 //  16k max. 32x32 = 1k
 
 uniform sampler2D pat_tex;
-uniform ivec2 pat_tex_size;
 uniform ivec2 pattern0;
 uniform int nl;
 uniform int al;
@@ -290,7 +289,7 @@ vec4 via_formula(vec2 pos, vec4 c, bool up) {
 }
 
  vec4 makeoff(vec4 c) {
-   if (c.a == 0) return c;
+   if (c.a == 0.0) return c;
    //c.rgb = 0.3 * c.rgb;
    //c.a = 1.0;
 c.rgb = 0.333 * c.rgb;
@@ -386,7 +385,7 @@ vec4 get_pixel(vec2 pos, sampler2D layer, int l) {
     // p = d * p;
     // }
   vec4 pout = p*img_color1;
-  if (p.a > 0 && p.a < 0.8) p.a = 0.5;
+  if (p.a > 0.0 && p.a < 0.8) p.a = 0.5;
   if (layer_hidden[l] != 0) pout = vec4(0);
   if (a_via_down || a_via_up) {
     // TODO sample from via texture or something
@@ -410,8 +409,8 @@ vec4 drawlayer(int l) {
   }
   vec4 c1;
   vec2 pos = fragTexCoord;
-  float dx = (al-l) * 0.125 / img_size.x;
-  float dy = (al-l) * 0.125 / img_size.y; 
+  float dx = float(al-l) * 0.125 / float(img_size.x);
+  float dy = float(al-l) * 0.125 / float(img_size.y); 
   //  pos = pos + vec2(dx, dy);
 
   if (l == 0) c1 = get_pixel(pos, layer0, l);
@@ -502,13 +501,13 @@ void main()
   if (al == 2) c2.a *= 1.0;
   if (al == 3) c3.a *= 1.0;
 
-  if (c0.a > 0 && layer_mode[0] != -2) c = blend2(c0, c, 0);
+  if (c0.a > 0.0 && layer_mode[0] != -2) c = blend2(c0, c, 0);
   if (al >0) c = blend(bg, c);
-  if (c1.a > 0 && layer_mode[1] != -2) c = blend2(c1, c, 1);
+  if (c1.a > 0.0 && layer_mode[1] != -2) c = blend2(c1, c, 1);
   if (al >1) c = blend(bg, c);
-  if (c2.a > 0 && layer_mode[2] != -2) c = blend2(c2, c, 2);
+  if (c2.a > 0.0 && layer_mode[2] != -2) c = blend2(c2, c, 2);
   if (al >2) c = blend(bg, c);
-  if (c3.a > 0 && layer_mode[3] != -2) c = blend2(c3, c, 3);
+  if (c3.a > 0.0 && layer_mode[3] != -2) c = blend2(c3, c, 3);
   c = blend2(p_via, c, 0);
   finalColor = c;
 }

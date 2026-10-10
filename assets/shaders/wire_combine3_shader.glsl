@@ -78,8 +78,15 @@ vec4 getcirc(float f, int v, vec4 c_on, vec4 c_off) {
   if (error_mode == 1) {
     // Error mode: red for v=2 (errors), grayscale_darker for v=0 (off), background stays background
     if (c_on.a == 0.0) {
-      // Background pixel - keep it transparent
-      fc = c_on;
+      /* Background pixel. It has to be written OPAQUE: normal mode never gets
+       * here (the p == 0 early-out in main() catches background first and
+       * writes alpha 1), but error mode disables that early-out, so this is
+       * the only thing painting the backdrop. Leaving alpha 0 makes the
+       * backdrop whatever tc was cleared to, which is bg_color with a = 0.
+       * It looked fine below zoom 1 only because project_shader's msample()
+       * rewrites transparent samples to opaque black; at zoom >= 1 it takes
+       * the plain texture() path and does no such repair. */
+      fc = vec4(c_on.rgb, 1.0);
     } else if (v == 2 || v == 3) {
       // Error state - animated red
       fc = ((utime+1.0)*0.5*0.6 + 0.4) * vec4(1.0, 0.0, 0.0, 1.0);

@@ -807,17 +807,9 @@ void texture_combine(RenderTexture2D src, RectangleInt r, RenderTexture2D* dst,
   rlSetBlendFactors(RL_ONE, RL_ZERO, RL_FUNC_ADD);
   BeginBlendMode(BLEND_CUSTOM);
   begin_shader(comb);
-  int src_size[2] = {src.texture.width, src.texture.height};
-  int dst_size[2] = {dst->texture.width, dst->texture.height};
-  // int roi_size[2] = {r.width, r.height};
-  int src_off[2] = {r.x, r.y};
-  int dst_off[2] = {offset.x, offset.y};
-  set_shader_tex(comb, dst_tex, dst->texture);
-  set_shader_ivec2(comb, src_size, &src_size);
-  set_shader_ivec2(comb, dst_size, &dst_size);
-  // set_shader_ivec2(comb, roi_size, &roi_size);
-  set_shader_ivec2(comb, src_off, &src_off);
-  set_shader_ivec2(comb, dst_off, &dst_off);
+  /* No dst sampler: the shader discards instead of reading back, so `dst` is
+   * only ever the render target. Binding it as a texture here as well made the
+   * draw a no-op under WebGL's feedback-loop rule. */
   DrawTexturePro(src.texture, source, target, (Vector2){.x = 0, .y = 0}, 0.0f,
                  WHITE);
   end_shader();
@@ -1405,7 +1397,6 @@ void gaussian(int dir, Texture2D in, RenderTexture2D out) {
   begin_shader(gaussian);
   int size[] = {in.width, in.height};
   set_shader_ivec2(gaussian, size, &size);
-  set_shader_int(gaussian, size, &size);
   set_shader_int(gaussian, dir, &dir);
   SetTextureWrap(in, TEXTURE_WRAP_CLAMP);
   draw_stretched(in, out, WHITE);

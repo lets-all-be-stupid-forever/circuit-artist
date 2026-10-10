@@ -7,22 +7,22 @@
 #include <string.h>
 
 #include "cam2d.h"
+#include "font.h"
 #include "img.h"
+#include "lua_level.h"
 #include "raylib.h"
 #include "shaders.h"
 #include "sim.h"
 #include "sound.h"
 #include "stdio.h"
 #include "tex.h"
+#include "uifont.h"
 #include "utils.h"
 
 typedef enum {
   MODE_EMPTY,
-  MODE_LOADING,
   MODE_LOAD_ERROR,
-  MODE_READY,
   MODE_SIM_ERROR,
-  MODE_COMPILING,
   MODE_SIMU,
 } PlayerMode;
 
@@ -33,6 +33,10 @@ typedef enum {
 /* Time-travel clock sensitivity: ticks per degree of rotation, scaled by tps.
  */
 #define CLOCK_SENSITIVITY 0.003
+#define PAD_TOP 200
+#define PAD_BOT 50
+#define PAD_LEFT 20
+#define PAD_RIGHT 20
 
 // States:
 //   Empty
@@ -78,16 +82,13 @@ static struct {
   double previous_time;
   double frame_time;
   RenderTexture2D tgt;
+  Rectangle tgt_rect;
+  bool sim_loaded;
 } C = {0};
 
 #if defined(PLATFORM_WEB)
 EMSCRIPTEN_KEEPALIVE int ca_get_tick(void) { return C.sim.state.cur_tick; }
 
-/* Pause/resume from the HTML overlay. This is the same flag the K key toggles
- * in update_time_controls(), so the two stay interchangeable. Returns the new
- * state so the caller can relabel its button without a second call.
- * Safe to call from a DOM handler: those run between frames, never inside
- * update_draw_frame(), so nothing can observe a half-applied change. */
 EMSCRIPTEN_KEEPALIVE int ca_toggle_pause(void) {
   C.paused = !C.paused;
   return C.paused ? 1 : 0;
@@ -96,11 +97,29 @@ EMSCRIPTEN_KEEPALIVE int ca_toggle_pause(void) {
 EMSCRIPTEN_KEEPALIVE int ca_is_paused(void) { return C.paused ? 1 : 0; }
 #endif
 
+static void update_layout() {
+  int sw = GetScreenWidth();
+  int sh = GetScreenHeight();
+  int x = PAD_LEFT;
+  int y = PAD_TOP;
+  int w = sw - PAD_LEFT - PAD_RIGHT;
+  int h = sh - PAD_TOP - PAD_BOT;
+  C.tgt_rect = (Rectangle){x, y, w, h};
+  C.viewport = (RecI){
+      C.tgt_rect.x,
+      C.tgt_rect.y,
+      C.tgt_rect.width,
+      C.tgt_rect.height,
+  };
+}
+
+static void player_center_camera() {
+  C.cam_idx = cam2d_find_zoom_to_fit(C.img_size, C.viewport);
+  C.cam.sp = CAM2D_ZOOM_LUT[C.cam_idx];
+  cam2d_center(&C.cam, C.viewport, C.img_size);
+}
+
 int compile_and_load(Image img) {
-  /* Everything downstream reads pixels as Color*, and get_pixels() asserts on
-   * it, but raylib keeps an alpha-less PNG as R8G8B8 -- 3 bytes per pixel, not
-   * 4. Every bundled asset happens to be RGBA so this never came up; a PNG
-   * handed in from JS is whatever the author saved. */
   if (img.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
     ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
   }
@@ -117,15 +136,15 @@ int compile_and_load(Image img) {
   C.img_size = (v2i){C.buffer[0].width, C.buffer[0].height};
   C.cam_idx = 7;
   C.cam.sp = CAM2D_ZOOM_LUT[C.cam_idx];
-  C.viewport = (RecI){0};
-  sim_init(&C.sim, (SimParams){.warmup_cycles = 0,
+  player_center_camera();
+  sim_init(&C.sim, (SimParams){.warmup_cycles = 1,
                                .nl = C.nl,
                                .img = C.buffer,
                                .layers = C.t_buffer,
                                .api = &C.api});
   sim_compile(&C.sim);
   Status s = sim_post_compile(&C.sim);
-
+  C.sim_loaded = true;
   C.hsim = wrap_sim(&C.sim);
   C.simu_target_steps = 0;
   C.pix_toggle = -1;
@@ -145,21 +164,30 @@ int compile_and_load(Image img) {
   }
   return 0;
 }
-
-static void stop_simulation() {}
+static void unload_sim() {
+  if (C.sim_loaded) {
+    hsim_destroy(&C.hsim);
+    sim_destroy(&C.sim);
+    C.sim_loaded = false;
+  }
+}
 
 static void unload_image() {
-  // TODO: Stop sim if need.
-  // TODO: Unload all stuff...
+  unload_sim();
+  for (int i = 0; i < MAX_LAYERS; i++) {
+    if (C.buffer[i].width > 0) {
+      UnloadImage(C.buffer[i]);
+      UnloadRenderTexture(C.t_buffer[i]);
+    }
+    C.buffer[i] = (Image){0};
+    C.t_buffer[i] = (RenderTexture2D){0};
+  }
   C.mode = MODE_EMPTY;
 }
 
 static void load_from_local_image(const char* path) {
   unload_image();
   Image img = LoadImage(path);
-  /* raylib reports failure by handing back a zeroed Image; decoding that walks
-   * a NULL pixel buffer. Mattered less when the path was a literal, but JS
-   * picks it now. */
   if (img.data == NULL) {
     fprintf(stderr, "could not load image: %s\n", path);
     C.mode = MODE_LOAD_ERROR;
@@ -168,10 +196,6 @@ static void load_from_local_image(const char* path) {
   compile_and_load(img);
 }
 
-/* Same thing from an encoded PNG already in memory, so a caller that obtained
- * the bytes some other way (an HTTP fetch, a file drop) doesn't have to invent
- * a file for them. raylib decodes straight from the buffer; ".png" only tells
- * it which decoder to use, it is not a filename. */
 static void load_from_png_bytes(const unsigned char* data, int len) {
   unload_image();
   Image img = LoadImageFromMemory(".png", data, len);
@@ -198,15 +222,7 @@ static void consume_pending_load(void) {
 }
 
 #if defined(PLATFORM_WEB)
-/* Let JS choose the circuit. `path` is a MEMFS path, so it addresses the
- * assets/ tree baked in by --preload-file (e.g. "/assets/example2.png").
- *
- * This only records the request: the load tears down the sim and creates GL
- * textures, and a DOM handler fires between frames -- outside the rAF callback
- * and outside Begin/EndDrawing. Deferring to the top of the next frame keeps
- * that work where the rest of it already happens, the same way C.pix_toggle
- * defers a wire toggle into player_update_simu(). Poll ca_get_mode_name() for
- * the result. */
+
 EMSCRIPTEN_KEEPALIVE void ca_load_image(const char* path) {
   free(C.pending_png); /* a queued-but-unconsumed PNG loses to this call */
   C.pending_png = NULL;
@@ -215,10 +231,6 @@ EMSCRIPTEN_KEEPALIVE void ca_load_image(const char* path) {
   C.pending_load = true;
 }
 
-/* Hand over an encoded PNG from JS -- no MEMFS detour needed. `data` points at
- * a buffer JS allocated in the wasm heap; we copy out of it so JS stays free to
- * free it the moment this returns, and the copy survives until the next frame
- * decodes it. */
 EMSCRIPTEN_KEEPALIVE void ca_load_png(const unsigned char* data, int len) {
   free(C.pending_png);
   C.pending_png = malloc(len);
@@ -239,16 +251,10 @@ EMSCRIPTEN_KEEPALIVE const char* ca_get_mode_name(void) {
   switch (C.mode) {
     case MODE_EMPTY:
       return "empty";
-    case MODE_LOADING:
-      return "loading";
     case MODE_LOAD_ERROR:
       return "load_error";
-    case MODE_READY:
-      return "ready";
     case MODE_SIM_ERROR:
       return "sim_error";
-    case MODE_COMPILING:
-      return "compiling";
     case MODE_SIMU:
       return "simu";
   }
@@ -344,21 +350,20 @@ static void ensure_camera_bounds() {
   cam2d_ensure_bounds(&C.cam, C.img_size, C.viewport, (v2i){0, 0});
 }
 
-static void player_center_camera() {
-  C.cam_idx = cam2d_find_zoom_to_fit(C.img_size, C.viewport);
-  C.cam.sp = CAM2D_ZOOM_LUT[C.cam_idx];
-  cam2d_center(&C.cam, C.viewport, C.img_size);
-}
-
 /* Keeps the viewport in sync with the target size; recenters on first use. */
-static void player_set_viewport(int w, int h) {
-  bool first = (C.viewport.width == 0);
-  C.viewport = (RecI){0, 0, w, h};
-  if (first) {
-    player_center_camera();
-  } else {
-    ensure_camera_bounds();
-  }
+// static void player_set_viewport(int w, int h) {
+//   bool first = (C.viewport.width == 0);
+//   C.viewport = (RecI){0, 0, w, h};
+//   if (first) {
+//     player_center_camera();
+//   } else {
+//     ensure_camera_bounds();
+//   }
+// }
+
+static bool is_mouse_on_canvas() {
+  Vector2 mouse = GetMousePosition();
+  return CheckCollisionPointRec(mouse, C.tgt_rect);
 }
 
 static void update_camera(double frame_time) {
@@ -383,7 +388,7 @@ static void update_camera(double frame_time) {
   }
 
   /* Middle button drag pan */
-  if (IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
+  if (is_mouse_on_canvas() && IsMouseButtonDown(MOUSE_MIDDLE_BUTTON)) {
     v2 d = GetMouseDelta();
     C.cam.off.x += d.x;
     C.cam.off.y += d.y;
@@ -411,6 +416,7 @@ static void update_camera(double frame_time) {
 static void update_wire_toggle() {
   C.hover_pix = -1;
   if (C.time_open) return;
+  if (!is_mouse_on_canvas()) return;
   v2 mouse = GetMousePosition();
   v2 fpix = cam2d_screen_to_image(C.cam, C.viewport, mouse);
   int px = (int)floorf(fpix.x);
@@ -437,12 +443,15 @@ static void update_time_controls() {
 
   /* Right button: time-travel clock. Dragging around the viewport center
    * scrubs the simulation forward/backward. */
-  if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+  if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && is_mouse_on_canvas()) {
     C.time_open = true;
     C.time_ref = C.simu_target_steps;
     C.time_pos_ref = GetMousePosition();
     C.time_c = (v2){C.viewport.x + C.viewport.width / 2.0,
                     C.viewport.y + C.viewport.height / 2.0};
+  }
+  if (C.time_open && IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+    C.time_open = false;
   }
   if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
     C.time_open = false;
@@ -453,6 +462,9 @@ void player_update(double frame_time) {
   if (C.viewport.width == 0) return; /* No target yet */
   update_camera(frame_time);
   update_time_controls();
+
+  bool mouse_on_canvas = is_mouse_on_canvas();
+
   if (C.mode == MODE_SIMU) update_wire_toggle();
 
   SetMouseCursor(C.hover_pix != -1 ? MOUSE_CURSOR_POINTING_HAND
@@ -503,7 +515,7 @@ static void draw_hud() {
 void player_render(RenderTexture2D* target) {
   int tw = target->texture.width;
   int th = target->texture.height;
-  player_set_viewport(tw, th);
+  // player_set_viewport(tw, th);
 
   float slack_steps = get_simu_slack_steps();
   float frame_steps = get_simu_dt() * 1.0 / 60.0;
@@ -597,8 +609,8 @@ static void _draw_rt_on_screen(RenderTexture2D rt, Vector2 pos) {
 }
 
 static void check_size(RenderTexture2D* t) {
-  int sw = GetScreenWidth();
-  int sh = GetScreenHeight();
+  int sw = C.tgt_rect.width;
+  int sh = C.tgt_rect.height;
   // int sw = GetRenderWidth();
   // int sh = GetRenderHeight();
   int tw = t->texture.width;
@@ -609,16 +621,70 @@ static void check_size(RenderTexture2D* t) {
   }
 }
 
+/* An image dragged onto the window.
+ *
+ * No JS needed: emscripten's GLFW already listens for drop/dragover on the
+ * canvas, writes each dropped file into MEMFS (/.glfw_dropped_files/<name>) and
+ * only then invokes the drop callback, which raylib's web backend wires into
+ * the same IsFileDropped() API it uses on desktop. So the path handed to us is
+ * a readable file on both platforms and this needs no #ifdef.
+ *
+ * Goes through the pending-load slot instead of loading inline, so the sim
+ * teardown and GL texture rebuild happen at the same point in the frame as
+ * every other load (see ca_load_image). */
+static void check_dropped_files(void) {
+  if (!IsFileDropped()) return;
+  FilePathList dropped = LoadDroppedFiles();
+  if (dropped.count > 0) {
+    /* Last one wins when several are dropped together. */
+    const char* path = dropped.paths[dropped.count - 1];
+    /* Only the formats this raylib is actually built with; anything else would
+     * come back as a zeroed Image and drop us into MODE_LOAD_ERROR, throwing
+     * away the circuit already on screen over a stray drop. */
+    if (IsFileExtension(path, ".png;.bmp;.gif;.qoi")) {
+      free(C.pending_png); /* a queued-but-unconsumed PNG loses to this */
+      C.pending_png = NULL;
+      C.pending_png_len = 0;
+      snprintf(C.pending_path, sizeof(C.pending_path), "%s", path);
+      C.pending_load = true;
+    } else {
+      fprintf(stderr, "ignoring dropped file (unsupported type): %s\n", path);
+    }
+  }
+  /* Mandatory: LoadDroppedFiles() returns raylib's internal arrays without
+   * clearing the count, so skipping this leaks and leaves IsFileDropped() true
+   * forever. It also frees the paths, hence the copy above. */
+  UnloadDroppedFiles(dropped);
+}
+
+static void render_load_error(RenderTexture2D* target) {
+  SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+  BeginTextureMode(*target);
+  ClearBackground(RED);
+  Color tc = CA_WHITE;
+  Color bg = BLACK;
+  uifont_draw_texture_outlined("Error: File is not a valid PNG image.", 10, 10,
+                               tc, bg);
+  EndTextureMode();
+}
+
 static void update_draw_frame(void) {
+  update_layout();
+  check_dropped_files();
   consume_pending_load();
   check_size(&C.tgt);
   player_update(C.frame_time);
   if (C.mode == MODE_SIMU || C.mode == MODE_SIM_ERROR) {
     player_render(&C.tgt);
   }
+  if (C.mode == MODE_LOAD_ERROR) {
+    render_load_error(&C.tgt);
+  }
   BeginDrawing();
   ClearBackground(BLACK); /* same as the game behind its sim target */
-  _draw_rt_on_screen(C.tgt, (Vector2){0});
+  draw_default_tiled_screen();
+  _draw_rt_on_screen(C.tgt, (Vector2){C.tgt_rect.x, C.tgt_rect.y});
+  draw_default_tiled_frame(C.tgt_rect);
   if (C.mode == MODE_EMPTY) {
     DrawText("EMPTY", 40, 40, 20, WHITE);
   }
@@ -642,11 +708,16 @@ int main(int argc, char** argv) {
   SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 #endif
   InitWindow(1000, 800, "player");
+  init_common_globals();
+  uifont_load();
   player_init();
   C.mode = MODE_EMPTY;
-  // load_from_local_image("../assets/example2.png");
   C.tgt = LoadRenderTexture(800, 800);
   C.previous_time = GetTime();
+
+  init_game_registry();
+  LevelDef* ldef = get_level_by_id("official:basics");
+  lua_level_create(&C.api, ldef);
 
 #if defined(PLATFORM_WEB)
   emscripten_set_main_loop(update_draw_frame, 0, 1);

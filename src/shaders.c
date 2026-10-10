@@ -37,13 +37,6 @@ void shaders_init() {
   SHADER_LOC(rotate, ccw);
 
   SHADER_LOAD(comb);
-  SHADER_LOC(comb, dst_tex);
-  // SHADER_LOC(comb, off);
-  SHADER_LOC(comb, src_size);
-  SHADER_LOC(comb, dst_size);
-  //   SHADER_LOC(comb, roi_size);
-  SHADER_LOC(comb, src_off);
-  SHADER_LOC(comb, dst_off);
 
   SHADER_LOAD(project);
   SHADER_LOC(project, sp);

@@ -17,7 +17,6 @@
 #include "toc.h"
 #include "ui.h"
 #include "utils.h"
-#include "win_main.h"
 
 #define KEY_ALWAYS_ON_TOP "always_on_top"
 #define KEY_SIMU_NEON "simu_neon"
