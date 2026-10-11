@@ -45,6 +45,9 @@
 #define rect_sandbox ((Rectangle){80, 96, 13, 13})
 #define rect_full_rewind ((Rectangle){96, 128, 13, 13})
 
+#define rect_sound_on ((Rectangle){96, 144, 13, 13})
+#define rect_sound_off ((Rectangle){96, 144 + 16, 13, 13})
+
 // Logo of CircuitArtist (for About page)
 #define rect_logo ((Rectangle){160, 80, 158, 87})
 #define rect_logo_version ((Rectangle){160, 80, 158, 67})

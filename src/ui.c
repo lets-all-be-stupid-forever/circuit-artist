@@ -356,6 +356,12 @@ void ui_run() {
 #endif
 }
 
+void ui_reset_hit_count() {
+  // Resets the hit count for the frame.
+  C.hit_count = 0;
+  profiler_reset();
+}
+
 void ui_update_frame() {
   // X button in the UI
   if (WindowShouldClose()) {
@@ -371,10 +377,8 @@ void ui_update_frame() {
   SteamRunFrame();
 #endif
 
-  // Resets the hit count for the frame.
-  C.hit_count = 0;
-  profiler_reset();
-
+  ui_reset_hit_count();
+  widgets_set_sound(is_paint_sound_on());
   // *** Update Step ***
   // Assigining here because the variable can change during the update.
   C.cursor = MOUSE_ARROW;

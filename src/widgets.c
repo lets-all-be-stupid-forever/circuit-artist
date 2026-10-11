@@ -9,6 +9,7 @@
 #include "assert.h"
 #include "colors.h"
 #include "sound.h"
+#include "stdbool.h"
 #include "ui.h"
 #include "uifont.h"
 #include "utils.h"
@@ -56,9 +57,13 @@ void draw_frame(Rectangle r) {
 
 static struct {
   Texture ui; /* ui sprites */
+  bool sound;
 } C = {0};
 
-void widgets_init() { C.ui = ui_get_sprites(); }
+void widgets_init() {
+  C.ui = ui_get_sprites();
+  C.sound = true;
+}
 
 bool rect_hover(Rectangle hitbox, Vector2 pos) {
   return CheckCollisionPointRec(pos, hitbox);
@@ -407,7 +412,7 @@ bool btn_update(Btn* b) {
     b->pressed = false;
   }
   if (ret) {
-    ui_sound_click();
+    if (C.sound) play_sound_click();
   }
   /* The button might miss the release event if the window gets closed for
    * example.*/
@@ -1798,3 +1803,5 @@ void btn_draw_checkbox_text(Btn* b, const char* txt) {
 bool btn_right_click(Btn* b) {
   return IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && b->hover && !b->disabled;
 }
+
+void widgets_set_sound(bool sound) { C.sound = sound; }

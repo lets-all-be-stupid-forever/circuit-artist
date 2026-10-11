@@ -77,15 +77,7 @@ canvas, img {
   </head>
   <body>
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
-    <div id="ui">
-      <div class="panel">
-        <select id="circuit"></select>
-        <button id="pause">Pause</button>
-        <button id="fetch">Load from URL</button>
-        <div>Tick: <span id="tick">0</span></div>
-        <div>State: <span id="mode">-</span></div>
-      </div>
-    </div>
+
     <script type="text/javascript">
       var Module = {
         canvas: document.getElementById('canvas'),
@@ -98,12 +90,6 @@ canvas, img {
           const loadImage   = Module.cwrap('ca_load_image', null, ['string']);
           const loadPng     = Module.cwrap('ca_load_png', null, ['number', 'number']);
           const getMode     = Module.cwrap('ca_get_mode_name', 'string', []);
-
-          const tickEl = document.getElementById('tick');
-          const modeEl = document.getElementById('mode');
-          const btn = document.getElementById('pause');
-          const sel = document.getElementById('circuit');
-          const fetchBtn = document.getElementById('fetch');
 
           //const REMOTE_PNG = 'https://i.imgur.com/rolTNUw.png';
           const REMOTE_PNG = 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Oryctolagus_cuniculus_-_euqirneto_-_419737670_%28cropped%29.jpeg?utm_source=en.wikipedia.org&utm_campaign=index&utm_content=original';
@@ -136,20 +122,19 @@ canvas, img {
             const res = await fetch(url);
             if (!res.ok) throw new Error('HTTP ' + res.status);
             loadPngBytes(new Uint8Array(await res.arrayBuffer()));
-            sel.selectedIndex = -1;  /* no longer showing a bundled circuit */
           };
 
-          fetchBtn.addEventListener('click', async () => {
-            fetchBtn.disabled = true;
-            try {
-              await loadFromUrl(REMOTE_PNG);
-            } catch (e) {
-              jsError = 'fetch failed: ' + e.message;
-            } finally {
-              fetchBtn.disabled = false;
-              fetchBtn.blur();
-            }
-          });
+          // fetchBtn.addEventListener('click', async () => {
+          //   fetchBtn.disabled = true;
+          //   try {
+          //     await loadFromUrl(REMOTE_PNG);
+          //   } catch (e) {
+          //     jsError = 'fetch failed: ' + e.message;
+          //   } finally {
+          //     fetchBtn.disabled = false;
+          //     fetchBtn.blur();
+          //   }
+          // });
 
           /* Drag an image onto the page to load it.
 
@@ -175,68 +160,11 @@ canvas, img {
             jsError = '';
             try {
               loadPngBytes(new Uint8Array(await file.arrayBuffer()));
-              sel.selectedIndex = -1;  /* no longer a bundled circuit */
             } catch (err) {
               jsError = 'drop failed: ' + err.message;
             }
           });
 
-          /* List the .png files in the preloaded MEMFS tree, so the picker
-             reflects what --preload-file actually baked in instead of a list
-             kept in sync by hand. Only the dirs that hold circuits: a full
-             walk of assets/ turns up ~60 files, nearly all achievement badges,
-             toolbar icons and screenshots. */
-          const CIRCUIT_DIRS = ['/assets', '/assets/default_blueprints',
-                                '/assets/circuits'];
-          for (const dir of CIRCUIT_DIRS) {
-            let names;
-            try {
-              names = Module.FS.readdir(dir);
-            } catch (e) {
-              continue;  /* dir not in this bundle */
-            }
-            for (const name of names.sort()) {
-              if (!name.endsWith('.png')) continue;
-              const path = dir + '/' + name;
-              sel.add(new Option(path.replace('/assets/', ''), path));
-            }
-          }
-
-          sel.addEventListener('change', () => {
-            jsError = '';
-            loadImage(sel.value);
-            sel.blur();
-          });
-
-          const setLabel = (paused) => {
-            btn.textContent = paused ? 'Resume' : 'Pause';
-          };
-
-          btn.addEventListener('click', () => {
-            /* ca_toggle_pause returns the new state, so the round trip into C
-               and back is what drives the label -- no state kept in JS. */
-            setLabel(togglePause());
-            /* Drop focus, otherwise the button keeps swallowing the keys that
-               GLFW wants on the canvas (K to pause, WASD to pan). */
-            btn.blur();
-          });
-
-          setLabel(isPaused());
-          setInterval(() => {
-            tickEl.textContent = getTick();
-            modeEl.textContent = jsError || getMode();
-            /* Re-read rather than trust the last click: K on the canvas flips
-               the same flag, and the label would otherwise go stale. */
-            setLabel(isPaused());
-          }, 100);
-
-          /* ?img=<url-or-asset> chooses what to load at startup, so the
-             player can be handed round as a link.
-
-             An absolute http(s) URL (or a protocol-relative //host/...) is
-             fetched over the network; anything else is read as a path into the
-             preloaded assets, matching the picker's own values, so both
-             ?img=example2.png and ?img=/assets/circuits/help.png work. */
           const wanted = new URLSearchParams(location.search).get('img');
           if (wanted && /^(https?:)?\/\//i.test(wanted)) {
             loadFromUrl(wanted).catch((e) => {
@@ -248,16 +176,13 @@ canvas, img {
           } else if (wanted) {
             const path = wanted.startsWith('/') ? wanted : '/assets/' + wanted;
             loadImage(path);
-            /* Reflect it in the picker when it is one of the bundled files;
-               findIndex gives -1 otherwise, which blanks the select. */
-            sel.selectedIndex =
-                Array.from(sel.options).findIndex((o) => o.value === path);
-          } else if (sel.options.length) {
+          } else {
             /* No ?img= at all: main() leaves MODE_EMPTY, so pick the first
                entry -- the JS side choosing, same as a change event would. */
-            loadImage(sel.value);
+            loadImage('/assets/example2.png');
           }
         }
+
       };
     </script>
     {{{ SCRIPT }}}

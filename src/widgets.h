@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 void widgets_init();
+void widgets_set_sound(bool sound);
 
 // Scroll widget.
 typedef struct {

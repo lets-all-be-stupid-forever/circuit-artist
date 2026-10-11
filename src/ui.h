@@ -64,6 +64,7 @@ double ui_get_frame_time();
 void ui_handle_lua_error(lua_State* L);
 bool ui_is_demo();
 void ui_sound_click();
+void ui_reset_hit_count();
 
 #if defined(__cplusplus)
 }
