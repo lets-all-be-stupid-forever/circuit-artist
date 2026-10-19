@@ -1,7 +1,7 @@
+#version 330
 /*
  * Just a constant shader to show  a depth map
  */
-#version 330
 
 // Input vertex attributes (from vertex shader)
 in vec2 fragTexCoord;

@@ -31,10 +31,3 @@ rsync -a --delete --delete-excluded \
 ui_font="font/ark-pixel-12px-proportional-latin.bdf"
 mkdir -p "$dst_dir/$(dirname "$ui_font")"
 perl "$here/tools/subset_bdf.pl" "$src_dir/$ui_font" "$dst_dir/$ui_font"
-
-# GLSL ES requires "#version" to be the literal first line of the file, but
-# some desktop sources have a leading blank line or comment before it. Strip
-# everything up to and including the "#version 330" line so the ES header
-# always lands on line 1.
-perl -0777 -pi -e 's/\A.*?#version 330\s*\n/#version 300 es\nprecision mediump float;\n/s' \
-  "$dst_dir"/shaders/*.glsl

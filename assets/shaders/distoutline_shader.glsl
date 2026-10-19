@@ -1,8 +1,8 @@
+#version 330
 /*
  * Given a distance to the edge, generates a transparency map with 0 on edge
  * and transparent elsewhre.
  */
-#version 330
 
 in vec2 fragTexCoord;
 uniform vec2 tsize;
