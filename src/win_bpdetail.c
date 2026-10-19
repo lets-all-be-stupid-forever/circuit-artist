@@ -185,6 +185,8 @@ static void run_main_action() {
 }
 
 void win_bpdetail_update() {
+  C.btn_copy.disabled = ui_is_demo();
+
   update_layout();
 
   bool is_local = C.bp->steam_id == 0;

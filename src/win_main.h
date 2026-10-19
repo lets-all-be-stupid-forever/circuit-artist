@@ -23,6 +23,7 @@ void win_main_ask_for_save_and_proceed(void (*next_action)());
 void win_main_paste_file(const char* fname, int rot);
 void win_main_set_line_sep(int n);
 void win_main_load_image_from_path(const char* path);
+void win_main_load_image_from_bytes(const unsigned char* data, int len);
 void win_main_load_blueprint(Blueprint* bp);
 bool win_main_custom_level_open_file();
 void win_main_start_simu();
@@ -35,5 +36,6 @@ Blueprint* win_main_get_editting_blueprint();
 void win_main_toggle_sidebar();
 void win_main_add_blueprint_as_solution();
 bool win_main_can_add_sol();
+bool win_main_can_load_image();
 
 #endif

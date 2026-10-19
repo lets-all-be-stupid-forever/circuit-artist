@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "common.h"
+#include "msg.h"
 #include "paths.h"
 #include "ui.h"
+#include "win_clipboard.h"
 
 #ifdef WIN32
 #define NOGDI   // Prevent GDI definitions that conflict with raylib
@@ -14,8 +17,29 @@
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 #endif
 
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
+
+#ifndef PLATFORM_WEB
+#define EMSCRIPTEN_KEEPALIVE
+#endif
+
+EMSCRIPTEN_KEEPALIVE bool ca_get_can_paste() {
+  return win_clipboard_can_paste();
+}
+
+EMSCRIPTEN_KEEPALIVE void ca_msg_add(const char* msg, int dt) {
+  return msg_add(msg, dt);
+}
+
+EMSCRIPTEN_KEEPALIVE void ca_load_png(const unsigned char* data, int len) {
+  win_clipboard_queue_paste(data, len);
+}
+
 int main(int argc, char** argv) {
   int show_console = 0;
+  register_args(argc, argv);
 
   // Parse command-line arguments
   for (int i = 1; i < argc; i++) {

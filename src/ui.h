@@ -25,6 +25,7 @@ typedef enum {
 
 // Available windows/screens
 typedef enum {
+  WINDOW_NONE,
   WINDOW_MAIN,
   WINDOW_ABOUT,
   WINDOW_TEXT,
@@ -32,6 +33,7 @@ typedef enum {
   WINDOW_MSG,
   WINDOW_DIALOG,
   WINDOW_WIKI,
+  WINDOW_CLIPBOARD,
   WINDOW_LOG,
   WINDOW_LEVEL,
   WINDOW_BLUEPRINT,
@@ -62,7 +64,6 @@ void ui_run();
 void ui_crash(const char* err);
 double ui_get_frame_time();
 void ui_handle_lua_error(lua_State* L);
-bool ui_is_demo();
 void ui_sound_click();
 void ui_reset_hit_count();
 

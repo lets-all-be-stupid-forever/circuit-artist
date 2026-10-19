@@ -550,15 +550,11 @@ void paint_init(Paint* ca) {
   *ca = (Paint){0};
   ca->xmode = true;
 
-  if (ui_is_demo()) {
-    ca->max_img_size = 64;
-  } else {
-    // Maximum image size is 8k.
-    // For images bigger than that, a dedicated exporter/reader is necessary
-    // (stb_image blocks at 8k by default)
-    ca->max_img_size = 1 * 8 * 1024;
-    // ca->max_img_size = 1024;
-  }
+  // Maximum image size is 8k.
+  // For images bigger than that, a dedicated exporter/reader is necessary
+  // (stb_image blocks at 8k by default)
+  ca->max_img_size = 1 * 8 * 1024;
+  // ca->max_img_size = 1024;
 
   ca->camIdx = 5;
   ca->cam.sp = ZOOM_LUT[ca->camIdx];
@@ -587,11 +583,6 @@ void paint_load_image(Paint* ca, Image img) {
   image_decode_layers(img, &nl, tmp);
   if (nl == 1) {
     tmp[0] = ensure_size_multiple_of(tmp[0], 8);
-  }
-  if (ui_is_demo()) {
-    for (int i = 0; i < nl; i++) {
-      image_ensure_max_size(&tmp[i], 64);
-    }
   }
   hist_set_buffer(&ca->h, nl, tmp);
   paint_reset_camera(ca);
@@ -846,9 +837,19 @@ static void paint_draw_tmp_tex(
   ix1 = maxi(0, mini(ix1, tImg.width));
   iy0 = maxi(0, mini(iy0, tImg.height));
   iy1 = maxi(0, mini(iy1, tImg.height));
+
+  Tex2D sel_tex = tSel;
+  Tex2D tool_tex = tTool;
+  if (sel_tex.id == 0) {
+    sel_tex.id = rlGetTextureIdDefault();
+  }
+  if (tool_tex.id == 0) {
+    tool_tex.id = rlGetTextureIdDefault();
+  }
+
   begin_shader(update);
-  set_shader_tex(update, sel, tSel);
-  set_shader_tex(update, tool, tTool);
+  set_shader_tex(update, sel, sel_tex);
+  set_shader_tex(update, tool, tool_tex);
   set_shader_ivec2(update, img_size, &img_size);
   set_shader_ivec2(update, sel_off, &sel_off);
   set_shader_ivec2(update, sel_size, &sel_size);
@@ -1015,6 +1016,10 @@ static void paint_combine_layers_onoff2(Paint* ca, RenderTexture2D target) {
 #define GRAYSCALE 2
 
   bool xmode = ca->xmode;
+  for (int l = 0; l < 5; l++) {
+    Texture2D def = {.id = rlGetTextureIdDefault(), .width = 1, .height = 1};
+    shader_tex(TextFormat("layer%d", l), def);
+  }
   for (int l = 0; l < nl; l++) {
     layer_hidden[l] = ca->hidden[l];
     layer_pat[l] = l;
@@ -1031,8 +1036,8 @@ static void paint_combine_layers_onoff2(Paint* ca, RenderTexture2D target) {
   shader_intv("layer_pat", &layer_pat[0], 4);
   shader_intv("layer_hidden", &layer_hidden[0], 4);
   shader_intv("layer_mode", &layer_mode[0], 4);
-  shader_intv("layer_rad", &layer_rad[0], 4);
-  shader_vec4v("layer_color", &layer_colors[0], 4);
+  // shader_intv("layer_rad", &layer_rad[0], 4);
+  // shader_vec4v("layer_color", &layer_colors[0], 4);
 
   int pat0[2] = {496, 384};
   shader_ivec2("pattern0", &pat0[0]);
@@ -1040,7 +1045,7 @@ static void paint_combine_layers_onoff2(Paint* ca, RenderTexture2D target) {
   Texture2D timg = ca->h.t_buffer[0].texture;
   int img_size[2] = {timg.width, timg.height};
   int tgt_size[2] = {target.texture.width, target.texture.height};
-  SetTextureFilter(timg, TEXTURE_FILTER_POINT);
+  // SetTextureFilter(timg, TEXTURE_FILTER_POINT);
   int mw = img_size[0];
   int mh = img_size[1];
   float cx = ca->cam.off.x;
@@ -1049,11 +1054,17 @@ static void paint_combine_layers_onoff2(Paint* ca, RenderTexture2D target) {
   shader_vec2("sp", &sp);
 
   shader_ivec2("img_size", &img_size[0]);
-  shader_ivec2("tgt_size", &tgt_size[0]);
+  // shader_ivec2("tgt_size", &tgt_size[0]);
   DrawTexturePro(tmp, (Rectangle){0, 0, (float)mw, (float)-mh},
                  (Rectangle){cx, cy, mw * cs, mh * cs}, (Vector2){0, 0}, 0,
                  WHITE);
   shader_unload();
+  for (int i = 0; i <= 4; i++) {
+    rlActiveTextureSlot(i);
+    rlDisableTexture();
+  }
+  rlActiveTextureSlot(0);
+
   EndTextureMode();
 }
 
@@ -1276,9 +1287,6 @@ void paint_render_texture(Paint* ca, Texture2D sidepanel,
 // Creates a new empty drawing buffer. (and throws away old one).
 void paint_new_buffer(Paint* ca) {
   int sz = 256;
-  if (ui_is_demo()) {
-    sz = 64;
-  }
   hist_new_buffer(&ca->h, sz, sz);
   paint_reset_camera(ca);
   ca->prev_layer = 0;
@@ -1387,9 +1395,9 @@ void paint_handle_wheel_zoom(Paint* ca) {
 }
 
 static void paint_paste_from_clipboard(Paint* ca) {
-#ifndef CA_WEB
   // If there's an image in the clipboard, uses that image instead (and save
   // it in internal clipboard)
+#ifndef CA_WEB
   Image system_clipboard_image = image_from_clipboard();
   if (system_clipboard_image.width > 0) {
     if (ca->clipboard_image.width > 0) {
@@ -1402,20 +1410,21 @@ static void paint_paste_from_clipboard(Paint* ca) {
     }
     ca->clipboard_image = system_clipboard_image;
   }
+#endif
   if (ca->clipboard_image.width > 0) {
     Vector2Int offset = paint_find_best_offset_for_clipboard(ca);
     Image tmp[20];
     int nl = -1;
     image_decode_layers(ca->clipboard_image, &nl, tmp);
     paint_paste_and_ensure_layer(ca, offset, nl, tmp);
+#ifndef CA_WEB
     UnloadImage(ca->clipboard_image);
     ca->clipboard_image = (Image){0};
-  }
 #endif
+  }
 }
 
 static void paint_copy_to_clipboard(Paint* ca) {
-#ifndef CA_WEB
   if (!paint_get_has_selection(ca)) {
     return;
   }
@@ -1427,6 +1436,7 @@ static void paint_copy_to_clipboard(Paint* ca) {
   ca->clipboard_offset = hist_get_sel_offset(&ca->h);
   ca->clipboard_image = hist_export_sel(&ca->h);
   // Copies the image in the clipboard as well
+#ifndef CA_WEB
   image_to_clipboard(ca->clipboard_image);
 #endif
 }
@@ -1917,3 +1927,5 @@ void paint_layer_alt(Paint* ca) {
 
 int paint_img_width(Paint* ca) { return ca->h.buffer[0].width; }
 int paint_img_height(Paint* ca) { return ca->h.buffer[0].height; }
+
+bool paint_has_image(Paint* ca) { return paint_img_width(ca) > 0; }

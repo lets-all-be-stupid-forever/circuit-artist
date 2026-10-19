@@ -249,7 +249,10 @@ typedef struct {
 Texture2D ui_get_sprites();
 Image ui_get_sprites_img();
 int ui_get_scale();
+bool ui_is_demo();
 
 void init_common_globals();
+void register_args(int argc, char** argv);
+const char* get_cli_arg(const char* str);
 
 #endif

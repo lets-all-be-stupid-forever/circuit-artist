@@ -489,6 +489,8 @@ void steam_load_blueprints_and_levels() {
 bool steam_unsubscribe_item(u64 id) {
 #ifdef WITH_STEAM
   return C.ugc->UnsubscribeItem(id);
+#else
+  return false;
 #endif
 }
 

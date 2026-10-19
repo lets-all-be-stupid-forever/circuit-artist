@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
+add_compile_definitions(RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS=8)
+
 IF(NOT EMSCRIPTEN)
   add_compile_definitions(CA_DESKTOP=1)
 ELSE()
@@ -146,6 +148,7 @@ SET(ca_src
   src/win_blueprint.c
   src/win_pubform.c
   src/win_campaign.c
+  src/win_clipboard.c
   src/win_customlvl.c
   src/win_progress.c
   src/win_bpdetail.c
@@ -297,7 +300,9 @@ IF (EMSCRIPTEN)
   )
   add_custom_target(wasm_assets ALL DEPENDS "${wasm_assets_stamp}")
 
-  add_executable(ca_wasm src/player.c)
+  add_executable(ca_wasm
+    src/main.c
+  )
   add_dependencies(ca_wasm wasm_assets)
   # The shell html is baked into ca_wasm.html by the link step too, so it has
   # to be a LINK_DEPENDS as well -- otherwise editing wasm_shell.html leaves a
@@ -324,8 +329,9 @@ IF (EMSCRIPTEN)
     "-sALLOW_MEMORY_GROWTH=1"
     "--shell-file=${wasm_shell}"
    "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8,HEAPU8,FS"
-   "-sEXPORTED_FUNCTIONS=_main,_malloc,_free,_ca_get_tick,_ca_toggle_pause,_ca_is_paused"
+   "-sEXPORTED_FUNCTIONS=_main,_malloc,_free"
     "--preload-file=${wasm_assets_dir}@/assets"
   )
+  # "-sEXPORTED_FUNCTIONS=_main,_malloc,_free,_ca_get_tick,_ca_toggle_pause,_ca_is_paused"
   return()
 ENDIF()

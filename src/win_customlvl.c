@@ -200,6 +200,7 @@ void win_customlvl_open(LevelDef* ldef) {
 
 static void update_page_buttons() {
   C.btn_page_workshop.disabled = !is_steam_on();
+  C.btn_local_folder.disabled = ui_is_demo();
   if (btn_update(&C.btn_wiki)) {
     win_wiki_open_on_item("customlevel");
   }
@@ -282,10 +283,11 @@ static void on_confirm_unsubscribe(int r) {
 }
 
 static void update_level_buttons() {
+  bool demo = ui_is_demo();
   C.btn_open_steam.disabled = (C.page != PAGE_WORKSHOP) || C.sel == -1;
   C.btn_unsubscribe.disabled = (C.page != PAGE_WORKSHOP) || C.sel == -1;
   C.btn_publish.disabled = (C.page != PAGE_LOCAL) || C.sel == -1;
-  C.btn_level_folder.disabled = C.sel == -1;
+  C.btn_level_folder.disabled = (C.sel == -1) || demo;
 
   if (btn_update(&C.btn_publish)) {
     publish_level();

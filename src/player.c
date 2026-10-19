@@ -2,6 +2,10 @@
 #include <emscripten/emscripten.h>
 #endif
 
+#ifndef PLATFORM_WEB
+#define EMSCRIPTEN_KEEPALIVE
+#endif
+
 #include <i18n.h>
 #include <math.h>
 #include <stdlib.h>
@@ -12,6 +16,8 @@
 #include "img.h"
 #include "layout.h"
 #include "lua_level.h"
+#include "msg.h"
+#include "player_sim.h"
 #include "raylib.h"
 #include "shaders.h"
 #include "sim.h"
@@ -25,8 +31,8 @@
 
 typedef enum {
   MODE_EMPTY,
-  MODE_LOAD_IMG_PENDING,
   MODE_LOAD_IMG_ERROR,
+  MODE_STOP,
   MODE_SIM_ERROR,
   MODE_SIMU,
 } PlayerMode;
@@ -57,27 +63,28 @@ static struct {
   Image buffer[3];
   int nl;
   v2i img_size;
-  Sim sim;
-  HSim hsim;
   Cam2D cam;
   int cam_idx;
   RecI viewport; /* Region of the target the circuit is drawn on (all of it) */
   PlayerMode mode;
-  double simu_target_steps;
-  int pix_toggle;
   bool sound_on;
-  int hover_pix; /* Wire pixel under the cursor, -1 if none */
   bool paused;
   bool forward_pressed;
   bool rewind_pressed;
   /* Keyboard pan accumulators, so sub-pixel movement isn't lost at low fps */
   double pan_acc_x, pan_acc_y;
   /* Time-travel clock (right mouse button held) */
-  bool time_open;
   double time_ref;
   v2 time_pos_ref;
   v2 time_c;
-  Listbox lb;
+  Textbox tb;
+
+  LevelDef* ldef;
+
+  /* If true, it means there was an error in the kernel/lua
+   * side, and the simulation can't start.   */
+  bool kernel_error;
+  char* kernel_error_msg;
 
   /* Load requested from outside the frame loop (JS), consumed at the top of
    * the next frame. See ca_load_image() / ca_load_png(). Exactly one of the
@@ -93,46 +100,29 @@ static struct {
   double previous_time;
   double frame_time;
   RenderTexture2D tgt;
+  RenderTexture2D tgt_ovl;
   Rectangle tgt_rect;
   bool sim_loaded;
 
+  Color bg_color;
   bool layer_vis[MAX_LAYERS];
   Btn btn_layer_v[MAX_LAYERS];
+  Btn btn_play;
   Btn btn_pause;
   Btn btn_rewind;
   Btn btn_sound;
   Btn btn_forward;
   Btn btn_fullrewind;
   Btn btn_clockopt[6];
+  Btn btn_home;
 
-  Btn btn_copy_url;
   int clock_speed;
-
-  //  struct {
-  //    const char* name;
-  //    const char* local_path;
-  //    const char* url_path;
-  //  }* examples;
 
 } C = {0};
 
 static void toggle_simu_pause() { C.paused = !C.paused; }
 static void toggle_sound() { C.sound_on = !C.sound_on; }
-
-static struct {
-  const char* name;
-  const char* local_path;
-  const char* url_path;
-} examples[] = {
-    {"32bit Barrel Shifter", "/assets/example2.png", NULL},
-    {"Tutorial", "/assets/circuits/help.png", NULL},
-    {"Remote", NULL, "https://i.imgur.com/rolTNUw.png"},
-    {"r2", NULL,
-     "https://raw.githubusercontent.com/lets-all-be-stupid-forever/"
-     "circuit-artist/refs/heads/main/campaign_solutions/02_sevseg1/"
-     "sevenseg.png"},
-    {0},
-};
+static bool get_can_rewind() { return C.api.bw; }
 
 #if defined(PLATFORM_WEB)
 EMSCRIPTEN_KEEPALIVE int ca_get_tick(void) { return C.sim.state.cur_tick; }
@@ -170,6 +160,43 @@ static float get_speed_dt(int speed) {
   return 10000;
 }
 
+static void on_start_click() {
+  C.time_open = false;
+  player_sim_start(C.nl, C.buffer, C.t_buffer, &C.api);
+  if (player_sim_has_error()) {
+    // play_sound_oops();
+    msg_add("Unknown Error in simulation", 4);
+    C.mode = MODE_SIM_ERROR;
+    return;
+  }
+  if (player_sim_did_compilation_fail()) {
+    msg_add("Error compiling image", 4);
+    return;
+  }
+  C.mode = MODE_SIMU;
+}
+
+static void on_stop_click()() {
+  player_sim_stop();
+  msg_clear_permanent();
+  C.mode = MODE_STOP;
+  C.time_open = false;
+  C.rewind_pressed = false;
+  C.forward_pressed = false;
+}
+
+static bool player_is_running() {
+  return C.mode == MODE_SIM_ERROR || MODE_SIMU;
+}
+
+static void player_toggle_sim() {
+  if (player_is_running()) {
+    on_stop_click();
+  } else {
+    on_start_click();
+  }
+}
+
 static void update_layout() {
   Layout* l = C.layout;
   Rectangle canvas = layout_rect(l, "canvas");
@@ -198,16 +225,17 @@ static void update_layout() {
   };
 
   C.btn_pause.hitbox = layout_rectb(l, "btn_pause");
+  C.btn_play.hitbox = layout_rectb(l, "btn_play");
   C.btn_sound.hitbox = layout_rectb(l, "btn_sound");
   C.btn_rewind.hitbox = layout_rectb(l, "btn_rewind");
   C.btn_forward.hitbox = layout_rectb(l, "btn_forward");
   C.btn_fullrewind.hitbox = layout_rectb(l, "btn_none");
+  C.btn_home.hitbox = layout_rectb(l, "btn_home");
 
   lr.x += dx;
   lr.height += dy;
-  listbox_set_box(&C.lb, lr);
+  textbox_set_box(&C.tb, lr);
 
-  C.btn_copy_url.hitbox = layout_rectb(l, "btn_copy_url");
   Rectangle extra[8];
   for (int i = 0; i < 8; i++) {
     extra[i] = layout_rectb(l, TextFormat("btn_extra%d", i + 1));
@@ -230,6 +258,20 @@ static void player_center_camera() {
   cam2d_center(&C.cam, C.viewport, C.img_size);
 }
 
+static void set_default_text() {
+  textbox_set_content(
+      &C.tb,
+      "`Welcome to Circuit Artist Player`\n\n"
+      "Every \"triangle\" is a `NAND` gate, and everything else is a wire.\n\n"
+      "Click to interact with the circuit.\n\n"
+      "To load an image:\n"
+      "`*` Drag a local PNG\n"
+      "`*` Ctrl+V (Cmd+V on Mac) an image\n"
+      "`*` Ctrl+V an image address (text)\n"
+      "`*` Use the URL directly (?img=<your_png_img>)\n",
+      NULL);
+}
+
 int compile_and_load(Image img) {
   if (img.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
     ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
@@ -248,32 +290,11 @@ int compile_and_load(Image img) {
   C.img_size = (v2i){C.buffer[0].width, C.buffer[0].height};
   C.cam_idx = 7;
   C.cam.sp = CAM2D_ZOOM_LUT[C.cam_idx];
-  player_center_camera();
-  sim_init(&C.sim, (SimParams){.warmup_cycles = 1,
-                               .nl = C.nl,
-                               .img = C.buffer,
-                               .layers = C.t_buffer,
-                               .api = &C.api});
-  sim_compile(&C.sim);
-  Status s = sim_post_compile(&C.sim);
-  C.sim_loaded = true;
-  C.paused = true;
-  C.hsim = wrap_sim(&C.sim);
-  C.simu_target_steps = 0;
-  C.pix_toggle = -1;
-  C.hover_pix = -1;
-  C.time_open = false;
-  if (sim_has_errors(&C.sim)) {
-    // play_sound_oops();
-    C.mode = MODE_SIM_ERROR;
-    return -1;
-  }
-  C.mode = MODE_SIMU;
 
-  if (!s.ok) {
-    fprintf(stderr, "Error in sim \n");
-    sim_destroy(&C.sim);
-  }
+  set_default_text();
+  player_center_camera();
+  C.mode = MODE_STOP;
+  msg_add("Image Loaded", 4);
   return 0;
 }
 static void unload_sim() {
@@ -284,7 +305,7 @@ static void unload_sim() {
   }
 }
 
-static void unload_image() {
+static void player_unload_image() {
   unload_sim();
   for (int i = 0; i < MAX_LAYERS; i++) {
     if (C.buffer[i].width > 0) {
@@ -294,11 +315,12 @@ static void unload_image() {
     C.buffer[i] = (Image){0};
     C.t_buffer[i] = (RenderTexture2D){0};
   }
+  C.nl = 0;
   C.mode = MODE_EMPTY;
 }
 
 static void load_from_local_image(const char* path) {
-  unload_image();
+  player_unload_image();
   Image img = LoadImage(path);
   if (img.data == NULL) {
     fprintf(stderr, "could not load image: %s\n", path);
@@ -309,11 +331,12 @@ static void load_from_local_image(const char* path) {
 }
 
 static void load_from_png_bytes(const unsigned char* data, int len) {
-  unload_image();
+  player_unload_image();
   Image img = LoadImageFromMemory(".png", data, len);
   if (img.data == NULL) {
     fprintf(stderr, "could not decode png (%d bytes)\n", len);
     C.mode = MODE_LOAD_IMG_ERROR;
+    msg_add("Error: Could not decode image... is it a valid PNG?", 4);
     return;
   }
   compile_and_load(img);
@@ -333,7 +356,52 @@ static void consume_pending_load(void) {
   }
 }
 
-#if defined(PLATFORM_WEB)
+static void player_handle_kernel_error(Status s) {
+  C.kernel_error = true;
+  msg_add("Level error :(", 5);
+  printf("------------- LEVEL ERROR -------------\n");
+  printf("%s\n", s.err_msg);
+  printf("-------------------------------------\n");
+  C.kernel_error_msg = s.err_msg;
+  // show_kernel_error();
+}
+
+static void player_reset_kernel_error() {
+  if (C.kernel_error_msg) free(C.kernel_error_msg);
+  C.kernel_error_msg = NULL;
+  C.kernel_error = false;
+}
+
+static void player_reset_level() {
+  C.ldef = NULL;
+  level_api_destroy(&C.api);
+  C.api = (LevelAPI){0};
+  player_reset_kernel_error();
+}
+
+static void player_unload_level() { player_reset_level(); }
+
+EMSCRIPTEN_KEEPALIVE void ca_set_load_error() { C.mode = MODE_LOAD_IMG_ERROR; }
+
+EMSCRIPTEN_KEEPALIVE void ca_load_level(const char* name) {
+  player_reset_level();
+  LevelDef* ldef = get_level_by_id(name);
+  C.ldef = ldef;
+  Status s = lua_level_create(&C.api, ldef);
+  if (!s.ok) {
+    player_handle_kernel_error(s);
+  } else {
+    msg_add(
+        ldef->is_campaign ? T.main_campaign_loaded : T.main_custom_level_loaded,
+        2);
+  }
+  // TODO level_sidebar_set_lvl(ldef);
+}
+
+EMSCRIPTEN_KEEPALIVE void ca_unload() {
+  player_unload_level();
+  player_unload_image();
+}
 
 EMSCRIPTEN_KEEPALIVE void ca_load_image(const char* path) {
   free(C.pending_png); /* a queued-but-unconsumed PNG loses to this call */
@@ -357,8 +425,6 @@ EMSCRIPTEN_KEEPALIVE void ca_load_png(const unsigned char* data, int len) {
   C.pending_load = true;
 }
 
-#endif
-
 static float get_simu_slack_steps() {
   return C.simu_target_steps - C.sim.state.cur_tick;
 }
@@ -371,29 +437,22 @@ static int get_simu_speed() {
   return (C.paused || C.time_open) ? 0 : 1;
 }
 
-static void init_examples() {
-  listbox_clear(&C.lb);
-  int i = 0;
-  while (examples[i].name) {
-    listbox_add_row(&C.lb, examples[i].name);
-    i++;
-  }
-}
-
 void player_init() {
+  C.bg_color = (Color){41, 31, 13, 255};
+  C.btn_play.primary = true;
   init_common_globals();
   init_i18n();
   widgets_init();
   uifont_load();
   shaders_init();
   InitAudioDevice();
+  msg_init();
   sound_init();
   C.layout = easy_load_layout("main_player");
   layout_scale(C.layout);
-  listbox_init(&C.lb);
-  C.lb.row_pad = 1;
-  init_examples();
+  textbox_init(&C.tb);
   update_layout();
+  set_default_text();
   C.clock_speed = 2;
   C.sound_on = true;
 }
@@ -408,50 +467,6 @@ static void simu_play_sounds() {
   }
 }
 
-static Status player_update_simu() {
-  Status status = status_ok();
-  Sim* pSim = &C.sim;
-  float slack_steps = get_simu_slack_steps();
-
-  /* interaction doesn't work when going backward */
-  if (C.pix_toggle > -1 && slack_steps >= 0.f) {
-    sim_toggle_pixel(pSim, C.pix_toggle);
-    hsim_clear_forward_history(&C.hsim);
-    C.pix_toggle = -1;
-    C.simu_target_steps = C.sim.state.cur_tick + 1;
-  }
-  slack_steps = get_simu_slack_steps();
-
-  while (status.ok && slack_steps < 0.f) {
-    /* Can't go backward */
-    if (!hsim_has_prv(&C.hsim)) {
-      slack_steps = 0.f;
-      C.simu_target_steps = C.sim.state.cur_tick;
-      break;
-    }
-    status = hsim_prv(&C.hsim);
-    slack_steps += 1.f;
-  }
-
-  while (status.ok && slack_steps >= 1.f) {
-    status = hsim_nxt(&C.hsim);
-    if (!status.ok) {
-      break;
-    }
-    simu_play_sounds();
-    /* Simulation has called Pause() */
-    if (C.sim.pause_requested) {
-      C.sim.pause_requested = false;
-      C.paused = true;
-      C.simu_target_steps = C.sim.state.cur_tick;
-      // play_sound_click();
-      break;
-    }
-    slack_steps -= 1.f;
-  }
-  return status;
-}
-
 /* Same as win_main: signed angle (degrees) swept from a to b around c. */
 static float get_clock_delta(v2 c, v2 a, v2 b) {
   float ay = a.y - c.y;
@@ -462,6 +477,17 @@ static float get_clock_delta(v2 c, v2 a, v2 b) {
   float rb = sqrt(bx * bx + by * by + 1e-1);
   float cross = -ax * by + ay * bx;
   return (180 / M_PI) * asin(cross / (ra * rb));
+}
+
+static void on_steam_click() {
+  // TODO
+  // emscripten_run_script("window.location.href = 'home.html';");
+}
+
+static void on_examples_click() {
+  // TODO
+  ca_unload();
+  // emscripten_run_script("window.location.href = 'home.html';");
 }
 
 static void ensure_camera_bounds() {
@@ -536,7 +562,6 @@ static void update_camera(double frame_time) {
 }
 
 static void update_wire_toggle() {
-  C.hover_pix = -1;
   if (C.time_open) return;
   if (!is_mouse_on_canvas()) return;
   v2 mouse = GetMousePosition();
@@ -573,7 +598,8 @@ static void update_time_controls() {
   C.rewind_pressed = false;
 
   if (C.mode == MODE_SIMU) {
-    if (IsKeyPressed(KEY_K) || IsKeyPressed(KEY_SPACE)) C.paused = !C.paused;
+    if (IsKeyPressed(KEY_K)) C.paused = !C.paused;
+    if (IsKeyPressed(KEY_SPACE)) player_toggle_sim();
     if (IsKeyDown(KEY_L)) C.forward_pressed = true;
     if (IsKeyDown(KEY_J)) C.rewind_pressed = true;
     if (IsKeyDown(KEY_R)) full_rewind();
@@ -676,7 +702,9 @@ static void draw_status_bar() {
 }
 
 static void draw_ui() {
-  btn_draw_icon(&C.btn_pause, C.paused ? rect_start : rect_pause);
+  btn_draw_text(&C.btn_home, "Examples");
+  btn_draw_icon(&C.btn_pause, rect_pause);
+  btn_draw_icon(&C.btn_play, player_is_running() ? rect_stop : rect_start);
   btn_draw_icon(&C.btn_sound, C.sound_on ? rect_sound_on : rect_sound_off);
   btn_draw_icon(&C.btn_fullrewind, rect_full_rewind);
   btn_draw_icon(&C.btn_rewind, rect_rewind);
@@ -685,9 +713,7 @@ static void draw_ui() {
   btn_draw_icon(&C.btn_clockopt[1], rect_hz1);
   btn_draw_icon(&C.btn_clockopt[2], rect_hz4);
   btn_draw_icon(&C.btn_clockopt[3], rect_hz16);
-  int rh = C.lb.row_hit;
-  listbox_draw(&C.lb, rh);
-  btn_draw_text(&C.btn_copy_url, "Copy Link");
+  textbox_draw(&C.tb);
 
   // btn_draw_icon(&C.btn_clockopt[4], rect_hz64);
   // btn_draw_icon(&C.btn_clockopt[5], rect_hz1k);
@@ -738,22 +764,13 @@ static void load_from_url(const char* url) {
 #endif
 }
 
-static void load_example(int i) {
-  unload_image();
-  if (examples[i].local_path) {
-    load_from_local_image(examples[i].local_path);
-  } else {
-    C.mode = MODE_LOAD_IMG_PENDING;
-    load_from_url(examples[i].url_path);
-  }
-}
-
 static void update_ui_controls() {
   for (int i = 0; i < C.nl; i++) {
     if (btn_update(&C.btn_layer_v[i])) {
       C.layer_vis[i] = !C.layer_vis[i];
     }
   }
+  if (btn_update(&C.btn_home)) on_examples_click();
   if (btn_update(&C.btn_clockopt[0])) C.clock_speed = 0;
   if (btn_update(&C.btn_clockopt[1])) C.clock_speed = 1;
   if (btn_update(&C.btn_clockopt[2])) C.clock_speed = 2;
@@ -761,27 +778,29 @@ static void update_ui_controls() {
   // if (btn_update(&C.btn_clockopt[4])) C.clock_speed = 4;
   // if (btn_update(&C.btn_clockopt[5])) C.clock_speed = 5;
   if (btn_update(&C.btn_pause)) toggle_simu_pause();
+  if (btn_update(&C.btn_play)) player_toggle_sim();
   if (btn_update(&C.btn_sound)) toggle_sound();
   btn_update(&C.btn_rewind);
   btn_update(&C.btn_forward);
   if (C.btn_rewind.pressed) C.rewind_pressed = true;
   if (C.btn_forward.pressed) C.forward_pressed = true;
   if (btn_update(&C.btn_fullrewind)) full_rewind();
-  listbox_update(&C.lb);
-  int hit = C.lb.row_hit;
-  if (hit >= 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-    // TODO: load example!
-    load_example(hit);
-    // set_sel(C.topic_sel, hit);
-  }
+  textbox_update(&C.tb);
 
   bool sm = C.mode == MODE_SIMU;
   for (int i = 0; i < C.nl; i++) {
     C.btn_layer_v[i].toggled = sm && C.layer_vis[i];
+    C.btn_layer_v[i].disabled = !sm;
   }
   C.btn_rewind.toggled = sm && C.rewind_pressed;
   C.btn_forward.toggled = sm && C.forward_pressed;
   C.btn_forward.disabled = sm && !C.paused;
+  C.btn_pause.disabled = !sm;
+  // C.btn_play.disabled =
+  C.btn_rewind.disabled = !sm;
+  C.btn_forward.disabled = !sm;
+  C.btn_fullrewind.disabled = !sm;
+
   for (int i = 0; i < 4; i++) {
     C.btn_clockopt[i].disabled = !sm;
     C.btn_clockopt[i].toggled = C.clock_speed == i;
@@ -796,7 +815,10 @@ void player_update(double frame_time) {
 
   bool mouse_on_canvas = is_mouse_on_canvas();
 
-  if (C.mode == MODE_SIMU) update_wire_toggle();
+  C.hover_pix = -1;
+  if (C.mode == MODE_SIMU) {
+    update_wire_toggle();
+  }
 
   SetMouseCursor(C.hover_pix != -1 ? MOUSE_CURSOR_POINTING_HAND
                                    : MOUSE_CURSOR_DEFAULT);
@@ -852,7 +874,6 @@ void player_render(RenderTexture2D* target) {
   float frame_steps = get_simu_dt() * 1.0 / 60.0;
   if (C.paused) frame_steps = 0;
   bool neon = true;
-  Color bg = {41, 31, 13, 255};
   int hide_mask = 0;
   for (int i = 0; i < C.nl; i++) {
     if (!C.layer_vis[i]) {
@@ -860,7 +881,7 @@ void player_render(RenderTexture2D* target) {
     }
   }
   Tex* rendered = sim_render_v2(&C.sim, tw, th, C.cam, frame_steps, slack_steps,
-                                hide_mask, neon, bg);
+                                hide_mask, neon, C.bg_color);
   texdraw2(*target, rendered->rt);
   texdel(rendered);
 
@@ -945,16 +966,18 @@ static void _draw_rt_on_screen(RenderTexture2D rt, Vector2 pos) {
   DrawTexturePro(rt.texture, source, target, v0, 0.0f, WHITE);
 }
 
-static void check_size(RenderTexture2D* t) {
+static void check_size() {
   int sw = C.tgt_rect.width;
   int sh = C.tgt_rect.height;
-  // int sw = GetRenderWidth();
-  // int sh = GetRenderHeight();
-  int tw = t->texture.width;
-  int th = t->texture.height;
+  int tw = C.tgt.texture.width;
+  int th = C.tgt.texture.height;
   if (tw != sw || th != sh) {
-    UnloadRenderTexture(*t);
-    *t = LoadRenderTexture(sw, sh);
+    if (C.tgt.texture.width > 0) {
+      UnloadRenderTexture(C.tgt);
+      UnloadRenderTexture(C.tgt_ovl);
+    }
+    C.tgt = LoadRenderTexture(sw, sh);
+    C.tgt_ovl = LoadRenderTexture(sw, sh);
   }
 }
 
@@ -1013,7 +1036,8 @@ static void draw_ui_legend() {
   btn_draw_legend(&C.btn_sound, "Mute/Unmute sound (M)");
   btn_draw_legend(&C.btn_forward, T.main_forward_leg);
   btn_draw_legend(&C.btn_fullrewind, T.main_fullrewind_leg);
-  btn_draw_legend(&C.btn_pause, "Play/Pause Simulation (K / Space)\n");
+  btn_draw_legend(&C.btn_pause, "Pause Simulation (K)\n");
+  btn_draw_legend(&C.btn_play, "Start/Stop Simulation (Space)\n");
   btn_draw_legend(
       &C.btn_clockopt[0],
       TextFormat(T.main_speed1_leg, fmtnum((int)(get_speed_dt(0)))));
@@ -1036,53 +1060,64 @@ static void draw_ui_legend() {
 
 static void render_empty(RenderTexture2D* target) {
   BeginTextureMode(*target);
-  ClearBackground(BLACK);
+  ClearBackground(C.bg_color);
   Color tc = CA_WHITE;
   Color bg = BLACK;
-  uifont_draw_texture_outlined("Empty", 10, 10, tc, bg);
+  // uifont_draw_texture_outlined("Empty", 10, 10, tc, bg);
   EndTextureMode();
 }
 
-static void render_loading(RenderTexture2D* target) {
-  BeginTextureMode(*target);
-  ClearBackground(BLACK);
-  Color tc = CA_WHITE;
-  Color bg = BLACK;
-  uifont_draw_texture_outlined("Loading...", 10, 10, tc, bg);
+Status player_draw_level_kernel() {
+  LevelAPI* api = &C.api;
+  if (!api->draw) return status_ok();
+  BeginTextureMode(C.tgt_ovl);
+  rlPushMatrix();
+  Status s = api->draw(api->u);
+  rlPopMatrix();
   EndTextureMode();
+  return s;
 }
 
 static void update_draw_frame(void) {
   SetMouseCursor(MOUSE_CURSOR_DEFAULT);
   widgets_set_sound(C.sound_on);
   ui_reset_hit_count();
+  msg_update();
   update_layout();
   check_dropped_files();
   consume_pending_load();
-  check_size(&C.tgt);
+  check_size();
   player_update(C.frame_time);
-  if (C.lb.row_hit != -1) {
-    SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-  }
   if (C.mode == MODE_EMPTY) {
     render_empty(&C.tgt);
   }
-  if (C.mode == MODE_LOAD_IMG_PENDING) {
-    render_loading(&C.tgt);
-  }
   if (C.mode == MODE_SIMU || C.mode == MODE_SIM_ERROR) {
     player_render(&C.tgt);
+    int w = C.img_size.x;
+    int h = C.img_size.y;
+    bool hidden = false;  // C.sim_mode == SIM_MODE_SANDBOX;
+    level_api_draw_board(&C.api, C.cam, w, h, C.tgt_ovl, hidden);
+    if (!C.kernel_error) {
+      Status s = status_ok();
+      // if (s.ok) s = main_draw_level_board();
+      if (s.ok) s = player_draw_level_kernel();
+      if (!s.ok) player_handle_kernel_error(s);
+    }
   }
   if (C.mode == MODE_LOAD_IMG_ERROR) {
     render_load_error(&C.tgt);
   }
+
   BeginDrawing();
   ClearBackground(BLACK); /* same as the game behind its sim target */
   draw_default_tiled_screen();
   _draw_rt_on_screen(C.tgt, (Vector2){C.tgt_rect.x, C.tgt_rect.y});
+  _draw_rt_on_screen(C.tgt_ovl, (Vector2){C.tgt_rect.x, C.tgt_rect.y});
   draw_default_tiled_frame(C.tgt_rect);
   draw_ui();
-  draw_default_tiled_frame(C.lb.hitbox);
+  draw_default_tiled_frame(C.tb.box);
+  msg_draw();
+
   draw_ui_legend();
   EndDrawing();
 #if defined(PLATFORM_WEB)
@@ -1107,11 +1142,12 @@ int main(int argc, char** argv) {
   player_init();
   C.mode = MODE_EMPTY;
   C.tgt = LoadRenderTexture(800, 800);
+  C.tgt_ovl = LoadRenderTexture(800, 800);
   C.previous_time = GetTime();
 
   init_game_registry();
-  LevelDef* ldef = get_level_by_id("official:basics");
-  lua_level_create(&C.api, ldef);
+  // ca_load_level("official:basics");
+  ca_load_level("campaign:npu1");
 
 #if defined(PLATFORM_WEB)
   emscripten_set_main_loop(update_draw_frame, 0, 1);

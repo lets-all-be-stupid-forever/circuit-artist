@@ -29,6 +29,7 @@
 #include "win_blueprint.h"
 #include "win_bpdetail.h"
 #include "win_campaign.h"
+#include "win_clipboard.h"
 #include "win_customlvl.h"
 #include "win_level.h"
 #include "win_main.h"
@@ -110,14 +111,6 @@ int ui_get_hit_count() { return C.hit_count; };
 
 void ui_crash(const char* error) { C.lua_error = clone_string(error); }
 
-bool ui_is_demo() {
-#ifdef DEMO_VERSION
-  return true;
-#else
-  return false;
-#endif
-}
-
 // Sets the window/taskbar icon on Windows and Linux. On macOS the icon comes
 // from the .app bundle (see MACOS_BUNDLE in CMakeLists.txt) and GLFW warns if
 // we try, so skip it there.
@@ -193,6 +186,7 @@ void ui_init() {
   shaders_init();
   win_level_init();
   win_main_init();
+  win_clipboard_init();
   win_workshop_init();
   win_workshopdet_init();
   win_main_open();
@@ -393,6 +387,7 @@ void ui_update_frame() {
   if (update_window == WINDOW_NUMBER) number_modal_update();
   if (update_window == WINDOW_BLUEPRINT) win_blueprint_update();
   if (update_window == WINDOW_MAIN) win_main_update();
+  if (update_window == WINDOW_CLIPBOARD) win_clipboard_update();
   if (update_window == WINDOW_ABOUT) about_update();
   if (update_window == WINDOW_DIALOG) dialog_update();
   if (update_window == WINDOW_LOG) win_log_update();
@@ -421,6 +416,7 @@ void ui_update_frame() {
   for (int i = 0; i < arrlen(C.window); i++) {
     WindowEnum window = C.window[i];
     if (window == WINDOW_MAIN) win_main_draw();
+    if (window == WINDOW_CLIPBOARD) win_clipboard_draw();
     if (window == WINDOW_TEXT) text_modal_draw();
     if (window == WINDOW_NUMBER) number_modal_draw();
     if (window == WINDOW_ABOUT) about_draw();
@@ -530,7 +526,12 @@ bool ui_get_should_close() { return C.should_close; }
 
 void ui_set_cursor(MouseCursorType cursor) { C.cursor = cursor; }
 void ui_set_close_requested() { C.close_requested = true; }
-WindowEnum ui_get_window() { return C.window[arrlen(C.window) - 1]; }
+
+WindowEnum ui_get_window() {
+  int n = arrlen(C.window);
+  if (n == 0) return WINDOW_NONE;
+  return C.window[n - 1];
+}
 
 double ui_get_frame_time() { return C.frame_time; }
 

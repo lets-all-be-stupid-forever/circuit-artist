@@ -1871,7 +1871,6 @@ bool sim_is_on_warmup(Sim* sim) {
 }
 
 Status sim_reset_state(Sim* sim) {
-  // TODO
   arrfree(sim->ui_events);
   if (!sim_has_errors(sim)) {
     patch_builder_destroy(&sim->patch_builder);

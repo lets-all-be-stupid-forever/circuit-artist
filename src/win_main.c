@@ -36,6 +36,7 @@
 #include "wdialog.h"
 #include "widgets.h"
 #include "win_blueprint.h"
+#include "win_clipboard.h"
 #include "win_customlvl.h"
 #include "win_level.h"
 #include "win_msg.h"
@@ -49,6 +50,7 @@
 #endif
 
 static struct {
+  bool inited;
   Layout* layout;
   int mode;              // Edit, Simu
   RTex2D img_target_tex; /* Image Drawing target image */
@@ -62,14 +64,13 @@ static struct {
   int num_colors;
   char* fname; /* Currently open filename. */
   Paint ca;
-  int header_size;
-  int bottom_size;
   // Topbar buttons
   Btn btn_new;
   Btn btn_open;
   Btn btn_save;
   Btn btn_saveas;
   Btn btn_exit;
+  Btn btn_clipboard;
 
   Btn btn_wiki;
   Btn btn_blueprint;
@@ -155,7 +156,6 @@ static struct {
   Rectangle sep2;
 
   SimMode sim_mode;
-
 } C = {0};
 
 static inline int maxint(int a, int b) { return a > b ? a : b; }
@@ -224,6 +224,7 @@ static void update_layout() {
   C.btn_saveas.hitbox = layout_rectb(l, "btn_saveas");
   C.btn_settings.hitbox = layout_rectb(l, "btn_settings");
   C.btn_exit.hitbox = layout_rectb(l, "btn_exit");
+  C.btn_clipboard.hitbox = layout_rectb(l, "btn_clipboard");
   C.btn_camp.hitbox = layout_rectb(l, "btn_camp");
   C.btn_level_custom.hitbox = layout_rectb(l, "btn_custom");
 
@@ -454,6 +455,7 @@ static void handle_kernel_error(Status s) {
   C.kernel_error_msg = s.err_msg;
   show_kernel_error();
 }
+
 static void reset_kernel_error() {
   if (C.kernel_error_msg) free(C.kernel_error_msg);
   C.kernel_error_msg = NULL;
@@ -472,9 +474,16 @@ static void reset_level() {
 void win_main_load_level(LevelDef* ldef) {
   reset_level();
   C.ldef = ldef;
-  if (ldef->default_circuit && ldef->folder) {
+  bool can_load = true;
+  if (!C.inited) {
+    if (paint_has_image(&C.ca)) {
+      can_load = false;
+    }
+  }
+  if (ldef->default_circuit && ldef->folder && can_load) {
     const char* img_path =
         TextFormat("%s/%s", ldef->folder, ldef->default_circuit);
+
     Image img = LoadImage(img_path);
     if (img.data) paint_load_image(&C.ca, img);
   }
@@ -548,6 +557,23 @@ static void update_viewport() {
   }
 }
 
+static void load_initial_level() {
+  LevelDef* ldef = NULL;
+  const char* id = get_cli_arg("--lvl");
+  if (id) {
+    ldef = get_level_by_id(id);
+    if (!ldef) {
+      const char* msg =
+          TextFormat("Error: Could not find level with ID '%s'", id);
+      msg_add(msg, 4);
+    }
+  }
+  if (!ldef) {
+    ldef = find_basics_custom_level();
+  }
+  win_main_load_level(ldef);
+}
+
 void win_main_init() {
   srand(time(NULL));
   C.kernel_error = false;
@@ -580,8 +606,6 @@ void win_main_init() {
   C.num_colors = 20;
   load_palette_asset("imgs/pal.png");
   int s = ui_get_scale();
-  C.header_size = 24 * s;
-  C.bottom_size = 3 * 17 * 1 * s - 6 * s;
   paint_init(&C.ca);
   paint_set_color(&C.ca, C.palette[3]);
   C.sidepanel_img = gen_image_simple(200, 800);
@@ -592,9 +616,23 @@ void win_main_init() {
   sim_dry_run();
   level_sidebar_init();
 
-  win_main_load_level(find_basics_custom_level());
+  /* First try to load initial image from CLI argument */
+  const char* initial_img = get_cli_arg("--img");
+  if (initial_img && FileExists(initial_img)) {
+    Image img = LoadImage(initial_img);
+    if (img.width > 0) {
+      paint_load_image(&C.ca, img);
+    } else {
+      msg_add("Error: Failed to load initial image", 4);
+    }
+  }
+  /* otherwise, loads it from the level definition */
+  load_initial_level();
   // update_viewport();
-
+  /* otherwise, loads a default empty buffer*/
+  if (!paint_has_image(&C.ca)) {
+    paint_new_buffer(&C.ca);
+  }
   win_main_update();
   win_main_update();
   discord_init();
@@ -604,6 +642,7 @@ void win_main_init() {
     Image img = LoadImage("../big2.png");
     paint_load_image(&C.ca, img);
   }
+  C.inited = true;
 }
 
 static void simu_play_sounds() {
@@ -770,6 +809,11 @@ static void update_simu_controls() {
   if (!s.ok) {
     handle_kernel_error(s);
   }
+}
+
+bool win_main_can_load_image() {
+  return true;
+  return C.mode == MODE_EDIT && (ui_wintop() == WINDOW_MAIN);
 }
 
 void win_main_update() {
@@ -995,7 +1039,9 @@ static void paste_text(const char* txt) {
 static void on_paste_text(void* ctx, const char* txt) { paste_text(txt); }
 
 static void on_open_click() {
-  win_main_ask_for_save_and_proceed(main_open_file_modal);
+  if (!ui_is_demo()) {
+    win_main_ask_for_save_and_proceed(main_open_file_modal);
+  }
 }
 
 static void on_new_click() { win_main_ask_for_save_and_proceed(main_new_file); }
@@ -1043,7 +1089,7 @@ void main_update_controls() {
     win_main_toggle_sidebar();
   }
   if (is_control_down()) {
-    if (IsKeyPressed(KEY_S)) {
+    if (IsKeyPressed(KEY_S) && !ui_is_demo()) {
       on_save_click(false);
     }
     if (IsKeyPressed(KEY_O)) on_open_click();
@@ -1322,6 +1368,10 @@ static void full_rewind() {
   C.pix_toggle = -1;
 }
 
+static void on_clipboard_click() {
+  win_main_ask_for_save_and_proceed(win_clipboard_open);
+}
+
 void main_update_hud() {
   Paint* ca = &C.ca;
   if (btn_update(&C.btn_new)) on_new_click();
@@ -1330,6 +1380,7 @@ void main_update_hud() {
   if (btn_update(&C.btn_save)) on_save_click(false);
   if (btn_update(&C.btn_saveas)) on_save_click(true);
   if (btn_update(&C.btn_exit)) ui_set_close_requested();
+  if (btn_update(&C.btn_clipboard)) on_clipboard_click();
 
   if (btn_update(&C.btn_layer_pop)) paint_layer_pop(&C.ca);
   if (btn_update(&C.btn_layer_push)) paint_layer_push(&C.ca);
@@ -1480,12 +1531,16 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_layer_v[2], v2 ? rect_eye_on : rect_eye_off);
   btn_draw_icon(&C.btn_layer_v[3], v3 ? rect_eye_on : rect_eye_off);
 
+  bool demo = ui_is_demo();
   btn_draw_icon(&C.btn_new, rect_new);
-  btn_draw_icon(&C.btn_open, rect_open);
-  btn_draw_icon(&C.btn_save, rect_save);
-  btn_draw_icon(&C.btn_saveas, rect_saveas);
+  btn_draw_icon(&C.btn_open, demo ? rect_nothing : rect_open);
+  btn_draw_icon(&C.btn_save, demo ? rect_nothing : rect_save);
+  btn_draw_icon(&C.btn_saveas, demo ? rect_nothing : rect_saveas);
   btn_draw_icon(&C.btn_settings, rect_settings);
-  btn_draw_icon(&C.btn_exit, rect_exit);
+  btn_draw_icon(&C.btn_exit, demo ? rect_nothing : rect_exit);
+  if (demo) {
+    btn_draw_text(&C.btn_clipboard, "Load from clipboard");
+  }
 
   btn_draw_icon(&C.btn_clockopt[0], rect_hz0);
   btn_draw_icon(&C.btn_clockopt[1], rect_hz1);
@@ -1514,7 +1569,6 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_wiki, rect_book);
   // btn_draw_text(&C.btn_level_custom, T.main_select_level_custom);
   // btn_draw_icon(&C.btn_level_custom, rect_custom_level);
-  btn_draw_icon(&C.btn_level_custom, rect_engineer);
   // btn_draw_text(&C.btn_level_campaign, T.main_select_level);
 
   bool color_disabled = mode != MODE_EDIT;
@@ -1533,7 +1587,10 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_marquee, rect_marquee);
   btn_draw_icon(&C.btn_side_level, rect_objective);
   // btn_draw_icon(&C.btn_camp, rect_campaign1);
-  btn_draw_icon(&C.btn_camp, rect_flag);
+  // btn_draw_icon(&C.btn_camp, rect_flag);
+  btn_draw_text(&C.btn_camp, "Campaign");
+  // btn_draw_icon(&C.btn_level_custom rect_engineer);
+  btn_draw_text(&C.btn_level_custom, "Custom");
 
   btn_draw_icon(&C.btn_text, rect_text);
   btn_draw_icon(&C.btn_rotate, rect_rot);
@@ -1542,8 +1599,8 @@ void win_main_draw() {
   btn_draw_icon(&C.btn_fill, rect_fill);
   btn_draw_icon(&C.btn_line_sep, rect_line_sep);
   btn_draw_icon(&C.btn_line_sep_r, rect_line_sep_r);
-  btn_draw_icon(&C.btn_sel_open, rect_sel_open);
-  btn_draw_icon(&C.btn_sel_save, rect_sel_save);
+  btn_draw_icon(&C.btn_sel_open, demo ? rect_nothing : rect_sel_open);
+  btn_draw_icon(&C.btn_sel_save, demo ? rect_nothing : rect_sel_save);
   btn_draw_icon(&C.btn_blueprint_add, rect_blueprint_add);
   if (C.sidebar_open) {
     level_sidebar_draw();
@@ -1553,11 +1610,19 @@ void win_main_draw() {
   if (ui_get_window() == WINDOW_MAIN) {
     btn_draw_legend(&C.btn_settings, T.main_settings_leg);
     btn_draw_legend(&C.btn_new, T.main_new_leg);
-    btn_draw_legend(&C.btn_open, T.main_open_leg);
-    btn_draw_legend(&C.btn_save, T.main_save_leg);
-    btn_draw_legend(&C.btn_saveas, T.main_saveas_leg);
+    if (!demo) {
+      btn_draw_legend(&C.btn_open, T.main_open_leg);
+      btn_draw_legend(&C.btn_save, T.main_save_leg);
+      btn_draw_legend(&C.btn_saveas, T.main_saveas_leg);
+      btn_draw_legend(&C.btn_exit, T.main_exit_leg);
+      btn_draw_legend(&C.btn_sel_open, T.main_open_sel_leg);
+      btn_draw_legend(&C.btn_sel_save, T.main_save_sel_leg);
+    }
     btn_draw_legend(&C.btn_blueprint, T.main_btn_blueprint_leg);
-    btn_draw_legend(&C.btn_exit, T.main_exit_leg);
+    if (demo) {
+      btn_draw_legend(&C.btn_clipboard,
+                      "Load main image from clipboard image or URL");
+    }
     btn_draw_legend(&C.btn_simmode, T.main_simmode_leg);
 
     btn_draw_legend(&C.btn_side_level, T.main_objectives);
@@ -1580,8 +1645,6 @@ void win_main_draw() {
     btn_draw_legend(&C.btn_camp, T.main_select_level_leg);
     btn_draw_legend(&C.btn_wiki, T.main_wiki_leg);
 
-    btn_draw_legend(&C.btn_sel_open, T.main_open_sel_leg);
-    btn_draw_legend(&C.btn_sel_save, T.main_save_sel_leg);
     btn_draw_legend(&C.btn_blueprint_add, T.main_bp_add_leg);
 
     btn_draw_legend(
@@ -1848,10 +1911,14 @@ void main_update_widgets() {
   bool simu = C.mode == MODE_SIMU;
   int tool = paint_get_tool(&C.ca);
   bool demo = ui_is_demo();
-
   bool can_rewind = main_can_rewind();
   C.btn_new.disabled = ned;
   C.btn_open.disabled = ned || demo;
+  C.btn_save.disabled = demo;
+  C.btn_saveas.disabled = demo;
+  C.btn_exit.disabled = demo;
+  C.btn_clipboard.disabled = ned || !demo;
+  C.btn_clipboard.hidden = !demo;
 
   C.btn_brush.disabled = ned;
   C.btn_line.disabled = ned;
@@ -1889,8 +1956,9 @@ void main_update_widgets() {
   C.btn_fill.disabled = !has_sel || ned;
   C.btn_line_sep.disabled = ned;
   C.btn_line_sep_r.disabled = ned || paint_get_line_sep(&C.ca) == 1;
-  C.btn_sel_open.disabled = ned;
-  C.btn_sel_save.disabled = !has_sel || ned;
+  C.btn_sel_open.disabled = ned || demo;
+  C.btn_sel_save.disabled = !has_sel || ned || demo;
+
   C.btn_blueprint_add.disabled = !has_sel || ned;
   C.btn_rotate.hidden = (tool != TOOL_SEL) || ned;
   C.btn_flipv.hidden = (tool != TOOL_SEL) || ned;
@@ -1938,7 +2006,9 @@ void main_new_file() {
     C.fname = NULL;
   }
   C.bp = NULL;
-  paint_new_buffer(&C.ca);
+  if (C.inited) {
+    paint_new_buffer(&C.ca);
+  }
   update_title();
 }
 
@@ -2013,6 +2083,13 @@ void main_open_file_modal() {
 #endif
 }
 
+static void on_dialog_close_demo(int r) {
+  if (r == 1 || r == -1) {  // cancel: no action
+    return;
+  }
+  C.dialog_callback();
+}
+
 static void on_dialog_close(int r) {
   if (r == 2 || r == -1) {  // cancel: no action
     return;
@@ -2031,8 +2108,13 @@ void win_main_ask_for_save_and_proceed(void (*next_action)()) {
   if (!paint_get_is_dirty(&C.ca)) {
     next_action();
   } else {
-    dialog_open(T.want_to_save_changes, T.save, T.dont_save, T.cancel,
-                on_dialog_close);
+    if (ui_is_demo()) {
+      dialog_open(T.want_to_save_changes, T.dont_save, T.cancel, NULL,
+                  on_dialog_close_demo);
+    } else {
+      dialog_open(T.want_to_save_changes, T.save, T.dont_save, T.cancel,
+                  on_dialog_close);
+    }
   }
 }
 
@@ -2060,3 +2142,17 @@ bool win_main_is_simu_error() {
 }
 
 bool win_main_is_simu_done() { return can_save_as_solution(); }
+
+void win_main_load_image_from_bytes(const unsigned char* data, int len) {
+  Image img = LoadImageFromMemory(".png", data, len);
+  if (img.width == 0) {
+    msg_add(TextFormat("Could not load image: Is it a valid PNG?"), 10);
+    return;
+  }
+  paint_load_image(&C.ca, img);
+  if (C.fname) {
+    free(C.fname);
+    C.fname = NULL;
+  }
+  update_title();
+}

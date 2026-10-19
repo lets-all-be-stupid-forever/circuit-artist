@@ -110,6 +110,7 @@ void paint_layer_push(Paint* ca);
 void paint_layer_pop(Paint* ca);
 void paint_set_layer(Paint* ca, int layer);
 int paint_get_num_layers(Paint* ca);
+bool paint_has_image(Paint* ca);
 
 int paint_img_width(Paint* ca);
 int paint_img_height(Paint* ca);

@@ -28,9 +28,9 @@
 <rect id="btn_extra7" x="4" y="199" width="17" height="17" fill="#D9D9D9"/>
 <rect id="btn_extra8" x="22" y="199" width="17" height="17" fill="#D9D9D9"/>
 <rect id="btn_campaign_level" x="622" y="5" width="162" height="17" fill="#D9D9D9"/>
-<rect id="btn_wiki" x="256" y="4" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_blueprint" x="202" y="4" width="17" height="17" fill="#D9D9D9"/>
-<rect id="btn_bluadd" x="220" y="4" width="17" height="17" fill="#B94040"/>
+<rect id="btn_wiki" x="342" y="4" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_blueprint" x="288" y="4" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_bluadd" x="306" y="4" width="17" height="17" fill="#B94040"/>
 <rect id="btn_custom_level" x="785" y="5" width="72" height="17" fill="#D9D9D9"/>
 <rect id="btn_settings" x="76" y="4" width="17" height="17" fill="#D9D9D9"/>
 <rect id="canvas" x="50" y="32" width="807" height="395" fill="#C77B7B"/>
@@ -76,8 +76,9 @@
 <rect id="c28" x="298" y="453" width="17" height="17" fill="#D9D9D9"/>
 <rect id="c30" x="315" y="453" width="17" height="17" fill="#D16363"/>
 <rect id="btn_side_level" x="722.5" y="437" width="34" height="34" fill="#D9D9D9"/>
-<rect id="btn_camp" x="130" y="4" width="35" height="17" fill="#D9D9D9"/>
-<rect id="btn_custom" x="166" y="4" width="17" height="17" fill="#D9D9D9"/>
+<rect id="btn_camp" x="130" y="4" width="71" height="17" fill="#D9D9D9"/>
+<rect id="btn_clipboard" x="378" y="4" width="132" height="17" fill="#D9D9D9"/>
+<rect id="btn_custom" x="202" y="4" width="53" height="17" fill="#D9D9D9"/>
 <rect id="sep2" x="2" y="142" width="39" height="2" fill="#D9D9D9"/>
 </g>
 </svg>
