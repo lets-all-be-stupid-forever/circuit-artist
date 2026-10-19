@@ -271,31 +271,45 @@ IF (EMSCRIPTEN)
   # Desktop GL (ca/cav) needs "#version 330" shaders; WebGL2/GLES3 needs
   # "#version 300 es" + an explicit precision qualifier. Rather than forking
   # assets/shaders/*.glsl (which both platforms load from the same path),
-  # stage_wasm_assets.sh copies assets/ into the build tree and rewrites only
-  # the staged copy's shaders. assets/shaders/ on disk stays desktop-only.
+  # tools/stage_wasm_assets.py copies assets/ into the build tree and rewrites
+  # only the staged copy's shaders (it also subsets the UI font). assets/ on
+  # disk stays desktop-only.
   #
   # The .data bundle is produced by the *link* step, so the link must be
   # re-run whenever anything under assets/ changes (not just when a .c file
   # does). A stamp file regenerated from the asset list carries that
   # dependency into LINK_DEPENDS.
-  set(wasm_shell "${CMAKE_SOURCE_DIR}/src/wasm_shell.html")
+  # The demo is served by GitHub Pages straight from the repo root:
+  # index.html at the root, everything else under static/. ca_wasm is linked
+  # as a plain .js (no --shell-file); emscripten's loader resolves .wasm and
+  # .data relative to its own script URL, so they are found in static/ too.
+  # The shell already references static/ca_wasm.js, so it is copied verbatim.
+  # COPYONLY registers it as a configure-time dependency, so editing it
+  # re-copies on the next build.
+  set(wasm_shell "${CMAKE_SOURCE_DIR}/src/index_template.html")
+  set(wasm_out_dir "${CMAKE_SOURCE_DIR}/static")
+  configure_file("${wasm_shell}" "${CMAKE_SOURCE_DIR}/index.html" COPYONLY)
 
   # The UI webfont is fetched over HTTP by @font-face in the shell. CSS cannot
   # read MEMFS, so being inside the --preload-file bundle is not enough: the
-  # file has to sit next to ca_wasm.html. COPYONLY also registers it as a
-  # configure-time dependency, so regenerating it re-copies on the next build.
+  # file has to be served as-is from static/.
   # Generated from assets/font/*.bdf by tools/bdf2woff2.py.
   configure_file("${CMAKE_SOURCE_DIR}/assets/font/ca-ui-font.woff2"
-                 "${CMAKE_BINARY_DIR}/ca-ui-font.woff2" COPYONLY)
+                 "${wasm_out_dir}/ca-ui-font.woff2" COPYONLY)
+  # Page favicon, referenced by the shell as static/favicon.png.
+  configure_file("${CMAKE_SOURCE_DIR}/assets/imgs/icon32.png"
+                 "${wasm_out_dir}/favicon.png" COPYONLY)
   set(wasm_assets_dir "${CMAKE_BINARY_DIR}/wasm_assets")
   set(wasm_assets_stamp "${CMAKE_BINARY_DIR}/wasm_assets.stamp")
   file(GLOB_RECURSE wasm_asset_srcs CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/assets/*")
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  set(wasm_stage_script "${CMAKE_SOURCE_DIR}/tools/stage_wasm_assets.py")
   add_custom_command(
     OUTPUT "${wasm_assets_stamp}"
-    COMMAND bash "${CMAKE_SOURCE_DIR}/stage_wasm_assets.sh"
+    COMMAND ${Python3_EXECUTABLE} "${wasm_stage_script}"
       "${CMAKE_SOURCE_DIR}/assets" "${wasm_assets_dir}"
     COMMAND ${CMAKE_COMMAND} -E touch "${wasm_assets_stamp}"
-    DEPENDS ${wasm_asset_srcs} "${CMAKE_SOURCE_DIR}/stage_wasm_assets.sh"
+    DEPENDS ${wasm_asset_srcs} "${wasm_stage_script}"
     COMMENT "Staging assets/ for wasm (rewriting shaders to GLSL ES 300)"
   )
   add_custom_target(wasm_assets ALL DEPENDS "${wasm_assets_stamp}")
@@ -304,15 +318,14 @@ IF (EMSCRIPTEN)
     src/main.c
   )
   add_dependencies(ca_wasm wasm_assets)
-  # The shell html is baked into ca_wasm.html by the link step too, so it has
-  # to be a LINK_DEPENDS as well -- otherwise editing wasm_shell.html leaves a
-  # stale ca_wasm.html behind and `make` cheerfully reports "Built target".
   set_target_properties(ca_wasm PROPERTIES
-    LINK_DEPENDS "${wasm_assets_stamp};${wasm_shell}")
+    LINK_DEPENDS "${wasm_assets_stamp}")
   target_include_directories(ca_wasm PRIVATE ${ca_lib_includes})
   target_link_libraries(ca_wasm ca_lib)
 
-  set_target_properties(ca_wasm PROPERTIES SUFFIX ".html")
+  set_target_properties(ca_wasm PROPERTIES
+    SUFFIX ".js"
+    RUNTIME_OUTPUT_DIRECTORY "${wasm_out_dir}")
   # -DWASM_GL_DEBUG=ON makes every WebGL error print the GL call that caused
   # it (plus a JS stack) in the browser console. Slow; for debugging only.
   option(WASM_GL_DEBUG "Trace WebGL errors per GL call in the wasm build" OFF)
@@ -327,7 +340,6 @@ IF (EMSCRIPTEN)
     "-sUSE_GLFW=3"
     "-sASYNCIFY"
     "-sALLOW_MEMORY_GROWTH=1"
-    "--shell-file=${wasm_shell}"
    "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,lengthBytesUTF8,HEAPU8,FS"
    "-sEXPORTED_FUNCTIONS=_main,_malloc,_free"
     "--preload-file=${wasm_assets_dir}@/assets"

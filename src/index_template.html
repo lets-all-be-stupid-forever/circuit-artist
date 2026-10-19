@@ -4,19 +4,20 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Circuit Artist - WASM test</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="static/favicon.png">
     <style>
 /* The game's own UI font. Converted from
    assets/font/ark-pixel-12px-proportional-latin.bdf (the file uifont.c loads)
    by tools/bdf2woff2.py, which turns each lit pixel into a square outline so it
-   stays crisp instead of being autotraced into curves. Served from next to this
-   page by a configure_file() step -- CSS cannot read the MEMFS bundle.
+   stays crisp instead of being autotraced into curves. Served from static/ next
+   to the wasm by a configure_file() step -- CSS cannot read the MEMFS bundle.
 
    It is a 12px bitmap design, so ONLY multiples of 12px stay pixel-exact:
    12 / 24 / 36. Anything else (14px, 16px, 1em...) resamples and goes fuzzy.
    The game itself draws it at PIXEL_FONT_SCALE 2, i.e. 24px. */
 @font-face {
   font-family: 'CA Pixel';
-  src: url('ca-ui-font.woff2') format('woff2');
+  src: url('static/ca-ui-font.woff2') format('woff2');
   /* block, not swap: a fallback flash would reflow at a different metric. */
   font-display: block;
 }
@@ -180,6 +181,10 @@ canvas, img {
       var Module = {
         canvas: document.getElementById('canvas'),
         arguments: args,
+        /* The build outputs live in static/. Without this, the .data preload
+           resolves against the page URL (the file packager only honours
+           locateFile, not the script's own directory) and 404s. */
+        locateFile: (path) => 'static/' + path,
 
         preRun: [() => {
           if (!imgUrl) return;
@@ -228,6 +233,6 @@ canvas, img {
         }
       };
     </script>
-    {{{ SCRIPT }}}
+    <script async type="text/javascript" src="static/ca_wasm.js"></script>
   </body>
 </html>

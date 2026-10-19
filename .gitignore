@@ -21,3 +21,6 @@ _old
 blueprints/*
 compile_commands.json
 .cache
+
+# Web demo served by GitHub Pages (built by the ca_wasm target)
+!static/ca_wasm.*
