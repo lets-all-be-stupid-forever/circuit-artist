@@ -449,25 +449,28 @@ void ui_update_frame() {
 
 void ui_draw_mouse() {
   // Doesn't draw if cursor is not on screen.
-#ifdef __APPLE__
-  // Workaround for MACOS:
-  // It seems that raylib should start with cursor_on_screen=True but it
-  // starts with a false value, the result being the cursor not being visible
-  // when the user starts the application.
-  static bool use_raylib = false;
-  if (IsCursorOnScreen()) {
-    use_raylib = true;
-  }
-  if (use_raylib && !IsCursorOnScreen()) {
-    return;
-  }
-#else
-  if (!IsCursorOnScreen()) {
-    return;
-  }
-#endif
-
+  // raylib's IsCursorOnScreen() starts false and only flips on enter/leave
+  // events, which never fire when the window (or web page) opens with the
+  // pointer already over it. So mouse movement inside the window also counts
+  // as being on screen; a real enter/leave change always wins. The bounds
+  // check matters while dragging, when movement is reported outside too.
+  static bool inside = false;
+  static bool last_on = false;
+  bool on = IsCursorOnScreen();
   Vector2 pos = GetMousePosition();
+  Vector2 delta = GetMouseDelta();
+  bool in_bounds = pos.x >= 0 && pos.y >= 0 && pos.x < GetScreenWidth() &&
+                   pos.y < GetScreenHeight();
+  if (on != last_on) {
+    inside = on;
+  } else if ((delta.x != 0 || delta.y != 0) && in_bounds) {
+    inside = true;
+  }
+  last_on = on;
+  if (!inside) {
+    return;
+  }
+
   Rectangle source = rect_mouse_arrow;
   switch (C.cursor) {
     case MOUSE_SWITCH: {
