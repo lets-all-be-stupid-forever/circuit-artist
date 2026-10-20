@@ -98,7 +98,12 @@ canvas, img {
         right: 42px;
         z-index: 1000;            /* above the canvas */
         display: flex;
+        align-items: center;      /* text and buttons share a midline */
         gap: 6px;                 /* space between the buttons */
+      }
+      #demoTag {
+        color: #f8ffcb;           /* CA_WHITE in src/common.h */
+        margin-right: 6px;
       }
       .topBtn {
         padding: 4px 10px;
@@ -118,6 +123,8 @@ canvas, img {
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
 
     <div id="topLinks">
+        <a class="topBtn" href="https://circuitartistgame.com/2026/10/21/web-player/"
+               target="_blank" rel="noopener">Blog Post</a>
         <a class="topBtn" href="https://github.com/lets-all-be-stupid-forever/circuit-artist"
                target="_blank" rel="noopener">GitHub</a>
           <a class="topBtn" href="https://store.steampowered.com/app/3139580/"
