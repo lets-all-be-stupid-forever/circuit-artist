@@ -139,6 +139,27 @@ canvas, img {
           history.replaceState(null, '', pageUrl);
       }
 
+      /* fetch() wrapper with readable errors. A CORS block rejects with a bare
+         TypeError ("Failed to fetch" / "Load failed"), and browsers hide the
+         reason from JS on purpose, so it can't be told apart from an offline
+         or unreachable host -- the message names CORS as the likely cause. */
+      async function fetchImage(url) {
+        let res;
+        try {
+          res = await fetch(url);
+        } catch (err) {
+          throw new Error('Could not download the image from:\n' + url +
+            '\n\nThe site most likely does not allow its images to be loaded ' +
+            'from other pages (CORS), or it is unreachable.\n' +
+            'Try copying the image itself and pasting it instead.');
+        }
+        if (!res.ok) {
+          throw new Error('Could not download the image from:\n' + url +
+            '\n\nThe server answered HTTP ' + res.status + '.');
+        }
+        return res;
+      }
+
       function registerPaste(getCanPaste, loadPngBytes, loadFromUrl) {
         document.addEventListener('paste', async (e) => {
           if (!getCanPaste()) {
@@ -165,9 +186,11 @@ canvas, img {
           }
 
           if (url.protocol === 'http:' || url.protocol === 'https:') {
-            loadFromUrl(url)
-            setImgParam(url.href)
             e.preventDefault();
+            // Only remember the URL in ?img= once it actually loaded.
+            loadFromUrl(url)
+              .then(() => setImgParam(url.href))
+              .catch(err => alert(err.message));
             // Module.ccall('OnUrlPasted', null, ['string'], [url.href]);
           }
         });
@@ -196,15 +219,13 @@ canvas, img {
         preRun: [() => {
           if (!imgUrl) return;
           Module.addRunDependency('startup-img');
-          fetch(imgUrl)
-            .then(res => {
-              if (!res.ok) throw new Error('HTTP ' + res.status);
-              return res.arrayBuffer();
-            })
+          fetchImage(imgUrl)
+            .then(res => res.arrayBuffer())
             .then(buf => Module.FS.writeFile(IMG_PATH, new Uint8Array(buf)))
             .catch(err => {
               console.warn('Startup image failed:', err)
               initialMsg = 'Startup image failed to load';
+              alert(err.message);
             })
             .finally(() => Module.removeRunDependency('startup-img'));  
         }],
@@ -214,11 +235,10 @@ canvas, img {
           const getCanPaste = Module.cwrap('ca_get_can_paste', 'number', []);
 
           const loadFromUrl = async (url) => {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const res = await fetchImage(url);
             const type = res.headers.get('content-type') || '';
             if (!type.startsWith('image/')) {
-              alert('Not an image: ' + type)
+              // The caller alerts err.message.
               throw new Error('Not an image: ' + type);
             }
             loadPngBytes(new Uint8Array(await res.arrayBuffer()));
