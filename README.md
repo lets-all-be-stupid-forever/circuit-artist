@@ -4,6 +4,7 @@
 
 ### A Digital Logic Simulation Game 
 #### Every Circuit Is An Image
+##### [:art: Check the Web Demo](https://lets-all-be-stupid-forever.github.io/circuit-artist/)
 
 [![Steam](https://img.shields.io/badge/Steam-Wishlist%20Now-1b2838?logo=steam&logoColor=white)](https://store.steampowered.com/app/3139580)
 
