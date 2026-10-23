@@ -28,7 +28,6 @@
 #include "wdialog.h"
 #include "win_blueprint.h"
 #include "win_bpdetail.h"
-#include "win_campaign.h"
 #include "win_clipboard.h"
 #include "win_customlvl.h"
 #include "win_level.h"
@@ -191,7 +190,6 @@ void ui_init() {
   win_workshopdet_init();
   win_main_open();
   win_bpdetail_init();
-  win_campaign_init();
   win_msg_init();
   win_settings_init();
   flush_win_cmd();
@@ -402,7 +400,6 @@ void ui_update_frame() {
   if (update_window == WINDOW_WORKSHOP) win_workshop_update();
   if (update_window == WINDOW_WORKSHOPDET) win_workshopdet_update();
   if (update_window == WINDOW_SETTINGS) win_settings_update();
-  if (update_window == WINDOW_CAMPAIGN) win_campaign_update();
   profiler_tac();
 
   // We stop the app here if should_close is flagged.
@@ -434,7 +431,6 @@ void ui_update_frame() {
     if (window == WINDOW_WORKSHOP) win_workshop_draw();
     if (window == WINDOW_WORKSHOPDET) win_workshopdet_draw();
     if (window == WINDOW_SETTINGS) win_settings_draw();
-    if (window == WINDOW_CAMPAIGN) win_campaign_draw();
   }
   msg_draw();
   ui_draw_mouse();

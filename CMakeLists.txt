@@ -147,7 +147,6 @@ SET(ca_src
   src/win_msg.c
   src/win_blueprint.c
   src/win_pubform.c
-  src/win_campaign.c
   src/win_clipboard.c
   src/win_customlvl.c
   src/win_progress.c

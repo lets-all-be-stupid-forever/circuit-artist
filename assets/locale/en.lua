@@ -1143,7 +1143,6 @@ Implement a 1:2 decoder that takes a 1-bit input `a` and activates exactly one o
 ]]
 decoder2_name ="1-Bit Decoder with Enable"
 decoder2_desc = [[
-
 Implement a 1:2 decoder with enable.
 
 The enable input is an additional control signal: when `enable=1` (ON), the decoder operates normally. When `enable=0` (OFF), all outputs are zero.
@@ -1151,7 +1150,6 @@ The enable input is an additional control signal: when `enable=1` (ON), the deco
 ]]
 decoder_2bit_name ="2-Bit Decoder"
 decoder_2bit_desc =[[
-
 Implement a 2:4 decoder that takes a 2-bit input `a` and activates exactly one of the 4 output bits based on the input value:
 
 - a=0 -> output=0001
@@ -1411,7 +1409,6 @@ mem3_title = 'Truth Table'
 mem4_title = 'D Latch Implementation'
 photo_name = "D Flip-Flop"
 photo_desc = [[
-
 Build a D Flip-Flop - an extension of the D-latch that only updates `Q` at one specific point in time instead of continuously.
 
 The idea is that, instead of changing the `Q` value whenever D changes, there will be an extra input (`CLK`), and we only want the `Q` value to update when the `CLK` signal changes from 0 to 1. It's an auxiliary signal to tell the exact moment we want the memory to be updated.

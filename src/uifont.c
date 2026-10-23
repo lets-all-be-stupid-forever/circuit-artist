@@ -494,7 +494,7 @@ void uifont_draw_text_box_advanced(const char* text, Rectangle rect,
                                    Color first_color, sprite_t* sprites,
                                    int* height) {
   int scale = PIXEL_FONT_SCALE;
-  int lh = C.font_ui.base_size * scale + 2;
+  int lh = (C.font_ui.base_size - 4) * scale;  //+ 2;
   int n = strlen(text), sx = space_width(scale);
   int x = rect.x, y = rect.y, linew = rect.width;
   int k = 0, offx = 0, offy = 0, kcount = 0;
@@ -569,7 +569,7 @@ void uifont_draw_text_box_advanced(const char* text, Rectangle rect,
   }
   if (height != NULL) {
     if (offx == 0) offy -= lh;
-    *height = offy + lh;
+    *height = offy + lh + 4 * scale;
   }
 }
 

@@ -153,7 +153,7 @@ RegisterTxt('memory1', [[
 latch_door            wiki=srlatch text=latch_door_think
 dlatch                wiki=dlatch text=dlatch_example img=mem2,s=4 img=mem3,s=4 img=mem4,s=4
 photo                 wiki=dflipflop text=photo_analogy
-combo_detector        wiki=propdelay wiki=setuphold text=combo_detector_clock text=combo_detector_timing text=combo_detector_delay text=combo_detector_history text=combo_detector_output
+combo_detector        wiki=propdelay text=combo_detector_clock text=combo_detector_timing text=combo_detector_delay text=combo_detector_history text=combo_detector_output
 dflipflop_with_enable wiki=dflipflop text=dflipflop_with_enable_hint text=dflipflop_with_enable_example text=dflipflop_with_enable_tests text=dflipflop_with_enable_comment img=D_with_enable,s=4
 dff_w_r               text=dff_w_r_hint text=dff_w_r_comment img=D_with_reset,s=4 text=dff_w_r_tests
 register4             text=register4_hint text=register4_tests

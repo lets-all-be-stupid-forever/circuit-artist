@@ -183,7 +183,7 @@ void listbox_draw(Listbox* l, int selected) {
   rlPopMatrix();
   scroll_draw(&l->scroll);
   EndScissorMode();
-  draw_frame(box);
+  // draw_frame(box);
 }
 
 // scroll I need: 1. value, some state for hovering: mouse0, value0
@@ -372,7 +372,7 @@ void textbox_draw(Textbox* t) {
   rlPopMatrix();
   EndScissorMode();
   scroll_draw(&t->scroll);
-  draw_frame(t->box);
+  // draw_frame(t->box);
 }
 
 void textbox_destroy(Textbox* t) {
@@ -1205,7 +1205,7 @@ void lineedit_draw(LineEdit* e) {
 
   rlPopMatrix();
   EndScissorMode();
-  draw_frame(e->hitbox);
+  // draw_frame(e->hitbox);
 }
 
 // ---- MultiLineEdit ----
@@ -1738,7 +1738,7 @@ void mle_draw(MultiLineEdit* m) {
   rlPopMatrix();
   EndScissorMode();
   scroll_draw(&m->scroll);
-  draw_frame(m->hitbox);
+  // draw_frame(m->hitbox);
 }
 
 static void draw_checkbox(Rectangle r, bool toggled, bool pressed) {

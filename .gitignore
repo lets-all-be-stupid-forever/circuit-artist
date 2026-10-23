@@ -1,4 +1,5 @@
 /.idea
+blueprints_v2
 cmake-build-*
 third_party/*.gz
 build
