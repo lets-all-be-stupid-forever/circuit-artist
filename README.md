@@ -6,7 +6,7 @@
 #### Every Circuit Is An Image
 ##### [:art: Check the Web Demo](https://lets-all-be-stupid-forever.github.io/circuit-artist/)
 
-[![Steam](https://img.shields.io/badge/Steam-Wishlist%20Now-1b2838?logo=steam&logoColor=white)](https://store.steampowered.com/app/3139580)
+[![Steam](https://img.shields.io/badge/Steam-Buy%20On%20Steam-1b2838?logo=steam&logoColor=white)](https://store.steampowered.com/app/3139580)
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2)](https://discord.gg/McpSTEW5jU)
 [![WordPress](https://img.shields.io/badge/WordPress-Blog-21759B?logo=wordpress&logoColor=white)](https://circuitartistgame.com/)
