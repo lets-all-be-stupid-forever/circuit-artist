@@ -14,6 +14,8 @@ typedef struct {
   u8* ori[MAX_LAYERS]; /* Orientation of a pixel. 0 is horizontal, 1 is
                           vertical. */
   int* pgoff;          /* socket/driver offset of each pingroup */
+  int bbw;             /* bounding box */
+  int bbh;             /* bounding box */
 } PixelGraph;
 
 void pixel_graph_init(PixelGraph* pg, DistSpec spec, int nl, Image* imgs,

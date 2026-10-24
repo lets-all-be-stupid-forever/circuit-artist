@@ -1835,7 +1835,15 @@ void main_draw_status_bar() {
   }
   yc += step;
   v2i buf_size = hist_get_buf_size(&C.ca.h);
-  snprintf(txt, sizeof(txt), T.main_bar_img, buf_size.x, buf_size.y);
+  if (C.mode == MODE_SIMU) {
+    int bw, bh;
+    sim_get_bbox(&C.sim, &bw, &bh);
+    int area = bw * bh;
+    snprintf(txt, sizeof(txt), T.main_bar_img_bbox, buf_size.x, buf_size.y, bw,
+             bh, fmtnum(area));
+  } else {
+    snprintf(txt, sizeof(txt), T.main_bar_img, buf_size.x, buf_size.y);
+  }
   uifont_draw_texture_outlined(txt, xc, yc, tc, bg);
   yc += step;
   if (C.sim_mode == SIM_MODE_LEVEL) {

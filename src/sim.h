@@ -183,7 +183,6 @@ typedef struct Sim {
   int64_t update_interval;
   int base_tps;
   bool complete; /* Activats on complete */
-
   double start_parsing_time;
 
   RenderTexture2D arg_layers[MAX_LAYERS];
@@ -204,6 +203,7 @@ typedef struct {
 
 void sim_init(Sim* sim, SimParams params);
 int sim_compile(Sim* sim);
+void sim_get_bbox(Sim* sim, int* bbw, int* bbh); /* Bounding box of circuit */
 // bool sim_is_compilation_done(Sim* sim);
 // void sim_stop_compilation(Sim* sim);
 // bool sim_get_compilation_cancelled(Sim* sim);

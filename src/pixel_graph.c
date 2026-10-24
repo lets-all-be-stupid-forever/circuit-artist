@@ -320,16 +320,36 @@ static Graph build_graph_from_code(int nl, int w, int h, u8** img_code) {
 }
 
 /* Separates background from foreground in a regular image. */
-static u8* gen_fg_code(Image img) {
+static u8* gen_fg_code(Image img, int* bbw, int* bbh) {
   int w = img.width;
   int h = img.height;
+  int bx0 = w;
+  int by0 = h;
+  int bx1 = 0;
+  int by1 = 0;
   u8* image = calloc(w * h, sizeof(u8));
   assert(img.format == PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
   Color* colors = img.data;
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
-      image[y * w + x] = colors[y * w + x].a != 0;
+      int k = colors[y * w + x].a != 0;
+      image[y * w + x] = k;
+      if (k == 1) {
+        bx0 = bx0 < x ? bx0 : x;
+        by0 = by0 < y ? by0 : y;
+        bx1 = bx1 > x ? bx1 : x;
+        by1 = by1 > y ? by1 : y;
+      }
     }
+  }
+
+  if (bx1 >= bx0) {
+    *bbw = bx1 - bx0 + 1;
+    *bbh = by1 - by0 + 1;
+    ;
+  } else {
+    *bbw = 0;
+    *bbh = 0;
   }
   return image;
 }
@@ -468,7 +488,7 @@ void pixel_graph_init(PixelGraph* pg, DistSpec spec, int nl, Image* imgs,
   int h = imgs[0].height;
   u8* img_code[MAX_LAYERS + 1] = {0};
   for (int i = 0; i < nl; i++) {
-    img_code[i] = gen_fg_code(imgs[i]);
+    img_code[i] = gen_fg_code(imgs[i], &pg->bbw, &pg->bbh);
   }
 
   find_nands(w, h, img_code[0], &pg->nands);

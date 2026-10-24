@@ -1901,3 +1901,8 @@ Status sim_reset_state(Sim* sim) {
   }
   return status;
 }
+
+void sim_get_bbox(Sim* sim, int* bbw, int* bbh) {
+  *bbw = sim->pg.bbw;
+  *bbh = sim->pg.bbh;
+}

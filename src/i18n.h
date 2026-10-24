@@ -78,6 +78,7 @@ void i18n_register_lua(lua_State* L);
   X(main_bar_level)                   \
   X(main_bar_sandbox)                 \
   X(main_bar_img)                     \
+  X(main_bar_img_bbox)                \
   X(main_bar_img_name)                \
   X(main_bar_tick)                    \
   X(main_bar_energy)                  \
