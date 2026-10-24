@@ -479,13 +479,41 @@ static void draw_btn_base(Btn* b) {
   rlPopMatrix();
 }
 
+static void draw_btn_base_grad(Btn* b) {
+  int x = b->hitbox.x;
+  int y = b->hitbox.y;
+  int w = b->hitbox.width;
+  int h = b->hitbox.height;
+  rlPushMatrix();
+  rlTranslatef(x, y, 0);
+  rlScalef(2, 2, 1);
+  Texture2D sprites = ui_get_sprites();
+  NPatchInfo np = {.source = {528, 105, 5, 5}, 2, 2, 2, 2, NPATCH_NINE_PATCH};
+  if ((b->pressed || b->toggled) && !b->disabled) {
+    np =
+        (NPatchInfo){.source = {534, 105, 5, 5}, 2, 2, 2, 2, NPATCH_NINE_PATCH};
+  }
+  Rectangle dest = {0, 0, w / 2, h / 2};
+  Color top = GetColor(0xF4D949FF);
+  Color bottom = ColorLerp(top, BLACK, 0.5);  // GetColor(0x762E10FF);
+  if (!(b->toggled || b->pressed)) {
+    top = ColorLerp(top, BLACK, 0.5);
+    bottom = ColorLerp(bottom, BLACK, 0.5);
+  }
+
+  DrawRectangleGradientV(dest.x, dest.y, dest.width, dest.height, top, bottom);
+  DrawTextureNPatch(sprites, np, dest, (Vector2){0, 0}, 0, WHITE);
+  rlPopMatrix();
+}
+
 void btn_draw_text(Btn* b, const char* text) {
   if (b->hidden) return;
   Vector2 size = uifont_text_size(text);
   int fx = (b->hitbox.x + b->hitbox.width / 2) - size.x / 2;
   int fy = (b->hitbox.y + b->hitbox.height / 2) - size.y / 2;
-  if (b->pressed) {
-    // fy += 2;
+  if (b->pressed || b->toggled) {
+    fy += 1;
+    fx += 1;
   }
 
   Color c0 = get_lut_color(COLOR_BTN0);
@@ -496,7 +524,11 @@ void btn_draw_text(Btn* b, const char* text) {
   } else if (b->done) {
     draw_btn_base_done(b);
   } else {
-    draw_btn_base(b);
+    if (b->gradient) {
+      draw_btn_base_grad(b);
+    } else {
+      draw_btn_base(b);
+    }
   }
 
   if (!b->disabled) {
@@ -528,7 +560,10 @@ void btn_draw_icon2(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
   int s = 2;
   int fx = (b->hitbox.x + b->hitbox.width / 2) - s * source.width / 2;
   int fy = (b->hitbox.y + b->hitbox.height / 2) - s * source.height / 2;
-  // if (b->pressed) fy += 1;
+  if (b->pressed || b->toggled) {
+    fy += 1;
+    fx += 1;
+  }
   int x = b->hitbox.x;
   int y = b->hitbox.y;
   int w = b->hitbox.width;
@@ -542,7 +577,11 @@ void btn_draw_icon2(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
   } else if (b->done) {
     draw_btn_base_done(b);
   } else {
-    draw_btn_base(b);
+    if (b->gradient) {
+      draw_btn_base_grad(b);
+    } else {
+      draw_btn_base(b);
+    }
   }
   rlPushMatrix();
   rlTranslatef(fx, fy, 0);
@@ -551,8 +590,12 @@ void btn_draw_icon2(Btn* b, int ui_scale, Texture2D texture, Rectangle source) {
     if (!b->gradient) {
       DrawTextureRec(texture, source, (Vector2){0, 0}, BLACK);
     } else {
+      Color fg = WHITE;
+      if (!(b->pressed || b->toggled)) {
+        fg = ColorLerp(fg, BLACK, 0.25);
+      }
       DrawTextureRec(texture, source, (Vector2){0, 0 + 1}, BLACK);
-      DrawTextureRec(texture, source, (Vector2){0, 0}, WHITE);
+      DrawTextureRec(texture, source, (Vector2){0, 0}, fg);
     }
   } else {
     if (!b->primary) {

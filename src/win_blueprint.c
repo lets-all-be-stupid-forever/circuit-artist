@@ -267,7 +267,6 @@ void win_blueprint_update() {
     if (C.sel >= NUM_FIXED + NUM_PAGES * BP_PAGESIZE) {
       C.sel = -1;
     }
-    return;
   }
   C.btn_editpage.toggled = C.editpage;
 
@@ -337,9 +336,9 @@ void win_blueprint_draw() {
   draw_win(C.modal, T.bp_title);
 
   Color k = GetColor(0xBB830BFF);
-  draw_frame(C.r_slots);
+  // draw_frame(C.r_slots);
   // draw_frame(C.r_pages);
-  draw_frame(C.r_staging);
+  // draw_frame(C.r_staging);
 
   label_draw(&C.slots_cap);
   label_draw(&C.pages_cap);

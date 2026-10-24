@@ -117,7 +117,7 @@ static void draw_level_title() {
   const char* level_title_txt = C.ldef->name;
   DrawRectangleRec(C.level_title, (Color){0, 0, 0, 150});
   custom_label_draw_centered(C.level_title, level_title_txt, CA_WHITE, BLACK);
-  draw_frame(C.level_title);
+  // draw_frame(C.level_title);
 }
 
 void level_sidebar_draw() {

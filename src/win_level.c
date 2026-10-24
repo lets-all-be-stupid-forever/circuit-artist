@@ -266,7 +266,7 @@ static void draw_campaign_level_list() {
       LevelDef* ldef = levels[i];
       const char* txt =
           TextFormat("%s. %s", get_roman_number(i + 1), ldef->name);
-      C.btn_option[i].primary = !ldef->complete;
+      // C.btn_option[i].done = ldef->complete;
       btn_draw_text(&C.btn_option[i], txt);
       if (C.btn_option[i].hidden) {
         custom_label_draw_centered(C.btn_option[i].hitbox, txt, CA_GRAYDARK,
@@ -365,7 +365,7 @@ static void draw_roadmap_side() {
     Rectangle rect = {0, 0, g->icon.width, g->icon.height};
     Rectangle source = rect;
     if (g->can_choose) {
-      C.btn_camp[i].primary = !g->complete;
+      C.btn_camp[i].gradient = g->complete;
       btn_draw_icon2(&C.btn_camp[i], ui_get_scale(), texture,
                      source);  // c->name);
 
