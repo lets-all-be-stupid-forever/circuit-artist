@@ -13,12 +13,30 @@ out vec4 finalColor;
 
 uniform vec2 sp; // zoom
 uniform ivec2 img_size; // image size in image pixels
+uniform int mode; // 0: sim (opaque), 1: paint layer (keeps transparency)
 
 vec4 msample(vec2 pos, int r) {
   float kx = 1.0 / float(img_size.x);
   float ky = 1.0 / float(img_size.y);
   vec4 ss = vec4(0.0,0.0,0.0,0.0);
   float cnt = 0.0;
+  if (mode == 1) {
+    // Paint layers are stacked on top of each other, so the empty area must
+    // stay transparent or it hides the layers below. Alpha is the coverage;
+    // over black this gives the same color as the opaque average below.
+    vec3 rgb = vec3(0.0);
+    float a = 0.0;
+    for (int y = -r; y < r; y++) {
+      for (int x = -r; x < r; x++) {
+        vec4 s = texture(texture0, vec2(pos.x + (float(x)+0.5)*kx , pos.y +(float(y)+0.5)*ky));
+        rgb += s.rgb * s.a;
+        a += s.a;
+        cnt += 1.0;
+      }
+    }
+    if (a < 0.001) return vec4(0.0);
+    return vec4(rgb / a, a / cnt);
+  }
   for (int y = -r; y < r; y++) {
     for (int x = -r; x < r; x++) {
       vec4 s = texture(texture0, vec2(pos.x + (float(x)+0.5)*kx , pos.y +(float(y)+0.5)*ky));
